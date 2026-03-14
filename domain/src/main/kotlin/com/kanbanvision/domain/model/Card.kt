@@ -13,12 +13,19 @@ data class Card(
     val createdAt: Instant = Instant.now(),
 ) {
     companion object {
-        fun create(columnId: ColumnId, title: String, description: String = "", position: Int): Card {
+        fun create(
+            columnId: ColumnId,
+            title: String,
+            description: String = "",
+            position: Int,
+        ): Card {
             require(title.isNotBlank()) { "Card title must not be blank" }
             return Card(id = CardId.generate(), columnId = columnId, title = title, description = description, position = position)
         }
     }
 
-    fun moveTo(targetColumnId: ColumnId, newPosition: Int): Card =
-        copy(columnId = targetColumnId, position = newPosition)
+    fun moveTo(
+        targetColumnId: ColumnId,
+        newPosition: Int,
+    ): Card = copy(columnId = targetColumnId, position = newPosition)
 }
