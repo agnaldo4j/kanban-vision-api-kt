@@ -1,7 +1,7 @@
 plugins {
     id("kanban.kotlin-common")
     id("org.jetbrains.kotlin.plugin.serialization")
-    alias(libs.plugins.ktor)
+    id("io.ktor.plugin")
 }
 
 application {
@@ -16,27 +16,27 @@ ktor {
 
 dependencies {
     implementation(project(":usecases"))
-    implementation(project(":persistence"))
+    implementation(project(":sql_persistence"))
 
-    implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.netty)
-    implementation(libs.ktor.server.content.neg)
-    implementation(libs.ktor.server.status.pages)
-    implementation(libs.ktor.server.call.logging)
-    implementation(libs.ktor.serialization.json)
+    implementation("io.ktor:ktor-server-core-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-netty-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-status-pages-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-call-logging-jvm:3.1.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.1.2")
 
-    implementation(libs.koin.core)
-    implementation(libs.koin.ktor)
-    implementation(libs.koin.logger.slf4j)
+    implementation("io.insert-koin:koin-core:4.1.0")
+    implementation("io.insert-koin:koin-ktor:4.1.0")
+    implementation("io.insert-koin:koin-logger-slf4j:4.1.0")
 
-    implementation(libs.logback.classic)
+    implementation("ch.qos.logback:logback-classic:1.5.18")
 
-    testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.ktor.client.content.neg)
-    testImplementation(libs.koin.test.junit5)
-    testImplementation(libs.kotlin.test)
-    testImplementation(libs.junit5.api)
-    testRuntimeOnly(libs.junit5.engine)
-    testImplementation(libs.mockk)
-    testImplementation(libs.h2)
+    testImplementation("io.ktor:ktor-server-test-host-jvm:3.1.2")
+    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.1.2")
+    testImplementation("io.insert-koin:koin-test-junit5:4.1.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
+    testImplementation("io.mockk:mockk:1.14.2")
+    testImplementation("com.h2database:h2:2.3.232")
 }
