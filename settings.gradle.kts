@@ -3,6 +3,6 @@ rootProject.name = "kanban-vision-api"
 include(
     ":domain",
     ":usecases",
-    ":persistence",
+    ":sql_persistence",
     ":http_api",
 )
