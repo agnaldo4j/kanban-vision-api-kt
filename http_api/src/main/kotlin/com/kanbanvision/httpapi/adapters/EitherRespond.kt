@@ -27,5 +27,9 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
             respond(HttpStatusCode.NotFound, mapOf("error" to error.toString(), "requestId" to requestId))
         is DomainError.PersistenceError ->
             respond(HttpStatusCode.InternalServerError, mapOf("error" to "Internal server error", "requestId" to requestId))
+        is DomainError.InvalidDecision ->
+            respond(HttpStatusCode.BadRequest, mapOf("error" to error.reason, "requestId" to requestId))
+        is DomainError.DayAlreadyExecuted ->
+            respond(HttpStatusCode.Conflict, mapOf("error" to "Day ${error.day} was already executed", "requestId" to requestId))
     }
 }
