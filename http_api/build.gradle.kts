@@ -14,6 +14,41 @@ ktor {
     }
 }
 
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.90".toBigDecimal()
+            }
+        }
+    }
+    classDirectories.setFrom(
+        sourceSets.main.get().output.asFileTree.matching {
+            exclude(
+                "com/kanbanvision/httpapi/MainKt.class",
+                "com/kanbanvision/httpapi/di/**",
+                "**/*\$\$inlined\$*",
+                "**/*\$\$serializer.class",
+                "**/*\$Companion.class",
+            )
+        },
+    )
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        sourceSets.main.get().output.asFileTree.matching {
+            exclude(
+                "com/kanbanvision/httpapi/MainKt.class",
+                "com/kanbanvision/httpapi/di/**",
+                "**/*\$\$inlined\$*",
+                "**/*\$\$serializer.class",
+                "**/*\$Companion.class",
+            )
+        },
+    )
+}
+
 dependencies {
     implementation(project(":usecases"))
     implementation(project(":sql_persistence"))
@@ -28,6 +63,9 @@ dependencies {
     implementation("io.insert-koin:koin-core:4.1.0")
     implementation("io.insert-koin:koin-ktor:4.1.0")
     implementation("io.insert-koin:koin-logger-slf4j:4.1.0")
+
+    implementation("io.github.smiley4:ktor-openapi:5.0.2")
+    implementation("io.github.smiley4:ktor-swagger-ui:5.0.2")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
