@@ -55,12 +55,12 @@ dependencies {
 
     implementation("io.arrow-kt:arrow-core:2.0.1")
 
-    implementation("io.ktor:ktor-server-core-jvm:3.1.2")
-    implementation("io.ktor:ktor-server-netty-jvm:3.1.2")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.1.2")
-    implementation("io.ktor:ktor-server-status-pages-jvm:3.1.2")
-    implementation("io.ktor:ktor-server-call-logging-jvm:3.1.2")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-core-jvm:3.4.1")
+    implementation("io.ktor:ktor-server-netty-jvm:3.4.1")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.4.1")
+    implementation("io.ktor:ktor-server-status-pages-jvm:3.4.1")
+    implementation("io.ktor:ktor-server-call-logging-jvm:3.4.1")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.4.1")
 
     implementation("io.insert-koin:koin-core:4.1.0")
     implementation("io.insert-koin:koin-ktor:4.1.0")
@@ -71,8 +71,8 @@ dependencies {
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
-    testImplementation("io.ktor:ktor-server-test-host-jvm:3.1.2")
-    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.1.2")
+    testImplementation("io.ktor:ktor-server-test-host-jvm:3.4.1")
+    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.4.1")
     testImplementation("io.insert-koin:koin-test-junit5:4.1.0")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
