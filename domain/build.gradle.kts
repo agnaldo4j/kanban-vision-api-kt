@@ -6,7 +6,7 @@ dependencies {
     implementation("io.arrow-kt:arrow-core:2.0.1")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
     testImplementation("io.mockk:mockk:1.14.2")
 }
