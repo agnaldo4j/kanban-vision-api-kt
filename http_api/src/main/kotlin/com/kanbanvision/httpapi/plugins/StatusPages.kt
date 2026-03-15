@@ -9,16 +9,9 @@ import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("StatusPages")
 
+@Suppress("TooGenericExceptionCaught")
 fun Application.configureStatusPages() {
     install(StatusPages) {
-        exception<IllegalArgumentException> { call, cause ->
-            val requestId = call.attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
-            call.respond(HttpStatusCode.BadRequest, mapOf("error" to (cause.message ?: "Bad request"), "requestId" to requestId))
-        }
-        exception<NoSuchElementException> { call, cause ->
-            val requestId = call.attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
-            call.respond(HttpStatusCode.NotFound, mapOf("error" to (cause.message ?: "Not found"), "requestId" to requestId))
-        }
         exception<Throwable> { call, cause ->
             val requestId = call.attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
             log.error("Unhandled exception [requestId={}]", requestId, cause)

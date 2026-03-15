@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.card
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.CreateCardCommand
@@ -9,8 +10,9 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class CreateCardUseCaseTest {
     private val cardRepository = mockk<CardRepository>()
@@ -24,9 +26,10 @@ class CreateCardUseCaseTest {
             coEvery { cardRepository.findByColumnId(any()) } returns emptyList()
             coEvery { cardRepository.save(any()) } answers { firstArg() }
 
-            val cardId = useCase.execute(CreateCardCommand(columnId = columnId, title = "Fix bug"))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Fix bug"))
 
-            assertNotNull(cardId)
+            assertTrue(result.isRight())
+            assertNotNull(result.getOrNull())
             coVerify(exactly = 1) { cardRepository.save(any()) }
         }
 
@@ -43,20 +46,22 @@ class CreateCardUseCaseTest {
         }
 
     @Test
-    fun `execute with blank column id throws before saving`() =
+    fun `execute with blank column id returns ValidationError before saving`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
-                useCase.execute(CreateCardCommand(columnId = "", title = "Task"))
-            }
+            val result = useCase.execute(CreateCardCommand(columnId = "", title = "Task"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.save(any()) }
         }
 
     @Test
-    fun `execute with blank title throws before saving`() =
+    fun `execute with blank title returns ValidationError before saving`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
-                useCase.execute(CreateCardCommand(columnId = columnId, title = ""))
-            }
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = ""))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.save(any()) }
         }
 }

@@ -1,5 +1,8 @@
 package com.kanbanvision.usecases.card
 
+import arrow.core.Either
+import arrow.core.raise.either
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -13,30 +16,31 @@ class CreateCardUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(command: CreateCardCommand): CardId {
-        command.validate()
-        log.debug("Creating card: columnId={} title={}", command.columnId, command.title)
-        val (cardId, duration) =
-            measureTimedValue {
-                val columnId = ColumnId(command.columnId)
-                val existing = cardRepository.findByColumnId(columnId)
-                val card =
-                    Card.create(
-                        columnId = columnId,
-                        title = command.title,
-                        description = command.description,
-                        position = existing.size,
-                    )
-                cardRepository.save(card)
-                card.id
-            }
-        log.info(
-            "Card created: id={} columnId={} title={} duration={}ms",
-            cardId.value,
-            command.columnId,
-            command.title,
-            duration.inWholeMilliseconds,
-        )
-        return cardId
-    }
+    suspend fun execute(command: CreateCardCommand): Either<DomainError, CardId> =
+        either {
+            command.validate().bind()
+            log.debug("Creating card: columnId={} title={}", command.columnId, command.title)
+            val (cardId, duration) =
+                measureTimedValue {
+                    val columnId = ColumnId(command.columnId)
+                    val existing = cardRepository.findByColumnId(columnId)
+                    val card =
+                        Card.create(
+                            columnId = columnId,
+                            title = command.title,
+                            description = command.description,
+                            position = existing.size,
+                        )
+                    cardRepository.save(card)
+                    card.id
+                }
+            log.info(
+                "Card created: id={} columnId={} title={} duration={}ms",
+                cardId.value,
+                command.columnId,
+                command.title,
+                duration.inWholeMilliseconds,
+            )
+            cardId
+        }
 }

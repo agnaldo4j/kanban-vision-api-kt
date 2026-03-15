@@ -1,5 +1,8 @@
 package com.kanbanvision.httpapi.routes
 
+import arrow.core.raise.either
+import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.httpapi.extensions.respondWithDomainError
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.board.commands.CreateBoardCommand
@@ -40,9 +43,14 @@ fun Route.boardRoutes() {
             }
         }) {
             val request = call.receive<CreateBoardRequest>()
-            val boardId = createBoard.execute(CreateBoardCommand(name = request.name))
-            val board = getBoard.execute(GetBoardQuery(id = boardId.value))
-            call.respond(HttpStatusCode.Created, BoardResponse(board.id.value, board.name))
+            either<DomainError, BoardResponse> {
+                val boardId = createBoard.execute(CreateBoardCommand(name = request.name)).bind()
+                val board = getBoard.execute(GetBoardQuery(id = boardId.value)).bind()
+                BoardResponse(board.id.value, board.name)
+            }.fold(
+                ifLeft = { error -> call.respondWithDomainError(error) },
+                ifRight = { response -> call.respond(HttpStatusCode.Created, response) },
+            )
         }
 
         get("/{id}", {
@@ -64,9 +72,13 @@ fun Route.boardRoutes() {
                 }
             }
         }) {
-            val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing board id")
-            val board = getBoard.execute(GetBoardQuery(id = id))
-            call.respond(BoardResponse(board.id.value, board.name))
+            val id =
+                call.parameters["id"]
+                    ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing board id"))
+            getBoard.execute(GetBoardQuery(id = id)).fold(
+                ifLeft = { error -> call.respondWithDomainError(error) },
+                ifRight = { board -> call.respond(BoardResponse(board.id.value, board.name)) },
+            )
         }
     }
 }

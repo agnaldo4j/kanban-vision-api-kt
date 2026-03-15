@@ -53,6 +53,8 @@ dependencies {
     implementation(project(":usecases"))
     implementation(project(":sql_persistence"))
 
+    implementation("io.arrow-kt:arrow-core:2.0.1")
+
     implementation("io.ktor:ktor-server-core-jvm:3.1.2")
     implementation("io.ktor:ktor-server-netty-jvm:3.1.2")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:3.1.2")

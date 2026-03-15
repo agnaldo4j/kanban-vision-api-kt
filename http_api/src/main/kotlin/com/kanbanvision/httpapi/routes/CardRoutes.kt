@@ -1,5 +1,8 @@
 package com.kanbanvision.httpapi.routes
 
+import arrow.core.raise.either
+import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.httpapi.extensions.respondWithDomainError
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
@@ -78,18 +81,21 @@ private suspend fun ApplicationCall.handleCreateCard(
     getCard: GetCardUseCase,
 ) {
     val request = receive<CreateCardRequest>()
-    val cardId =
-        createCard.execute(
-            CreateCardCommand(
-                columnId = request.columnId,
-                title = request.title,
-                description = request.description,
-            ),
-        )
-    val card = getCard.execute(GetCardQuery(id = cardId.value))
-    respond(
-        HttpStatusCode.Created,
-        CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position),
+    either<DomainError, CardResponse> {
+        val cardId =
+            createCard
+                .execute(
+                    CreateCardCommand(
+                        columnId = request.columnId,
+                        title = request.title,
+                        description = request.description,
+                    ),
+                ).bind()
+        val card = getCard.execute(GetCardQuery(id = cardId.value)).bind()
+        CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position)
+    }.fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { response -> respond(HttpStatusCode.Created, response) },
     )
 }
 
@@ -97,17 +103,25 @@ private suspend fun ApplicationCall.handleMoveCard(
     moveCard: MoveCardUseCase,
     getCard: GetCardUseCase,
 ) {
-    val id = parameters["id"] ?: throw IllegalArgumentException("Missing card id")
+    val id =
+        parameters["id"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing card id"))
     val request = receive<MoveCardRequest>()
-    moveCard.execute(
-        MoveCardCommand(
-            cardId = id,
-            targetColumnId = request.columnId,
-            newPosition = request.position,
-        ),
+    either<DomainError, CardResponse> {
+        moveCard
+            .execute(
+                MoveCardCommand(
+                    cardId = id,
+                    targetColumnId = request.columnId,
+                    newPosition = request.position,
+                ),
+            ).bind()
+        val card = getCard.execute(GetCardQuery(id = id)).bind()
+        CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position)
+    }.fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { response -> respond(response) },
     )
-    val card = getCard.execute(GetCardQuery(id = id))
-    respond(CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position))
 }
 
 @Serializable

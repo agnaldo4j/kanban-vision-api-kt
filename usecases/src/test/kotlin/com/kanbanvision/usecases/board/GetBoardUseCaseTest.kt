@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.board
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.board.queries.GetBoardQuery
@@ -9,7 +10,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class GetBoardUseCaseTest {
     private val boardRepository = mockk<BoardRepository>()
@@ -23,25 +26,30 @@ class GetBoardUseCaseTest {
 
             val result = useCase.execute(GetBoardQuery(id = board.id.value))
 
-            assertEquals(board.id, result.id)
-            assertEquals(board.name, result.name)
+            assertTrue(result.isRight())
+            val returnedBoard = result.getOrNull()
+            assertNotNull(returnedBoard)
+            assertEquals(board.id, returnedBoard.id)
+            assertEquals(board.name, returnedBoard.name)
         }
 
     @Test
-    fun `execute throws when board not found`() =
+    fun `execute returns BoardNotFound when board not found`() =
         runTest {
             coEvery { boardRepository.findById(any()) } returns null
 
-            assertFailsWith<NoSuchElementException> {
-                useCase.execute(GetBoardQuery(id = BoardId.generate().value))
-            }
+            val result = useCase.execute(GetBoardQuery(id = BoardId.generate().value))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.BoardNotFound>(result.leftOrNull())
         }
 
     @Test
-    fun `execute with blank id throws before querying repository`() =
+    fun `execute with blank id returns ValidationError`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
-                useCase.execute(GetBoardQuery(id = ""))
-            }
+            val result = useCase.execute(GetBoardQuery(id = ""))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
         }
 }

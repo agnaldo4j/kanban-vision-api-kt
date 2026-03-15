@@ -1,5 +1,8 @@
 package com.kanbanvision.usecases.board
 
+import arrow.core.Either
+import arrow.core.raise.either
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.board.commands.CreateBoardCommand
@@ -12,16 +15,17 @@ class CreateBoardUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(command: CreateBoardCommand): BoardId {
-        command.validate()
-        log.debug("Creating board: name={}", command.name)
-        val (boardId, duration) =
-            measureTimedValue {
-                val board = Board.create(command.name)
-                boardRepository.save(board)
-                board.id
-            }
-        log.info("Board created: id={} name={} duration={}ms", boardId.value, command.name, duration.inWholeMilliseconds)
-        return boardId
-    }
+    suspend fun execute(command: CreateBoardCommand): Either<DomainError, BoardId> =
+        either {
+            command.validate().bind()
+            log.debug("Creating board: name={}", command.name)
+            val (boardId, duration) =
+                measureTimedValue {
+                    val board = Board.create(command.name)
+                    boardRepository.save(board)
+                    board.id
+                }
+            log.info("Board created: id={} name={} duration={}ms", boardId.value, command.name, duration.inWholeMilliseconds)
+            boardId
+        }
 }

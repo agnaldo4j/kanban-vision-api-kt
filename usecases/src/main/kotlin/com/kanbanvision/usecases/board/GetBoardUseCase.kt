@@ -1,5 +1,8 @@
 package com.kanbanvision.usecases.board
 
+import arrow.core.Either
+import arrow.core.raise.either
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.board.queries.GetBoardQuery
@@ -12,15 +15,16 @@ class GetBoardUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(query: GetBoardQuery): Board {
-        query.validate()
-        log.debug("Fetching board: id={}", query.id)
-        val (board, duration) =
-            measureTimedValue {
-                boardRepository.findById(BoardId(query.id))
-                    ?: throw NoSuchElementException("Board '${query.id}' not found")
-            }
-        log.info("Board fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
-        return board
-    }
+    suspend fun execute(query: GetBoardQuery): Either<DomainError, Board> =
+        either {
+            query.validate().bind()
+            log.debug("Fetching board: id={}", query.id)
+            val (maybeBoard, duration) =
+                measureTimedValue {
+                    boardRepository.findById(BoardId(query.id))
+                }
+            val board = maybeBoard ?: raise(DomainError.BoardNotFound(query.id))
+            log.info("Board fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
+            board
+        }
 }

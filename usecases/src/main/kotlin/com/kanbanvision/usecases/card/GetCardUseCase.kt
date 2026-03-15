@@ -1,5 +1,8 @@
 package com.kanbanvision.usecases.card
 
+import arrow.core.Either
+import arrow.core.raise.either
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.usecases.card.queries.GetCardQuery
@@ -12,15 +15,16 @@ class GetCardUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(query: GetCardQuery): Card {
-        query.validate()
-        log.debug("Fetching card: id={}", query.id)
-        val (card, duration) =
-            measureTimedValue {
-                cardRepository.findById(CardId(query.id))
-                    ?: throw NoSuchElementException("Card '${query.id}' not found")
-            }
-        log.info("Card fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
-        return card
-    }
+    suspend fun execute(query: GetCardQuery): Either<DomainError, Card> =
+        either {
+            query.validate().bind()
+            log.debug("Fetching card: id={}", query.id)
+            val (maybeCard, duration) =
+                measureTimedValue {
+                    cardRepository.findById(CardId(query.id))
+                }
+            val card = maybeCard ?: raise(DomainError.CardNotFound(query.id))
+            log.info("Card fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
+            card
+        }
 }

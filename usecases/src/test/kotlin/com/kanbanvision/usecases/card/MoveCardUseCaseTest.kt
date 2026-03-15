@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.card
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -10,7 +11,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class MoveCardUseCaseTest {
     private val cardRepository = mockk<CardRepository>()
@@ -24,8 +26,9 @@ class MoveCardUseCaseTest {
             coEvery { cardRepository.findById(CardId(card.id.value)) } returns card
             coEvery { cardRepository.save(any()) } answers { firstArg() }
 
-            useCase.execute(MoveCardCommand(cardId = card.id.value, targetColumnId = targetColumnId, newPosition = 2))
+            val result = useCase.execute(MoveCardCommand(cardId = card.id.value, targetColumnId = targetColumnId, newPosition = 2))
 
+            assertTrue(result.isRight())
             coVerify {
                 cardRepository.save(
                     match { it.columnId.value == targetColumnId && it.position == 2 },
@@ -34,11 +37,11 @@ class MoveCardUseCaseTest {
         }
 
     @Test
-    fun `execute throws when card not found`() =
+    fun `execute returns CardNotFound when card not found`() =
         runTest {
             coEvery { cardRepository.findById(any()) } returns null
 
-            assertFailsWith<NoSuchElementException> {
+            val result =
                 useCase.execute(
                     MoveCardCommand(
                         cardId = CardId.generate().value,
@@ -46,35 +49,41 @@ class MoveCardUseCaseTest {
                         newPosition = 0,
                     ),
                 )
-            }
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.CardNotFound>(result.leftOrNull())
         }
 
     @Test
-    fun `execute with blank card id throws before querying repository`() =
+    fun `execute with blank card id returns ValidationError before querying repository`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
+            val result =
                 useCase.execute(
                     MoveCardCommand(cardId = "", targetColumnId = ColumnId.generate().value, newPosition = 0),
                 )
-            }
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.findById(any()) }
         }
 
     @Test
-    fun `execute with blank target column id throws before querying repository`() =
+    fun `execute with blank target column id returns ValidationError before querying repository`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
+            val result =
                 useCase.execute(
                     MoveCardCommand(cardId = CardId.generate().value, targetColumnId = "", newPosition = 0),
                 )
-            }
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.findById(any()) }
         }
 
     @Test
-    fun `execute with negative position throws before querying repository`() =
+    fun `execute with negative position returns ValidationError before querying repository`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
+            val result =
                 useCase.execute(
                     MoveCardCommand(
                         cardId = CardId.generate().value,
@@ -82,7 +91,9 @@ class MoveCardUseCaseTest {
                         newPosition = -1,
                     ),
                 )
-            }
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.findById(any()) }
         }
 }
