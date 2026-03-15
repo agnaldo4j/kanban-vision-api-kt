@@ -14,7 +14,6 @@ import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -121,28 +120,6 @@ class JdbcColumnRepositoryIntegrationTest {
 
             assertTrue(result.isRight())
             assertTrue(result.getOrNull()!!.isEmpty())
-        }
-
-    @Test
-    fun `delete removes column and returns true`() =
-        runBlocking<Unit> {
-            val column = newColumn()
-            repository.save(column)
-
-            val deleted = repository.delete(column.id)
-
-            assertTrue(deleted.getOrNull() == true)
-            val found = repository.findById(column.id)
-            assertTrue(found.isLeft())
-            assertIs<DomainError.ColumnNotFound>(found.leftOrNull())
-        }
-
-    @Test
-    fun `delete returns false when column does not exist`() =
-        runBlocking {
-            val deleted = repository.delete(ColumnId(UUID.randomUUID().toString()))
-
-            assertFalse(deleted.getOrNull() ?: true)
         }
 
     @Test

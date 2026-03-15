@@ -12,6 +12,4 @@ interface ColumnRepository {
     suspend fun findById(id: ColumnId): Either<DomainError, Column>
 
     suspend fun findByBoardId(boardId: BoardId): Either<DomainError, List<Column>>
-
-    suspend fun delete(id: ColumnId): Either<DomainError, Boolean>
 }

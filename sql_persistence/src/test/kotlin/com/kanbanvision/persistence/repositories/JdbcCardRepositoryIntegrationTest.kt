@@ -16,7 +16,6 @@ import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -136,28 +135,6 @@ class JdbcCardRepositoryIntegrationTest {
 
             assertTrue(result.isRight())
             assertTrue(result.getOrNull()!!.isEmpty())
-        }
-
-    @Test
-    fun `delete removes card and returns true`() =
-        runBlocking<Unit> {
-            val card = newCard()
-            repository.save(card)
-
-            val deleted = repository.delete(card.id)
-
-            assertTrue(deleted.getOrNull() == true)
-            val found = repository.findById(card.id)
-            assertTrue(found.isLeft())
-            assertIs<DomainError.CardNotFound>(found.leftOrNull())
-        }
-
-    @Test
-    fun `delete returns false when card does not exist`() =
-        runBlocking {
-            val deleted = repository.delete(CardId(UUID.randomUUID().toString()))
-
-            assertFalse(deleted.getOrNull() ?: true)
         }
 
     @Test

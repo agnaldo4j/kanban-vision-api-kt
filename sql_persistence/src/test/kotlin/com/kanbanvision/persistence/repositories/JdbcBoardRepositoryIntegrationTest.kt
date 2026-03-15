@@ -12,7 +12,6 @@ import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -73,48 +72,6 @@ class JdbcBoardRepositoryIntegrationTest {
 
             val result = repository.findById(board.id)
             assertEquals("Updated Name", result.getOrNull()?.name)
-        }
-
-    @Test
-    fun `findAll returns all saved boards`() =
-        runBlocking {
-            repository.save(newBoard("Board One"))
-            repository.save(newBoard("Board Two"))
-
-            val result = repository.findAll()
-
-            assertEquals(2, result.getOrNull()?.size)
-        }
-
-    @Test
-    fun `findAll returns empty list when no boards exist`() =
-        runBlocking {
-            val result = repository.findAll()
-
-            assertTrue(result.isRight())
-            assertTrue(result.getOrNull()!!.isEmpty())
-        }
-
-    @Test
-    fun `delete removes board and returns true`() =
-        runBlocking<Unit> {
-            val board = newBoard()
-            repository.save(board)
-
-            val deleted = repository.delete(board.id)
-
-            assertTrue(deleted.getOrNull() == true)
-            val found = repository.findById(board.id)
-            assertTrue(found.isLeft())
-            assertIs<DomainError.BoardNotFound>(found.leftOrNull())
-        }
-
-    @Test
-    fun `delete returns false when board does not exist`() =
-        runBlocking {
-            val deleted = repository.delete(BoardId(UUID.randomUUID().toString()))
-
-            assertFalse(deleted.getOrNull() ?: true)
         }
 
     @Test

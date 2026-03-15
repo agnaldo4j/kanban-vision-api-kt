@@ -159,22 +159,6 @@ class JdbcCardRepository : CardRepository {
                 }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
-    override suspend fun delete(id: CardId): Either<DomainError, Boolean> =
-        query {
-            Either
-                .catch {
-                    DatabaseFactory.dataSource.connection.use { conn ->
-                        val deleted =
-                            conn.prepareStatement("DELETE FROM cards WHERE id = ?").use { stmt ->
-                                stmt.setString(COL_ID, id.value)
-                                stmt.executeUpdate()
-                            }
-                        conn.commit()
-                        deleted > 0
-                    }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
-        }
-
     private fun java.sql.ResultSet.toCard() =
         Card(
             id = CardId(getString("id")),

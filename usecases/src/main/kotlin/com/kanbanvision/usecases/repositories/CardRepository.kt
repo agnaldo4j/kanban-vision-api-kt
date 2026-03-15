@@ -17,6 +17,4 @@ interface CardRepository {
     ): Either<DomainError, Card>
 
     suspend fun findByColumnId(columnId: ColumnId): Either<DomainError, List<Card>>
-
-    suspend fun delete(id: CardId): Either<DomainError, Boolean>
 }

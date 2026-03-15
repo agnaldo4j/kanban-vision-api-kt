@@ -169,6 +169,32 @@ class ColumnRoutesTest {
         }
 
     @Test
+    fun `unexpected repository error in column creation returns 500`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
+
+            val response =
+                client.post("/api/v1/columns") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                }
+
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("Internal server error", body["error"]?.jsonPrimitive?.content)
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
     fun `GET boards boardId columns returns list`() =
         testApplication {
             install(Koin) { modules(testModule) }

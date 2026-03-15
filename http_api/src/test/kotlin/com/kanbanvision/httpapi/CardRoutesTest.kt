@@ -22,6 +22,7 @@ import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -172,6 +173,74 @@ class CardRoutesTest {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${columnId.value}","position":0}""")
                 }
+
+            assertEquals(HttpStatusCode.NotFound, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["error"])
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
+    fun `PATCH cards move with blank columnId returns 400`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val response =
+                client.patch("/api/v1/cards/${cardId.value}/move") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"columnId":"","position":0}""")
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["errors"])
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
+    fun `GET cards by id returns card`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { cardRepository.findById(cardId) } returns card.right()
+
+            val response = client.get("/api/v1/cards/${cardId.value}")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals(cardId.value, body["id"]?.jsonPrimitive?.content)
+            assertEquals("Task", body["title"]?.jsonPrimitive?.content)
+        }
+
+    @Test
+    fun `GET cards by id returns 404 when not found`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound("nonexistent").left()
+
+            val response = client.get("/api/v1/cards/nonexistent")
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

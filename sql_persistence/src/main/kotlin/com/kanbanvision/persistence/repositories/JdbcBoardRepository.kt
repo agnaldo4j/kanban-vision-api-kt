@@ -63,36 +63,6 @@ class JdbcBoardRepository : BoardRepository {
                 )
         }
 
-    override suspend fun findAll(): Either<DomainError, List<Board>> =
-        query {
-            Either
-                .catch {
-                    DatabaseFactory.dataSource.connection.use { conn ->
-                        conn.prepareStatement("SELECT id, name, created_at FROM boards").use { stmt ->
-                            stmt.executeQuery().use { rs ->
-                                buildList { while (rs.next()) add(rs.toBoard()) }
-                            }
-                        }
-                    }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
-        }
-
-    override suspend fun delete(id: BoardId): Either<DomainError, Boolean> =
-        query {
-            Either
-                .catch {
-                    DatabaseFactory.dataSource.connection.use { conn ->
-                        val deleted =
-                            conn.prepareStatement("DELETE FROM boards WHERE id = ?").use { stmt ->
-                                stmt.setString(COL_ID, id.value)
-                                stmt.executeUpdate()
-                            }
-                        conn.commit()
-                        deleted > 0
-                    }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
-        }
-
     private fun java.sql.ResultSet.toBoard() =
         Board(
             id = BoardId(getString("id")),
