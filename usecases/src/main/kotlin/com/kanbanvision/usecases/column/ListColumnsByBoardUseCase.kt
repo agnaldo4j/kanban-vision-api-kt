@@ -1,7 +1,6 @@
 package com.kanbanvision.usecases.column
 
 import arrow.core.Either
-import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
@@ -20,10 +19,8 @@ class ListColumnsByBoardUseCase(
         either {
             query.validate().bind()
             log.debug("Listing columns: boardId={}", query.boardId)
-            val (columns, duration) =
-                catch(
-                    { measureTimedValue { columnRepository.findByBoardId(BoardId(query.boardId)) } },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
+            val (result, duration) = measureTimedValue { columnRepository.findByBoardId(BoardId(query.boardId)) }
+            val columns = result.bind()
             log.info(
                 "Columns listed: boardId={} count={} duration={}ms",
                 query.boardId,

@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.repositories
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
@@ -10,14 +11,12 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertThrows
-import org.postgresql.util.PSQLException
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -63,7 +62,9 @@ class JdbcColumnRepositoryIntegrationTest {
 
             repository.save(column)
 
-            val found = repository.findById(column.id)
+            val result = repository.findById(column.id)
+            assertTrue(result.isRight())
+            val found = result.getOrNull()
             assertNotNull(found)
             assertEquals(column.id, found.id)
             assertEquals(column.boardId, found.boardId)
@@ -72,11 +73,12 @@ class JdbcColumnRepositoryIntegrationTest {
         }
 
     @Test
-    fun `findById returns null when column does not exist`() =
-        runBlocking {
+    fun `findById returns ColumnNotFound when column does not exist`() =
+        runBlocking<Unit> {
             val result = repository.findById(ColumnId(UUID.randomUUID().toString()))
 
-            assertNull(result)
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
         }
 
     @Test
@@ -87,9 +89,9 @@ class JdbcColumnRepositoryIntegrationTest {
 
             repository.save(column.copy(name = "Updated", position = 5))
 
-            val found = repository.findById(column.id)
-            assertEquals("Updated", found?.name)
-            assertEquals(5, found?.position)
+            val result = repository.findById(column.id)
+            assertEquals("Updated", result.getOrNull()?.name)
+            assertEquals(5, result.getOrNull()?.position)
         }
 
     @Test
@@ -102,8 +104,10 @@ class JdbcColumnRepositoryIntegrationTest {
             repository.save(col0)
             repository.save(col1)
 
-            val found = repository.findByBoardId(existingBoardId!!)
+            val result = repository.findByBoardId(existingBoardId!!)
 
+            assertTrue(result.isRight())
+            val found = result.getOrNull()!!
             assertEquals(3, found.size)
             assertEquals(col0.id, found[0].id)
             assertEquals(col1.id, found[1].id)
@@ -113,21 +117,24 @@ class JdbcColumnRepositoryIntegrationTest {
     @Test
     fun `findByBoardId returns empty list when board has no columns`() =
         runBlocking {
-            val found = repository.findByBoardId(existingBoardId!!)
+            val result = repository.findByBoardId(existingBoardId!!)
 
-            assertTrue(found.isEmpty())
+            assertTrue(result.isRight())
+            assertTrue(result.getOrNull()!!.isEmpty())
         }
 
     @Test
     fun `delete removes column and returns true`() =
-        runBlocking {
+        runBlocking<Unit> {
             val column = newColumn()
             repository.save(column)
 
             val deleted = repository.delete(column.id)
 
-            assertTrue(deleted)
-            assertNull(repository.findById(column.id))
+            assertTrue(deleted.getOrNull() == true)
+            val found = repository.findById(column.id)
+            assertTrue(found.isLeft())
+            assertIs<DomainError.ColumnNotFound>(found.leftOrNull())
         }
 
     @Test
@@ -135,22 +142,26 @@ class JdbcColumnRepositoryIntegrationTest {
         runBlocking {
             val deleted = repository.delete(ColumnId(UUID.randomUUID().toString()))
 
-            assertFalse(deleted)
+            assertFalse(deleted.getOrNull() ?: true)
         }
 
     @Test
-    fun `save with non-existent boardId throws exception and no column is persisted`() {
-        val orphanColumn =
-            Column(
-                id = ColumnId(UUID.randomUUID().toString()),
-                boardId = BoardId(UUID.randomUUID().toString()),
-                name = "Orphan",
-                position = 0,
-            )
+    fun `save with non-existent boardId returns PersistenceError and no column is persisted`() =
+        runBlocking<Unit> {
+            val orphanColumn =
+                Column(
+                    id = ColumnId(UUID.randomUUID().toString()),
+                    boardId = BoardId(UUID.randomUUID().toString()),
+                    name = "Orphan",
+                    position = 0,
+                )
 
-        assertThrows<PSQLException> { runBlocking { repository.save(orphanColumn) } }
+            val result = repository.save(orphanColumn)
 
-        val found = runBlocking { repository.findById(orphanColumn.id) }
-        assertNull(found)
-    }
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            val found = repository.findById(orphanColumn.id)
+            assertTrue(found.isLeft())
+            assertIs<DomainError.ColumnNotFound>(found.leftOrNull())
+        }
 }

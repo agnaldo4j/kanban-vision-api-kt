@@ -1,5 +1,8 @@
 package com.kanbanvision.httpapi
 
+import arrow.core.left
+import arrow.core.right
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -73,9 +76,9 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { cardRepository.findByColumnId(any()) } returns emptyList()
-            coEvery { cardRepository.save(any()) } answers { firstArg() }
-            coEvery { cardRepository.findById(any()) } returns card
+            coEvery { cardRepository.findByColumnId(any()) } returns emptyList<Card>().right()
+            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
+            coEvery { cardRepository.findById(any()) } returns card.right()
 
             val response =
                 client.post("/api/v1/cards") {
@@ -125,9 +128,8 @@ class CardRoutesTest {
             val targetColumnId = ColumnId.generate()
             val movedCard = card.moveTo(targetColumnId, 1)
 
-            coEvery { cardRepository.findById(cardId) } returns card
-            coEvery { cardRepository.save(any()) } answers { firstArg() }
-            coEvery { cardRepository.findById(cardId) } returnsMany listOf(card, movedCard)
+            coEvery { cardRepository.findById(cardId) } returnsMany listOf(card.right(), movedCard.right())
+            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
 
             val response =
                 client.patch("/api/v1/cards/${cardId.value}/move") {
@@ -150,7 +152,7 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { cardRepository.findById(any()) } returns null
+            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound("nonexistent").left()
 
             val response =
                 client.patch("/api/v1/cards/nonexistent/move") {
@@ -162,7 +164,7 @@ class CardRoutesTest {
         }
 
     @Test
-    fun `unexpected repository exception in card creation returns 500`() =
+    fun `unexpected repository error in card creation returns 500`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -173,7 +175,7 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { cardRepository.findByColumnId(any()) } throws RuntimeException("DB failure")
+            coEvery { cardRepository.findByColumnId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response =
                 client.post("/api/v1/cards") {

@@ -1,5 +1,7 @@
 package com.kanbanvision.usecases.board
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
@@ -22,7 +24,7 @@ class GetBoardUseCaseTest {
     fun `execute returns board when found`() =
         runTest {
             val board = Board.create("My Board")
-            coEvery { boardRepository.findById(any()) } returns board
+            coEvery { boardRepository.findById(any()) } returns board.right()
 
             val result = useCase.execute(GetBoardQuery(id = board.id.value))
 
@@ -36,9 +38,10 @@ class GetBoardUseCaseTest {
     @Test
     fun `execute returns BoardNotFound when board not found`() =
         runTest {
-            coEvery { boardRepository.findById(any()) } returns null
+            val id = BoardId.generate().value
+            coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound(id).left()
 
-            val result = useCase.execute(GetBoardQuery(id = BoardId.generate().value))
+            val result = useCase.execute(GetBoardQuery(id = id))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())
@@ -54,9 +57,9 @@ class GetBoardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { boardRepository.findById(any()) } throws RuntimeException("DB failure")
+            coEvery { boardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(GetBoardQuery(id = BoardId.generate().value))
 

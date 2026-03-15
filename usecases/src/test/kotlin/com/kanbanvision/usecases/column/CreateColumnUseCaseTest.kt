@@ -1,6 +1,9 @@
 package com.kanbanvision.usecases.column
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Column
 import com.kanbanvision.usecases.column.commands.CreateColumnCommand
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.mockk.coEvery
@@ -19,8 +22,8 @@ class CreateColumnUseCaseTest {
     @Test
     fun `execute saves column and returns its id`() =
         runTest {
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList()
-            coEvery { columnRepository.save(any()) } answers { firstArg() }
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
+            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
 
             val command = CreateColumnCommand(boardId = "board-1", name = "To Do")
             val result = useCase.execute(command)
@@ -57,17 +60,17 @@ class CreateColumnUseCaseTest {
     @Test
     fun `execute sets position based on existing columns count`() =
         runTest {
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList()
-            coEvery { columnRepository.save(any()) } answers { firstArg() }
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
+            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
 
             val result = useCase.execute(CreateColumnCommand(boardId = "board-1", name = "First"))
             assertTrue(result.isRight())
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { columnRepository.findByBoardId(any()) } throws RuntimeException("DB failure")
+            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(CreateColumnCommand(boardId = "board-1", name = "To Do"))
 

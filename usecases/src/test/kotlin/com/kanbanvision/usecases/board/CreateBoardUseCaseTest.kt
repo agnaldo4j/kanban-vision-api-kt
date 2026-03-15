@@ -1,6 +1,9 @@
 package com.kanbanvision.usecases.board
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Board
 import com.kanbanvision.usecases.board.commands.CreateBoardCommand
 import com.kanbanvision.usecases.repositories.BoardRepository
 import io.mockk.coEvery
@@ -19,7 +22,7 @@ class CreateBoardUseCaseTest {
     @Test
     fun `execute saves board and returns its id`() =
         runTest {
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
+            coEvery { boardRepository.save(any()) } answers { firstArg<Board>().right() }
 
             val command = CreateBoardCommand(name = "Sprint Board")
             val result = useCase.execute(command)
@@ -54,9 +57,9 @@ class CreateBoardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { boardRepository.save(any()) } throws RuntimeException("DB failure")
+            coEvery { boardRepository.save(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(CreateBoardCommand(name = "Board"))
 

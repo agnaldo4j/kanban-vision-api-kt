@@ -1,5 +1,7 @@
 package com.kanbanvision.usecases.card
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -23,8 +25,8 @@ class CreateCardUseCaseTest {
     @Test
     fun `execute saves card and returns its id when column is empty`() =
         runTest {
-            coEvery { cardRepository.findByColumnId(any()) } returns emptyList()
-            coEvery { cardRepository.save(any()) } answers { firstArg() }
+            coEvery { cardRepository.findByColumnId(any()) } returns emptyList<Card>().right()
+            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
 
             val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Fix bug"))
 
@@ -37,8 +39,8 @@ class CreateCardUseCaseTest {
     fun `execute assigns position equal to existing cards count`() =
         runTest {
             val existingCard = Card.create(columnId = ColumnId(columnId), title = "Existing", position = 0)
-            coEvery { cardRepository.findByColumnId(any()) } returns listOf(existingCard)
-            coEvery { cardRepository.save(any()) } answers { firstArg() }
+            coEvery { cardRepository.findByColumnId(any()) } returns listOf(existingCard).right()
+            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
 
             useCase.execute(CreateCardCommand(columnId = columnId, title = "New Card"))
 
@@ -66,9 +68,9 @@ class CreateCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { cardRepository.findByColumnId(any()) } throws RuntimeException("DB failure")
+            coEvery { cardRepository.findByColumnId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Task"))
 

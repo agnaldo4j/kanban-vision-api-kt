@@ -1,7 +1,6 @@
 package com.kanbanvision.usecases.board
 
 import arrow.core.Either
-import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
@@ -20,17 +19,10 @@ class CreateBoardUseCase(
         either {
             command.validate().bind()
             log.debug("Creating board: name={}", command.name)
-            val (boardId, duration) =
-                catch(
-                    {
-                        measureTimedValue {
-                            val board = Board.create(command.name)
-                            boardRepository.save(board)
-                            board.id
-                        }
-                    },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
-            log.info("Board created: id={} name={} duration={}ms", boardId.value, command.name, duration.inWholeMilliseconds)
-            boardId
+            val board = Board.create(command.name)
+            val (result, duration) = measureTimedValue { boardRepository.save(board) }
+            result.bind()
+            log.info("Board created: id={} name={} duration={}ms", board.id.value, command.name, duration.inWholeMilliseconds)
+            board.id
         }
 }

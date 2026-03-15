@@ -28,6 +28,23 @@ object IntegrationTestSetup {
         }
     }
 
+    fun closeDataSource() {
+        DatabaseFactory.dataSource.close()
+    }
+
+    fun reinitDataSource() {
+        pg?.let { embeddedPg ->
+            DatabaseFactory.init(
+                DatabaseConfig(
+                    url = embeddedPg.getJdbcUrl("postgres", "postgres"),
+                    driver = "org.postgresql.Driver",
+                    user = "postgres",
+                    password = "",
+                ),
+            )
+        }
+    }
+
     fun cleanTables() {
         DatabaseFactory.dataSource.connection.use { conn ->
             conn.createStatement().use { stmt ->

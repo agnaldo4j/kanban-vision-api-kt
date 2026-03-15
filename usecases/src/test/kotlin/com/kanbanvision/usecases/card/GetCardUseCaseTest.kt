@@ -1,5 +1,7 @@
 package com.kanbanvision.usecases.card
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
@@ -23,7 +25,7 @@ class GetCardUseCaseTest {
     fun `execute returns card when found`() =
         runTest {
             val card = Card.create(columnId = ColumnId.generate(), title = "My Task", position = 0)
-            coEvery { cardRepository.findById(any()) } returns card
+            coEvery { cardRepository.findById(any()) } returns card.right()
 
             val result = useCase.execute(GetCardQuery(id = card.id.value))
 
@@ -37,9 +39,10 @@ class GetCardUseCaseTest {
     @Test
     fun `execute returns CardNotFound when card not found`() =
         runTest {
-            coEvery { cardRepository.findById(any()) } returns null
+            val id = CardId.generate().value
+            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound(id).left()
 
-            val result = useCase.execute(GetCardQuery(id = CardId.generate().value))
+            val result = useCase.execute(GetCardQuery(id = id))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.CardNotFound>(result.leftOrNull())
@@ -55,9 +58,9 @@ class GetCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { cardRepository.findById(any()) } throws RuntimeException("DB failure")
+            coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(GetCardQuery(id = CardId.generate().value))
 
