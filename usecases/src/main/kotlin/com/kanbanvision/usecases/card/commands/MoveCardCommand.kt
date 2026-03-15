@@ -1,5 +1,9 @@
 package com.kanbanvision.usecases.card.commands
 
+import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.usecases.cqs.Command
 
 data class MoveCardCommand(
@@ -7,9 +11,10 @@ data class MoveCardCommand(
     val targetColumnId: String,
     val newPosition: Int,
 ) : Command {
-    override fun validate() {
-        require(cardId.isNotBlank()) { "Card id must not be blank" }
-        require(targetColumnId.isNotBlank()) { "Target column id must not be blank" }
-        require(newPosition >= 0) { "Position must be non-negative" }
-    }
+    override fun validate(): Either<DomainError.ValidationError, Unit> =
+        either {
+            ensure(cardId.isNotBlank()) { DomainError.ValidationError("Card id must not be blank") }
+            ensure(targetColumnId.isNotBlank()) { DomainError.ValidationError("Target column id must not be blank") }
+            ensure(newPosition >= 0) { DomainError.ValidationError("Position must be non-negative") }
+        }
 }
