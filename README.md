@@ -6,6 +6,40 @@
 
 ---
 
+## Quick Start
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/agnaldo4j/kanban-vision-api-kt.git
+cd kanban-vision-api-kt
+
+# 2. Configure Java 21 (obrigatório — o projeto não é compatível com Java 25+)
+# O gradle.properties contém um path local em org.gradle.java.home.
+# Sobrescreva com o path correto para o Java 21 na sua máquina:
+echo "org.gradle.java.home=$(java -XshowSettings:all -version 2>&1 | grep 'java.home' | awk '{print $3}')" >> gradle.properties
+# Ou exporte manualmente:
+#   export JAVA_HOME=/caminho/para/java21
+#   echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+
+# 3. Compile e rode todos os testes + quality gates
+./gradlew testAll
+
+# 2. Suba o banco de dados
+docker run -d --name kanban-db \
+  -e POSTGRES_DB=kanbanvision \
+  -e POSTGRES_USER=kanban \
+  -e POSTGRES_PASSWORD=kanban \
+  -p 5432:5432 \
+  postgres:16
+
+# 3. Execute a aplicação
+./gradlew :http_api:run
+```
+
+Acesse a documentação interativa: **http://localhost:8080/swagger**
+
+---
+
 ## Sobre o projeto
 
 O **Kanban Vision** é um simulador de gestão de tarefas no estilo Kanban. Ele permite criar quadros, organizar colunas e mover cartões entre estágios de um fluxo de trabalho — expondo tudo via uma API REST.
@@ -266,6 +300,42 @@ Content-Type: application/json
 { "columnId": "uuid-destino", "position": 2 }
 ```
 
+### Exemplos curl
+
+```bash
+# Criar um quadro
+curl -s -X POST http://localhost:8080/api/v1/boards \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Meu Projeto"}' | jq
+
+# Buscar um quadro
+curl -s http://localhost:8080/api/v1/boards/{boardId} | jq
+
+# Criar uma coluna
+curl -s -X POST http://localhost:8080/api/v1/columns \
+  -H "Content-Type: application/json" \
+  -d '{"boardId": "{boardId}", "name": "To Do"}' | jq
+
+# Listar colunas de um quadro
+curl -s http://localhost:8080/api/v1/boards/{boardId}/columns | jq
+
+# Buscar uma coluna
+curl -s http://localhost:8080/api/v1/columns/{columnId} | jq
+
+# Criar um cartão
+curl -s -X POST http://localhost:8080/api/v1/cards \
+  -H "Content-Type: application/json" \
+  -d '{"columnId": "{columnId}", "title": "Implementar login", "description": "Opcional"}' | jq
+
+# Buscar um cartão
+curl -s http://localhost:8080/api/v1/cards/{cardId} | jq
+
+# Mover cartão para outra coluna
+curl -s -X PATCH http://localhost:8080/api/v1/cards/{cardId}/move \
+  -H "Content-Type: application/json" \
+  -d '{"columnId": "{targetColumnId}", "position": 0}' | jq
+```
+
 ---
 
 ## Rastreabilidade (Observabilidade)
@@ -396,6 +466,70 @@ database {
 | `DATABASE_USER` | `kanban` |
 | `DATABASE_PASSWORD` | `kanban` |
 | `DATABASE_POOL_SIZE` | `10` |
+
+---
+
+## Troubleshooting
+
+### Java 21 não encontrado
+
+O projeto exige Java 21. O Gradle usa o path configurado em `gradle.properties` (`org.gradle.java.home`). Se o build falhar com `Could not determine java version`:
+
+```bash
+# Verificar a versão ativa
+java -version
+
+# Configurar manualmente (exemplo macOS com SDKMAN)
+sdk install java 21-tem
+sdk use java 21-tem
+
+# Ou exportar a variável antes do build
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+./gradlew testAll
+```
+
+### PostgreSQL recusado na inicialização
+
+Se a aplicação falhar com `Connection refused` ao subir:
+
+```bash
+# Verificar se o container está rodando
+docker ps | grep kanban-db
+
+# Subir novamente se necessário
+docker start kanban-db
+
+# Verificar logs do container
+docker logs kanban-db
+```
+
+Confirme que as variáveis de ambiente `DATABASE_URL`, `DATABASE_USER` e `DATABASE_PASSWORD` estão alinhadas com a configuração do container.
+
+### JaCoCo falhando com cobertura abaixo de 90%
+
+O gate de cobertura é por módulo. Para identificar qual módulo está abaixo:
+
+```bash
+./gradlew :domain:test :domain:jacocoTestCoverageVerification
+./gradlew :usecases:test :usecases:jacocoTestCoverageVerification
+./gradlew :sql_persistence:test :sql_persistence:jacocoTestCoverageVerification
+./gradlew :http_api:test :http_api:jacocoTestCoverageVerification
+```
+
+O relatório HTML em `build/reports/jacoco/test/html/index.html` mostra a cobertura linha a linha.
+
+### Detekt ou KtLint bloqueando o build
+
+```bash
+# Ver todos os problemas de uma vez
+./gradlew detekt
+
+# Corrigir formatação automaticamente (KtLint)
+./gradlew ktlintFormat
+
+# Rodar Detekt apenas em um módulo
+./gradlew :domain:detekt
+```
 
 ---
 
