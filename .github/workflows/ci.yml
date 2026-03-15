@@ -69,7 +69,7 @@ jobs:
           retention-days: 14
 
       - name: Test results report on PR
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: '**/build/test-results/test/*.xml'
@@ -78,7 +78,7 @@ jobs:
 
       - name: Generate Detekt report
         id: detekt-report
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           {
             echo 'body<<DETEKT_REPORT'
@@ -108,7 +108,7 @@ jobs:
 
       - name: Find existing Detekt comment
         id: find-detekt
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/find-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -116,7 +116,7 @@ jobs:
           body-includes: '## Detekt Analysis'
 
       - name: Post Detekt report on PR
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.find-detekt.outputs.comment-id }}

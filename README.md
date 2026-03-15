@@ -9,9 +9,19 @@
 ## Quick Start
 
 ```bash
-# 1. Clone e rode os testes
+# 1. Clone o repositório
 git clone https://github.com/agnaldo4j/kanban-vision-api-kt.git
 cd kanban-vision-api-kt
+
+# 2. Configure Java 21 (obrigatório — o projeto não é compatível com Java 25+)
+# O gradle.properties contém um path local em org.gradle.java.home.
+# Sobrescreva com o path correto para o Java 21 na sua máquina:
+echo "org.gradle.java.home=$(java -XshowSettings:all -version 2>&1 | grep 'java.home' | awk '{print $3}')" >> gradle.properties
+# Ou exporte manualmente:
+#   export JAVA_HOME=/caminho/para/java21
+#   echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+
+# 3. Compile e rode todos os testes + quality gates
 ./gradlew testAll
 
 # 2. Suba o banco de dados
