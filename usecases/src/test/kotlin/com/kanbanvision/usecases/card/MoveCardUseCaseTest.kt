@@ -25,24 +25,21 @@ class MoveCardUseCaseTest {
         runTest {
             val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
             val targetColumnId = ColumnId.generate().value
-            coEvery { cardRepository.findById(CardId(card.id.value)) } returns card.right()
-            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
+            coEvery { cardRepository.updateCard(CardId(card.id.value), any()) } answers {
+                secondArg<(Card) -> Card>()(card).right()
+            }
 
             val result = useCase.execute(MoveCardCommand(cardId = card.id.value, targetColumnId = targetColumnId, newPosition = 2))
 
             assertTrue(result.isRight())
-            coVerify {
-                cardRepository.save(
-                    match { it.columnId.value == targetColumnId && it.position == 2 },
-                )
-            }
+            coVerify { cardRepository.updateCard(CardId(card.id.value), any()) }
         }
 
     @Test
     fun `execute returns CardNotFound when card not found`() =
         runTest {
             val id = CardId.generate().value
-            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound(id).left()
+            coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.CardNotFound(id).left()
 
             val result =
                 useCase.execute(
@@ -67,7 +64,7 @@ class MoveCardUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
-            coVerify(exactly = 0) { cardRepository.findById(any()) }
+            coVerify(exactly = 0) { cardRepository.updateCard(any(), any()) }
         }
 
     @Test
@@ -80,7 +77,7 @@ class MoveCardUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
-            coVerify(exactly = 0) { cardRepository.findById(any()) }
+            coVerify(exactly = 0) { cardRepository.updateCard(any(), any()) }
         }
 
     @Test
@@ -97,38 +94,18 @@ class MoveCardUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
-            coVerify(exactly = 0) { cardRepository.findById(any()) }
+            coVerify(exactly = 0) { cardRepository.updateCard(any(), any()) }
         }
 
     @Test
-    fun `execute returns PersistenceError when find returns error`() =
+    fun `execute returns PersistenceError when updateCard returns error`() =
         runTest {
-            coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
+            coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result =
                 useCase.execute(
                     MoveCardCommand(
                         cardId = CardId.generate().value,
-                        targetColumnId = ColumnId.generate().value,
-                        newPosition = 0,
-                    ),
-                )
-
-            assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
-        }
-
-    @Test
-    fun `execute returns PersistenceError when save returns error`() =
-        runTest {
-            val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
-            coEvery { cardRepository.findById(any()) } returns card.right()
-            coEvery { cardRepository.save(any()) } returns DomainError.PersistenceError("DB failure").left()
-
-            val result =
-                useCase.execute(
-                    MoveCardCommand(
-                        cardId = card.id.value,
                         targetColumnId = ColumnId.generate().value,
                         newPosition = 0,
                     ),

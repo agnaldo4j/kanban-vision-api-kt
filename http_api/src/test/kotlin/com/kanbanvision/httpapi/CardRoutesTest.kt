@@ -128,8 +128,10 @@ class CardRoutesTest {
             val targetColumnId = ColumnId.generate()
             val movedCard = card.moveTo(targetColumnId, 1)
 
-            coEvery { cardRepository.findById(cardId) } returnsMany listOf(card.right(), movedCard.right())
-            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
+            coEvery { cardRepository.updateCard(cardId, any()) } answers {
+                secondArg<(Card) -> Card>()(card).right()
+            }
+            coEvery { cardRepository.findById(cardId) } returns movedCard.right()
 
             val response =
                 client.patch("/api/v1/cards/${cardId.value}/move") {
@@ -152,7 +154,7 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound("nonexistent").left()
+            coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.CardNotFound("nonexistent").left()
 
             val response =
                 client.patch("/api/v1/cards/nonexistent/move") {

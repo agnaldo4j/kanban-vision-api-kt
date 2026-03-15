@@ -21,6 +21,12 @@ class JdbcCardRepository : CardRepository {
         const val COL_DESCRIPTION = 4
         const val COL_POSITION = 5
         const val COL_CREATED_AT = 6
+
+        const val PARAM_COLUMN_ID = 1
+        const val PARAM_TITLE = 2
+        const val PARAM_DESCRIPTION = 3
+        const val PARAM_POSITION = 4
+        const val PARAM_WHERE_ID = 5
     }
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
@@ -76,6 +82,61 @@ class JdbcCardRepository : CardRepository {
                     ifRight = { card -> card?.right() ?: DomainError.CardNotFound(id.value).left() },
                 )
         }
+
+    override suspend fun updateCard(
+        id: CardId,
+        transform: (Card) -> Card,
+    ): Either<DomainError, Card> =
+        query {
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        val card = fetchForUpdate(conn, id) ?: return@use null
+                        applyAndPersist(conn, card, transform)
+                    }
+                }.fold(
+                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifRight = { updated -> updated?.right() ?: DomainError.CardNotFound(id.value).left() },
+                )
+        }
+
+    private fun fetchForUpdate(
+        conn: java.sql.Connection,
+        id: CardId,
+    ): Card? =
+        conn
+            .prepareStatement(
+                "SELECT id, column_id, title, description, position, created_at" +
+                    " FROM cards WHERE id = ? FOR UPDATE",
+            ).use { stmt ->
+                stmt.setString(COL_ID, id.value)
+                stmt.executeQuery().use { rs -> if (rs.next()) rs.toCard() else null }
+            }
+
+    private fun applyAndPersist(
+        conn: java.sql.Connection,
+        card: Card,
+        transform: (Card) -> Card,
+    ): Card {
+        val updated = transform(card)
+        conn
+            .prepareStatement(
+                """
+                UPDATE cards
+                SET column_id = ?, title = ?, description = ?, position = ?
+                WHERE id = ?
+                """.trimIndent(),
+            ).use { stmt ->
+                stmt.setString(PARAM_COLUMN_ID, updated.columnId.value)
+                stmt.setString(PARAM_TITLE, updated.title)
+                stmt.setString(PARAM_DESCRIPTION, updated.description)
+                stmt.setInt(PARAM_POSITION, updated.position)
+                stmt.setString(PARAM_WHERE_ID, updated.id.value)
+                stmt.executeUpdate()
+            }
+        conn.commit()
+        return updated
+    }
 
     override suspend fun findByColumnId(columnId: ColumnId): Either<DomainError, List<Card>> =
         query {
