@@ -45,6 +45,7 @@ O projeto segue os princípios de **Clean Architecture** (Arquitetura Hexagonal)
 ```
 http_api → usecases → domain
 sql_persistence → domain
+sql_persistence → usecases   (implementa as interfaces de repositório)
 http_api → sql_persistence   (somente na camada de DI via Koin)
 ```
 
@@ -91,6 +92,7 @@ GetCardQuery       → GetCardUseCase     → Card
 | Banco de testes | H2 (in-memory) |
 | Logging | SLF4J |
 | Testes | JUnit 5 + MockK |
+| Documentação API | ktor-openapi + Swagger UI |
 | Análise estática | Detekt |
 | Estilo de código | Ktlint |
 | Cobertura | JaCoCo (mínimo 90%) |
@@ -142,9 +144,11 @@ http_api/
 ├── Main.kt
 ├── di/AppModule.kt
 ├── plugins/
+│   ├── Observability.kt
 │   ├── Routing.kt
 │   ├── Serialization.kt
-│   └── StatusPages.kt
+│   ├── StatusPages.kt
+│   └── OpenApi.kt
 └── routes/
     ├── BoardRoutes.kt
     └── CardRoutes.kt
@@ -154,16 +158,18 @@ http_api/
 
 ## API REST
 
+Todas as rotas seguem o prefixo `/api/v1`.
+
 ### Quadros (Boards)
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/boards` | Cria um novo quadro |
-| `GET` | `/boards/{id}` | Busca um quadro pelo ID |
+| `POST` | `/api/v1/boards` | Cria um novo quadro |
+| `GET` | `/api/v1/boards/{id}` | Busca um quadro pelo ID |
 
 **Criar quadro:**
 ```http
-POST /boards
+POST /api/v1/boards
 Content-Type: application/json
 
 { "name": "Meu Projeto" }
@@ -178,13 +184,12 @@ HTTP 201 Created
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/cards` | Cria um cartão em uma coluna |
-| `GET` | `/cards/{id}` | Busca um cartão pelo ID |
-| `PATCH` | `/cards/{id}/move` | Move o cartão para outra coluna/posição |
+| `POST` | `/api/v1/cards` | Cria um cartão em uma coluna |
+| `PATCH` | `/api/v1/cards/{id}/move` | Move o cartão para outra coluna/posição |
 
 **Criar cartão:**
 ```http
-POST /cards
+POST /api/v1/cards
 Content-Type: application/json
 
 { "columnId": "uuid", "title": "Implementar login", "description": "Opcional" }
@@ -192,11 +197,44 @@ Content-Type: application/json
 
 **Mover cartão:**
 ```http
-PATCH /cards/{id}/move
+PATCH /api/v1/cards/{id}/move
 Content-Type: application/json
 
 { "columnId": "uuid-destino", "position": 2 }
 ```
+
+---
+
+## Rastreabilidade (Observabilidade)
+
+Cada requisição recebe um identificador único de correlação propagado em toda a execução:
+
+- **Header de entrada**: `X-Request-ID` — se enviado pelo cliente, o mesmo valor é reutilizado.
+- **Header de resposta**: `X-Request-ID` — sempre presente na resposta, seja sucesso ou erro.
+- **Logs**: o `requestId` é adicionado ao MDC (Mapped Diagnostic Context) e aparece em todas as linhas de log da requisição no formato `[rid=<uuid>]`.
+- **Erros**: todas as respostas de erro (`4xx`, `5xx`) incluem o campo `requestId` no corpo JSON para facilitar a correlação com os logs.
+
+**Exemplo de log:**
+```
+14:22:01.123 [ktor-nio-thread-1] INFO  RequestLogging [rid=3f2a1b4c-...] - POST /api/v1/boards → 201 Created
+```
+
+**Exemplo de resposta de erro:**
+```json
+{
+  "error": "Nome do quadro não pode ser vazio.",
+  "requestId": "3f2a1b4c-8e2d-4f1a-b9c3-..."
+}
+```
+
+---
+
+## Documentação OpenAPI
+
+A API expõe documentação interativa via Swagger UI quando a aplicação está em execução:
+
+- **Swagger UI**: `http://localhost:8080/swagger`
+- **OpenAPI JSON**: `http://localhost:8080/api.json`
 
 ---
 
@@ -213,7 +251,7 @@ Content-Type: application/json
 # Com Docker
 docker run -d \
   --name kanban-db \
-  -e POSTGRES_DB=kanban \
+  -e POSTGRES_DB=kanbanvision \
   -e POSTGRES_USER=kanban \
   -e POSTGRES_PASSWORD=kanban \
   -p 5432:5432 \
@@ -230,7 +268,7 @@ docker run -d \
 
 ```bash
 ./gradlew :http_api:buildFatJar
-java -jar http_api/build/libs/http_api-all.jar
+java -jar http_api/build/libs/kanban-vision-api.jar
 ```
 
 ---
@@ -280,7 +318,7 @@ Configuradas via `application.conf` (Ktor):
 
 ```hocon
 database {
-  url      = "jdbc:postgresql://localhost:5432/kanban"
+  url      = "jdbc:postgresql://localhost:5432/kanbanvision"
   driver   = "org.postgresql.Driver"
   user     = "kanban"
   password = "kanban"

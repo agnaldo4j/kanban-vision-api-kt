@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi
 
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
+import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
@@ -31,6 +32,7 @@ import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class BoardRoutesTest {
     private val boardId = BoardId.generate()
@@ -55,6 +57,7 @@ class BoardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -81,6 +84,7 @@ class BoardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -101,6 +105,7 @@ class BoardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -122,6 +127,7 @@ class BoardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -136,10 +142,63 @@ class BoardRoutesTest {
         }
 
     @Test
+    fun `response contains X-Request-ID header`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { boardRepository.save(any()) } answers { firstArg() }
+            coEvery { boardRepository.findById(any()) } returns board
+
+            val response =
+                client.post("/api/v1/boards") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"name":"My Board"}""")
+                }
+
+            val requestId = response.headers["X-Request-ID"]
+            assertNotNull(requestId)
+            assertTrue(requestId.isNotBlank())
+        }
+
+    @Test
+    fun `X-Request-ID from request is propagated to response`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { boardRepository.save(any()) } answers { firstArg() }
+            coEvery { boardRepository.findById(any()) } returns board
+
+            val correlationId = "test-correlation-id-123"
+            val response =
+                client.post("/api/v1/boards") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"name":"My Board"}""")
+                    headers.append("X-Request-ID", correlationId)
+                }
+
+            assertEquals(correlationId, response.headers["X-Request-ID"])
+        }
+
+    @Test
     fun `unexpected repository exception returns 500`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()

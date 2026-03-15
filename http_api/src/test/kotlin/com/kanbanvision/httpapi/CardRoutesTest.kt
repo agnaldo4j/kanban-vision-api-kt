@@ -3,6 +3,7 @@ package com.kanbanvision.httpapi
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
@@ -56,6 +57,7 @@ class CardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -83,6 +85,7 @@ class CardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -103,6 +106,7 @@ class CardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -130,6 +134,7 @@ class CardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -152,6 +157,7 @@ class CardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
@@ -174,6 +180,7 @@ class CardRoutesTest {
         testApplication {
             install(Koin) { modules(testModule) }
             application {
+                configureObservability()
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
