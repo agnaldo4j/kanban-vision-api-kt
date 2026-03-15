@@ -7,8 +7,8 @@ import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.column.queries.ListColumnsByBoardQuery
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.measureTimedValue
 
 class ListColumnsByBoardUseCase(
     private val columnRepository: ColumnRepository,
@@ -19,8 +19,7 @@ class ListColumnsByBoardUseCase(
         either {
             query.validate().bind()
             log.debug("Listing columns: boardId={}", query.boardId)
-            val (result, duration) = measureTimedValue { columnRepository.findByBoardId(BoardId(query.boardId)) }
-            val columns = result.bind()
+            val (columns, duration) = timed { columnRepository.findByBoardId(BoardId(query.boardId)) }
             log.info(
                 "Columns listed: boardId={} count={} duration={}ms",
                 query.boardId,

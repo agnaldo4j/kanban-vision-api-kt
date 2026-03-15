@@ -7,9 +7,8 @@ import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.MoveCardCommand
 import com.kanbanvision.usecases.repositories.CardRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.Duration
-import kotlin.time.measureTimedValue
 
 class MoveCardUseCase(
     private val cardRepository: CardRepository,
@@ -25,7 +24,12 @@ class MoveCardUseCase(
                 command.targetColumnId,
                 command.newPosition,
             )
-            val duration = findAndMove(command).bind()
+            val (_, duration) =
+                timed {
+                    cardRepository.updateCard(CardId(command.cardId)) { card ->
+                        card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
+                    }
+                }
             log.info(
                 "Card moved: cardId={} targetColumnId={} position={} duration={}ms",
                 command.cardId,
@@ -33,17 +37,5 @@ class MoveCardUseCase(
                 command.newPosition,
                 duration.inWholeMilliseconds,
             )
-        }
-
-    private suspend fun findAndMove(command: MoveCardCommand): Either<DomainError, Duration> =
-        either {
-            val (updateResult, duration) =
-                measureTimedValue {
-                    cardRepository.updateCard(CardId(command.cardId)) { card ->
-                        card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
-                    }
-                }
-            updateResult.bind()
-            duration
         }
 }

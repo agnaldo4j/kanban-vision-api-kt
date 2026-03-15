@@ -7,8 +7,8 @@ import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.column.queries.GetColumnQuery
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.measureTimedValue
 
 class GetColumnUseCase(
     private val columnRepository: ColumnRepository,
@@ -19,8 +19,7 @@ class GetColumnUseCase(
         either {
             query.validate().bind()
             log.debug("Fetching column: id={}", query.id)
-            val (result, duration) = measureTimedValue { columnRepository.findById(ColumnId(query.id)) }
-            val column = result.bind()
+            val (column, duration) = timed { columnRepository.findById(ColumnId(query.id)) }
             log.info("Column fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             column
         }

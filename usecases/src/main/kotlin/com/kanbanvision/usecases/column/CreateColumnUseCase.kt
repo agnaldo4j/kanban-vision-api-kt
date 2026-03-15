@@ -8,8 +8,8 @@ import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.column.commands.CreateColumnCommand
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.measureTimedValue
 
 class CreateColumnUseCase(
     private val columnRepository: ColumnRepository,
@@ -20,8 +20,8 @@ class CreateColumnUseCase(
         either {
             command.validate().bind()
             log.debug("Creating column: boardId={} name={}", command.boardId, command.name)
-            val (result, duration) =
-                measureTimedValue {
+            val (columnId, duration) =
+                timed {
                     either {
                         val boardId = BoardId(command.boardId)
                         val existing = columnRepository.findByBoardId(boardId).bind()
@@ -35,7 +35,6 @@ class CreateColumnUseCase(
                         column.id
                     }
                 }
-            val columnId = result.bind()
             log.info(
                 "Column created: id={} boardId={} name={} duration={}ms",
                 columnId.value,

@@ -7,8 +7,8 @@ import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.board.queries.GetBoardQuery
 import com.kanbanvision.usecases.repositories.BoardRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.measureTimedValue
 
 class GetBoardUseCase(
     private val boardRepository: BoardRepository,
@@ -19,8 +19,7 @@ class GetBoardUseCase(
         either {
             query.validate().bind()
             log.debug("Fetching board: id={}", query.id)
-            val (result, duration) = measureTimedValue { boardRepository.findById(BoardId(query.id)) }
-            val board = result.bind()
+            val (board, duration) = timed { boardRepository.findById(BoardId(query.id)) }
             log.info("Board fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             board
         }
