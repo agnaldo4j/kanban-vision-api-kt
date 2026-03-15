@@ -1,21 +1,27 @@
 package com.kanbanvision.usecases.board.queries
 
+import com.kanbanvision.domain.errors.DomainError
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class GetBoardQueryTest {
     @Test
     fun `validate passes with valid id`() {
-        GetBoardQuery(id = "some-id").validate()
+        assertTrue(GetBoardQuery(id = "some-id").validate().isRight())
     }
 
     @Test
-    fun `validate throws with blank id`() {
-        assertFailsWith<IllegalArgumentException> { GetBoardQuery(id = "").validate() }
+    fun `validate returns error with blank id`() {
+        val result = GetBoardQuery(id = "").validate()
+        assertTrue(result.isLeft())
+        assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
 
     @Test
-    fun `validate throws with whitespace-only id`() {
-        assertFailsWith<IllegalArgumentException> { GetBoardQuery(id = "   ").validate() }
+    fun `validate returns error with whitespace-only id`() {
+        val result = GetBoardQuery(id = "   ").validate()
+        assertTrue(result.isLeft())
+        assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
 }

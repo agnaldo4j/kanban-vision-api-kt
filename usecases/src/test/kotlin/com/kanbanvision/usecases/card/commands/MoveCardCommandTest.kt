@@ -1,32 +1,34 @@
 package com.kanbanvision.usecases.card.commands
 
+import com.kanbanvision.domain.errors.DomainError
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class MoveCardCommandTest {
     @Test
     fun `validate passes with valid data`() {
-        MoveCardCommand(cardId = "card-1", targetColumnId = "col-1", newPosition = 0).validate()
+        assertTrue(MoveCardCommand(cardId = "card-1", targetColumnId = "col-1", newPosition = 0).validate().isRight())
     }
 
     @Test
-    fun `validate throws with blank card id`() {
-        assertFailsWith<IllegalArgumentException> {
-            MoveCardCommand(cardId = "", targetColumnId = "col-1", newPosition = 0).validate()
-        }
+    fun `validate returns error with blank card id`() {
+        val result = MoveCardCommand(cardId = "", targetColumnId = "col-1", newPosition = 0).validate()
+        assertTrue(result.isLeft())
+        assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
 
     @Test
-    fun `validate throws with blank target column id`() {
-        assertFailsWith<IllegalArgumentException> {
-            MoveCardCommand(cardId = "card-1", targetColumnId = "", newPosition = 0).validate()
-        }
+    fun `validate returns error with blank target column id`() {
+        val result = MoveCardCommand(cardId = "card-1", targetColumnId = "", newPosition = 0).validate()
+        assertTrue(result.isLeft())
+        assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
 
     @Test
-    fun `validate throws with negative position`() {
-        assertFailsWith<IllegalArgumentException> {
-            MoveCardCommand(cardId = "card-1", targetColumnId = "col-1", newPosition = -1).validate()
-        }
+    fun `validate returns error with negative position`() {
+        val result = MoveCardCommand(cardId = "card-1", targetColumnId = "col-1", newPosition = -1).validate()
+        assertTrue(result.isLeft())
+        assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
 }

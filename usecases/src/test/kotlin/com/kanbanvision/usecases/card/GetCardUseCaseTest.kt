@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.card
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -10,7 +11,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class GetCardUseCaseTest {
     private val cardRepository = mockk<CardRepository>()
@@ -24,25 +27,30 @@ class GetCardUseCaseTest {
 
             val result = useCase.execute(GetCardQuery(id = card.id.value))
 
-            assertEquals(card.id, result.id)
-            assertEquals(card.title, result.title)
+            assertTrue(result.isRight())
+            val returnedCard = result.getOrNull()
+            assertNotNull(returnedCard)
+            assertEquals(card.id, returnedCard.id)
+            assertEquals(card.title, returnedCard.title)
         }
 
     @Test
-    fun `execute throws when card not found`() =
+    fun `execute returns CardNotFound when card not found`() =
         runTest {
             coEvery { cardRepository.findById(any()) } returns null
 
-            assertFailsWith<NoSuchElementException> {
-                useCase.execute(GetCardQuery(id = CardId.generate().value))
-            }
+            val result = useCase.execute(GetCardQuery(id = CardId.generate().value))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.CardNotFound>(result.leftOrNull())
         }
 
     @Test
-    fun `execute with blank id throws before querying repository`() =
+    fun `execute with blank id returns ValidationError`() =
         runTest {
-            assertFailsWith<IllegalArgumentException> {
-                useCase.execute(GetCardQuery(id = ""))
-            }
+            val result = useCase.execute(GetCardQuery(id = ""))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
         }
 }

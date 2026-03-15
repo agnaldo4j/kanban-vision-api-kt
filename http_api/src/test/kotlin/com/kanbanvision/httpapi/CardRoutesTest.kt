@@ -153,7 +153,7 @@ class CardRoutesTest {
         }
 
     @Test
-    fun `IllegalArgumentException without message returns 400`() =
+    fun `unexpected repository exception in card creation returns 500`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -164,7 +164,7 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { cardRepository.findByColumnId(any()) } throws IllegalArgumentException()
+            coEvery { cardRepository.findByColumnId(any()) } throws RuntimeException("DB failure")
 
             val response =
                 client.post("/api/v1/cards") {
@@ -172,29 +172,6 @@ class CardRoutesTest {
                     setBody("""{"columnId":"${columnId.value}","title":"Task"}""")
                 }
 
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-        }
-
-    @Test
-    fun `NoSuchElementException without message returns 404`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { cardRepository.findById(any()) } throws NoSuchElementException()
-
-            val response =
-                client.patch("/api/v1/cards/${cardId.value}/move") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${columnId.value}","position":0}""")
-                }
-
-            assertEquals(HttpStatusCode.NotFound, response.status)
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
         }
 }

@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.board
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.usecases.board.commands.CreateBoardCommand
 import com.kanbanvision.usecases.repositories.BoardRepository
 import io.mockk.coEvery
@@ -7,8 +8,9 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class CreateBoardUseCaseTest {
     private val boardRepository = mockk<BoardRepository>()
@@ -20,29 +22,34 @@ class CreateBoardUseCaseTest {
             coEvery { boardRepository.save(any()) } answers { firstArg() }
 
             val command = CreateBoardCommand(name = "Sprint Board")
-            val boardId = useCase.execute(command)
+            val result = useCase.execute(command)
 
-            assertNotNull(boardId)
+            assertTrue(result.isRight())
+            assertNotNull(result.getOrNull())
             coVerify(exactly = 1) { boardRepository.save(any()) }
         }
 
     @Test
-    fun `execute with blank name throws before saving`() =
+    fun `execute with blank name returns ValidationError before saving`() =
         runTest {
             val command = CreateBoardCommand(name = "")
 
-            assertFailsWith<IllegalArgumentException> { useCase.execute(command) }
+            val result = useCase.execute(command)
 
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { boardRepository.save(any()) }
         }
 
     @Test
-    fun `execute with whitespace-only name throws before saving`() =
+    fun `execute with whitespace-only name returns ValidationError before saving`() =
         runTest {
             val command = CreateBoardCommand(name = "   ")
 
-            assertFailsWith<IllegalArgumentException> { useCase.execute(command) }
+            val result = useCase.execute(command)
 
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { boardRepository.save(any()) }
         }
 }
