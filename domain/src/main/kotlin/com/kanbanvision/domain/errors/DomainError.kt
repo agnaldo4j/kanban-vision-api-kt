@@ -28,4 +28,12 @@ sealed class DomainError {
     data class PersistenceError(
         val message: String,
     ) : DomainError()
+
+    data class TenantNotFound(
+        val id: String,
+    ) : DomainError()
+
+    data class ScenarioNotFound(
+        val id: String,
+    ) : DomainError()
 }

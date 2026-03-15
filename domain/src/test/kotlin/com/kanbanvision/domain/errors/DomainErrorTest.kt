@@ -39,4 +39,18 @@ class DomainErrorTest {
         assertIs<DomainError>(error)
         assertEquals("connection failed", error.message)
     }
+
+    @Test
+    fun `TenantNotFound holds id`() {
+        val error = DomainError.TenantNotFound("tenant-1")
+        assertIs<DomainError>(error)
+        assertEquals("tenant-1", error.id)
+    }
+
+    @Test
+    fun `ScenarioNotFound holds id`() {
+        val error = DomainError.ScenarioNotFound("scenario-1")
+        assertIs<DomainError>(error)
+        assertEquals("scenario-1", error.id)
+    }
 }

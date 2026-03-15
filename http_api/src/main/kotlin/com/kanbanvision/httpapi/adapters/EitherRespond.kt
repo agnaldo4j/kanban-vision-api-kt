@@ -21,7 +21,9 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
                     put("requestId", requestId)
                 },
             )
-        is DomainError.BoardNotFound, is DomainError.CardNotFound, is DomainError.ColumnNotFound ->
+        is DomainError.BoardNotFound, is DomainError.CardNotFound, is DomainError.ColumnNotFound,
+        is DomainError.TenantNotFound, is DomainError.ScenarioNotFound,
+        ->
             respond(HttpStatusCode.NotFound, mapOf("error" to error.toString(), "requestId" to requestId))
         is DomainError.PersistenceError ->
             respond(HttpStatusCode.InternalServerError, mapOf("error" to "Internal server error", "requestId" to requestId))
