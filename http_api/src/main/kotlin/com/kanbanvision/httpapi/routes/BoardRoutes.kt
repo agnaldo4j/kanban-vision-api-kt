@@ -14,6 +14,7 @@ import io.ktor.server.routing.route
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 
+@Suppress("LongMethod")
 fun Route.boardRoutes() {
     val createBoard: CreateBoardUseCase by inject()
     val getBoard: GetBoardUseCase by inject()

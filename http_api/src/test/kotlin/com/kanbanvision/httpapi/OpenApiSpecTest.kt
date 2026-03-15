@@ -18,6 +18,7 @@ import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
@@ -38,7 +39,7 @@ class OpenApiSpecTest {
         }
 
     @Test
-    fun `openapi spec is served and contains all api routes`() =
+    fun `openapi spec is served and contains all api routes with correct methods`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -54,14 +55,26 @@ class OpenApiSpecTest {
             val paths = Json.parseToJsonElement(response.bodyAsText()).jsonObject["paths"]?.jsonObject
             assertNotNull(paths, "OpenAPI spec deve definir paths")
 
-            assertTrue("/api/v1/boards" in paths, "POST /api/v1/boards deve estar documentado")
-            assertTrue("/api/v1/boards/{id}" in paths, "GET /api/v1/boards/{id} deve estar documentado")
-            assertTrue("/api/v1/cards" in paths, "POST /api/v1/cards deve estar documentado")
-            assertTrue("/api/v1/cards/{id}/move" in paths, "PATCH /api/v1/cards/{id}/move deve estar documentado")
+            assertTrue(
+                paths["/api/v1/boards"]?.jsonObject?.containsKey("post") == true,
+                "POST /api/v1/boards deve estar documentado",
+            )
+            assertTrue(
+                paths["/api/v1/boards/{id}"]?.jsonObject?.containsKey("get") == true,
+                "GET /api/v1/boards/{id} deve estar documentado",
+            )
+            assertTrue(
+                paths["/api/v1/cards"]?.jsonObject?.containsKey("post") == true,
+                "POST /api/v1/cards deve estar documentado",
+            )
+            assertTrue(
+                paths["/api/v1/cards/{id}/move"]?.jsonObject?.containsKey("patch") == true,
+                "PATCH /api/v1/cards/{id}/move deve estar documentado",
+            )
         }
 
     @Test
-    fun `all routes have a description`() =
+    fun `all routes have a non-blank description`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -77,9 +90,9 @@ class OpenApiSpecTest {
 
             paths.forEach { (path, pathItem) ->
                 pathItem.jsonObject.forEach { (method, operation) ->
-                    val description = operation.jsonObject["description"]
-                    assertNotNull(
-                        description,
+                    val description = operation.jsonObject["description"]?.jsonPrimitive?.content
+                    assertTrue(
+                        !description.isNullOrBlank(),
                         "Rota $method $path está sem descrição — toda rota deve ser documentada.",
                     )
                 }

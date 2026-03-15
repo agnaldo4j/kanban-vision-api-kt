@@ -15,17 +15,13 @@ fun Application.configureOpenApi() {
             version = "1.0.0"
             description = "Simulador de quadro Kanban — gerencie boards, colunas e cartões via REST."
         }
-        server {
-            url = "http://localhost:8080"
-            description = "Local"
-        }
     }
 
     routing {
-        route("api.json") {
+        route("/api.json") {
             openApi()
         }
-        route("swagger") {
+        route("/swagger") {
             swaggerUI("/api.json")
         }
     }

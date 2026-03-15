@@ -17,6 +17,7 @@ import io.ktor.server.routing.route
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 
+@Suppress("LongMethod")
 fun Route.cardRoutes() {
     val createCard: CreateCardUseCase by inject()
     val moveCard: MoveCardUseCase by inject()
