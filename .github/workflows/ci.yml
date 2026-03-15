@@ -10,15 +10,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  security-events: write
-  pull-requests: write
-
 jobs:
   quality:
     name: Quality Gates
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -69,14 +69,14 @@ jobs:
           retention-days: 14
 
       - name: Upload Detekt SARIF to GitHub Code Scanning
-        if: always()
+        if: always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: '**/build/reports/detekt/*.sarif'
           category: detekt
 
       - name: JaCoCo coverage report on PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: madrapps/jacoco-report@v1.7.1
         with:
           paths: |
