@@ -5,7 +5,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 
-suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
+suspend fun ApplicationCall.respondWithDomainError(error: DomainError): Unit =
     when (error) {
         is DomainError.ValidationError ->
             respond(HttpStatusCode.BadRequest, mapOf("error" to error.message))
@@ -14,4 +14,3 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
         is DomainError.PersistenceError ->
             respond(HttpStatusCode.InternalServerError, mapOf("error" to "Internal server error"))
     }
-}
