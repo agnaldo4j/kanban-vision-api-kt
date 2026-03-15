@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import org.postgresql.util.PSQLException
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -163,7 +164,7 @@ class JdbcCardRepositoryIntegrationTest {
                 createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
             )
 
-        assertThrows<Exception> { runBlocking { repository.save(orphanCard) } }
+        assertThrows<PSQLException> { runBlocking { repository.save(orphanCard) } }
 
         val found = runBlocking { repository.findById(orphanCard.id) }
         assertNull(found)

@@ -4,13 +4,21 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 
 object IntegrationTestSetup {
     private var initialized = false
+    private var pg: EmbeddedPostgres? = null
 
     fun ensureInitialized() {
         if (!initialized) {
-            val pg = EmbeddedPostgres.start()
+            val embeddedPg = EmbeddedPostgres.start()
+            pg = embeddedPg
+            Runtime.getRuntime().addShutdownHook(
+                Thread {
+                    DatabaseFactory.dataSource.close()
+                    embeddedPg.close()
+                },
+            )
             DatabaseFactory.init(
                 DatabaseConfig(
-                    url = pg.getJdbcUrl("postgres", "postgres"),
+                    url = embeddedPg.getJdbcUrl("postgres", "postgres"),
                     driver = "org.postgresql.Driver",
                     user = "postgres",
                     password = "",

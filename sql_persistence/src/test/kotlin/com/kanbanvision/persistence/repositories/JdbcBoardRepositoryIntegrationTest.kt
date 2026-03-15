@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import org.postgresql.util.PSQLException
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -120,7 +121,7 @@ class JdbcBoardRepositoryIntegrationTest {
                 createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
             )
 
-        assertThrows<Exception> { runBlocking { repository.save(board) } }
+        assertThrows<PSQLException> { runBlocking { repository.save(board) } }
 
         val found = runBlocking { repository.findById(board.id) }
         assertNull(found)

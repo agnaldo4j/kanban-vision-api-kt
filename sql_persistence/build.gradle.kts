@@ -18,14 +18,25 @@ dependencies {
     testImplementation("io.zonky.test:embedded-postgres:2.0.7")
 }
 
-// Exclude Kotlin-generated coroutine continuation classes from JaCoCo coverage.
-// These are state-machine classes (e.g. JdbcBoardRepository$query$2) produced by the
-// Kotlin compiler for suspend functions and contain unreachable exception-path branches
-// that cannot be exercised without deliberately crashing the JDBC driver.
+// Exclude Kotlin-generated coroutine continuation classes for the `query` suspend function.
+// These are state-machine classes (JdbcBoardRepository$query$2, JdbcColumnRepository$query$2,
+// JdbcCardRepository$query$2) produced by the Kotlin compiler and contain unreachable
+// addSuppressed branches that cannot be exercised without deliberately crashing the JDBC driver.
+// Applied to both report and verification so the two tasks stay in sync.
+val jacocoExcludes = listOf("**/*\$query\$*.class")
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        sourceSets.main.get().output.asFileTree.matching {
+            exclude(jacocoExcludes)
+        },
+    )
+}
+
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     classDirectories.setFrom(
         sourceSets.main.get().output.asFileTree.matching {
-            exclude("**/*\$*\$*.class")
+            exclude(jacocoExcludes)
         },
     )
 }
