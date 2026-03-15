@@ -152,4 +152,12 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }
+
+    @Test
+    fun `card updateCard returns PersistenceError when datasource is closed`() =
+        runBlocking<Unit> {
+            val result = cardRepository.updateCard(CardId(UUID.randomUUID().toString())) { it }
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+        }
 }

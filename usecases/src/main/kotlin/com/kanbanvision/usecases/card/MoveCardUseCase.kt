@@ -37,11 +37,13 @@ class MoveCardUseCase(
 
     private suspend fun findAndMove(command: MoveCardCommand): Either<DomainError, Duration> =
         either {
-            val (findResult, findDuration) = measureTimedValue { cardRepository.findById(CardId(command.cardId)) }
-            val card = findResult.bind()
-            val moved = card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
-            val (saveResult, saveDuration) = measureTimedValue { cardRepository.save(moved) }
-            saveResult.bind()
-            findDuration + saveDuration
+            val (updateResult, duration) =
+                measureTimedValue {
+                    cardRepository.updateCard(CardId(command.cardId)) { card ->
+                        card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
+                    }
+                }
+            updateResult.bind()
+            duration
         }
 }

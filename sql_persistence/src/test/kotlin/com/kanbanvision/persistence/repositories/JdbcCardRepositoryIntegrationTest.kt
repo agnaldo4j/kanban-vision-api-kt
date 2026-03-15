@@ -180,4 +180,47 @@ class JdbcCardRepositoryIntegrationTest {
             assertTrue(found.isLeft())
             assertIs<DomainError.CardNotFound>(found.leftOrNull())
         }
+
+    @Test
+    fun `updateCard applies transform and persists result atomically`() =
+        runBlocking {
+            val card = newCard("Original", position = 0)
+            repository.save(card)
+
+            val result = repository.updateCard(card.id) { it.moveTo(existingColumnId!!, newPosition = 5) }
+
+            assertTrue(result.isRight())
+            val updated = result.getOrNull()
+            assertNotNull(updated)
+            assertEquals(card.id, updated.id)
+            assertEquals(existingColumnId, updated.columnId)
+            assertEquals(5, updated.position)
+            val found = repository.findById(card.id)
+            assertEquals(5, found.getOrNull()?.position)
+        }
+
+    @Test
+    fun `updateCard returns CardNotFound when card does not exist`() =
+        runBlocking<Unit> {
+            val result = repository.updateCard(CardId(UUID.randomUUID().toString())) { it }
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.CardNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `updateCard returns PersistenceError and does not modify card when update violates constraint`() =
+        runBlocking<Unit> {
+            val card = newCard("Atomic Test", position = 0)
+            repository.save(card)
+            val nonExistentColumnId = ColumnId(UUID.randomUUID().toString())
+
+            val result = repository.updateCard(card.id) { it.copy(columnId = nonExistentColumnId) }
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            val found = repository.findById(card.id)
+            assertTrue(found.isRight())
+            assertEquals(existingColumnId, found.getOrNull()?.columnId)
+        }
 }
