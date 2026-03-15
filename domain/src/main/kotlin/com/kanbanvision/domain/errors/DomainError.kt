@@ -36,4 +36,12 @@ sealed class DomainError {
     data class ScenarioNotFound(
         val id: String,
     ) : DomainError()
+
+    data class InvalidDecision(
+        val reason: String,
+    ) : DomainError()
+
+    data class DayAlreadyExecuted(
+        val day: Int,
+    ) : DomainError()
 }

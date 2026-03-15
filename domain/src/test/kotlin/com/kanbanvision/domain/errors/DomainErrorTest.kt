@@ -53,4 +53,18 @@ class DomainErrorTest {
         assertIs<DomainError>(error)
         assertEquals("scenario-1", error.id)
     }
+
+    @Test
+    fun `InvalidDecision holds reason`() {
+        val error = DomainError.InvalidDecision("item not in correct state")
+        assertIs<DomainError>(error)
+        assertEquals("item not in correct state", error.reason)
+    }
+
+    @Test
+    fun `DayAlreadyExecuted holds day number`() {
+        val error = DomainError.DayAlreadyExecuted(5)
+        assertIs<DomainError>(error)
+        assertEquals(5, error.day)
+    }
 }
