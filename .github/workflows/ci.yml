@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
 jobs:
   quality:
     name: Quality Gates
@@ -62,3 +67,25 @@ jobs:
           path: |
             **/build/reports/jacoco/
           retention-days: 14
+
+      - name: Upload Detekt SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: '**/build/reports/detekt/*.sarif'
+          category: detekt
+
+      - name: JaCoCo coverage report on PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: |
+            ${{ github.workspace }}/domain/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/usecases/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: JaCoCo Coverage Report
+          min-coverage-overall: 90
+          min-coverage-changed-files: 80
+          update-comment: true

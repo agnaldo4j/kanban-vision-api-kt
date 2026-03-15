@@ -24,6 +24,12 @@ detekt {
     buildUponDefaultConfig = true
 }
 
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    reports {
+        sarif.required.set(true)
+    }
+}
+
 ktlint {
     version.set("1.5.0")
 }
