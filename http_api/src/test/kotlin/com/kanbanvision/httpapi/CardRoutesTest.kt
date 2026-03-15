@@ -33,12 +33,14 @@ import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class CardRoutesTest {
     private val columnId = ColumnId.generate()
@@ -111,6 +113,15 @@ class CardRoutesTest {
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            val firstError =
+                body["errors"]
+                    ?.jsonArray
+                    ?.get(0)
+                    ?.jsonPrimitive
+                    ?.content
+            assertEquals("Card title must not be blank", firstError)
+            assertNotNull(body["requestId"])
         }
 
     @Test
@@ -163,6 +174,9 @@ class CardRoutesTest {
                 }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["error"])
+            assertNotNull(body["requestId"])
         }
 
     @Test
@@ -186,5 +200,8 @@ class CardRoutesTest {
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("Internal server error", body["error"]?.jsonPrimitive?.content)
+            assertNotNull(body["requestId"])
         }
 }
