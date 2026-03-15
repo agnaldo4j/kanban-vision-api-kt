@@ -5,7 +5,7 @@ plugins {
 dependencies {
     api(project(":domain"))
 
-    implementation("io.arrow-kt:arrow-core:2.0.1")
+    api("io.arrow-kt:arrow-core:2.0.1")
     implementation("org.slf4j:slf4j-api:2.0.16")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")

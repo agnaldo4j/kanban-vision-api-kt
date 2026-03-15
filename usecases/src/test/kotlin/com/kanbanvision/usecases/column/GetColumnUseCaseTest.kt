@@ -1,5 +1,7 @@
 package com.kanbanvision.usecases.column
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
@@ -23,7 +25,7 @@ class GetColumnUseCaseTest {
     @Test
     fun `execute returns column when found`() =
         runTest {
-            coEvery { columnRepository.findById(columnId) } returns column
+            coEvery { columnRepository.findById(columnId) } returns column.right()
 
             val result = useCase.execute(GetColumnQuery(id = columnId.value))
 
@@ -33,7 +35,7 @@ class GetColumnUseCaseTest {
     @Test
     fun `execute returns ColumnNotFound when not found`() =
         runTest {
-            coEvery { columnRepository.findById(any()) } returns null
+            coEvery { columnRepository.findById(any()) } returns DomainError.ColumnNotFound("nonexistent").left()
 
             val result = useCase.execute(GetColumnQuery(id = "nonexistent"))
 
@@ -51,9 +53,9 @@ class GetColumnUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { columnRepository.findById(any()) } throws RuntimeException("DB failure")
+            coEvery { columnRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(GetColumnQuery(id = ColumnId.generate().value))
 

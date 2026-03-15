@@ -1,7 +1,6 @@
 package com.kanbanvision.usecases.column
 
 import arrow.core.Either
-import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
@@ -21,23 +20,22 @@ class CreateColumnUseCase(
         either {
             command.validate().bind()
             log.debug("Creating column: boardId={} name={}", command.boardId, command.name)
-            val (columnId, duration) =
-                catch(
-                    {
-                        measureTimedValue {
-                            val boardId = BoardId(command.boardId)
-                            val existing = columnRepository.findByBoardId(boardId)
-                            val column =
-                                Column.create(
-                                    boardId = boardId,
-                                    name = command.name,
-                                    position = existing.size,
-                                )
-                            columnRepository.save(column)
-                            column.id
-                        }
-                    },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
+            val (result, duration) =
+                measureTimedValue {
+                    either {
+                        val boardId = BoardId(command.boardId)
+                        val existing = columnRepository.findByBoardId(boardId).bind()
+                        val column =
+                            Column.create(
+                                boardId = boardId,
+                                name = command.name,
+                                position = existing.size,
+                            )
+                        columnRepository.save(column).bind()
+                        column.id
+                    }
+                }
+            val columnId = result.bind()
             log.info(
                 "Column created: id={} boardId={} name={} duration={}ms",
                 columnId.value,

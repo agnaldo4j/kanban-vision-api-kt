@@ -1,7 +1,6 @@
 package com.kanbanvision.usecases.card
 
 import arrow.core.Either
-import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
@@ -20,11 +19,8 @@ class GetCardUseCase(
         either {
             query.validate().bind()
             log.debug("Fetching card: id={}", query.id)
-            val (maybeCard, duration) =
-                catch(
-                    { measureTimedValue { cardRepository.findById(CardId(query.id)) } },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
-            val card = maybeCard ?: raise(DomainError.CardNotFound(query.id))
+            val (result, duration) = measureTimedValue { cardRepository.findById(CardId(query.id)) }
+            val card = result.bind()
             log.info("Card fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             card
         }

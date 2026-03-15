@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.repositories
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.persistence.IntegrationTestSetup
@@ -8,14 +9,12 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertThrows
-import org.postgresql.util.PSQLException
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -46,7 +45,9 @@ class JdbcBoardRepositoryIntegrationTest {
 
             repository.save(board)
 
-            val found = repository.findById(board.id)
+            val result = repository.findById(board.id)
+            assertTrue(result.isRight())
+            val found = result.getOrNull()
             assertNotNull(found)
             assertEquals(board.id, found.id)
             assertEquals(board.name, found.name)
@@ -54,11 +55,12 @@ class JdbcBoardRepositoryIntegrationTest {
         }
 
     @Test
-    fun `findById returns null when board does not exist`() =
-        runBlocking {
+    fun `findById returns BoardNotFound when board does not exist`() =
+        runBlocking<Unit> {
             val result = repository.findById(BoardId(UUID.randomUUID().toString()))
 
-            assertNull(result)
+            assertTrue(result.isLeft())
+            assertIs<DomainError.BoardNotFound>(result.leftOrNull())
         }
 
     @Test
@@ -69,8 +71,8 @@ class JdbcBoardRepositoryIntegrationTest {
 
             repository.save(board.copy(name = "Updated Name"))
 
-            val found = repository.findById(board.id)
-            assertEquals("Updated Name", found?.name)
+            val result = repository.findById(board.id)
+            assertEquals("Updated Name", result.getOrNull()?.name)
         }
 
     @Test
@@ -79,29 +81,32 @@ class JdbcBoardRepositoryIntegrationTest {
             repository.save(newBoard("Board One"))
             repository.save(newBoard("Board Two"))
 
-            val all = repository.findAll()
+            val result = repository.findAll()
 
-            assertEquals(2, all.size)
+            assertEquals(2, result.getOrNull()?.size)
         }
 
     @Test
     fun `findAll returns empty list when no boards exist`() =
         runBlocking {
-            val all = repository.findAll()
+            val result = repository.findAll()
 
-            assertTrue(all.isEmpty())
+            assertTrue(result.isRight())
+            assertTrue(result.getOrNull()!!.isEmpty())
         }
 
     @Test
     fun `delete removes board and returns true`() =
-        runBlocking {
+        runBlocking<Unit> {
             val board = newBoard()
             repository.save(board)
 
             val deleted = repository.delete(board.id)
 
-            assertTrue(deleted)
-            assertNull(repository.findById(board.id))
+            assertTrue(deleted.getOrNull() == true)
+            val found = repository.findById(board.id)
+            assertTrue(found.isLeft())
+            assertIs<DomainError.BoardNotFound>(found.leftOrNull())
         }
 
     @Test
@@ -109,21 +114,25 @@ class JdbcBoardRepositoryIntegrationTest {
         runBlocking {
             val deleted = repository.delete(BoardId(UUID.randomUUID().toString()))
 
-            assertFalse(deleted)
+            assertFalse(deleted.getOrNull() ?: true)
         }
 
     @Test
-    fun `save with name exceeding column limit throws exception and no board is persisted`() {
-        val board =
-            Board(
-                id = BoardId(UUID.randomUUID().toString()),
-                name = "x".repeat(256),
-                createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
-            )
+    fun `save with name exceeding column limit returns PersistenceError`() =
+        runBlocking<Unit> {
+            val board =
+                Board(
+                    id = BoardId(UUID.randomUUID().toString()),
+                    name = "x".repeat(256),
+                    createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
+                )
 
-        assertThrows<PSQLException> { runBlocking { repository.save(board) } }
+            val result = repository.save(board)
 
-        val found = runBlocking { repository.findById(board.id) }
-        assertNull(found)
-    }
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            val found = repository.findById(board.id)
+            assertTrue(found.isLeft())
+            assertIs<DomainError.BoardNotFound>(found.leftOrNull())
+        }
 }

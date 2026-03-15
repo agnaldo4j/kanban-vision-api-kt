@@ -1,5 +1,9 @@
 package com.kanbanvision.persistence.repositories
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.persistence.DatabaseFactory
@@ -17,61 +21,76 @@ class JdbcBoardRepository : BoardRepository {
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
-    override suspend fun save(board: Board): Board =
+    override suspend fun save(board: Board): Either<DomainError, Board> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                conn
-                    .prepareStatement(
-                        """
-                        INSERT INTO boards (id, name, created_at)
-                        VALUES (?, ?, ?)
-                        ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
-                        """.trimIndent(),
-                    ).use { stmt ->
-                        stmt.setString(COL_ID, board.id.value)
-                        stmt.setString(COL_NAME, board.name)
-                        stmt.setLong(COL_CREATED_AT, board.createdAt.toEpochMilli())
-                        stmt.executeUpdate()
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        conn
+                            .prepareStatement(
+                                """
+                                INSERT INTO boards (id, name, created_at)
+                                VALUES (?, ?, ?)
+                                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
+                                """.trimIndent(),
+                            ).use { stmt ->
+                                stmt.setString(COL_ID, board.id.value)
+                                stmt.setString(COL_NAME, board.name)
+                                stmt.setLong(COL_CREATED_AT, board.createdAt.toEpochMilli())
+                                stmt.executeUpdate()
+                            }
+                        conn.commit()
                     }
-                conn.commit()
-            }
-            board
+                    board
+                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
-    override suspend fun findById(id: BoardId): Board? =
+    override suspend fun findById(id: BoardId): Either<DomainError, Board> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                conn.prepareStatement("SELECT id, name, created_at FROM boards WHERE id = ?").use { stmt ->
-                    stmt.setString(COL_ID, id.value)
-                    stmt.executeQuery().use { rs ->
-                        if (rs.next()) rs.toBoard() else null
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        conn.prepareStatement("SELECT id, name, created_at FROM boards WHERE id = ?").use { stmt ->
+                            stmt.setString(COL_ID, id.value)
+                            stmt.executeQuery().use { rs ->
+                                if (rs.next()) rs.toBoard() else null
+                            }
+                        }
                     }
-                }
-            }
+                }.fold(
+                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifRight = { board -> board?.right() ?: DomainError.BoardNotFound(id.value).left() },
+                )
         }
 
-    override suspend fun findAll(): List<Board> =
+    override suspend fun findAll(): Either<DomainError, List<Board>> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                conn.prepareStatement("SELECT id, name, created_at FROM boards").use { stmt ->
-                    stmt.executeQuery().use { rs ->
-                        buildList { while (rs.next()) add(rs.toBoard()) }
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        conn.prepareStatement("SELECT id, name, created_at FROM boards").use { stmt ->
+                            stmt.executeQuery().use { rs ->
+                                buildList { while (rs.next()) add(rs.toBoard()) }
+                            }
+                        }
                     }
-                }
-            }
+                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
-    override suspend fun delete(id: BoardId): Boolean =
+    override suspend fun delete(id: BoardId): Either<DomainError, Boolean> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                val deleted =
-                    conn.prepareStatement("DELETE FROM boards WHERE id = ?").use { stmt ->
-                        stmt.setString(COL_ID, id.value)
-                        stmt.executeUpdate()
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        val deleted =
+                            conn.prepareStatement("DELETE FROM boards WHERE id = ?").use { stmt ->
+                                stmt.setString(COL_ID, id.value)
+                                stmt.executeUpdate()
+                            }
+                        conn.commit()
+                        deleted > 0
                     }
-                conn.commit()
-                deleted > 0
-            }
+                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
     private fun java.sql.ResultSet.toBoard() =

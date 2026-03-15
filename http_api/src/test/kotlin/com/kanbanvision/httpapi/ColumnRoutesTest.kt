@@ -1,5 +1,8 @@
 package com.kanbanvision.httpapi
 
+import arrow.core.left
+import arrow.core.right
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -74,9 +77,9 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList()
-            coEvery { columnRepository.save(any()) } answers { firstArg() }
-            coEvery { columnRepository.findById(any()) } returns column
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
+            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
+            coEvery { columnRepository.findById(any()) } returns column.right()
 
             val response =
                 client.post("/api/v1/columns") {
@@ -123,7 +126,7 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findById(columnId) } returns column
+            coEvery { columnRepository.findById(columnId) } returns column.right()
 
             val response = client.get("/api/v1/columns/${columnId.value}")
 
@@ -145,7 +148,7 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findById(any()) } returns null
+            coEvery { columnRepository.findById(any()) } returns DomainError.ColumnNotFound("nonexistent-id").left()
 
             val response = client.get("/api/v1/columns/nonexistent-id")
 
@@ -164,7 +167,7 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(boardId) } returns listOf(column)
+            coEvery { columnRepository.findByBoardId(boardId) } returns listOf(column).right()
 
             val response = client.get("/api/v1/boards/${boardId.value}/columns")
 

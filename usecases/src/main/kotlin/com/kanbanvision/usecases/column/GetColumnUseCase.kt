@@ -1,7 +1,6 @@
 package com.kanbanvision.usecases.column
 
 import arrow.core.Either
-import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
@@ -20,11 +19,8 @@ class GetColumnUseCase(
         either {
             query.validate().bind()
             log.debug("Fetching column: id={}", query.id)
-            val (maybeColumn, duration) =
-                catch(
-                    { measureTimedValue { columnRepository.findById(ColumnId(query.id)) } },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
-            val column = maybeColumn ?: raise(DomainError.ColumnNotFound(query.id))
+            val (result, duration) = measureTimedValue { columnRepository.findById(ColumnId(query.id)) }
+            val column = result.bind()
             log.info("Column fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             column
         }

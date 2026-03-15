@@ -1,5 +1,7 @@
 package com.kanbanvision.usecases.column
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
@@ -28,7 +30,7 @@ class ListColumnsByBoardUseCaseTest {
                     Column(id = ColumnId.generate(), boardId = boardId, name = "To Do", position = 0),
                     Column(id = ColumnId.generate(), boardId = boardId, name = "In Progress", position = 1),
                 )
-            coEvery { columnRepository.findByBoardId(boardId) } returns columns
+            coEvery { columnRepository.findByBoardId(boardId) } returns columns.right()
 
             val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId.value))
 
@@ -39,7 +41,7 @@ class ListColumnsByBoardUseCaseTest {
     @Test
     fun `execute returns empty list when no columns exist`() =
         runTest {
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList()
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
 
             val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId.value))
 
@@ -57,9 +59,9 @@ class ListColumnsByBoardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when repository throws`() =
+    fun `execute returns PersistenceError when repository returns error`() =
         runTest {
-            coEvery { columnRepository.findByBoardId(any()) } throws RuntimeException("DB failure")
+            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId.value))
 

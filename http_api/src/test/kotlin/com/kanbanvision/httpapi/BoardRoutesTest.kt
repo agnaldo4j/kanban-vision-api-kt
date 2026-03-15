@@ -1,5 +1,8 @@
 package com.kanbanvision.httpapi
 
+import arrow.core.left
+import arrow.core.right
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.httpapi.plugins.configureObservability
@@ -73,8 +76,8 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
-            coEvery { boardRepository.findById(any()) } returns board
+            coEvery { boardRepository.save(any()) } answers { firstArg<Board>().right() }
+            coEvery { boardRepository.findById(any()) } returns board.right()
 
             val response =
                 client.post("/api/v1/boards") {
@@ -121,7 +124,7 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.findById(boardId) } returns board
+            coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response = client.get("/api/v1/boards/${boardId.value}")
 
@@ -143,7 +146,7 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.findById(any()) } returns null
+            coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound("nonexistent-id").left()
 
             val response = client.get("/api/v1/boards/nonexistent-id")
 
@@ -162,8 +165,8 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
-            coEvery { boardRepository.findById(any()) } returns board
+            coEvery { boardRepository.save(any()) } answers { firstArg<Board>().right() }
+            coEvery { boardRepository.findById(any()) } returns board.right()
 
             val response =
                 client.post("/api/v1/boards") {
@@ -188,8 +191,8 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
-            coEvery { boardRepository.findById(any()) } returns board
+            coEvery { boardRepository.save(any()) } answers { firstArg<Board>().right() }
+            coEvery { boardRepository.findById(any()) } returns board.right()
 
             val correlationId = "test-correlation-id-123"
             val response =
@@ -203,7 +206,7 @@ class BoardRoutesTest {
         }
 
     @Test
-    fun `unexpected repository exception returns 500`() =
+    fun `unexpected repository error returns 500`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -214,7 +217,7 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.findById(any()) } throws RuntimeException("DB failure")
+            coEvery { boardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response = client.get("/api/v1/boards/some-id")
 

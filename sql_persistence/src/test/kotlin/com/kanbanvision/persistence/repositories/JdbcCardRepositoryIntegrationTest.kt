@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.repositories
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.Column
@@ -12,14 +13,12 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertThrows
-import org.postgresql.util.PSQLException
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -76,7 +75,9 @@ class JdbcCardRepositoryIntegrationTest {
 
             repository.save(card)
 
-            val found = repository.findById(card.id)
+            val result = repository.findById(card.id)
+            assertTrue(result.isRight())
+            val found = result.getOrNull()
             assertNotNull(found)
             assertEquals(card.id, found.id)
             assertEquals(card.columnId, found.columnId)
@@ -87,11 +88,12 @@ class JdbcCardRepositoryIntegrationTest {
         }
 
     @Test
-    fun `findById returns null when card does not exist`() =
-        runBlocking {
+    fun `findById returns CardNotFound when card does not exist`() =
+        runBlocking<Unit> {
             val result = repository.findById(CardId(UUID.randomUUID().toString()))
 
-            assertNull(result)
+            assertTrue(result.isLeft())
+            assertIs<DomainError.CardNotFound>(result.leftOrNull())
         }
 
     @Test
@@ -102,9 +104,9 @@ class JdbcCardRepositoryIntegrationTest {
 
             repository.save(card.copy(title = "Updated Title", position = 99))
 
-            val found = repository.findById(card.id)
-            assertEquals("Updated Title", found?.title)
-            assertEquals(99, found?.position)
+            val result = repository.findById(card.id)
+            assertEquals("Updated Title", result.getOrNull()?.title)
+            assertEquals(99, result.getOrNull()?.position)
         }
 
     @Test
@@ -117,8 +119,10 @@ class JdbcCardRepositoryIntegrationTest {
             repository.save(card0)
             repository.save(card1)
 
-            val found = repository.findByColumnId(existingColumnId!!)
+            val result = repository.findByColumnId(existingColumnId!!)
 
+            assertTrue(result.isRight())
+            val found = result.getOrNull()!!
             assertEquals(3, found.size)
             assertEquals(card0.id, found[0].id)
             assertEquals(card1.id, found[1].id)
@@ -128,21 +132,24 @@ class JdbcCardRepositoryIntegrationTest {
     @Test
     fun `findByColumnId returns empty list when column has no cards`() =
         runBlocking {
-            val found = repository.findByColumnId(existingColumnId!!)
+            val result = repository.findByColumnId(existingColumnId!!)
 
-            assertTrue(found.isEmpty())
+            assertTrue(result.isRight())
+            assertTrue(result.getOrNull()!!.isEmpty())
         }
 
     @Test
     fun `delete removes card and returns true`() =
-        runBlocking {
+        runBlocking<Unit> {
             val card = newCard()
             repository.save(card)
 
             val deleted = repository.delete(card.id)
 
-            assertTrue(deleted)
-            assertNull(repository.findById(card.id))
+            assertTrue(deleted.getOrNull() == true)
+            val found = repository.findById(card.id)
+            assertTrue(found.isLeft())
+            assertIs<DomainError.CardNotFound>(found.leftOrNull())
         }
 
     @Test
@@ -150,23 +157,27 @@ class JdbcCardRepositoryIntegrationTest {
         runBlocking {
             val deleted = repository.delete(CardId(UUID.randomUUID().toString()))
 
-            assertFalse(deleted)
+            assertFalse(deleted.getOrNull() ?: true)
         }
 
     @Test
-    fun `save with non-existent columnId throws exception and no card is persisted`() {
-        val orphanCard =
-            Card(
-                id = CardId(UUID.randomUUID().toString()),
-                columnId = ColumnId(UUID.randomUUID().toString()),
-                title = "Orphan",
-                position = 0,
-                createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
-            )
+    fun `save with non-existent columnId returns PersistenceError and no card is persisted`() =
+        runBlocking<Unit> {
+            val orphanCard =
+                Card(
+                    id = CardId(UUID.randomUUID().toString()),
+                    columnId = ColumnId(UUID.randomUUID().toString()),
+                    title = "Orphan",
+                    position = 0,
+                    createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
+                )
 
-        assertThrows<PSQLException> { runBlocking { repository.save(orphanCard) } }
+            val result = repository.save(orphanCard)
 
-        val found = runBlocking { repository.findById(orphanCard.id) }
-        assertNull(found)
-    }
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            val found = repository.findById(orphanCard.id)
+            assertTrue(found.isLeft())
+            assertIs<DomainError.CardNotFound>(found.leftOrNull())
+        }
 }

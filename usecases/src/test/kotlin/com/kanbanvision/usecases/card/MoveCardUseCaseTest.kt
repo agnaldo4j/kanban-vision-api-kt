@@ -1,5 +1,7 @@
 package com.kanbanvision.usecases.card
 
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
@@ -23,8 +25,8 @@ class MoveCardUseCaseTest {
         runTest {
             val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
             val targetColumnId = ColumnId.generate().value
-            coEvery { cardRepository.findById(CardId(card.id.value)) } returns card
-            coEvery { cardRepository.save(any()) } answers { firstArg() }
+            coEvery { cardRepository.findById(CardId(card.id.value)) } returns card.right()
+            coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
 
             val result = useCase.execute(MoveCardCommand(cardId = card.id.value, targetColumnId = targetColumnId, newPosition = 2))
 
@@ -39,12 +41,13 @@ class MoveCardUseCaseTest {
     @Test
     fun `execute returns CardNotFound when card not found`() =
         runTest {
-            coEvery { cardRepository.findById(any()) } returns null
+            val id = CardId.generate().value
+            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound(id).left()
 
             val result =
                 useCase.execute(
                     MoveCardCommand(
-                        cardId = CardId.generate().value,
+                        cardId = id,
                         targetColumnId = ColumnId.generate().value,
                         newPosition = 0,
                     ),
@@ -98,9 +101,9 @@ class MoveCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when find throws`() =
+    fun `execute returns PersistenceError when find returns error`() =
         runTest {
-            coEvery { cardRepository.findById(any()) } throws RuntimeException("DB failure")
+            coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result =
                 useCase.execute(
@@ -116,11 +119,11 @@ class MoveCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when save throws`() =
+    fun `execute returns PersistenceError when save returns error`() =
         runTest {
             val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
-            coEvery { cardRepository.findById(any()) } returns card
-            coEvery { cardRepository.save(any()) } throws RuntimeException("DB failure")
+            coEvery { cardRepository.findById(any()) } returns card.right()
+            coEvery { cardRepository.save(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val result =
                 useCase.execute(

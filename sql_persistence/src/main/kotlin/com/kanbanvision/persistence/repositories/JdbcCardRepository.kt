@@ -1,5 +1,9 @@
 package com.kanbanvision.persistence.repositories
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -21,75 +25,91 @@ class JdbcCardRepository : CardRepository {
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
-    override suspend fun save(card: Card): Card =
+    override suspend fun save(card: Card): Either<DomainError, Card> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                conn
-                    .prepareStatement(
-                        """
-                        INSERT INTO cards (id, column_id, title, description, position, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON CONFLICT (id) DO UPDATE SET
-                            column_id   = EXCLUDED.column_id,
-                            title       = EXCLUDED.title,
-                            description = EXCLUDED.description,
-                            position    = EXCLUDED.position
-                        """.trimIndent(),
-                    ).use { stmt ->
-                        stmt.setString(COL_ID, card.id.value)
-                        stmt.setString(COL_COLUMN_ID, card.columnId.value)
-                        stmt.setString(COL_TITLE, card.title)
-                        stmt.setString(COL_DESCRIPTION, card.description)
-                        stmt.setInt(COL_POSITION, card.position)
-                        stmt.setLong(COL_CREATED_AT, card.createdAt.toEpochMilli())
-                        stmt.executeUpdate()
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        conn
+                            .prepareStatement(
+                                """
+                                INSERT INTO cards (id, column_id, title, description, position, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                                ON CONFLICT (id) DO UPDATE SET
+                                    column_id   = EXCLUDED.column_id,
+                                    title       = EXCLUDED.title,
+                                    description = EXCLUDED.description,
+                                    position    = EXCLUDED.position
+                                """.trimIndent(),
+                            ).use { stmt ->
+                                stmt.setString(COL_ID, card.id.value)
+                                stmt.setString(COL_COLUMN_ID, card.columnId.value)
+                                stmt.setString(COL_TITLE, card.title)
+                                stmt.setString(COL_DESCRIPTION, card.description)
+                                stmt.setInt(COL_POSITION, card.position)
+                                stmt.setLong(COL_CREATED_AT, card.createdAt.toEpochMilli())
+                                stmt.executeUpdate()
+                            }
+                        conn.commit()
                     }
-                conn.commit()
-            }
-            card
+                    card
+                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
-    override suspend fun findById(id: CardId): Card? =
+    override suspend fun findById(id: CardId): Either<DomainError, Card> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                conn
-                    .prepareStatement(
-                        "SELECT id, column_id, title, description, position, created_at FROM cards WHERE id = ?",
-                    ).use { stmt ->
-                        stmt.setString(COL_ID, id.value)
-                        stmt.executeQuery().use { rs ->
-                            if (rs.next()) rs.toCard() else null
-                        }
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        conn
+                            .prepareStatement(
+                                "SELECT id, column_id, title, description, position, created_at FROM cards WHERE id = ?",
+                            ).use { stmt ->
+                                stmt.setString(COL_ID, id.value)
+                                stmt.executeQuery().use { rs ->
+                                    if (rs.next()) rs.toCard() else null
+                                }
+                            }
                     }
-            }
+                }.fold(
+                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifRight = { card -> card?.right() ?: DomainError.CardNotFound(id.value).left() },
+                )
         }
 
-    override suspend fun findByColumnId(columnId: ColumnId): List<Card> =
+    override suspend fun findByColumnId(columnId: ColumnId): Either<DomainError, List<Card>> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                conn
-                    .prepareStatement(
-                        "SELECT id, column_id, title, description, position, created_at FROM cards WHERE column_id = ? ORDER BY position",
-                    ).use { stmt ->
-                        stmt.setString(COL_ID, columnId.value)
-                        stmt.executeQuery().use { rs ->
-                            buildList { while (rs.next()) add(rs.toCard()) }
-                        }
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        conn
+                            .prepareStatement(
+                                "SELECT id, column_id, title, description, position, created_at" +
+                                    " FROM cards WHERE column_id = ? ORDER BY position",
+                            ).use { stmt ->
+                                stmt.setString(COL_ID, columnId.value)
+                                stmt.executeQuery().use { rs ->
+                                    buildList { while (rs.next()) add(rs.toCard()) }
+                                }
+                            }
                     }
-            }
+                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
-    override suspend fun delete(id: CardId): Boolean =
+    override suspend fun delete(id: CardId): Either<DomainError, Boolean> =
         query {
-            DatabaseFactory.dataSource.connection.use { conn ->
-                val deleted =
-                    conn.prepareStatement("DELETE FROM cards WHERE id = ?").use { stmt ->
-                        stmt.setString(COL_ID, id.value)
-                        stmt.executeUpdate()
+            Either
+                .catch {
+                    DatabaseFactory.dataSource.connection.use { conn ->
+                        val deleted =
+                            conn.prepareStatement("DELETE FROM cards WHERE id = ?").use { stmt ->
+                                stmt.setString(COL_ID, id.value)
+                                stmt.executeUpdate()
+                            }
+                        conn.commit()
+                        deleted > 0
                     }
-                conn.commit()
-                deleted > 0
-            }
+                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
         }
 
     private fun java.sql.ResultSet.toCard() =

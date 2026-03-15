@@ -1,7 +1,6 @@
 package com.kanbanvision.usecases.card
 
 import arrow.core.Either
-import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.valueobjects.CardId
@@ -38,20 +37,11 @@ class MoveCardUseCase(
 
     private suspend fun findAndMove(command: MoveCardCommand): Either<DomainError, Duration> =
         either {
-            val (maybeCard, findDuration) =
-                catch(
-                    { measureTimedValue { cardRepository.findById(CardId(command.cardId)) } },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
-            val card = maybeCard ?: raise(DomainError.CardNotFound(command.cardId))
-            val (_, saveDuration) =
-                catch(
-                    {
-                        measureTimedValue {
-                            val moved = card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
-                            cardRepository.save(moved)
-                        }
-                    },
-                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
+            val (findResult, findDuration) = measureTimedValue { cardRepository.findById(CardId(command.cardId)) }
+            val card = findResult.bind()
+            val moved = card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
+            val (saveResult, saveDuration) = measureTimedValue { cardRepository.save(moved) }
+            saveResult.bind()
             findDuration + saveDuration
         }
 }
