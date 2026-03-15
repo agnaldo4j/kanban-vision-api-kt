@@ -4,6 +4,10 @@ sealed class DomainError {
     data class ValidationError(
         val messages: List<String>,
     ) : DomainError() {
+        init {
+            require(messages.isNotEmpty()) { "ValidationError must have at least one message" }
+        }
+
         constructor(message: String) : this(listOf(message))
 
         val message: String get() = messages.joinToString("; ")
