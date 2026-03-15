@@ -19,5 +19,5 @@ data class CreateCardCommand(
                 { ensure(columnId.isNotBlank()) { DomainError.ValidationError("Column id must not be blank") } },
                 { ensure(title.isNotBlank()) { DomainError.ValidationError("Card title must not be blank") } },
             ) { _, _ -> }
-        }.mapLeft { errors -> DomainError.ValidationError(errors.joinToString("; ") { it.message }) }
+        }.mapLeft { errors -> DomainError.ValidationError(errors.map { it.message }) }
 }

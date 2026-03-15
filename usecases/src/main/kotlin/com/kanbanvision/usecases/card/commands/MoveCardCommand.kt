@@ -20,5 +20,5 @@ data class MoveCardCommand(
                 { ensure(targetColumnId.isNotBlank()) { DomainError.ValidationError("Target column id must not be blank") } },
                 { ensure(newPosition >= 0) { DomainError.ValidationError("Position must be non-negative") } },
             ) { _, _, _ -> }
-        }.mapLeft { errors -> DomainError.ValidationError(errors.joinToString("; ") { it.message }) }
+        }.mapLeft { errors -> DomainError.ValidationError(errors.map { it.message }) }
 }
