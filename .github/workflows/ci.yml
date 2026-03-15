@@ -68,11 +68,17 @@ jobs:
             **/build/reports/jacoco/
           retention-days: 14
 
+      - name: Collect Detekt SARIF reports
+        if: always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+        run: |
+          mkdir -p build/sarif
+          find . -path '*/build/reports/detekt/*.sarif' -exec cp {} build/sarif/ \;
+
       - name: Upload Detekt SARIF to GitHub Code Scanning
         if: always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: '**/build/reports/detekt/*.sarif'
+          sarif_file: build/sarif
           category: detekt
 
       - name: JaCoCo coverage report on PR
