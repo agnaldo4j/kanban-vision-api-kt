@@ -119,21 +119,23 @@ class JdbcCardRepository : CardRepository {
         transform: (Card) -> Card,
     ): Card {
         val updated = transform(card)
-        conn
-            .prepareStatement(
-                """
-                UPDATE cards
-                SET column_id = ?, title = ?, description = ?, position = ?
-                WHERE id = ?
-                """.trimIndent(),
-            ).use { stmt ->
-                stmt.setString(PARAM_COLUMN_ID, updated.columnId.value)
-                stmt.setString(PARAM_TITLE, updated.title)
-                stmt.setString(PARAM_DESCRIPTION, updated.description)
-                stmt.setInt(PARAM_POSITION, updated.position)
-                stmt.setString(PARAM_WHERE_ID, updated.id.value)
-                stmt.executeUpdate()
-            }
+        val rowsUpdated =
+            conn
+                .prepareStatement(
+                    """
+                    UPDATE cards
+                    SET column_id = ?, title = ?, description = ?, position = ?
+                    WHERE id = ?
+                    """.trimIndent(),
+                ).use { stmt ->
+                    stmt.setString(PARAM_COLUMN_ID, updated.columnId.value)
+                    stmt.setString(PARAM_TITLE, updated.title)
+                    stmt.setString(PARAM_DESCRIPTION, updated.description)
+                    stmt.setInt(PARAM_POSITION, updated.position)
+                    stmt.setString(PARAM_WHERE_ID, card.id.value)
+                    stmt.executeUpdate()
+                }
+        check(rowsUpdated > 0) { "Card ${card.id.value} was not updated" }
         conn.commit()
         return updated
     }

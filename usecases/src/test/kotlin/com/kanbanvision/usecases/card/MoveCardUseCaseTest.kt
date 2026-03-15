@@ -13,6 +13,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -25,14 +26,16 @@ class MoveCardUseCaseTest {
         runTest {
             val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
             val targetColumnId = ColumnId.generate().value
+            var transformedCard: Card? = null
             coEvery { cardRepository.updateCard(CardId(card.id.value), any()) } answers {
-                secondArg<(Card) -> Card>()(card).right()
+                secondArg<(Card) -> Card>()(card).also { transformedCard = it }.right()
             }
 
             val result = useCase.execute(MoveCardCommand(cardId = card.id.value, targetColumnId = targetColumnId, newPosition = 2))
 
             assertTrue(result.isRight())
-            coVerify { cardRepository.updateCard(CardId(card.id.value), any()) }
+            assertEquals(targetColumnId, transformedCard?.columnId?.value)
+            assertEquals(2, transformedCard?.position)
         }
 
     @Test
