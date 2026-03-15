@@ -96,4 +96,42 @@ class MoveCardUseCaseTest {
             assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.findById(any()) }
         }
+
+    @Test
+    fun `execute returns PersistenceError when find throws`() =
+        runTest {
+            coEvery { cardRepository.findById(any()) } throws RuntimeException("DB failure")
+
+            val result =
+                useCase.execute(
+                    MoveCardCommand(
+                        cardId = CardId.generate().value,
+                        targetColumnId = ColumnId.generate().value,
+                        newPosition = 0,
+                    ),
+                )
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+        }
+
+    @Test
+    fun `execute returns PersistenceError when save throws`() =
+        runTest {
+            val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
+            coEvery { cardRepository.findById(any()) } returns card
+            coEvery { cardRepository.save(any()) } throws RuntimeException("DB failure")
+
+            val result =
+                useCase.execute(
+                    MoveCardCommand(
+                        cardId = card.id.value,
+                        targetColumnId = ColumnId.generate().value,
+                        newPosition = 0,
+                    ),
+                )
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+        }
 }

@@ -1,6 +1,7 @@
 package com.kanbanvision.usecases.board
 
 import arrow.core.Either
+import arrow.core.raise.catch
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
@@ -20,9 +21,9 @@ class GetBoardUseCase(
             query.validate().bind()
             log.debug("Fetching board: id={}", query.id)
             val (maybeBoard, duration) =
-                measureTimedValue {
-                    boardRepository.findById(BoardId(query.id))
-                }
+                catch(
+                    { measureTimedValue { boardRepository.findById(BoardId(query.id)) } },
+                ) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
             val board = maybeBoard ?: raise(DomainError.BoardNotFound(query.id))
             log.info("Board fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             board

@@ -64,4 +64,15 @@ class CreateCardUseCaseTest {
             assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { cardRepository.save(any()) }
         }
+
+    @Test
+    fun `execute returns PersistenceError when repository throws`() =
+        runTest {
+            coEvery { cardRepository.findByColumnId(any()) } throws RuntimeException("DB failure")
+
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Task"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+        }
 }
