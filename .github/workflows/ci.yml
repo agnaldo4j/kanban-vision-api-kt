@@ -90,7 +90,7 @@ jobs:
             for module in domain usecases sql_persistence http_api; do
               xml="${module}/build/reports/detekt/detekt.xml"
               if [ -f "$xml" ]; then
-                count=$(grep '<error ' "$xml" | wc -l)
+                count=$({ grep '<error ' "$xml" 2>/dev/null || true; } | wc -l)
               else
                 count=0
               fi
