@@ -21,7 +21,7 @@ description: >
 ```
 ./gradlew testAll
         │
-        ├── :*:detekt            ← análise estática (antes de qualquer teste)
+        ├── :*:detekt            ← análise estática
         ├── :*:ktlintCheck       ← formatação
         ├── :*:test              ← testes (JUnit 5)
         │       └── finalizedBy jacocoTestReport
@@ -30,8 +30,11 @@ description: >
 
 O task `check` de cada módulo depende de `jacocoTestCoverageVerification`.
 O task `testAll` no root agrega o `check` de todos os módulos.
+O Gradle pode executar `detekt`, `ktlintCheck` e `test` em paralelo ou em outra
+ordem — não há `mustRunAfter` explícito entre eles. O diagrama acima reflete os
+**grupos lógicos** de verificação, não uma sequência de execução garantida.
 
-**Ordem mental quando um build falha:**
+**Ordem mental para diagnosticar uma falha:**
 1. Detekt — problema de design ou nomenclatura
 2. KtLint — problema de formatação
 3. Testes — problema de lógica
@@ -226,13 +229,17 @@ O `@Suppress` aparece em PRs — revisores devem questionar toda supressão.
 ### Princípio
 
 KtLint aplica o **estilo oficial do Kotlin** sem negociação. Não há arquivo de
-configuração de regras — a única configuração é a versão:
+configuração de regras específico do KtLint — a versão é configurada via:
 
 ```kotlin
 ktlint {
     version.set("1.5.0")
 }
 ```
+
+O `.editorconfig` na raiz do repositório também é lido pelo KtLint e pode
+influenciar a formatação (ex.: `max_line_length`, `ij_kotlin_imports_layout`).
+Propriedades definidas lá têm precedência sobre os padrões do KtLint.
 
 ### Regras críticas que causam falhas frequentes
 
@@ -455,7 +462,7 @@ if (poolSize > MAX_POOL_SIZE) error("Pool too large")
 
 ### KtLint: `NewLineAtEndOfFile`
 
-Todo arquivo `.kt` deve terminar com exatamente uma linha em branco (`\n`).
+Todo arquivo `.kt` deve terminar com uma quebra de linha (`\n`) no final do arquivo.
 Configure o editor ou use `./gradlew ktlintFormat`.
 
 ### JaCoCo: cobertura caiu após adicionar código
