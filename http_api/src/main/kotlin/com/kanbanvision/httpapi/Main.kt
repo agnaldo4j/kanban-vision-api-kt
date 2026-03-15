@@ -1,6 +1,7 @@
 package com.kanbanvision.httpapi
 
 import com.kanbanvision.httpapi.di.AppModule
+import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
@@ -35,6 +36,7 @@ fun Application.module() {
         ),
     )
 
+    configureObservability()
     configureOpenApi()
     configureSerialization()
     configureStatusPages()
