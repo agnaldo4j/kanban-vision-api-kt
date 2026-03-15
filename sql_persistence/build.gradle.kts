@@ -15,7 +15,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
     testImplementation("io.mockk:mockk:1.14.2")
-    testImplementation("io.zonky.test:embedded-postgres:2.0.7")
+    testImplementation("io.zonky.test:embedded-postgres:2.2.2")
 }
 
 // Exclude Kotlin-generated coroutine continuation classes for the `query` suspend function.
