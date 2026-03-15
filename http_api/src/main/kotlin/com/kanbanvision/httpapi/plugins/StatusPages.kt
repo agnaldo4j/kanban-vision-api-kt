@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("StatusPages")
 
-@Suppress("TooGenericExceptionCaught")
 fun Application.configureStatusPages() {
     install(StatusPages) {
         exception<Throwable> { call, cause ->

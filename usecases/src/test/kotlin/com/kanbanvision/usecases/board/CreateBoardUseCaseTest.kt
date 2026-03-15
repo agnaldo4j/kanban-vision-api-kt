@@ -52,4 +52,15 @@ class CreateBoardUseCaseTest {
             assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { boardRepository.save(any()) }
         }
+
+    @Test
+    fun `execute returns PersistenceError when repository throws`() =
+        runTest {
+            coEvery { boardRepository.save(any()) } throws RuntimeException("DB failure")
+
+            val result = useCase.execute(CreateBoardCommand(name = "Board"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+        }
 }

@@ -58,12 +58,56 @@ O módulo `domain` não conhece nenhum framework. O módulo `usecases` não conh
 Cada caso de uso recebe um objeto tipado que implementa `Command` (modifica estado) ou `Query` (lê estado), com validação explícita antes da execução:
 
 ```
-CreateBoardCommand → CreateBoardUseCase → BoardId
-GetBoardQuery      → GetBoardUseCase    → Board
+CreateBoardCommand       → CreateBoardUseCase       → BoardId
+GetBoardQuery            → GetBoardUseCase          → Board
 
-CreateCardCommand  → CreateCardUseCase  → CardId
-MoveCardCommand    → MoveCardUseCase    → Unit
-GetCardQuery       → GetCardUseCase     → Card
+CreateCardCommand        → CreateCardUseCase        → CardId
+MoveCardCommand          → MoveCardUseCase          → Unit
+GetCardQuery             → GetCardUseCase           → Card
+
+CreateColumnCommand      → CreateColumnUseCase      → ColumnId
+GetColumnQuery           → GetColumnUseCase         → Column
+ListColumnsByBoardQuery  → ListColumnsByBoardUseCase → List<Column>
+```
+
+---
+
+## Tratamento de Erros (Either)
+
+Os erros de domínio são modelados como valores com Arrow-kt `Either<DomainError, T>`, eliminando exceções como mecanismo de controle de fluxo.
+
+### Hierarquia DomainError
+
+```
+sealed class DomainError
+├── ValidationError(message)  → HTTP 400
+├── BoardNotFound(id)          → HTTP 404
+├── ColumnNotFound(id)         → HTTP 404
+├── CardNotFound(id)           → HTTP 404
+└── PersistenceError(message)  → HTTP 500
+```
+
+### Padrão nos Use Cases
+
+```kotlin
+suspend fun execute(query: GetBoardQuery): Either<DomainError, Board>
+```
+
+Chamadas de repositório são envolvidas com `arrow.core.raise.catch` para converter exceções JDBC em `PersistenceError` tipado:
+
+```kotlin
+val (result, duration) = catch(
+    { measureTimedValue { repository.findById(id) } }
+) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
+```
+
+### Padrão nas Rotas
+
+```kotlin
+useCase.execute(query).fold(
+    ifLeft = { error -> call.respondWithDomainError(error) },
+    ifRight = { result -> call.respond(result) },
+)
 ```
 
 ---
@@ -130,18 +174,28 @@ usecases/
 │   ├── CreateCardUseCase.kt
 │   ├── GetCardUseCase.kt
 │   └── MoveCardUseCase.kt
+├── column/
+│   ├── commands/CreateColumnCommand.kt
+│   ├── queries/GetColumnQuery.kt
+│   ├── queries/ListColumnsByBoardQuery.kt
+│   ├── CreateColumnUseCase.kt
+│   ├── GetColumnUseCase.kt
+│   └── ListColumnsByBoardUseCase.kt
 └── repositories/
     ├── BoardRepository.kt
-    └── CardRepository.kt
+    ├── CardRepository.kt
+    └── ColumnRepository.kt
 
 sql_persistence/
 ├── DatabaseFactory.kt
 └── repositories/
     ├── JdbcBoardRepository.kt
-    └── JdbcCardRepository.kt
+    ├── JdbcCardRepository.kt
+    └── JdbcColumnRepository.kt
 
 http_api/
 ├── Main.kt
+├── adapters/EitherRespond.kt
 ├── di/AppModule.kt
 ├── plugins/
 │   ├── Observability.kt
@@ -151,7 +205,8 @@ http_api/
 │   └── OpenApi.kt
 └── routes/
     ├── BoardRoutes.kt
-    └── CardRoutes.kt
+    ├── CardRoutes.kt
+    └── ColumnRoutes.kt
 ```
 
 ---
@@ -179,6 +234,14 @@ Content-Type: application/json
 HTTP 201 Created
 { "id": "uuid", "name": "Meu Projeto" }
 ```
+
+### Colunas (Columns)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/v1/columns` | Cria uma coluna em um quadro |
+| `GET` | `/api/v1/columns/{id}` | Busca uma coluna pelo ID |
+| `GET` | `/api/v1/boards/{boardId}/columns` | Lista todas as colunas de um quadro |
 
 ### Cartões (Cards)
 
@@ -314,7 +377,7 @@ Os testes de casos de uso utilizam **MockK** para isolar os repositórios e **ko
 
 ## Variáveis de configuração
 
-Configuradas via `application.conf` (Ktor):
+Configuradas via `application.conf` (Ktor), com fallback para variáveis de ambiente:
 
 ```hocon
 database {
@@ -325,6 +388,14 @@ database {
   poolSize = 10
 }
 ```
+
+| Variável de ambiente | Padrão |
+|---|---|
+| `DATABASE_URL` | `jdbc:postgresql://localhost:5432/kanbanvision` |
+| `DATABASE_DRIVER` | `org.postgresql.Driver` |
+| `DATABASE_USER` | `kanban` |
+| `DATABASE_PASSWORD` | `kanban` |
+| `DATABASE_POOL_SIZE` | `10` |
 
 ---
 

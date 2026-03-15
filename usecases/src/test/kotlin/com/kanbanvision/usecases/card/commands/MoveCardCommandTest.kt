@@ -31,4 +31,15 @@ class MoveCardCommandTest {
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
+
+    @Test
+    fun `validate accumulates all errors when all fields are invalid`() {
+        val result = MoveCardCommand(cardId = "", targetColumnId = "", newPosition = -1).validate()
+        assertTrue(result.isLeft())
+        val error = result.leftOrNull()
+        assertIs<DomainError.ValidationError>(error)
+        assertTrue(error.message.contains("Card id must not be blank"))
+        assertTrue(error.message.contains("Target column id must not be blank"))
+        assertTrue(error.message.contains("Position must be non-negative"))
+    }
 }

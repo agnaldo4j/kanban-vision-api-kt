@@ -13,6 +13,10 @@ sealed class DomainError {
         val id: String,
     ) : DomainError()
 
+    data class ColumnNotFound(
+        val id: String,
+    ) : DomainError()
+
     data class PersistenceError(
         val message: String,
     ) : DomainError()

@@ -9,8 +9,12 @@ import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
+import com.kanbanvision.usecases.column.CreateColumnUseCase
+import com.kanbanvision.usecases.column.GetColumnUseCase
+import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
+import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
@@ -31,15 +35,19 @@ class OpenApiSpecTest {
         module {
             single<BoardRepository> { mockk(relaxed = true) }
             single<CardRepository> { mockk(relaxed = true) }
+            single<ColumnRepository> { mockk(relaxed = true) }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
             single { CreateCardUseCase(get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
+            single { CreateColumnUseCase(get()) }
+            single { GetColumnUseCase(get()) }
+            single { ListColumnsByBoardUseCase(get()) }
         }
 
     @Test
-    fun `openapi spec is served and contains all api routes with correct methods`() =
+    fun `openapi spec contains board and card routes`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -55,22 +63,30 @@ class OpenApiSpecTest {
             val paths = Json.parseToJsonElement(response.bodyAsText()).jsonObject["paths"]?.jsonObject
             assertNotNull(paths, "OpenAPI spec deve definir paths")
 
-            assertTrue(
-                paths["/api/v1/boards"]?.jsonObject?.containsKey("post") == true,
-                "POST /api/v1/boards deve estar documentado",
-            )
-            assertTrue(
-                paths["/api/v1/boards/{id}"]?.jsonObject?.containsKey("get") == true,
-                "GET /api/v1/boards/{id} deve estar documentado",
-            )
-            assertTrue(
-                paths["/api/v1/cards"]?.jsonObject?.containsKey("post") == true,
-                "POST /api/v1/cards deve estar documentado",
-            )
-            assertTrue(
-                paths["/api/v1/cards/{id}/move"]?.jsonObject?.containsKey("patch") == true,
-                "PATCH /api/v1/cards/{id}/move deve estar documentado",
-            )
+            assertTrue(paths["/api/v1/boards"]?.jsonObject?.containsKey("post") == true)
+            assertTrue(paths["/api/v1/boards/{id}"]?.jsonObject?.containsKey("get") == true)
+            assertTrue(paths["/api/v1/cards"]?.jsonObject?.containsKey("post") == true)
+            assertTrue(paths["/api/v1/cards/{id}/move"]?.jsonObject?.containsKey("patch") == true)
+        }
+
+    @Test
+    fun `openapi spec contains column routes`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val paths =
+                Json.parseToJsonElement(client.get("/api.json").bodyAsText()).jsonObject["paths"]?.jsonObject
+            assertNotNull(paths)
+
+            assertTrue(paths["/api/v1/columns"]?.jsonObject?.containsKey("post") == true)
+            assertTrue(paths["/api/v1/columns/{id}"]?.jsonObject?.containsKey("get") == true)
+            assertTrue(paths["/api/v1/boards/{boardId}/columns"]?.jsonObject?.containsKey("get") == true)
         }
 
     @Test

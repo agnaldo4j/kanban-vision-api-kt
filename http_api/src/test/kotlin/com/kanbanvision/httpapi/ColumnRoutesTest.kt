@@ -1,7 +1,8 @@
 package com.kanbanvision.httpapi
 
-import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
+import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -36,11 +37,11 @@ import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
-class BoardRoutesTest {
+class ColumnRoutesTest {
     private val boardId = BoardId.generate()
-    private val board = Board(id = boardId, name = "My Board")
+    private val columnId = ColumnId.generate()
+    private val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
 
     private val boardRepository = mockk<BoardRepository>()
     private val cardRepository = mockk<CardRepository>()
@@ -62,7 +63,7 @@ class BoardRoutesTest {
         }
 
     @Test
-    fun `POST boards creates board and returns 201`() =
+    fun `POST columns creates column and returns 201`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -73,23 +74,24 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
-            coEvery { boardRepository.findById(any()) } returns board
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList()
+            coEvery { columnRepository.save(any()) } answers { firstArg() }
+            coEvery { columnRepository.findById(any()) } returns column
 
             val response =
-                client.post("/api/v1/boards") {
+                client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"name":"My Board"}""")
+                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals("My Board", body["name"]?.jsonPrimitive?.content)
+            assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
             assertNotNull(body["id"])
         }
 
     @Test
-    fun `POST boards with blank name returns 400`() =
+    fun `POST columns with blank name returns 400`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -101,16 +103,16 @@ class BoardRoutesTest {
             }
 
             val response =
-                client.post("/api/v1/boards") {
+                client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"name":""}""")
+                    setBody("""{"boardId":"${boardId.value}","name":""}""")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
         }
 
     @Test
-    fun `GET boards by id returns board`() =
+    fun `GET columns by id returns column`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -121,18 +123,18 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.findById(boardId) } returns board
+            coEvery { columnRepository.findById(columnId) } returns column
 
-            val response = client.get("/api/v1/boards/${boardId.value}")
+            val response = client.get("/api/v1/columns/${columnId.value}")
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(boardId.value, body["id"]?.jsonPrimitive?.content)
-            assertEquals("My Board", body["name"]?.jsonPrimitive?.content)
+            assertEquals(columnId.value, body["id"]?.jsonPrimitive?.content)
+            assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
         }
 
     @Test
-    fun `GET boards by id returns 404 when not found`() =
+    fun `GET columns by id returns 404 when not found`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -143,15 +145,15 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.findById(any()) } returns null
+            coEvery { columnRepository.findById(any()) } returns null
 
-            val response = client.get("/api/v1/boards/nonexistent-id")
+            val response = client.get("/api/v1/columns/nonexistent-id")
 
             assertEquals(HttpStatusCode.NotFound, response.status)
         }
 
     @Test
-    fun `response contains X-Request-ID header`() =
+    fun `GET boards boardId columns returns list`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -162,62 +164,10 @@ class BoardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
-            coEvery { boardRepository.findById(any()) } returns board
+            coEvery { columnRepository.findByBoardId(boardId) } returns listOf(column)
 
-            val response =
-                client.post("/api/v1/boards") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"name":"My Board"}""")
-                }
+            val response = client.get("/api/v1/boards/${boardId.value}/columns")
 
-            val requestId = response.headers["X-Request-ID"]
-            assertNotNull(requestId)
-            assertTrue(requestId.isNotBlank())
-        }
-
-    @Test
-    fun `X-Request-ID from request is propagated to response`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { boardRepository.save(any()) } answers { firstArg() }
-            coEvery { boardRepository.findById(any()) } returns board
-
-            val correlationId = "test-correlation-id-123"
-            val response =
-                client.post("/api/v1/boards") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"name":"My Board"}""")
-                    headers.append("X-Request-ID", correlationId)
-                }
-
-            assertEquals(correlationId, response.headers["X-Request-ID"])
-        }
-
-    @Test
-    fun `unexpected repository exception returns 500`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { boardRepository.findById(any()) } throws RuntimeException("DB failure")
-
-            val response = client.get("/api/v1/boards/some-id")
-
-            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            assertEquals(HttpStatusCode.OK, response.status)
         }
 }
