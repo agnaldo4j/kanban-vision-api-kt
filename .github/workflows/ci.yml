@@ -17,6 +17,7 @@ jobs:
 
     permissions:
       contents: read
+      checks: write
       pull-requests: write
 
     steps:
@@ -66,6 +67,62 @@ jobs:
           path: |
             **/build/reports/jacoco/
           retention-days: 14
+
+      - name: Test results report on PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: '**/build/test-results/test/*.xml'
+          comment_title: 'Test Results'
+          check_name: 'Test Results'
+
+      - name: Generate Detekt report
+        id: detekt-report
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          {
+            echo 'body<<DETEKT_REPORT'
+            echo '## Detekt Analysis'
+            echo ''
+            echo '| Module | Issues |'
+            echo '|--------|--------|'
+            total=0
+            for module in domain usecases sql_persistence http_api; do
+              xml="${module}/build/reports/detekt/detekt.xml"
+              if [ -f "$xml" ]; then
+                count=$(grep '<error ' "$xml" | wc -l)
+              else
+                count=0
+              fi
+              total=$((total + count))
+              printf "| \`%s\` | %d |\n" "$module" "$count"
+            done
+            echo ''
+            if [ "$total" -eq 0 ]; then
+              echo '✅ **Total: 0 issues**'
+            else
+              printf '❌ **Total: %d issue(s)**\n' "$total"
+            fi
+            echo 'DETEKT_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing Detekt comment
+        id: find-detekt
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Detekt Analysis'
+
+      - name: Post Detekt report on PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-detekt.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.detekt-report.outputs.body }}
+          edit-mode: replace
 
       - name: JaCoCo coverage report on PR
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
