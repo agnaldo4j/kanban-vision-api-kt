@@ -8,8 +8,8 @@ import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.CreateCardCommand
 import com.kanbanvision.usecases.repositories.CardRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.measureTimedValue
 
 class CreateCardUseCase(
     private val cardRepository: CardRepository,
@@ -20,8 +20,8 @@ class CreateCardUseCase(
         either {
             command.validate().bind()
             log.debug("Creating card: columnId={} title={}", command.columnId, command.title)
-            val (result, duration) =
-                measureTimedValue {
+            val (cardId, duration) =
+                timed {
                     either {
                         val columnId = ColumnId(command.columnId)
                         val existing = cardRepository.findByColumnId(columnId).bind()
@@ -36,7 +36,6 @@ class CreateCardUseCase(
                         card.id
                     }
                 }
-            val cardId = result.bind()
             log.info("Card created: id={} duration={}ms", cardId.value, duration.inWholeMilliseconds)
             cardId
         }

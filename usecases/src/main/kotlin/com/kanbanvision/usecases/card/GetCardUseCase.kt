@@ -7,8 +7,8 @@ import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.usecases.card.queries.GetCardQuery
 import com.kanbanvision.usecases.repositories.CardRepository
+import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
-import kotlin.time.measureTimedValue
 
 class GetCardUseCase(
     private val cardRepository: CardRepository,
@@ -19,8 +19,7 @@ class GetCardUseCase(
         either {
             query.validate().bind()
             log.debug("Fetching card: id={}", query.id)
-            val (result, duration) = measureTimedValue { cardRepository.findById(CardId(query.id)) }
-            val card = result.bind()
+            val (card, duration) = timed { cardRepository.findById(CardId(query.id)) }
             log.info("Card fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             card
         }
