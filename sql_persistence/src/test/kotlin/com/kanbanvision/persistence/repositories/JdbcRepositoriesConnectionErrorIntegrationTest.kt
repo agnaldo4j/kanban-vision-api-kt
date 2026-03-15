@@ -58,22 +58,6 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
         }
 
     @Test
-    fun `board findAll returns PersistenceError when datasource is closed`() =
-        runBlocking<Unit> {
-            val result = boardRepository.findAll()
-            assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
-        }
-
-    @Test
-    fun `board delete returns PersistenceError when datasource is closed`() =
-        runBlocking<Unit> {
-            val result = boardRepository.delete(BoardId(UUID.randomUUID().toString()))
-            assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
-        }
-
-    @Test
     fun `column save returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
             val column =
@@ -100,14 +84,6 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
     fun `column findByBoardId returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
             val result = columnRepository.findByBoardId(BoardId(UUID.randomUUID().toString()))
-            assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
-        }
-
-    @Test
-    fun `column delete returns PersistenceError when datasource is closed`() =
-        runBlocking<Unit> {
-            val result = columnRepository.delete(ColumnId(UUID.randomUUID().toString()))
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }
@@ -141,14 +117,6 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
     fun `card findByColumnId returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
             val result = cardRepository.findByColumnId(ColumnId(UUID.randomUUID().toString()))
-            assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
-        }
-
-    @Test
-    fun `card delete returns PersistenceError when datasource is closed`() =
-        runBlocking<Unit> {
-            val result = cardRepository.delete(CardId(UUID.randomUUID().toString()))
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }

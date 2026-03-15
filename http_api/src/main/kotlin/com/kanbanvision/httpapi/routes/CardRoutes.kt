@@ -10,6 +10,7 @@ import com.kanbanvision.usecases.card.commands.CreateCardCommand
 import com.kanbanvision.usecases.card.commands.MoveCardCommand
 import com.kanbanvision.usecases.card.queries.GetCardQuery
 import io.github.smiley4.ktoropenapi.config.RouteConfig
+import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.patch
 import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
@@ -29,9 +30,32 @@ fun Route.cardRoutes() {
     route("/cards") {
         post(createCardSpec()) { call.handleCreateCard(createCard, getCard) }
 
+        get("/{id}", getCardByIdSpec()) { call.handleGetCard(getCard) }
+
         patch("/{id}/move", moveCardSpec()) { call.handleMoveCard(moveCard, getCard) }
     }
 }
+
+private fun getCardByIdSpec(): RouteConfig.() -> Unit =
+    {
+        tags("cards")
+        description = "Busca um cartão pelo seu identificador único."
+        request {
+            pathParameter<String>("id") {
+                description = "UUID do cartão."
+                required = true
+            }
+        }
+        response {
+            code(HttpStatusCode.OK) {
+                description = "Cartão encontrado."
+                body<CardResponse>()
+            }
+            code(HttpStatusCode.NotFound) {
+                description = "Cartão não encontrado."
+            }
+        }
+    }
 
 private fun createCardSpec(): RouteConfig.() -> Unit =
     {
@@ -81,6 +105,18 @@ private fun moveCardSpec(): RouteConfig.() -> Unit =
             }
         }
     }
+
+private suspend fun ApplicationCall.handleGetCard(getCard: GetCardUseCase) {
+    val id =
+        parameters["id"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing card id"))
+    getCard.execute(GetCardQuery(id = id)).fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { card ->
+            respond(CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position))
+        },
+    )
+}
 
 private suspend fun ApplicationCall.handleCreateCard(
     createCard: CreateCardUseCase,
