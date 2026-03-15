@@ -66,8 +66,8 @@ dependencies {
     implementation("io.insert-koin:koin-ktor:4.1.0")
     implementation("io.insert-koin:koin-logger-slf4j:4.1.0")
 
-    implementation("io.github.smiley4:ktor-openapi:5.0.2")
-    implementation("io.github.smiley4:ktor-swagger-ui:5.0.2")
+    implementation("io.github.smiley4:ktor-openapi:5.6.0")
+    implementation("io.github.smiley4:ktor-swagger-ui:5.6.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
 
