@@ -267,13 +267,13 @@ sequenceDiagram
   DB-->>SR: rows
   SR-->>UC: ScenarioWithState
   UC->>SE: runDay(currentState, decisions)
-  SE-->>UC: DailySnapshot + nextState
+  SE-->>UC: SimulationResult(snapshot, newState)
+  UC->>SR: saveState(scenarioId, newState)
+  SR->>DB: INSERT/UPDATE scenario_states
+  DB-->>SR: ok
   UC->>SS: save(snapshot)
   SS->>DB: INSERT daily_snapshots
   DB-->>SS: ok
-  UC->>SR: updateState(nextState)
-  SR->>DB: UPDATE scenario_states
-  DB-->>SR: ok
   UC-->>R: DailySnapshot
   R-->>C: 200 OK {day, metrics, movements}
 
