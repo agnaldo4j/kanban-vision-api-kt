@@ -4,6 +4,7 @@ import com.kanbanvision.domain.model.scenario.SimulationDay
 import com.kanbanvision.domain.model.valueobjects.WorkItemId
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class MovementTest {
     private val itemId = WorkItemId.generate()
@@ -22,11 +23,11 @@ class MovementTest {
         val moved = Movement(MovementType.MOVED, itemId, SimulationDay(1), "moved")
         val completed = Movement(MovementType.COMPLETED, itemId, SimulationDay(1), "completed")
         assertEquals(MovementType.COMPLETED, completed.type)
-        assert(moved.type != completed.type)
+        assertNotEquals(moved.type, completed.type)
     }
 
     @Test
     fun `BLOCKED and UNBLOCKED are distinct types`() {
-        assert(MovementType.BLOCKED != MovementType.UNBLOCKED)
+        assertNotEquals(MovementType.BLOCKED, MovementType.UNBLOCKED)
     }
 }
