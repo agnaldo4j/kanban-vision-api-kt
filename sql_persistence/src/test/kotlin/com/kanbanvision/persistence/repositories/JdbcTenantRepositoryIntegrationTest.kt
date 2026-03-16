@@ -64,4 +64,25 @@ class JdbcTenantRepositoryIntegrationTest {
             assertTrue(result.isLeft())
             assertIs<DomainError.TenantNotFound>(result.leftOrNull())
         }
+
+    @Test
+    fun `findById with non-UUID string returns TenantNotFound`() =
+        runBlocking<Unit> {
+            val result = repository.findById(TenantId("not-a-valid-uuid"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.TenantNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `findById returns tenant whose name contains special characters`() =
+        runBlocking {
+            val id = UUID.randomUUID().toString()
+            insertTenant(id, "Empresa 'Ação' & Co.")
+
+            val result = repository.findById(TenantId(id))
+
+            assertTrue(result.isRight())
+            assertEquals("Empresa 'Ação' & Co.", result.getOrNull()?.name)
+        }
 }

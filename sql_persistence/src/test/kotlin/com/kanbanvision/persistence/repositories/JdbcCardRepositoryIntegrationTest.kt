@@ -1,18 +1,11 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
-import com.kanbanvision.persistence.IntegrationTestSetup
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -20,53 +13,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcCardRepositoryIntegrationTest {
-    private val boardRepository = JdbcBoardRepository()
-    private val columnRepository = JdbcColumnRepository()
-    private val repository = JdbcCardRepository()
-
-    private var existingColumnId: ColumnId? = null
-
-    @BeforeAll
-    fun initDatabase() {
-        IntegrationTestSetup.ensureInitialized()
-    }
-
-    @BeforeEach
-    fun cleanDatabase() =
-        runBlocking {
-            IntegrationTestSetup.cleanTables()
-            val board =
-                Board(
-                    id = BoardId(UUID.randomUUID().toString()),
-                    name = "Test Board",
-                    createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
-                )
-            boardRepository.save(board)
-            val column =
-                Column(
-                    id = ColumnId(UUID.randomUUID().toString()),
-                    boardId = board.id,
-                    name = "Test Column",
-                    position = 0,
-                )
-            columnRepository.save(column)
-            existingColumnId = column.id
-        }
-
-    private fun newCard(
-        title: String = "Test Card",
-        position: Int = 0,
-    ) = Card(
-        id = CardId(UUID.randomUUID().toString()),
-        columnId = existingColumnId!!,
-        title = title,
-        description = "Description",
-        position = position,
-        createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
-    )
-
+class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
     @Test
     fun `save persists card and findById returns it`() =
         runBlocking {

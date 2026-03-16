@@ -92,4 +92,25 @@ class JdbcBoardRepositoryIntegrationTest {
             assertTrue(found.isLeft())
             assertIs<DomainError.BoardNotFound>(found.leftOrNull())
         }
+
+    @Test
+    fun `save with name containing special characters persists correctly`() =
+        runBlocking {
+            val board = newBoard(name = "O'Reilly / Müller & \"Board\"")
+
+            repository.save(board)
+
+            val result = repository.findById(board.id)
+            assertTrue(result.isRight())
+            assertEquals("O'Reilly / Müller & \"Board\"", result.getOrNull()?.name)
+        }
+
+    @Test
+    fun `findById with non-UUID string returns BoardNotFound`() =
+        runBlocking<Unit> {
+            val result = repository.findById(BoardId("not-a-valid-uuid"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.BoardNotFound>(result.leftOrNull())
+        }
 }

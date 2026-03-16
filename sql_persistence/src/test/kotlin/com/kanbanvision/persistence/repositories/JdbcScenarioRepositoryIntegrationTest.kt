@@ -141,4 +141,13 @@ class JdbcScenarioRepositoryIntegrationTest {
             assertEquals(1, found.items.size)
             assertEquals("Task A", found.items.first().title)
         }
+
+    @Test
+    fun `findById with non-UUID string returns ScenarioNotFound`() =
+        runBlocking<Unit> {
+            val result = repository.findById(ScenarioId("not-a-valid-uuid"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ScenarioNotFound>(result.leftOrNull())
+        }
 }
