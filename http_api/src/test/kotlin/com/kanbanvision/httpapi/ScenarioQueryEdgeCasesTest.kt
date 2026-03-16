@@ -4,14 +4,12 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.policy.PolicySet
+import com.kanbanvision.domain.model.movement.Movement
+import com.kanbanvision.domain.model.movement.MovementType
 import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
 import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationState
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.valueobjects.WorkItemId
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -37,12 +35,9 @@ import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -54,17 +49,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class ScenarioRunDayRoutesTest {
+class ScenarioQueryEdgeCasesTest {
     private val scenarioId = ScenarioId("scenario-test-id")
-    private val tenantId = TenantId("tenant-test-id")
-    private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 42L)
-    private val scenario = Scenario(id = scenarioId, tenantId = tenantId, config = config)
-    private val state =
-        SimulationState(
-            currentDay = SimulationDay(1),
-            policySet = PolicySet(wipLimit = 3),
-            items = emptyList(),
-        )
     private val snapshot =
         DailySnapshot(
             scenarioId = scenarioId,
@@ -101,7 +87,7 @@ class ScenarioRunDayRoutesTest {
         }
 
     @Test
-    fun `POST scenarios run day returns 200 with snapshot`() =
+    fun `GET scenarios by id returns 500 on persistence error`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -112,54 +98,19 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
-            coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
-            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns null.right()
-            coEvery { scenarioRepository.saveState(scenarioId, any()) } answers { secondArg<SimulationState>().right() }
-            coEvery { snapshotRepository.save(any()) } answers { firstArg<DailySnapshot>().right() }
+            coEvery { scenarioRepository.findById(scenarioId) } returns
+                DomainError.PersistenceError("DB down").left()
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}")
 
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["day"])
-            assertNotNull(body["metrics"])
-        }
-
-    @Test
-    fun `POST scenarios run day returns 409 when day already executed`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
-            coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
-            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
-
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
-
-            assertEquals(HttpStatusCode.Conflict, response.status)
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertNotNull(body["error"])
             assertNotNull(body["requestId"])
         }
 
     @Test
-    fun `POST scenarios run day with unknown decision type returns 400`() =
+    fun `GET scenarios snapshot with non-integer day returns 400`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -170,11 +121,7 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[{"type":"INVALID_TYPE","payload":{}}]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/snapshot")
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -183,7 +130,7 @@ class ScenarioRunDayRoutesTest {
         }
 
     @Test
-    fun `POST scenarios run day returns 404 when scenario not found`() =
+    fun `GET scenarios snapshot returns 200 with movements`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -194,23 +141,29 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            coEvery { scenarioRepository.findById(scenarioId) } returns
-                DomainError.ScenarioNotFound(scenarioId.value).left()
+            val snapshotWithMovements =
+                snapshot.copy(
+                    movements =
+                        listOf(
+                            Movement(
+                                type = MovementType.MOVED,
+                                workItemId = WorkItemId("item-1"),
+                                day = SimulationDay(1),
+                                reason = "WIP available",
+                            ),
+                        ),
+                )
+            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshotWithMovements.right()
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot")
 
-            assertEquals(HttpStatusCode.NotFound, response.status)
+            assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
-            assertNotNull(body["requestId"])
+            assertNotNull(body["movements"])
         }
 
     @Test
-    fun `POST scenarios run day returns 400 when use case returns InvalidDecision`() =
+    fun `GET scenarios snapshot with persistence error returns 500`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -221,47 +174,10 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
-            coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
-            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns null.right()
-            coEvery { scenarioRepository.saveState(scenarioId, any()) } answers {
-                secondArg<SimulationState>().right()
-            }
-            coEvery { snapshotRepository.save(any()) } returns
-                DomainError.InvalidDecision("Cannot apply decision in current state").left()
-
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `POST scenarios run day returns 500 on persistence error`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { scenarioRepository.findById(scenarioId) } returns
+            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns
                 DomainError.PersistenceError("DB failure").left()
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot")
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

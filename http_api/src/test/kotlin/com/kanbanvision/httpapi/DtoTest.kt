@@ -18,6 +18,7 @@ import com.kanbanvision.httpapi.routes.SimulationStateResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class DtoTest {
     @Test
@@ -51,6 +52,7 @@ class DtoTest {
         val resp = BoardResponse(id = "board-1", name = "Sprint")
         assertEquals(resp, resp.copy())
         assertEquals("board-1", resp.id)
+        assertEquals("Sprint", resp.name)
         assertNotEquals(resp, BoardResponse("board-2", "Sprint"))
     }
 
@@ -59,6 +61,10 @@ class DtoTest {
         val resp = CardResponse(id = "c1", columnId = "col1", title = "Task", description = "Desc", position = 0)
         assertEquals(resp, resp.copy())
         assertEquals("c1", resp.id)
+        assertEquals("col1", resp.columnId)
+        assertEquals("Task", resp.title)
+        assertEquals("Desc", resp.description)
+        assertEquals(0, resp.position)
         assertNotEquals(resp, resp.copy(id = "c2"))
     }
 
@@ -67,6 +73,9 @@ class DtoTest {
         val req = CreateScenarioRequest(tenantId = "t1", wipLimit = 3, teamSize = 2, seedValue = 42L)
         assertEquals(req, req.copy())
         assertEquals("t1", req.tenantId)
+        assertEquals(3, req.wipLimit)
+        assertEquals(2, req.teamSize)
+        assertEquals(42L, req.seedValue)
         assertNotEquals(req, req.copy(tenantId = "t2"))
     }
 
@@ -75,6 +84,7 @@ class DtoTest {
         val req = DecisionRequest(type = "MOVE_ITEM", payload = mapOf("workItemId" to "w1"))
         assertEquals(req, req.copy())
         assertEquals("MOVE_ITEM", req.type)
+        assertEquals(mapOf("workItemId" to "w1"), req.payload)
         assertNotEquals(req, req.copy(type = "BLOCK_ITEM"))
     }
 
@@ -99,6 +109,9 @@ class DtoTest {
         val resp = SimulationStateResponse(currentDay = 1, wipLimit = 3, teamSize = 2, itemCount = 5)
         assertEquals(resp, resp.copy())
         assertEquals(1, resp.currentDay)
+        assertEquals(3, resp.wipLimit)
+        assertEquals(2, resp.teamSize)
+        assertEquals(5, resp.itemCount)
         assertNotEquals(resp, resp.copy(currentDay = 2))
     }
 
@@ -116,6 +129,11 @@ class DtoTest {
             )
         assertEquals(resp, resp.copy())
         assertEquals("s1", resp.scenarioId)
+        assertEquals("t1", resp.tenantId)
+        assertEquals(3, resp.wipLimit)
+        assertEquals(2, resp.teamSize)
+        assertEquals(42L, resp.seedValue)
+        assertEquals(stateResp, resp.state)
         assertNotEquals(resp, resp.copy(scenarioId = "s2"))
     }
 
@@ -124,6 +142,9 @@ class DtoTest {
         val resp = FlowMetricsResponse(throughput = 2, wipCount = 3, blockedCount = 1, avgAgingDays = 1.5)
         assertEquals(resp, resp.copy())
         assertEquals(2, resp.throughput)
+        assertEquals(3, resp.wipCount)
+        assertEquals(1, resp.blockedCount)
+        assertEquals(1.5, resp.avgAgingDays)
         assertNotEquals(resp, resp.copy(throughput = 5))
     }
 
@@ -132,6 +153,9 @@ class DtoTest {
         val resp = MovementResponse(type = "MOVED", workItemId = "w1", day = 1, reason = "WIP available")
         assertEquals(resp, resp.copy())
         assertEquals("MOVED", resp.type)
+        assertEquals("w1", resp.workItemId)
+        assertEquals(1, resp.day)
+        assertEquals("WIP available", resp.reason)
         assertNotEquals(resp, resp.copy(type = "BLOCKED"))
     }
 
@@ -141,6 +165,9 @@ class DtoTest {
         val resp = DailySnapshotResponse(scenarioId = "s1", day = 1, metrics = metrics, movements = emptyList())
         assertEquals(resp, resp.copy())
         assertEquals("s1", resp.scenarioId)
+        assertEquals(1, resp.day)
+        assertEquals(metrics, resp.metrics)
+        assertTrue(resp.movements.isEmpty())
         assertNotEquals(resp, resp.copy(scenarioId = "s2"))
     }
 
@@ -149,6 +176,10 @@ class DtoTest {
         val resp = DailyMetricsResponse(day = 1, throughput = 2, wipCount = 3, blockedCount = 0, avgAgingDays = 1.5)
         assertEquals(resp, resp.copy())
         assertEquals(1, resp.day)
+        assertEquals(2, resp.throughput)
+        assertEquals(3, resp.wipCount)
+        assertEquals(0, resp.blockedCount)
+        assertEquals(1.5, resp.avgAgingDays)
         assertNotEquals(resp, resp.copy(day = 2))
     }
 }
