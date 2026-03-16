@@ -15,6 +15,13 @@ import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.ScenarioRepository
+import com.kanbanvision.usecases.repositories.SnapshotRepository
+import com.kanbanvision.usecases.repositories.TenantRepository
+import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
+import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.scenario.GetScenarioUseCase
+import com.kanbanvision.usecases.scenario.RunDayUseCase
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
@@ -36,6 +43,9 @@ class OpenApiSpecTest {
             single<BoardRepository> { mockk(relaxed = true) }
             single<CardRepository> { mockk(relaxed = true) }
             single<ColumnRepository> { mockk(relaxed = true) }
+            single<TenantRepository> { mockk(relaxed = true) }
+            single<ScenarioRepository> { mockk(relaxed = true) }
+            single<SnapshotRepository> { mockk(relaxed = true) }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
             single { CreateCardUseCase(get()) }
@@ -44,6 +54,10 @@ class OpenApiSpecTest {
             single { CreateColumnUseCase(get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
+            single { CreateScenarioUseCase(get(), get()) }
+            single { GetScenarioUseCase(get()) }
+            single { RunDayUseCase(get(), get()) }
+            single { GetDailySnapshotUseCase(get()) }
         }
 
     @Test
@@ -87,6 +101,29 @@ class OpenApiSpecTest {
             assertTrue(paths["/api/v1/columns"]?.jsonObject?.containsKey("post") == true)
             assertTrue(paths["/api/v1/columns/{id}"]?.jsonObject?.containsKey("get") == true)
             assertTrue(paths["/api/v1/boards/{boardId}/columns"]?.jsonObject?.containsKey("get") == true)
+        }
+
+    @Test
+    fun `openapi spec contains scenario routes`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val paths =
+                Json.parseToJsonElement(client.get("/api.json").bodyAsText()).jsonObject["paths"]?.jsonObject
+            assertNotNull(paths)
+
+            assertTrue(paths["/api/v1/scenarios"]?.jsonObject?.containsKey("post") == true)
+            assertTrue(paths["/api/v1/scenarios/{scenarioId}"]?.jsonObject?.containsKey("get") == true)
+            assertTrue(paths["/api/v1/scenarios/{scenarioId}/run"]?.jsonObject?.containsKey("post") == true)
+            assertTrue(
+                paths["/api/v1/scenarios/{scenarioId}/days/{day}/snapshot"]?.jsonObject?.containsKey("get") == true,
+            )
         }
 
     @Test

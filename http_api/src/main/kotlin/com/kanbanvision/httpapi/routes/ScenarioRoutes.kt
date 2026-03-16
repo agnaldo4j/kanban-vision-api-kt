@@ -1,0 +1,311 @@
+package com.kanbanvision.httpapi.routes
+
+import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.decision.Decision
+import com.kanbanvision.domain.model.decision.DecisionId
+import com.kanbanvision.domain.model.decision.DecisionType
+import com.kanbanvision.domain.model.scenario.DailySnapshot
+import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
+import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.scenario.GetScenarioUseCase
+import com.kanbanvision.usecases.scenario.RunDayUseCase
+import com.kanbanvision.usecases.scenario.commands.CreateScenarioCommand
+import com.kanbanvision.usecases.scenario.commands.RunDayCommand
+import com.kanbanvision.usecases.scenario.queries.GetDailySnapshotQuery
+import com.kanbanvision.usecases.scenario.queries.GetScenarioQuery
+import io.github.smiley4.ktoropenapi.config.RouteConfig
+import io.github.smiley4.ktoropenapi.get
+import io.github.smiley4.ktoropenapi.post
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.route
+import kotlinx.serialization.Serializable
+import org.koin.ktor.ext.inject
+import org.slf4j.MDC
+
+fun Route.scenarioRoutes() {
+    val createScenario: CreateScenarioUseCase by inject()
+    val getScenario: GetScenarioUseCase by inject()
+    val runDay: RunDayUseCase by inject()
+    val getDailySnapshot: GetDailySnapshotUseCase by inject()
+
+    route("/scenarios") {
+        post(createScenarioSpec()) { call.handleCreateScenario(createScenario) }
+
+        route("/{scenarioId}") {
+            get(getScenarioSpec()) { call.handleGetScenario(getScenario) }
+
+            post("/run", runDaySpec()) { call.handleRunDay(runDay) }
+
+            get("/days/{day}/snapshot", getDailySnapshotSpec()) { call.handleGetDailySnapshot(getDailySnapshot) }
+        }
+    }
+}
+
+private fun createScenarioSpec(): RouteConfig.() -> Unit =
+    {
+        tags("scenarios")
+        description = "Cria um novo cenário de simulação Kanban para um tenant."
+        request {
+            body<CreateScenarioRequest> {
+                description = "Configuração do cenário: tenant, WIP limit, tamanho do time e semente aleatória."
+                required = true
+            }
+        }
+        response {
+            code(HttpStatusCode.Created) {
+                description = "Cenário criado com sucesso."
+                body<ScenarioCreatedResponse>()
+            }
+            code(HttpStatusCode.BadRequest) { description = "Dados inválidos." }
+            code(HttpStatusCode.NotFound) { description = "Tenant não encontrado." }
+        }
+    }
+
+private fun getScenarioSpec(): RouteConfig.() -> Unit =
+    {
+        tags("scenarios")
+        description = "Retorna o cenário e o estado atual da simulação pelo seu identificador."
+        request {
+            pathParameter<String>("scenarioId") {
+                description = "UUID do cenário."
+                required = true
+            }
+        }
+        response {
+            code(HttpStatusCode.OK) {
+                description = "Cenário encontrado."
+                body<ScenarioResponse>()
+            }
+            code(HttpStatusCode.NotFound) { description = "Cenário não encontrado." }
+        }
+    }
+
+private fun runDaySpec(): RouteConfig.() -> Unit =
+    {
+        tags("scenarios")
+        description = "Executa um dia de simulação, aplicando as decisões fornecidas pelo usuário."
+        request {
+            pathParameter<String>("scenarioId") {
+                description = "UUID do cenário."
+                required = true
+            }
+            body<RunDayRequest> {
+                description = "Lista de decisões a aplicar no dia corrente."
+                required = true
+            }
+        }
+        response {
+            code(HttpStatusCode.OK) {
+                description = "Dia executado com sucesso. Retorna o snapshot do dia."
+                body<DailySnapshotResponse>()
+            }
+            code(HttpStatusCode.Conflict) { description = "O dia já foi executado anteriormente." }
+            code(HttpStatusCode.NotFound) { description = "Cenário não encontrado." }
+            code(HttpStatusCode.BadRequest) { description = "Decisão inválida." }
+        }
+    }
+
+private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
+    {
+        tags("scenarios")
+        description = "Retorna o snapshot de métricas e movimentações de um dia específico da simulação."
+        request {
+            pathParameter<String>("scenarioId") {
+                description = "UUID do cenário."
+                required = true
+            }
+            pathParameter<Int>("day") {
+                description = "Número do dia da simulação (começa em 1)."
+                required = true
+            }
+        }
+        response {
+            code(HttpStatusCode.OK) {
+                description = "Snapshot encontrado."
+                body<DailySnapshotResponse>()
+            }
+            code(HttpStatusCode.NotFound) { description = "Snapshot não encontrado para o dia informado." }
+            code(HttpStatusCode.BadRequest) { description = "Parâmetros inválidos." }
+        }
+    }
+
+private suspend fun ApplicationCall.handleCreateScenario(createScenario: CreateScenarioUseCase) {
+    val request = receive<CreateScenarioRequest>()
+    createScenario
+        .execute(
+            CreateScenarioCommand(
+                tenantId = request.tenantId,
+                wipLimit = request.wipLimit,
+                teamSize = request.teamSize,
+                seedValue = request.seedValue,
+            ),
+        ).fold(
+            ifLeft = { error -> respondWithDomainError(error) },
+            ifRight = { id ->
+                MDC.put("scenarioId", id.value)
+                respond(HttpStatusCode.Created, ScenarioCreatedResponse(scenarioId = id.value))
+            },
+        )
+}
+
+private suspend fun ApplicationCall.handleGetScenario(getScenario: GetScenarioUseCase) {
+    val scenarioId =
+        parameters["scenarioId"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenarioId"))
+    MDC.put("scenarioId", scenarioId)
+    getScenario.execute(GetScenarioQuery(scenarioId = scenarioId)).fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { result ->
+            respond(
+                ScenarioResponse(
+                    scenarioId = result.scenario.id.value,
+                    tenantId = result.scenario.tenantId.value,
+                    wipLimit = result.scenario.config.wipLimit,
+                    teamSize = result.scenario.config.teamSize,
+                    seedValue = result.scenario.config.seedValue,
+                    state =
+                        SimulationStateResponse(
+                            currentDay = result.state.currentDay.value,
+                            wipLimit = result.state.policySet.wipLimit,
+                            teamSize = result.scenario.config.teamSize,
+                            itemCount = result.state.items.size,
+                        ),
+                ),
+            )
+        },
+    )
+}
+
+private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
+    val scenarioId =
+        parameters["scenarioId"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenarioId"))
+    MDC.put("scenarioId", scenarioId)
+    val request = receive<RunDayRequest>()
+    val decisions =
+        request.decisions.map { d ->
+            val type =
+                runCatching { DecisionType.valueOf(d.type.uppercase()) }.getOrElse {
+                    return respondWithDomainError(DomainError.ValidationError("Unknown decision type: ${d.type}"))
+                }
+            Decision(id = DecisionId.generate(), type = type, payload = d.payload)
+        }
+    runDay.execute(RunDayCommand(scenarioId = scenarioId, decisions = decisions)).fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { snapshot ->
+            MDC.put("day", snapshot.day.value.toString())
+            respond(snapshot.toResponse())
+        },
+    )
+}
+
+private suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: GetDailySnapshotUseCase) {
+    val scenarioId =
+        parameters["scenarioId"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenarioId"))
+    val dayStr =
+        parameters["day"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing day"))
+    val day =
+        dayStr.toIntOrNull()
+            ?: return respondWithDomainError(DomainError.ValidationError("Day must be an integer"))
+    MDC.put("scenarioId", scenarioId)
+    MDC.put("day", day.toString())
+    getDailySnapshot.execute(GetDailySnapshotQuery(scenarioId = scenarioId, day = day)).fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { snapshot -> respond(snapshot.toResponse()) },
+    )
+}
+
+private fun DailySnapshot.toResponse() =
+    DailySnapshotResponse(
+        scenarioId = scenarioId.value,
+        day = day.value,
+        metrics =
+            FlowMetricsResponse(
+                throughput = metrics.throughput,
+                wipCount = metrics.wipCount,
+                blockedCount = metrics.blockedCount,
+                avgAgingDays = metrics.avgAgingDays,
+            ),
+        movements =
+            movements.map { m ->
+                MovementResponse(
+                    type = m.type.name,
+                    workItemId = m.workItemId.value,
+                    day = m.day.value,
+                    reason = m.reason,
+                )
+            },
+    )
+
+@Serializable
+data class CreateScenarioRequest(
+    val tenantId: String,
+    val wipLimit: Int,
+    val teamSize: Int,
+    val seedValue: Long = 0L,
+)
+
+@Serializable
+data class DecisionRequest(
+    val type: String,
+    val payload: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+data class RunDayRequest(
+    val decisions: List<DecisionRequest> = emptyList(),
+)
+
+@Serializable
+data class ScenarioCreatedResponse(
+    val scenarioId: String,
+)
+
+@Serializable
+data class SimulationStateResponse(
+    val currentDay: Int,
+    val wipLimit: Int,
+    val teamSize: Int,
+    val itemCount: Int,
+)
+
+@Serializable
+data class ScenarioResponse(
+    val scenarioId: String,
+    val tenantId: String,
+    val wipLimit: Int,
+    val teamSize: Int,
+    val seedValue: Long,
+    val state: SimulationStateResponse,
+)
+
+@Serializable
+data class FlowMetricsResponse(
+    val throughput: Int,
+    val wipCount: Int,
+    val blockedCount: Int,
+    val avgAgingDays: Double,
+)
+
+@Serializable
+data class MovementResponse(
+    val type: String,
+    val workItemId: String,
+    val day: Int,
+    val reason: String,
+)
+
+@Serializable
+data class DailySnapshotResponse(
+    val scenarioId: String,
+    val day: Int,
+    val metrics: FlowMetricsResponse,
+    val movements: List<MovementResponse>,
+)

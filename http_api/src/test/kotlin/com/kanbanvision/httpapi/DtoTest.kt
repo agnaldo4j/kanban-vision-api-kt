@@ -4,7 +4,16 @@ import com.kanbanvision.httpapi.routes.BoardResponse
 import com.kanbanvision.httpapi.routes.CardResponse
 import com.kanbanvision.httpapi.routes.CreateBoardRequest
 import com.kanbanvision.httpapi.routes.CreateCardRequest
+import com.kanbanvision.httpapi.routes.CreateScenarioRequest
+import com.kanbanvision.httpapi.routes.DailySnapshotResponse
+import com.kanbanvision.httpapi.routes.DecisionRequest
+import com.kanbanvision.httpapi.routes.FlowMetricsResponse
 import com.kanbanvision.httpapi.routes.MoveCardRequest
+import com.kanbanvision.httpapi.routes.MovementResponse
+import com.kanbanvision.httpapi.routes.RunDayRequest
+import com.kanbanvision.httpapi.routes.ScenarioCreatedResponse
+import com.kanbanvision.httpapi.routes.ScenarioResponse
+import com.kanbanvision.httpapi.routes.SimulationStateResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -50,5 +59,87 @@ class DtoTest {
         assertEquals(resp, resp.copy())
         assertEquals("c1", resp.id)
         assertNotEquals(resp, resp.copy(id = "c2"))
+    }
+
+    @Test
+    fun `CreateScenarioRequest equality and copy`() {
+        val req = CreateScenarioRequest(tenantId = "t1", wipLimit = 3, teamSize = 2, seedValue = 42L)
+        assertEquals(req, req.copy())
+        assertEquals("t1", req.tenantId)
+        assertNotEquals(req, req.copy(tenantId = "t2"))
+    }
+
+    @Test
+    fun `DecisionRequest equality and copy`() {
+        val req = DecisionRequest(type = "MOVE_ITEM", payload = mapOf("workItemId" to "w1"))
+        assertEquals(req, req.copy())
+        assertEquals("MOVE_ITEM", req.type)
+        assertNotEquals(req, req.copy(type = "BLOCK_ITEM"))
+    }
+
+    @Test
+    fun `RunDayRequest equality and copy`() {
+        val req = RunDayRequest(decisions = listOf(DecisionRequest(type = "MOVE_ITEM")))
+        assertEquals(req, req.copy())
+        assertEquals(1, req.decisions.size)
+        assertNotEquals(req, RunDayRequest())
+    }
+
+    @Test
+    fun `ScenarioCreatedResponse equality and copy`() {
+        val resp = ScenarioCreatedResponse(scenarioId = "s1")
+        assertEquals(resp, resp.copy())
+        assertEquals("s1", resp.scenarioId)
+        assertNotEquals(resp, resp.copy(scenarioId = "s2"))
+    }
+
+    @Test
+    fun `SimulationStateResponse equality and copy`() {
+        val resp = SimulationStateResponse(currentDay = 1, wipLimit = 3, teamSize = 2, itemCount = 5)
+        assertEquals(resp, resp.copy())
+        assertEquals(1, resp.currentDay)
+        assertNotEquals(resp, resp.copy(currentDay = 2))
+    }
+
+    @Test
+    fun `ScenarioResponse equality and copy`() {
+        val stateResp = SimulationStateResponse(currentDay = 1, wipLimit = 3, teamSize = 2, itemCount = 0)
+        val resp =
+            ScenarioResponse(
+                scenarioId = "s1",
+                tenantId = "t1",
+                wipLimit = 3,
+                teamSize = 2,
+                seedValue = 42L,
+                state = stateResp,
+            )
+        assertEquals(resp, resp.copy())
+        assertEquals("s1", resp.scenarioId)
+        assertNotEquals(resp, resp.copy(scenarioId = "s2"))
+    }
+
+    @Test
+    fun `FlowMetricsResponse equality and copy`() {
+        val resp = FlowMetricsResponse(throughput = 2, wipCount = 3, blockedCount = 1, avgAgingDays = 1.5)
+        assertEquals(resp, resp.copy())
+        assertEquals(2, resp.throughput)
+        assertNotEquals(resp, resp.copy(throughput = 5))
+    }
+
+    @Test
+    fun `MovementResponse equality and copy`() {
+        val resp = MovementResponse(type = "MOVED", workItemId = "w1", day = 1, reason = "WIP available")
+        assertEquals(resp, resp.copy())
+        assertEquals("MOVED", resp.type)
+        assertNotEquals(resp, resp.copy(type = "BLOCKED"))
+    }
+
+    @Test
+    fun `DailySnapshotResponse equality and copy`() {
+        val metrics = FlowMetricsResponse(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 0.5)
+        val resp = DailySnapshotResponse(scenarioId = "s1", day = 1, metrics = metrics, movements = emptyList())
+        assertEquals(resp, resp.copy())
+        assertEquals("s1", resp.scenarioId)
+        assertNotEquals(resp, resp.copy(scenarioId = "s2"))
     }
 }
