@@ -4,7 +4,6 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.decision.Decision
 import com.kanbanvision.domain.model.decision.DecisionId
 import com.kanbanvision.domain.model.decision.DecisionType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -25,7 +24,6 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
-import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 import org.slf4j.MDC
 import java.util.Locale
@@ -290,91 +288,3 @@ private suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: Get
         }
     }
 }
-
-private fun DailySnapshot.toResponse() =
-    DailySnapshotResponse(
-        scenarioId = scenarioId.value,
-        day = day.value,
-        metrics =
-            FlowMetricsResponse(
-                throughput = metrics.throughput,
-                wipCount = metrics.wipCount,
-                blockedCount = metrics.blockedCount,
-                avgAgingDays = metrics.avgAgingDays,
-            ),
-        movements =
-            movements.map { m ->
-                MovementResponse(
-                    type = m.type.name,
-                    workItemId = m.workItemId.value,
-                    day = m.day.value,
-                    reason = m.reason,
-                )
-            },
-    )
-
-@Serializable
-data class CreateScenarioRequest(
-    val tenantId: String,
-    val wipLimit: Int,
-    val teamSize: Int,
-    val seedValue: Long = 0L,
-)
-
-@Serializable
-data class DecisionRequest(
-    val type: String,
-    val payload: Map<String, String> = emptyMap(),
-)
-
-@Serializable
-data class RunDayRequest(
-    val decisions: List<DecisionRequest> = emptyList(),
-)
-
-@Serializable
-data class ScenarioCreatedResponse(
-    val scenarioId: String,
-)
-
-@Serializable
-data class SimulationStateResponse(
-    val currentDay: Int,
-    val wipLimit: Int,
-    val teamSize: Int,
-    val itemCount: Int,
-)
-
-@Serializable
-data class ScenarioResponse(
-    val scenarioId: String,
-    val tenantId: String,
-    val wipLimit: Int,
-    val teamSize: Int,
-    val seedValue: Long,
-    val state: SimulationStateResponse,
-)
-
-@Serializable
-data class FlowMetricsResponse(
-    val throughput: Int,
-    val wipCount: Int,
-    val blockedCount: Int,
-    val avgAgingDays: Double,
-)
-
-@Serializable
-data class MovementResponse(
-    val type: String,
-    val workItemId: String,
-    val day: Int,
-    val reason: String,
-)
-
-@Serializable
-data class DailySnapshotResponse(
-    val scenarioId: String,
-    val day: Int,
-    val metrics: FlowMetricsResponse,
-    val movements: List<MovementResponse>,
-)
