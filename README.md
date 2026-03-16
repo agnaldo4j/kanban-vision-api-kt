@@ -88,6 +88,310 @@ O módulo `domain` não conhece nenhum framework. O módulo `usecases` não conh
 
 ---
 
+## Arquitetura — Diagramas C4
+
+### Nível 1 — Contexto do Sistema
+
+```mermaid
+C4Context
+  title Nível 1 — Contexto do Sistema
+
+  Person(user, "Desenvolvedor / Usuário", "Consome a API via HTTP REST para gerenciar quadros Kanban e executar simulações de fluxo.")
+
+  System(api, "Kanban Vision API", "Simulador de fluxo Kanban multi-organização. Expõe Board Management e Simulation Engine via REST.")
+
+  SystemDb_Ext(db, "PostgreSQL", "Armazena boards, colunas, cartões, tenants, cenários de simulação e snapshots diários.")
+
+  Rel(user, api, "HTTP REST", "JSON")
+  Rel(api, db, "JDBC", "SQL")
+```
+
+### Nível 2 — Containers
+
+```mermaid
+C4Container
+  title Nível 2 — Containers
+
+  Person(user, "Usuário")
+
+  System_Boundary(sys, "Kanban Vision API") {
+    Container(http, "http_api", "Kotlin / Ktor 3 + Koin", "Ponto de entrada HTTP. Rotas, plugins, serialização e injeção de dependências.")
+    Container(uc, "usecases", "Kotlin puro", "Casos de uso da aplicação. Define ports (interfaces de repositório). Padrão CQS.")
+    Container(dom, "domain", "Kotlin puro — zero frameworks", "Entidades, objetos de valor, motor de simulação e regras de negócio puras.")
+    Container(sql, "sql_persistence", "Kotlin / JDBC + HikariCP", "Implementa os ports de repositório. SQL puro, serialização JSON de estado, schema PostgreSQL.")
+  }
+
+  SystemDb_Ext(db, "PostgreSQL 16", "Banco de dados relacional")
+
+  Rel(user, http, "HTTP/REST", "JSON")
+  Rel(http, uc, "invoca casos de uso")
+  Rel(uc, dom, "usa entidades e regras de negócio")
+  Rel(sql, dom, "depende de (Dependency Rule)")
+  Rel(sql, uc, "implementa interfaces de repositório (ports)")
+  Rel(http, sql, "wiring via Koin DI apenas")
+  Rel(sql, db, "JDBC", "SQL")
+```
+
+### Nível 3 — Componentes: http_api
+
+```mermaid
+C4Component
+  title Nível 3 — Componentes: http_api
+
+  Container_Ext(uc, "usecases", "Casos de uso invocados pelas rotas")
+
+  Container_Boundary(http, "http_api") {
+    Component(board_r, "BoardRoutes", "Ktor Route", "POST /boards · GET /boards/{id}")
+    Component(column_r, "ColumnRoutes", "Ktor Route", "POST /columns · GET /columns/{id} · GET /boards/{boardId}/columns")
+    Component(card_r, "CardRoutes", "Ktor Route", "POST /cards · GET /cards/{id} · PATCH /cards/{id}/move")
+    Component(scenario_r, "ScenarioRoutes", "Ktor Route", "POST /scenarios · GET /scenarios/{id} · POST /run · GET /days/{day}/snapshot")
+    Component(analytics_r, "ScenarioAnalyticsRoutes", "Ktor Route", "GET /days/{day}/movements · GET /metrics")
+    Component(health_r, "HealthRoutes", "Ktor Route", "GET /health — liveness probe")
+    Component(app_mod, "AppModule", "Koin Module", "Wiring: repositórios concretos → interfaces de port · use cases")
+    Component(either_a, "EitherRespond", "Adapter", "Converte DomainError em status HTTP + corpo JSON com requestId")
+    Component(obs, "Observability Plugin", "Ktor Plugin", "MDC context por requisição · header X-Request-ID")
+    Component(openapi, "OpenApi Plugin", "Ktor Plugin", "Swagger UI em /swagger · spec JSON em /api.json")
+  }
+
+  Rel(board_r, uc, "invoca use cases de Board")
+  Rel(column_r, uc, "invoca use cases de Column")
+  Rel(card_r, uc, "invoca use cases de Card")
+  Rel(scenario_r, uc, "invoca use cases de Scenario")
+  Rel(analytics_r, uc, "invoca use cases de Analytics")
+  Rel(board_r, either_a, "usa para mapear erros")
+  Rel(column_r, either_a, "usa para mapear erros")
+  Rel(card_r, either_a, "usa para mapear erros")
+  Rel(scenario_r, either_a, "usa para mapear erros")
+  Rel(analytics_r, either_a, "usa para mapear erros")
+```
+
+### Nível 3 — Componentes: domain
+
+```mermaid
+C4Component
+  title Nível 3 — Componentes: domain
+
+  Container_Boundary(dom, "domain") {
+    Component(board_e, "Board / Column / Card", "Kotlin data class", "Entidades de gerenciamento de quadros Kanban com seus value objects.")
+    Component(scenario_e, "Scenario / ScenarioConfig", "Kotlin data class", "Entidade de cenário de simulação: tenant, WIP limit, team size, seed.")
+    Component(sim_state, "SimulationState / SimulationDay", "Kotlin data class", "Estado atual da simulação: dia corrente, itens ativos, políticas.")
+    Component(engine, "SimulationEngine", "Kotlin class", "Motor de simulação: processa WorkItems, aplica Decisions, gera DailySnapshot.")
+    Component(snapshot, "DailySnapshot / FlowMetrics", "Kotlin data class", "Resultado imutável de um dia: throughput, WIP, aging, movimentos.")
+    Component(workitem, "WorkItem / WorkItemState / ServiceClass", "Kotlin data class + enum", "Item de trabalho com ciclo de vida: WAITING → IN_PROGRESS → DONE / BLOCKED.")
+    Component(decision, "Decision / DecisionType", "Kotlin data class + enum", "Decisão aplicada no dia: ADD_ITEM, MOVE_ITEM, BLOCK_ITEM, UNBLOCK_ITEM.")
+    Component(movement, "Movement / MovementType", "Kotlin data class + enum", "Evento de movimentação de item registrado no snapshot.")
+    Component(policy, "PolicySet", "Kotlin data class", "Conjunto de políticas Kanban aplicadas à simulação: WIP limit.")
+    Component(vobj, "Value Objects", "Kotlin @JvmInline value class", "BoardId · CardId · ColumnId · TenantId · ScenarioId · WorkItemId · SimulationDay.")
+  }
+
+  Rel(engine, sim_state, "lê e produz novo estado")
+  Rel(engine, decision, "aplica no dia")
+  Rel(engine, snapshot, "produz ao final do dia")
+  Rel(sim_state, workitem, "contém lista de")
+  Rel(sim_state, policy, "aplica regras de")
+  Rel(snapshot, movement, "contém lista de")
+  Rel(snapshot, workitem, "registra estado final de")
+  Rel(scenario_e, sim_state, "tem estado associado (1:1)")
+  Rel(board_e, vobj, "identificado por")
+  Rel(scenario_e, vobj, "identificado por")
+```
+
+### Sequência — Board Management
+
+```mermaid
+sequenceDiagram
+  participant C as Cliente HTTP
+  participant R as BoardRoutes / ColumnRoutes / CardRoutes
+  participant UC as Use Cases
+  participant REPO as Jdbc*Repository
+  participant DB as PostgreSQL
+
+  Note over C,DB: Criar quadro com coluna e cartão
+
+  C->>R: POST /api/v1/boards {name}
+  R->>UC: CreateBoardUseCase.execute(CreateBoardCommand)
+  UC->>REPO: save(board)
+  REPO->>DB: INSERT INTO boards
+  DB-->>REPO: ok
+  UC-->>R: BoardId
+  R->>UC: GetBoardUseCase.execute(GetBoardQuery)
+  UC->>REPO: findById(id)
+  REPO->>DB: SELECT FROM boards
+  DB-->>REPO: row
+  REPO-->>UC: Board
+  R-->>C: 201 Created {id, name}
+
+  C->>R: POST /api/v1/columns {boardId, name}
+  R->>UC: CreateColumnUseCase.execute(CreateColumnCommand)
+  UC->>REPO: save(column)
+  REPO->>DB: INSERT INTO columns
+  DB-->>REPO: ok
+  UC-->>R: ColumnId
+  R-->>C: 201 Created {id, boardId, name, position}
+
+  C->>R: POST /api/v1/cards {columnId, title}
+  R->>UC: CreateCardUseCase.execute(CreateCardCommand)
+  UC->>REPO: save(card)
+  REPO->>DB: INSERT INTO cards
+  DB-->>REPO: ok
+  UC-->>R: CardId
+  R-->>C: 201 Created {id, columnId, title, position}
+```
+
+### Sequência — Simulation Engine
+
+```mermaid
+sequenceDiagram
+  participant C as Cliente HTTP
+  participant R as ScenarioRoutes
+  participant UC as Use Cases
+  participant SE as SimulationEngine
+  participant SR as JdbcScenarioRepository
+  participant SS as JdbcSnapshotRepository
+  participant DB as PostgreSQL
+
+  Note over C,DB: Criar cenário e executar um dia de simulação
+
+  C->>R: POST /api/v1/scenarios {tenantId, wipLimit, teamSize, seedValue}
+  R->>UC: CreateScenarioUseCase.execute(CreateScenarioCommand)
+  UC->>SR: save(scenario) + saveState(initialState)
+  SR->>DB: INSERT scenarios + scenario_states
+  DB-->>SR: ok
+  UC-->>R: ScenarioId
+  R-->>C: 201 Created {scenarioId}
+
+  C->>R: POST /api/v1/scenarios/{id}/run {decisions:[]}
+  R->>UC: RunDayUseCase.execute(RunDayCommand)
+  UC->>SR: findById(scenarioId)
+  SR->>DB: SELECT scenarios + scenario_states
+  DB-->>SR: rows
+  SR-->>UC: ScenarioWithState
+  UC->>SE: runDay(currentState, decisions)
+  SE-->>UC: DailySnapshot + nextState
+  UC->>SS: save(snapshot)
+  SS->>DB: INSERT daily_snapshots
+  DB-->>SS: ok
+  UC->>SR: updateState(nextState)
+  SR->>DB: UPDATE scenario_states
+  DB-->>SR: ok
+  UC-->>R: DailySnapshot
+  R-->>C: 200 OK {day, metrics, movements}
+
+  C->>R: GET /api/v1/scenarios/{id}/days/1/snapshot
+  R->>UC: GetDailySnapshotUseCase.execute(GetDailySnapshotQuery)
+  UC->>SS: findByScenarioAndDay(scenarioId, day=1)
+  SS->>DB: SELECT daily_snapshots
+  DB-->>SS: row (JSON)
+  SS-->>UC: DailySnapshot
+  UC-->>R: DailySnapshot
+  R-->>C: 200 OK {day, metrics:{throughput,wipCount,...}, movements:[...]}
+```
+
+### Classes — Domínio
+
+```mermaid
+classDiagram
+  class Board {
+    +BoardId id
+    +String name
+  }
+  class Column {
+    +ColumnId id
+    +BoardId boardId
+    +String name
+    +Int position
+  }
+  class Card {
+    +CardId id
+    +ColumnId columnId
+    +String title
+    +String description
+    +Int position
+  }
+  class Scenario {
+    +ScenarioId id
+    +TenantId tenantId
+    +ScenarioConfig config
+    +create(tenantId, config) Scenario$
+  }
+  class ScenarioConfig {
+    +Int wipLimit
+    +Int teamSize
+    +Long seedValue
+  }
+  class SimulationState {
+    +SimulationDay currentDay
+    +PolicySet policySet
+    +List~WorkItem~ items
+  }
+  class SimulationEngine {
+    +runDay(state, decisions) DailySnapshot
+  }
+  class DailySnapshot {
+    +ScenarioId scenarioId
+    +SimulationDay day
+    +FlowMetrics metrics
+    +List~Movement~ movements
+  }
+  class FlowMetrics {
+    +Int throughput
+    +Int wipCount
+    +Int blockedCount
+    +Double avgAgingDays
+  }
+  class WorkItem {
+    +WorkItemId id
+    +String title
+    +WorkItemState state
+    +ServiceClass serviceClass
+    +Int agingDays
+  }
+  class WorkItemState {
+    <<enumeration>>
+    WAITING
+    IN_PROGRESS
+    DONE
+    BLOCKED
+  }
+  class Decision {
+    +DecisionId id
+    +DecisionType type
+    +Map~String,String~ payload
+  }
+  class DecisionType {
+    <<enumeration>>
+    ADD_ITEM
+    MOVE_ITEM
+    BLOCK_ITEM
+    UNBLOCK_ITEM
+  }
+  class Movement {
+    +WorkItemId workItemId
+    +MovementType type
+    +SimulationDay day
+    +String reason
+  }
+  class PolicySet {
+    +Int wipLimit
+  }
+
+  Board "1" *-- "0..*" Column : contém
+  Column "1" *-- "0..*" Card : contém
+  Scenario "1" --> "1" ScenarioConfig : configurado por
+  Scenario "1" --> "1" SimulationState : tem estado
+  SimulationState "1" *-- "0..*" WorkItem : gerencia
+  SimulationState "1" --> "1" PolicySet : aplica
+  SimulationEngine ..> SimulationState : processa
+  SimulationEngine ..> Decision : aplica
+  SimulationEngine ..> DailySnapshot : produz
+  DailySnapshot "1" --> "1" FlowMetrics : contém
+  DailySnapshot "1" *-- "0..*" Movement : registra
+  WorkItem --> WorkItemState : tem estado
+  Decision --> DecisionType : é do tipo
+```
+
+---
+
 ## Padrão CQS (Command Query Separation)
 
 Cada caso de uso recebe um objeto tipado que implementa `Command` (modifica estado) ou `Query` (lê estado), com validação explícita antes da execução:
