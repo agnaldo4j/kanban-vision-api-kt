@@ -382,7 +382,6 @@ classDiagram
   Board "1" *-- "0..*" Column : contém
   Column "1" *-- "0..*" Card : contém
   Scenario "1" --> "1" ScenarioConfig : configurado por
-  Scenario "1" --> "1" SimulationState : tem estado
   SimulationState "1" *-- "0..*" WorkItem : gerencia
   SimulationState "1" --> "1" PolicySet : aplica
   SimulationEngine ..> SimulationState : processa
