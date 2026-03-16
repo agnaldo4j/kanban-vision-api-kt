@@ -1,10 +1,10 @@
 ---
 name: testing-and-observability
 description: >
-  Guia de qualidade para testes e observabilidade neste projeto: JUnit 5 (migração
-  para JUnit 6), MockK, SLF4J, MDC e regras Detekt de comentários. Use ao escrever
-  testes novos, configurar logging, propagar contexto de rastreamento ou documentar
-  código público. Complementa kotlin-quality-pipeline (Detekt/KtLint/JaCoCo/Gradle).
+  Guia de qualidade para testes e observabilidade neste projeto: JUnit 5, MockK,
+  SLF4J, MDC e regras Detekt de comentários. Use ao escrever testes novos, configurar
+  logging, propagar contexto de rastreamento ou documentar código público.
+  Complementa kotlin-quality-pipeline (Detekt/KtLint/JaCoCo/Gradle).
 ---
 
 # Testes e Observabilidade — JUnit · MockK · SLF4J · MDC · Detekt Comments
@@ -97,11 +97,8 @@ Três camadas de teste, cada uma com responsabilidade distinta:
 
 ### Versão em uso
 
-O projeto usa **JUnit 5.11.4** (`junit-jupiter`). A referência de documentação
-futura é JUnit 6: https://docs.junit.org/6.0.3/overview.html
-
-JUnit 6 introduz mudanças de API (novo modelo de extensões, melhor suporte a
-corrotinas, anotações simplificadas) — ao migrar, revisar este skill.
+O projeto usa **JUnit 5.11.4** (`junit-jupiter`).
+Documentação: https://junit.org/junit5/docs/current/user-guide/
 
 ### Imports corretos
 
@@ -351,10 +348,15 @@ Referência: https://detekt.dev/docs/rules/comments
 As regras de comentários protegem a **documentação pública** do código.
 Este projeto é uma API interna/educacional — aplique as regras abaixo com critério.
 
-### Regras relevantes para APIs e bibliotecas internas
+### Regras recomendadas (não ativas no `detekt.yml` do projeto)
 
-#### `UndocumentedPublicClass`
-Exige KDoc em toda `class`, `interface`, `object` e `enum` public/internal.
+> **Nota:** As regras `UndocumentedPublicClass` e `UndocumentedPublicFunction` do
+> ruleset `comments` **não estão configuradas** no `config/detekt/detekt.yml` deste
+> projeto — o bloco `comments` não está ativo. As diretrizes abaixo são **boas
+> práticas recomendadas**, não requisitos que causam falha de build.
+
+#### `UndocumentedPublicClass` (recomendada)
+Encoraja KDoc em toda `class`, `interface`, `object` e `enum` public/internal.
 
 ```kotlin
 // ✅ para classes públicas com comportamento não óbvio
@@ -368,8 +370,8 @@ class SimulationEngine { ... }
 data class BoardResponse(val id: String, val name: String)  // pode dispensar KDoc
 ```
 
-#### `UndocumentedPublicFunction`
-Exige KDoc em funções `public`/`internal` não óbvias.
+#### `UndocumentedPublicFunction` (recomendada)
+Encoraja KDoc em funções `public`/`internal` não óbvias.
 
 ```kotlin
 // ✅ quando o comportamento não é óbvio pelo nome
@@ -693,7 +695,6 @@ class CreateBoardUseCase(...) {
 | Ferramenta | Documentação |
 |---|---|
 | JUnit 5 | https://junit.org/junit5/docs/current/user-guide/ |
-| JUnit 6 (futuro) | https://docs.junit.org/6.0.3/overview.html |
 | MockK | https://mockk.io |
 | SLF4J | https://www.slf4j.org/manual.html |
 | Detekt Comments | https://detekt.dev/docs/rules/comments |
