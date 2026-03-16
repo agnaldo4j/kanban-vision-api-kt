@@ -279,7 +279,7 @@ sequenceDiagram
 
   C->>R: GET /api/v1/scenarios/{id}/days/1/snapshot
   R->>UC: GetDailySnapshotUseCase.execute(GetDailySnapshotQuery)
-  UC->>SS: findByScenarioAndDay(scenarioId, day=1)
+  UC->>SS: findByDay(scenarioId, day=1)
   SS->>DB: SELECT daily_snapshots
   DB-->>SS: row (JSON)
   SS-->>UC: DailySnapshot
