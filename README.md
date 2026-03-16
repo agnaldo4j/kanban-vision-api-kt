@@ -2,7 +2,7 @@
 
 # Kanban Vision API
 
-> Simulador de quadro Kanban via API REST — construído em Kotlin com foco em arquitetura limpa, qualidade de código e boas práticas de engenharia de software.
+> Simulador de fluxo Kanban multi-organização via API REST — construído em Kotlin com foco em arquitetura limpa, qualidade de código e boas práticas de engenharia de software.
 
 ---
 
@@ -14,17 +14,14 @@ git clone https://github.com/agnaldo4j/kanban-vision-api-kt.git
 cd kanban-vision-api-kt
 
 # 2. Configure Java 21 (obrigatório — o projeto não é compatível com Java 25+)
-# O gradle.properties contém um path local em org.gradle.java.home.
-# Sobrescreva com o path correto para o Java 21 na sua máquina:
-echo "org.gradle.java.home=$(java -XshowSettings:all -version 2>&1 | grep 'java.home' | awk '{print $3}')" >> gradle.properties
-# Ou exporte manualmente:
-#   export JAVA_HOME=/caminho/para/java21
-#   echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+# Sobrescreva o path em gradle.properties com o Java 21 da sua máquina:
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
 
 # 3. Compile e rode todos os testes + quality gates
 ./gradlew testAll
 
-# 2. Suba o banco de dados
+# 4. Suba o banco de dados
 docker run -d --name kanban-db \
   -e POSTGRES_DB=kanbanvision \
   -e POSTGRES_USER=kanban \
@@ -32,7 +29,7 @@ docker run -d --name kanban-db \
   -p 5432:5432 \
   postgres:16
 
-# 3. Execute a aplicação
+# 5. Execute a aplicação
 ./gradlew :http_api:run
 ```
 
@@ -42,7 +39,10 @@ Acesse a documentação interativa: **http://localhost:8080/swagger**
 
 ## Sobre o projeto
 
-O **Kanban Vision** é um simulador de gestão de tarefas no estilo Kanban. Ele permite criar quadros, organizar colunas e mover cartões entre estágios de um fluxo de trabalho — expondo tudo via uma API REST.
+O **Kanban Vision** é um simulador de fluxo Kanban para múltiplas organizações. Ele expõe dois domínios via API REST:
+
+1. **Board Management** — criar quadros (`Board`), organizar colunas (`Column`) e mover cartões (`Card`) entre estágios.
+2. **Simulation Engine** — criar cenários de simulação (`Scenario`) por tenant, executar dias de simulação com decisões configuráveis (`RunDay`), persistir snapshots diários (`DailySnapshot`) e recuperar métricas de fluxo (`FlowMetrics`).
 
 O projeto foi concebido como uma **referência prática** de arquitetura hexagonal em Kotlin, demonstrando como separar domínio, casos de uso, persistência e entrega HTTP de forma clara e testável.
 
@@ -60,17 +60,18 @@ O projeto segue os princípios de **Clean Architecture** (Arquitetura Hexagonal)
                │ depende de
 ┌──────────────▼──────────────────────┐
 │             usecases                │  ← Casos de uso (CQS)
-│  board / card / cqs / repositories  │
+│  board / card / column / scenario   │
+│  repositories (ports)               │
 └──────────────┬──────────────────────┘
                │ depende de
 ┌──────────────▼──────────────────────┐
 │              domain                 │  ← Núcleo do negócio (puro Kotlin)
-│  model / valueobjects               │
+│  model / valueobjects / simulation  │
 └─────────────────────────────────────┘
 
 ┌─────────────────────────────────────┐
 │          sql_persistence            │  ← Adaptador de banco (JDBC + HikariCP)
-│  repositories / DatabaseFactory     │
+│  repositories / serializers         │
 └─────────────────────────────────────┘
 ```
 
@@ -91,17 +92,28 @@ O módulo `domain` não conhece nenhum framework. O módulo `usecases` não conh
 
 Cada caso de uso recebe um objeto tipado que implementa `Command` (modifica estado) ou `Query` (lê estado), com validação explícita antes da execução:
 
+### Board Management
+
 ```
-CreateBoardCommand       → CreateBoardUseCase       → BoardId
-GetBoardQuery            → GetBoardUseCase          → Board
+CreateBoardCommand       → CreateBoardUseCase           → BoardId
+GetBoardQuery            → GetBoardUseCase              → Board
 
-CreateCardCommand        → CreateCardUseCase        → CardId
-MoveCardCommand          → MoveCardUseCase          → Unit
-GetCardQuery             → GetCardUseCase           → Card
+CreateColumnCommand      → CreateColumnUseCase          → ColumnId
+GetColumnQuery           → GetColumnUseCase             → Column
+ListColumnsByBoardQuery  → ListColumnsByBoardUseCase    → List<Column>
 
-CreateColumnCommand      → CreateColumnUseCase      → ColumnId
-GetColumnQuery           → GetColumnUseCase         → Column
-ListColumnsByBoardQuery  → ListColumnsByBoardUseCase → List<Column>
+CreateCardCommand        → CreateCardUseCase            → CardId
+MoveCardCommand          → MoveCardUseCase              → Unit
+GetCardQuery             → GetCardUseCase               → Card
+```
+
+### Simulation Engine
+
+```
+CreateScenarioCommand    → CreateScenarioUseCase        → ScenarioId
+RunDayCommand            → RunDayUseCase                → DailySnapshot
+GetScenarioQuery         → GetScenarioUseCase           → ScenarioWithState
+GetDailySnapshotQuery    → GetDailySnapshotUseCase      → DailySnapshot
 ```
 
 ---
@@ -114,32 +126,28 @@ Os erros de domínio são modelados como valores com Arrow-kt `Either<DomainErro
 
 ```
 sealed class DomainError
-├── ValidationError(message)  → HTTP 400
-├── BoardNotFound(id)          → HTTP 404
-├── ColumnNotFound(id)         → HTTP 404
-├── CardNotFound(id)           → HTTP 404
-└── PersistenceError(message)  → HTTP 500
+├── ValidationError(message)      → HTTP 400
+├── InvalidDecision(reason)       → HTTP 400
+├── BoardNotFound(id)             → HTTP 404
+├── ColumnNotFound(id)            → HTTP 404
+├── CardNotFound(id)              → HTTP 404
+├── TenantNotFound(id)            → HTTP 404
+├── ScenarioNotFound(id)          → HTTP 404
+├── DayAlreadyExecuted(day)       → HTTP 409
+└── PersistenceError(message)     → HTTP 500
 ```
 
 ### Padrão nos Use Cases
 
 ```kotlin
-suspend fun execute(query: GetBoardQuery): Either<DomainError, Board>
-```
-
-Chamadas de repositório são envolvidas com `arrow.core.raise.catch` para converter exceções JDBC em `PersistenceError` tipado:
-
-```kotlin
-val (result, duration) = catch(
-    { measureTimedValue { repository.findById(id) } }
-) { e -> raise(DomainError.PersistenceError(e.message ?: "Database error")) }
+suspend fun execute(command: RunDayCommand): Either<DomainError, DailySnapshot>
 ```
 
 ### Padrão nas Rotas
 
 ```kotlin
-useCase.execute(query).fold(
-    ifLeft = { error -> call.respondWithDomainError(error) },
+useCase.execute(command).fold(
+    ifLeft  = { error  -> call.respondWithDomainError(error) },
     ifRight = { result -> call.respond(result) },
 )
 ```
@@ -150,9 +158,9 @@ useCase.execute(query).fold(
 
 | Módulo | Responsabilidade |
 |---|---|
-| `domain` | Entidades, objetos de valor, regras de negócio puras |
+| `domain` | Entidades, objetos de valor, motor de simulação, regras de negócio puras |
 | `usecases` | Casos de uso, interfaces de repositório (ports), CQS |
-| `sql_persistence` | Implementações JDBC dos repositórios, schema SQL |
+| `sql_persistence` | Implementações JDBC, serialização JSON de estado, schema SQL |
 | `http_api` | Rotas HTTP, serialização, injeção de dependências, ponto de entrada |
 
 ---
@@ -167,12 +175,12 @@ useCase.execute(query).fold(
 | Injeção de dependência | Koin 4 |
 | Pool de conexões | HikariCP |
 | Banco de produção | PostgreSQL |
-| Banco de testes | H2 (in-memory) |
-| Logging | SLF4J |
+| Banco de testes | Embedded PostgreSQL (zonky) |
+| Logging | SLF4J + MDC |
 | Testes | JUnit 5 + MockK |
 | Documentação API | ktor-openapi + Swagger UI |
 | Análise estática | Detekt |
-| Estilo de código | Ktlint |
+| Estilo de código | KtLint |
 | Cobertura | JaCoCo (mínimo 90%) |
 | Build | Gradle 8 (Kotlin DSL) |
 | Java | Java 21 |
@@ -183,71 +191,50 @@ useCase.execute(query).fold(
 
 ```
 domain/
-└── model/
-    ├── Board.kt
-    ├── Card.kt
-    ├── Column.kt
-    └── valueobjects/
-        ├── BoardId.kt
-        ├── CardId.kt
-        └── ColumnId.kt
+├── model/
+│   ├── Board.kt, Card.kt, Column.kt
+│   ├── valueobjects/   BoardId, CardId, ColumnId, TenantId, ScenarioId, WorkItemId
+│   ├── tenant/         Tenant.kt
+│   ├── scenario/       Scenario, ScenarioConfig, SimulationState, SimulationDay,
+│   │                   SimulationResult, DailySnapshot
+│   ├── workitem/       WorkItem, WorkItemState, ServiceClass
+│   ├── decision/       Decision, DecisionId, DecisionType
+│   ├── movement/       Movement, MovementType
+│   ├── metrics/        FlowMetrics
+│   └── policy/         PolicySet
+└── simulation/
+    └── SimulationEngine.kt
 
 usecases/
-├── cqs/
-│   ├── Command.kt
-│   └── Query.kt
-├── board/
-│   ├── commands/CreateBoardCommand.kt
-│   ├── queries/GetBoardQuery.kt
-│   ├── CreateBoardUseCase.kt
-│   └── GetBoardUseCase.kt
-├── card/
-│   ├── commands/CreateCardCommand.kt
-│   ├── commands/MoveCardCommand.kt
-│   ├── queries/GetCardQuery.kt
-│   ├── CreateCardUseCase.kt
-│   ├── GetCardUseCase.kt
-│   └── MoveCardUseCase.kt
-├── column/
-│   ├── commands/CreateColumnCommand.kt
-│   ├── queries/GetColumnQuery.kt
-│   ├── queries/ListColumnsByBoardQuery.kt
-│   ├── CreateColumnUseCase.kt
-│   ├── GetColumnUseCase.kt
-│   └── ListColumnsByBoardUseCase.kt
-└── repositories/
-    ├── BoardRepository.kt
-    ├── CardRepository.kt
-    └── ColumnRepository.kt
+├── cqs/                Command.kt, Query.kt
+├── board/              CreateBoardUseCase, GetBoardUseCase + commands/queries
+├── card/               CreateCardUseCase, GetCardUseCase, MoveCardUseCase + commands/queries
+├── column/             CreateColumnUseCase, GetColumnUseCase, ListColumnsByBoardUseCase + commands/queries
+├── scenario/           CreateScenarioUseCase, RunDayUseCase, GetScenarioUseCase,
+│                       GetDailySnapshotUseCase + commands/queries
+└── repositories/       BoardRepository, CardRepository, ColumnRepository,
+                        TenantRepository, ScenarioRepository, SnapshotRepository
 
 sql_persistence/
-├── DatabaseFactory.kt
-└── repositories/
-    ├── JdbcBoardRepository.kt
-    ├── JdbcCardRepository.kt
-    └── JdbcColumnRepository.kt
+├── DatabaseFactory.kt        (schema: boards, columns, cards, tenants, scenarios,
+│                              scenario_states, daily_snapshots)
+├── repositories/             JdbcBoardRepository, JdbcCardRepository, JdbcColumnRepository,
+│                             JdbcTenantRepository, JdbcScenarioRepository, JdbcSnapshotRepository
+└── serializers/              SimulationStateSerializer, DailySnapshotSerializer
 
 http_api/
 ├── Main.kt
-├── adapters/EitherRespond.kt
-├── di/AppModule.kt
-├── plugins/
-│   ├── Observability.kt
-│   ├── Routing.kt
-│   ├── Serialization.kt
-│   ├── StatusPages.kt
-│   └── OpenApi.kt
-└── routes/
-    ├── BoardRoutes.kt
-    ├── CardRoutes.kt
-    └── ColumnRoutes.kt
+├── adapters/           EitherRespond.kt
+├── di/                 AppModule.kt
+├── plugins/            Observability, Routing, Serialization, StatusPages, OpenApi
+└── routes/             BoardRoutes, CardRoutes, ColumnRoutes, HealthRoutes, ScenarioRoutes
 ```
 
 ---
 
 ## API REST
 
-Todas as rotas seguem o prefixo `/api/v1`.
+Todas as rotas seguem o prefixo `/api/v1`. Documentação interativa disponível em `/swagger`.
 
 ### Quadros (Boards)
 
@@ -255,19 +242,6 @@ Todas as rotas seguem o prefixo `/api/v1`.
 |---|---|---|
 | `POST` | `/api/v1/boards` | Cria um novo quadro |
 | `GET` | `/api/v1/boards/{id}` | Busca um quadro pelo ID |
-
-**Criar quadro:**
-```http
-POST /api/v1/boards
-Content-Type: application/json
-
-{ "name": "Meu Projeto" }
-```
-
-```json
-HTTP 201 Created
-{ "id": "uuid", "name": "Meu Projeto" }
-```
 
 ### Colunas (Columns)
 
@@ -282,59 +256,44 @@ HTTP 201 Created
 | Método | Rota | Descrição |
 |---|---|---|
 | `POST` | `/api/v1/cards` | Cria um cartão em uma coluna |
+| `GET` | `/api/v1/cards/{id}` | Busca um cartão pelo ID |
 | `PATCH` | `/api/v1/cards/{id}/move` | Move o cartão para outra coluna/posição |
 
-**Criar cartão:**
-```http
-POST /api/v1/cards
-Content-Type: application/json
+### Simulação (Scenarios)
 
-{ "columnId": "uuid", "title": "Implementar login", "description": "Opcional" }
-```
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/v1/scenarios` | Cria um cenário de simulação para um tenant |
+| `GET` | `/api/v1/scenarios/{scenarioId}` | Retorna o cenário e o estado atual |
+| `POST` | `/api/v1/scenarios/{scenarioId}/run` | Executa um dia de simulação |
+| `GET` | `/api/v1/scenarios/{scenarioId}/days/{day}/snapshot` | Retorna o snapshot de um dia |
 
-**Mover cartão:**
-```http
-PATCH /api/v1/cards/{id}/move
-Content-Type: application/json
-
-{ "columnId": "uuid-destino", "position": 2 }
-```
-
-### Exemplos curl
+### Exemplos curl — Simulação
 
 ```bash
-# Criar um quadro
-curl -s -X POST http://localhost:8080/api/v1/boards \
+# Criar um cenário (requer tenant previamente cadastrado via SQL)
+curl -s -X POST http://localhost:8080/api/v1/scenarios \
   -H "Content-Type: application/json" \
-  -d '{"name": "Meu Projeto"}' | jq
+  -d '{"tenantId":"<uuid>","wipLimit":3,"teamSize":2,"seedValue":42}' | jq
 
-# Buscar um quadro
-curl -s http://localhost:8080/api/v1/boards/{boardId} | jq
+# Consultar estado do cenário
+curl -s http://localhost:8080/api/v1/scenarios/<scenarioId> | jq
 
-# Criar uma coluna
-curl -s -X POST http://localhost:8080/api/v1/columns \
+# Executar o próximo dia (sem decisões)
+curl -s -X POST http://localhost:8080/api/v1/scenarios/<scenarioId>/run \
   -H "Content-Type: application/json" \
-  -d '{"boardId": "{boardId}", "name": "To Do"}' | jq
+  -d '{"decisions":[]}' | jq
 
-# Listar colunas de um quadro
-curl -s http://localhost:8080/api/v1/boards/{boardId}/columns | jq
-
-# Buscar uma coluna
-curl -s http://localhost:8080/api/v1/columns/{columnId} | jq
-
-# Criar um cartão
-curl -s -X POST http://localhost:8080/api/v1/cards \
+# Executar o próximo dia com decisões
+curl -s -X POST http://localhost:8080/api/v1/scenarios/<scenarioId>/run \
   -H "Content-Type: application/json" \
-  -d '{"columnId": "{columnId}", "title": "Implementar login", "description": "Opcional"}' | jq
+  -d '{"decisions":[{"type":"ADD_ITEM","payload":{"title":"Nova tarefa","serviceClass":"STANDARD"}}]}' | jq
 
-# Buscar um cartão
-curl -s http://localhost:8080/api/v1/cards/{cardId} | jq
-
-# Mover cartão para outra coluna
-curl -s -X PATCH http://localhost:8080/api/v1/cards/{cardId}/move \
-  -H "Content-Type: application/json" \
-  -d '{"columnId": "{targetColumnId}", "position": 0}' | jq
+# Consultar snapshot do dia 1
+curl -s http://localhost:8080/api/v1/scenarios/<scenarioId>/days/1/snapshot | jq
 ```
+
+**Tipos de decisão disponíveis:** `MOVE_ITEM`, `BLOCK_ITEM`, `UNBLOCK_ITEM`, `ADD_ITEM`
 
 ---
 
@@ -342,29 +301,18 @@ curl -s -X PATCH http://localhost:8080/api/v1/cards/{cardId}/move \
 
 Cada requisição recebe um identificador único de correlação propagado em toda a execução:
 
-- **Header de entrada**: `X-Request-ID` — se enviado pelo cliente, o mesmo valor é reutilizado.
-- **Header de resposta**: `X-Request-ID` — sempre presente na resposta, seja sucesso ou erro.
-- **Logs**: o `requestId` é adicionado ao MDC (Mapped Diagnostic Context) e aparece em todas as linhas de log da requisição no formato `[rid=<uuid>]`.
-- **Erros**: todas as respostas de erro (`4xx`, `5xx`) incluem o campo `requestId` no corpo JSON para facilitar a correlação com os logs.
+- **Header de entrada**: `X-Request-ID` — reutilizado se enviado pelo cliente.
+- **Header de resposta**: `X-Request-ID` — sempre presente.
+- **MDC**: `requestId`, `scenarioId` e `day` são adicionados ao contexto de log.
+- **Erros**: todas as respostas `4xx`/`5xx` incluem `requestId` no corpo JSON.
 
-**Exemplo de log:**
 ```
-14:22:01.123 [ktor-nio-thread-1] INFO  RequestLogging [rid=3f2a1b4c-...] - POST /api/v1/boards → 201 Created
-```
-
-**Exemplo de resposta de erro:**
-```json
-{
-  "error": "Nome do quadro não pode ser vazio.",
-  "requestId": "3f2a1b4c-8e2d-4f1a-b9c3-..."
-}
+14:22:01.123 [ktor-nio-thread-1] INFO [rid=3f2a1b4c] - POST /api/v1/scenarios/run → 200 OK
 ```
 
 ---
 
 ## Documentação OpenAPI
-
-A API expõe documentação interativa via Swagger UI quando a aplicação está em execução:
 
 - **Swagger UI**: `http://localhost:8080/swagger`
 - **OpenAPI JSON**: `http://localhost:8080/api.json`
@@ -381,7 +329,6 @@ A API expõe documentação interativa via Swagger UI quando a aplicação está
 ### Configuração do banco
 
 ```bash
-# Com Docker
 docker run -d \
   --name kanban-db \
   -e POSTGRES_DB=kanbanvision \
@@ -415,14 +362,16 @@ java -jar http_api/build/libs/kanban-vision-api.jar
 # Por módulo
 ./gradlew :domain:check
 ./gradlew :usecases:check
+./gradlew :sql_persistence:check
+./gradlew :http_api:check
 
-# Formatar código automaticamente
+# Formatar código automaticamente (KtLint)
 ./gradlew ktlintFormat
 ```
 
 O pipeline de qualidade exige:
-- **Detekt** — análise estática sem violações
-- **Ktlint** — estilo de código consistente
+- **Detekt** — análise estática sem violações (`warningsAsErrors = true`)
+- **KtLint** — estilo de código consistente
 - **JaCoCo** — cobertura mínima de 90% de instruções por módulo
 
 ---
@@ -433,31 +382,26 @@ O pipeline de qualidade exige:
 # Rodar todos
 ./gradlew testAll
 
-# Rodar um módulo
+# Por módulo
 ./gradlew :domain:test
 ./gradlew :usecases:test
+./gradlew :sql_persistence:test
+./gradlew :http_api:test
 
-# Rodar uma classe específica
+# Uma classe específica
 ./gradlew :domain:test --tests "com.kanbanvision.domain.model.BoardTest"
 ```
 
-Os testes de casos de uso utilizam **MockK** para isolar os repositórios e **kotlinx-coroutines-test** para testar funções suspensas.
+- **Testes de domínio** — unitários puros, sem dependências externas.
+- **Testes de use case** — MockK para isolar repositórios, `kotlinx-coroutines-test`.
+- **Testes de persistência** — integração com Embedded PostgreSQL (zonky).
+- **Testes de rota** — `testApplication` do Ktor + Koin + MockK.
 
 ---
 
 ## Variáveis de configuração
 
-Configuradas via `application.conf` (Ktor), com fallback para variáveis de ambiente:
-
-```hocon
-database {
-  url      = "jdbc:postgresql://localhost:5432/kanbanvision"
-  driver   = "org.postgresql.Driver"
-  user     = "kanban"
-  password = "kanban"
-  poolSize = 10
-}
-```
+Configuradas via `application.conf`, com fallback para variáveis de ambiente:
 
 | Variável de ambiente | Padrão |
 |---|---|
@@ -473,62 +417,30 @@ database {
 
 ### Java 21 não encontrado
 
-O projeto exige Java 21. O Gradle usa o path configurado em `gradle.properties` (`org.gradle.java.home`). Se o build falhar com `Could not determine java version`:
-
 ```bash
-# Verificar a versão ativa
-java -version
-
-# Configurar manualmente (exemplo macOS com SDKMAN)
-sdk install java 21-tem
-sdk use java 21-tem
-
-# Ou exportar a variável antes do build
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 ./gradlew testAll
 ```
 
 ### PostgreSQL recusado na inicialização
 
-Se a aplicação falhar com `Connection refused` ao subir:
-
 ```bash
-# Verificar se o container está rodando
 docker ps | grep kanban-db
-
-# Subir novamente se necessário
 docker start kanban-db
-
-# Verificar logs do container
-docker logs kanban-db
 ```
-
-Confirme que as variáveis de ambiente `DATABASE_URL`, `DATABASE_USER` e `DATABASE_PASSWORD` estão alinhadas com a configuração do container.
 
 ### JaCoCo falhando com cobertura abaixo de 90%
 
-O gate de cobertura é por módulo. Para identificar qual módulo está abaixo:
-
 ```bash
-./gradlew :domain:test :domain:jacocoTestCoverageVerification
-./gradlew :usecases:test :usecases:jacocoTestCoverageVerification
 ./gradlew :sql_persistence:test :sql_persistence:jacocoTestCoverageVerification
-./gradlew :http_api:test :http_api:jacocoTestCoverageVerification
+# Relatório HTML: build/reports/jacoco/test/html/index.html
 ```
-
-O relatório HTML em `build/reports/jacoco/test/html/index.html` mostra a cobertura linha a linha.
 
 ### Detekt ou KtLint bloqueando o build
 
 ```bash
-# Ver todos os problemas de uma vez
-./gradlew detekt
-
-# Corrigir formatação automaticamente (KtLint)
-./gradlew ktlintFormat
-
-# Rodar Detekt apenas em um módulo
-./gradlew :domain:detekt
+./gradlew ktlintFormat   # corrige formatação automaticamente
+./gradlew detekt         # lista violações Detekt
 ```
 
 ---
