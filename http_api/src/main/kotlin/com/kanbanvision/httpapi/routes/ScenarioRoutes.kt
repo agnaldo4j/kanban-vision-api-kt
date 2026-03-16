@@ -26,6 +26,7 @@ import io.ktor.server.routing.route
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 import org.slf4j.MDC
+import java.util.Locale
 
 fun Route.scenarioRoutes() {
     val createScenario: CreateScenarioUseCase by inject()
@@ -147,8 +148,9 @@ private suspend fun ApplicationCall.handleCreateScenario(createScenario: CreateS
         ).fold(
             ifLeft = { error -> respondWithDomainError(error) },
             ifRight = { id ->
-                MDC.put("scenarioId", id.value)
-                respond(HttpStatusCode.Created, ScenarioCreatedResponse(scenarioId = id.value))
+                MDC.putCloseable("scenarioId", id.value).use {
+                    respond(HttpStatusCode.Created, ScenarioCreatedResponse(scenarioId = id.value))
+                }
             },
         )
 }
@@ -156,70 +158,75 @@ private suspend fun ApplicationCall.handleCreateScenario(createScenario: CreateS
 private suspend fun ApplicationCall.handleGetScenario(getScenario: GetScenarioUseCase) {
     val scenarioId =
         parameters["scenarioId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenarioId"))
-    MDC.put("scenarioId", scenarioId)
-    getScenario.execute(GetScenarioQuery(scenarioId = scenarioId)).fold(
-        ifLeft = { error -> respondWithDomainError(error) },
-        ifRight = { result ->
-            respond(
-                ScenarioResponse(
-                    scenarioId = result.scenario.id.value,
-                    tenantId = result.scenario.tenantId.value,
-                    wipLimit = result.scenario.config.wipLimit,
-                    teamSize = result.scenario.config.teamSize,
-                    seedValue = result.scenario.config.seedValue,
-                    state =
-                        SimulationStateResponse(
-                            currentDay = result.state.currentDay.value,
-                            wipLimit = result.state.policySet.wipLimit,
-                            teamSize = result.scenario.config.teamSize,
-                            itemCount = result.state.items.size,
-                        ),
-                ),
-            )
-        },
-    )
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenario id"))
+    MDC.putCloseable("scenarioId", scenarioId).use {
+        getScenario.execute(GetScenarioQuery(scenarioId = scenarioId)).fold(
+            ifLeft = { error -> respondWithDomainError(error) },
+            ifRight = { result ->
+                respond(
+                    ScenarioResponse(
+                        scenarioId = result.scenario.id.value,
+                        tenantId = result.scenario.tenantId.value,
+                        wipLimit = result.scenario.config.wipLimit,
+                        teamSize = result.scenario.config.teamSize,
+                        seedValue = result.scenario.config.seedValue,
+                        state =
+                            SimulationStateResponse(
+                                currentDay = result.state.currentDay.value,
+                                wipLimit = result.state.policySet.wipLimit,
+                                teamSize = result.scenario.config.teamSize,
+                                itemCount = result.state.items.size,
+                            ),
+                    ),
+                )
+            },
+        )
+    }
 }
 
 private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
     val scenarioId =
         parameters["scenarioId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenarioId"))
-    MDC.put("scenarioId", scenarioId)
-    val request = receive<RunDayRequest>()
-    val decisions =
-        request.decisions.map { d ->
-            val type =
-                runCatching { DecisionType.valueOf(d.type.uppercase()) }.getOrElse {
-                    return respondWithDomainError(DomainError.ValidationError("Unknown decision type: ${d.type}"))
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenario id"))
+    MDC.putCloseable("scenarioId", scenarioId).use {
+        val request = receive<RunDayRequest>()
+        val decisions =
+            request.decisions.map { d ->
+                val type =
+                    runCatching { DecisionType.valueOf(d.type.uppercase(Locale.ROOT)) }.getOrElse {
+                        return@use respondWithDomainError(DomainError.ValidationError("Unknown decision type: ${d.type}"))
+                    }
+                Decision(id = DecisionId.generate(), type = type, payload = d.payload)
+            }
+        runDay.execute(RunDayCommand(scenarioId = scenarioId, decisions = decisions)).fold(
+            ifLeft = { error -> respondWithDomainError(error) },
+            ifRight = { snapshot ->
+                MDC.putCloseable("day", snapshot.day.value.toString()).use {
+                    respond(snapshot.toResponse())
                 }
-            Decision(id = DecisionId.generate(), type = type, payload = d.payload)
-        }
-    runDay.execute(RunDayCommand(scenarioId = scenarioId, decisions = decisions)).fold(
-        ifLeft = { error -> respondWithDomainError(error) },
-        ifRight = { snapshot ->
-            MDC.put("day", snapshot.day.value.toString())
-            respond(snapshot.toResponse())
-        },
-    )
+            },
+        )
+    }
 }
 
 private suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: GetDailySnapshotUseCase) {
     val scenarioId =
         parameters["scenarioId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenarioId"))
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing scenario id"))
     val dayStr =
         parameters["day"]
             ?: return respondWithDomainError(DomainError.ValidationError("Missing day"))
     val day =
         dayStr.toIntOrNull()
             ?: return respondWithDomainError(DomainError.ValidationError("Day must be an integer"))
-    MDC.put("scenarioId", scenarioId)
-    MDC.put("day", day.toString())
-    getDailySnapshot.execute(GetDailySnapshotQuery(scenarioId = scenarioId, day = day)).fold(
-        ifLeft = { error -> respondWithDomainError(error) },
-        ifRight = { snapshot -> respond(snapshot.toResponse()) },
-    )
+    MDC.putCloseable("scenarioId", scenarioId).use {
+        MDC.putCloseable("day", day.toString()).use {
+            getDailySnapshot.execute(GetDailySnapshotQuery(scenarioId = scenarioId, day = day)).fold(
+                ifLeft = { error -> respondWithDomainError(error) },
+                ifRight = { snapshot -> respond(snapshot.toResponse()) },
+            )
+        }
+    }
 }
 
 private fun DailySnapshot.toResponse() =
