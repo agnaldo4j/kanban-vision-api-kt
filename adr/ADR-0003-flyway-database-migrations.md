@@ -67,8 +67,8 @@ Adotar **Flyway 10.x** para gerenciar todas as migrations PostgreSQL.
 ### Dependências adicionadas (`sql_persistence/build.gradle.kts`)
 
 ```kotlin
-implementation("org.flywaydb:flyway-core:10.23.0")
-runtimeOnly("org.flywaydb:flyway-database-postgresql:10.23.0")
+implementation("org.flywaydb:flyway-core:10.21.0")
+runtimeOnly("org.flywaydb:flyway-database-postgresql:10.21.0")
 ```
 
 ### Arquivos de migration
@@ -88,5 +88,5 @@ runtimeOnly("org.flywaydb:flyway-database-postgresql:10.23.0")
 
 ```bash
 ./gradlew :sql_persistence:test   # FlywayMigrationIntegrationTest (5 testes verdes)
-./gradlew testAll                  # BUILD SUCCESSFUL — Detekt + KtLint + JaCoCo ≥ 90%
+./gradlew testAll                  # BUILD SUCCESSFUL — Detekt + KtLint + JaCoCo ≥ 95%
 ```

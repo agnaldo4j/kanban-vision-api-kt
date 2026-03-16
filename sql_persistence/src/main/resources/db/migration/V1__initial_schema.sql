@@ -2,20 +2,20 @@
 -- Schema inicial: boards, columns, cards (Flow Design) +
 -- tenants, scenarios, scenario_states, daily_snapshots (Simulation).
 
-CREATE TABLE IF NOT EXISTS boards (
+CREATE TABLE boards (
     id         VARCHAR(36)  PRIMARY KEY,
     name       VARCHAR(255) NOT NULL,
     created_at BIGINT       NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS columns (
+CREATE TABLE columns (
     id         VARCHAR(36)  PRIMARY KEY,
     board_id   VARCHAR(36)  NOT NULL REFERENCES boards(id),
     name       VARCHAR(255) NOT NULL,
     position   INT          NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS cards (
+CREATE TABLE cards (
     id          VARCHAR(36)  PRIMARY KEY,
     column_id   VARCHAR(36)  NOT NULL REFERENCES columns(id),
     title       VARCHAR(255) NOT NULL,
@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS cards (
     created_at  BIGINT       NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS tenants (
+CREATE TABLE tenants (
     id   VARCHAR(36)  PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS scenarios (
+CREATE TABLE scenarios (
     id         VARCHAR(36) PRIMARY KEY,
     tenant_id  VARCHAR(36) NOT NULL REFERENCES tenants(id),
     wip_limit  INT         NOT NULL,
@@ -37,12 +37,12 @@ CREATE TABLE IF NOT EXISTS scenarios (
     seed_value BIGINT      NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS scenario_states (
+CREATE TABLE scenario_states (
     scenario_id VARCHAR(36) PRIMARY KEY REFERENCES scenarios(id),
     state_json  TEXT        NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS daily_snapshots (
+CREATE TABLE daily_snapshots (
     scenario_id   VARCHAR(36) NOT NULL REFERENCES scenarios(id),
     day           INT         NOT NULL,
     snapshot_json TEXT        NOT NULL,

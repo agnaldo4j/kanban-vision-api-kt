@@ -7,31 +7,22 @@ import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.domain.model.valueobjects.TenantId
 import com.kanbanvision.persistence.DatabaseFactory
-import com.kanbanvision.persistence.IntegrationTestSetup
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.sql.Connection
 import java.sql.SQLException
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 // Covers the conn.use { } addSuppressed path in Board, Column, and Tenant repositories.
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JdbcBoardColumnTenantRepositoryMockTest {
     private val boardRepo = JdbcBoardRepository()
     private val columnRepo = JdbcColumnRepository()
     private val tenantRepo = JdbcTenantRepository()
-
-    @BeforeAll
-    fun initDatabase() {
-        IntegrationTestSetup.ensureInitialized()
-    }
 
     private fun brokenDataSource(): HikariDataSource {
         val mockDs = mockk<HikariDataSource>()

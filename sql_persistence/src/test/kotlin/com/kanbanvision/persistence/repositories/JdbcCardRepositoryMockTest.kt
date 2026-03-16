@@ -5,7 +5,6 @@ import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.DatabaseFactory
-import com.kanbanvision.persistence.IntegrationTestSetup
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
 import io.mockk.just
@@ -13,9 +12,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -25,14 +22,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 // Covers the conn.use { } addSuppressed path in JdbcCardRepository.
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JdbcCardRepositoryMockTest {
     private val repo = JdbcCardRepository()
-
-    @BeforeAll
-    fun initDatabase() {
-        IntegrationTestSetup.ensureInitialized()
-    }
 
     private fun brokenDataSource(): HikariDataSource {
         val mockDs = mockk<HikariDataSource>()

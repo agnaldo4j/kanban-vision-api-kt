@@ -7,7 +7,6 @@ import com.kanbanvision.domain.model.scenario.SimulationState
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
 import com.kanbanvision.domain.model.valueobjects.TenantId
 import com.kanbanvision.persistence.DatabaseFactory
-import com.kanbanvision.persistence.IntegrationTestSetup
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
 import io.mockk.just
@@ -15,9 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
@@ -26,15 +23,9 @@ import kotlin.test.assertTrue
 
 // Covers the conn.use { } addSuppressed path: body throws (prepareStatement)
 // AND conn.close() also throws — exercises the suppressed-exception branch in Kotlin's use { }.
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JdbcScenarioRepositoryMockTest {
     private val repo = JdbcScenarioRepository()
     private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 42L)
-
-    @BeforeAll
-    fun initDatabase() {
-        IntegrationTestSetup.ensureInitialized()
-    }
 
     private fun brokenDataSource(): HikariDataSource {
         val mockDs = mockk<HikariDataSource>()

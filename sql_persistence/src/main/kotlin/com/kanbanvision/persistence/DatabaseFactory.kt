@@ -10,6 +10,7 @@ data class DatabaseConfig(
     val user: String,
     val password: String,
     val poolSize: Int = 10,
+    val baselineOnMigrate: Boolean = false,
 )
 
 object DatabaseFactory {
@@ -23,16 +24,19 @@ object DatabaseFactory {
         private set
 
     fun init(config: DatabaseConfig) {
+        if (::dataSource.isInitialized) {
+            dataSource.close()
+        }
         dataSource = HikariDataSource(buildHikariConfig(config))
-        runMigrations()
+        runMigrations(config.baselineOnMigrate)
     }
 
-    private fun runMigrations() {
+    private fun runMigrations(baselineOnMigrate: Boolean) {
         Flyway
             .configure()
             .dataSource(dataSource)
             .locations("classpath:db/migration")
-            .baselineOnMigrate(false)
+            .baselineOnMigrate(baselineOnMigrate)
             .validateOnMigrate(true)
             .load()
             .migrate()
