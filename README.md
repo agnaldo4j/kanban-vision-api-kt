@@ -121,7 +121,7 @@ C4Container
     Container(sql, "sql_persistence", "Kotlin / JDBC + HikariCP", "Implementa os ports de repositório. SQL puro, serialização JSON de estado, schema PostgreSQL.")
   }
 
-  SystemDb_Ext(db, "PostgreSQL 16", "Banco de dados relacional")
+  SystemDb_Ext(db, "PostgreSQL", "Banco de dados relacional")
 
   Rel(user, http, "HTTP/REST", "JSON")
   Rel(http, uc, "invoca casos de uso")
