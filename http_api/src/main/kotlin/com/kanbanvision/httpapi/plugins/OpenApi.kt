@@ -13,7 +13,18 @@ fun Application.configureOpenApi() {
         info {
             title = "Kanban Vision API"
             version = "1.0.0"
+            summary = "API REST para simulação e gerenciamento de quadros Kanban"
             description = "Simulador de quadro Kanban — gerencie boards, colunas e cartões via REST."
+            contact {
+                name = "Kanban Vision"
+            }
+        }
+        tags {
+            tag("boards") { description = "Gerenciamento de quadros Kanban" }
+            tag("columns") { description = "Colunas dentro de um quadro" }
+            tag("cards") { description = "Cartões e movimentações" }
+            tag("scenarios") { description = "Motor de simulação — criação e execução de cenários" }
+            tag("health") { description = "Liveness e readiness da aplicação" }
         }
     }
 

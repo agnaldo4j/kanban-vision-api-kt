@@ -6,6 +6,8 @@ import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.movement.Movement
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.usecases.scenario.DailyMetrics
 import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
@@ -34,6 +36,8 @@ fun Route.scenarioAnalyticsRoutes() {
 
 private fun getMovementsByDaySpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getMovementsByDay"
+        summary = "Retorna movimentos de itens de um dia da simulação"
         tags("scenarios")
         description = "Retorna os movimentos de itens ocorridos em um dia específico da simulação."
         request {
@@ -51,13 +55,25 @@ private fun getMovementsByDaySpec(): RouteConfig.() -> Unit =
                 description = "Lista de movimentos do dia."
                 body<List<MovementResponse>>()
             }
-            code(HttpStatusCode.NotFound) { description = "Snapshot não encontrado para o dia informado." }
-            code(HttpStatusCode.BadRequest) { description = "Parâmetros inválidos." }
+            code(HttpStatusCode.NotFound) {
+                description = "Snapshot não encontrado para o `day` informado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.BadRequest) {
+                description = "Parâmetro `day` inválido — deve ser inteiro ≥ 1."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
+            }
         }
     }
 
 private fun getFlowMetricsRangeSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getFlowMetricsRange"
+        summary = "Retorna métricas de fluxo Kanban por intervalo de dias"
         tags("scenarios")
         description = "Retorna as métricas de fluxo agregadas por dia em um intervalo da simulação."
         request {
@@ -79,7 +95,14 @@ private fun getFlowMetricsRangeSpec(): RouteConfig.() -> Unit =
                 description = "Lista de métricas diárias no intervalo solicitado."
                 body<List<DailyMetricsResponse>>()
             }
-            code(HttpStatusCode.BadRequest) { description = "Parâmetros inválidos." }
+            code(HttpStatusCode.BadRequest) {
+                description = "Parâmetros `fromDay`/`toDay` inválidos — devem ser inteiros com `toDay ≥ fromDay`."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
+            }
         }
     }
 

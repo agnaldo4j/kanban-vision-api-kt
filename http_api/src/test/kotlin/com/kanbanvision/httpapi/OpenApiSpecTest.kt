@@ -161,4 +161,46 @@ class OpenApiSpecTest {
                 }
             }
         }
+
+    @Test
+    fun `all routes have operationId and summary`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val paths =
+                Json.parseToJsonElement(client.get("/api.json").bodyAsText()).jsonObject["paths"]?.jsonObject
+            assertNotNull(paths)
+
+            paths.forEach { (path, pathItem) ->
+                pathItem.jsonObject.forEach { (method, operation) ->
+                    val summary = operation.jsonObject["summary"]?.jsonPrimitive?.content
+                    val operationId = operation.jsonObject["operationId"]?.jsonPrimitive?.content
+                    assertTrue(!summary.isNullOrBlank(), "Rota $method $path sem summary")
+                    assertTrue(!operationId.isNullOrBlank(), "Rota $method $path sem operationId")
+                }
+            }
+        }
+
+    @Test
+    fun `openapi spec contains health route`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val paths =
+                Json.parseToJsonElement(client.get("/api.json").bodyAsText()).jsonObject["paths"]?.jsonObject
+            assertNotNull(paths)
+            assertTrue(paths["/health"]?.jsonObject?.containsKey("get") == true)
+        }
 }

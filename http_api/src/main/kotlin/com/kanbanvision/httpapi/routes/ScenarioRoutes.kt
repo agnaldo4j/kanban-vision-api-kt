@@ -6,6 +6,8 @@ import com.kanbanvision.domain.model.decision.DecisionId
 import com.kanbanvision.domain.model.decision.DecisionType
 import com.kanbanvision.domain.model.scenario.DailySnapshot
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
@@ -49,6 +51,8 @@ fun Route.scenarioRoutes() {
 
 private fun createScenarioSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "createScenario"
+        summary = "Cria um cenário de simulação Kanban"
         tags("scenarios")
         description = "Cria um novo cenário de simulação Kanban para um tenant."
         request {
@@ -62,13 +66,25 @@ private fun createScenarioSpec(): RouteConfig.() -> Unit =
                 description = "Cenário criado com sucesso."
                 body<ScenarioCreatedResponse>()
             }
-            code(HttpStatusCode.BadRequest) { description = "Dados inválidos." }
-            code(HttpStatusCode.NotFound) { description = "Tenant não encontrado." }
+            code(HttpStatusCode.BadRequest) {
+                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.NotFound) {
+                description = "Tenant não encontrado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
+            }
         }
     }
 
 private fun getScenarioSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getScenario"
+        summary = "Retorna um cenário pelo identificador"
         tags("scenarios")
         description = "Retorna o cenário e o estado atual da simulação pelo seu identificador."
         request {
@@ -82,12 +98,21 @@ private fun getScenarioSpec(): RouteConfig.() -> Unit =
                 description = "Cenário encontrado."
                 body<ScenarioResponse>()
             }
-            code(HttpStatusCode.NotFound) { description = "Cenário não encontrado." }
+            code(HttpStatusCode.NotFound) {
+                description = "Cenário não encontrado para o `scenarioId` informado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
+            }
         }
     }
 
 private fun runDaySpec(): RouteConfig.() -> Unit =
     {
+        operationId = "runDay"
+        summary = "Executa um dia de simulação"
         tags("scenarios")
         description = "Executa um dia de simulação, aplicando as decisões fornecidas pelo usuário."
         request {
@@ -105,14 +130,29 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
                 description = "Dia executado com sucesso. Retorna o snapshot do dia."
                 body<DailySnapshotResponse>()
             }
-            code(HttpStatusCode.Conflict) { description = "O dia já foi executado anteriormente." }
-            code(HttpStatusCode.NotFound) { description = "Cenário não encontrado." }
-            code(HttpStatusCode.BadRequest) { description = "Decisão inválida." }
+            code(HttpStatusCode.Conflict) {
+                description = "O dia já foi executado anteriormente. Verificar o dia atual via `GET /scenarios/{scenarioId}`."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.NotFound) {
+                description = "Cenário não encontrado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.BadRequest) {
+                description = "Tipo de decisão inválido ou dados malformados. `error` descreve o campo inválido."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
+            }
         }
     }
 
 private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getDailySnapshot"
+        summary = "Retorna o snapshot de métricas de um dia da simulação"
         tags("scenarios")
         description = "Retorna o snapshot de métricas e movimentações de um dia específico da simulação."
         request {
@@ -130,8 +170,18 @@ private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
                 description = "Snapshot encontrado."
                 body<DailySnapshotResponse>()
             }
-            code(HttpStatusCode.NotFound) { description = "Snapshot não encontrado para o dia informado." }
-            code(HttpStatusCode.BadRequest) { description = "Parâmetros inválidos." }
+            code(HttpStatusCode.NotFound) {
+                description = "Snapshot não encontrado para o `day` informado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.BadRequest) {
+                description = "Parâmetro `day` inválido — deve ser inteiro ≥ 1."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
+            }
         }
     }
 
