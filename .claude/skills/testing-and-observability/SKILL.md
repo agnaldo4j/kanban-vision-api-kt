@@ -16,6 +16,56 @@ description: >
 
 ---
 
+## ⛔ REGRA ABSOLUTA — Configurações de Qualidade São Intocáveis
+
+**A IA NUNCA deve modificar nenhum arquivo de configuração de qualidade do projeto.**
+
+Esta regra é não negociável e se aplica a qualquer situação, inclusive quando
+o build está falhando por violação de alguma ferramenta.
+
+### Arquivos protegidos — nunca editar
+
+| Arquivo | Ferramenta | O que configura |
+|---|---|---|
+| `config/detekt/detekt.yml` | Detekt | Thresholds, regras ativas, padrões de nomenclatura |
+| `.editorconfig` | KtLint / editores | Estilo de código, tamanho de linha, ordenação de imports |
+| `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` | Convention plugin | JaCoCo gate (90%), JUnit platform, versões de ferramentas |
+| `**/build.gradle.kts` | Gradle | Exclusões de JaCoCo por módulo, dependências de teste |
+| `gradle.properties` | Gradle | Versão do Java, flags da JVM |
+
+### A resposta correta quando o build falha por qualidade
+
+```
+Build falhou por Detekt / KtLint / JaCoCo?
+         │
+         ├── Detekt → refatore o CÓDIGO para eliminar a violação
+         │
+         ├── KtLint → rode ./gradlew ktlintFormat e ajuste o código
+         │
+         └── JaCoCo → escreva o TESTE que cobre o caminho faltante
+```
+
+**Nunca:**
+- Aumentar um threshold (`LongMethod`, `CyclomaticComplexMethod`, `LargeClass`, etc.)
+- Baixar o gate de cobertura (mínimo 90% é fixo)
+- Adicionar exclusões no JaCoCo sem aprovação explícita do time
+- Desativar uma regra do Detekt
+- Adicionar `@Suppress` sem justificativa documentada no código
+
+**Se o código legítimo requer exceção** (ex: DSL declarativa que não pode ser
+dividida sem perder legibilidade), documente no PR e aguarde aprovação humana —
+não ajuste a configuração de forma autônoma.
+
+### Por que esta regra existe
+
+As configurações de qualidade representam o contrato coletivo do time sobre
+padrões de código. Alterá-las de forma autônoma:
+- Mascara problemas de design ao invés de resolvê-los
+- Cria inconsistência invisível entre o que o time acordou e o que está configurado
+- Viola a confiança no pipeline automatizado de CI/CD
+
+---
+
 ## 1. Arquitetura de Testes no Projeto
 
 Três camadas de teste, cada uma com responsabilidade distinta:
