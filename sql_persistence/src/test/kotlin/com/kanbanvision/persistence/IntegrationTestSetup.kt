@@ -51,6 +51,10 @@ object IntegrationTestSetup {
                 stmt.executeUpdate("DELETE FROM cards")
                 stmt.executeUpdate("DELETE FROM columns")
                 stmt.executeUpdate("DELETE FROM boards")
+                stmt.executeUpdate("DELETE FROM daily_snapshots")
+                stmt.executeUpdate("DELETE FROM scenario_states")
+                stmt.executeUpdate("DELETE FROM scenarios")
+                stmt.executeUpdate("DELETE FROM tenants")
             }
             conn.commit()
         }

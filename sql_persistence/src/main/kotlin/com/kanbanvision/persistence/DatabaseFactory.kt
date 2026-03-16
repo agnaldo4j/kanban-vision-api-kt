@@ -37,6 +37,10 @@ object DatabaseFactory {
                 createBoardsTable(stmt)
                 createColumnsTable(stmt)
                 createCardsTable(stmt)
+                createTenantsTable(stmt)
+                createScenariosTable(stmt)
+                createScenarioStatesTable(stmt)
+                createDailySnapshotsTable(stmt)
             }
             conn.commit()
         }
@@ -77,6 +81,55 @@ object DatabaseFactory {
                 description TEXT         NOT NULL DEFAULT '',
                 position    INT          NOT NULL,
                 created_at  BIGINT       NOT NULL
+            )
+            """.trimIndent(),
+        )
+    }
+
+    private fun createTenantsTable(stmt: java.sql.Statement) {
+        stmt.executeUpdate(
+            """
+            CREATE TABLE IF NOT EXISTS tenants (
+                id   VARCHAR(36)  PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+            )
+            """.trimIndent(),
+        )
+    }
+
+    private fun createScenariosTable(stmt: java.sql.Statement) {
+        stmt.executeUpdate(
+            """
+            CREATE TABLE IF NOT EXISTS scenarios (
+                id         VARCHAR(36) PRIMARY KEY,
+                tenant_id  VARCHAR(36) NOT NULL REFERENCES tenants(id),
+                wip_limit  INT         NOT NULL,
+                team_size  INT         NOT NULL,
+                seed_value BIGINT      NOT NULL
+            )
+            """.trimIndent(),
+        )
+    }
+
+    private fun createScenarioStatesTable(stmt: java.sql.Statement) {
+        stmt.executeUpdate(
+            """
+            CREATE TABLE IF NOT EXISTS scenario_states (
+                scenario_id VARCHAR(36) PRIMARY KEY REFERENCES scenarios(id),
+                state_json  TEXT        NOT NULL
+            )
+            """.trimIndent(),
+        )
+    }
+
+    private fun createDailySnapshotsTable(stmt: java.sql.Statement) {
+        stmt.executeUpdate(
+            """
+            CREATE TABLE IF NOT EXISTS daily_snapshots (
+                scenario_id   VARCHAR(36) NOT NULL REFERENCES scenarios(id),
+                day           INT         NOT NULL,
+                snapshot_json TEXT        NOT NULL,
+                PRIMARY KEY (scenario_id, day)
             )
             """.trimIndent(),
         )
