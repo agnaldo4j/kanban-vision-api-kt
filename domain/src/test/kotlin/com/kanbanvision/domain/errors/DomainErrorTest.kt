@@ -2,6 +2,7 @@ package com.kanbanvision.domain.errors
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class DomainErrorTest {
@@ -66,5 +67,15 @@ class DomainErrorTest {
         val error = DomainError.DayAlreadyExecuted(5)
         assertIs<DomainError>(error)
         assertEquals(5, error.day)
+    }
+
+    @Test
+    fun `DayAlreadyExecuted rejects day zero`() {
+        assertFailsWith<IllegalArgumentException> { DomainError.DayAlreadyExecuted(0) }
+    }
+
+    @Test
+    fun `DayAlreadyExecuted rejects negative day`() {
+        assertFailsWith<IllegalArgumentException> { DomainError.DayAlreadyExecuted(-1) }
     }
 }

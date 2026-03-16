@@ -43,5 +43,9 @@ sealed class DomainError {
 
     data class DayAlreadyExecuted(
         val day: Int,
-    ) : DomainError()
+    ) : DomainError() {
+        init {
+            require(day >= 1) { "DayAlreadyExecuted day must be at least 1" }
+        }
+    }
 }

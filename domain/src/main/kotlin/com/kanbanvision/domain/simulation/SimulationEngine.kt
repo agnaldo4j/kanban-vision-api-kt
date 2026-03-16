@@ -19,7 +19,8 @@ import kotlin.random.Random
 object SimulationEngine {
     /**
      * Runs a single simulation day. Pure function: same inputs always produce the same output.
-     * [seed] controls ordering of equal-priority items during auto-advance.
+     * [seed] controls ordering of non-EXPEDITE TODO items during auto-advance;
+     * EXPEDITE items are always prioritized first in their original list order.
      */
     fun runDay(
         scenarioId: ScenarioId,
@@ -87,12 +88,12 @@ object SimulationEngine {
         ctx: EngineContext,
     ) {
         val idx = current.indexOfFirst { it.id.value == payload["workItemId"] }
-        if (idx < 0) return
+        if (idx < 0 || current[idx].state == WorkItemState.DONE) return
         val item = current[idx]
         val advanced = item.advance()
         val movType = if (advanced.state == WorkItemState.DONE) MovementType.COMPLETED else MovementType.MOVED
         current[idx] = advanced
-        ctx.movements.add(Movement(type = movType, workItemId = item.id, day = ctx.day, reason = "decision: move"))
+        ctx.movements.add(Movement(type = movType, workItemId = item.id, day = SimulationDay(ctx.day), reason = "decision: move"))
     }
 
     private fun applyBlock(
@@ -105,7 +106,7 @@ object SimulationEngine {
         val item = current[idx]
         current[idx] = item.block()
         val reason = payload["reason"] ?: "decision: block"
-        ctx.movements.add(Movement(type = MovementType.BLOCKED, workItemId = item.id, day = ctx.day, reason = reason))
+        ctx.movements.add(Movement(type = MovementType.BLOCKED, workItemId = item.id, day = SimulationDay(ctx.day), reason = reason))
     }
 
     private fun applyUnblock(
@@ -117,7 +118,9 @@ object SimulationEngine {
         if (idx < 0 || current[idx].state != WorkItemState.BLOCKED) return
         val item = current[idx]
         current[idx] = item.advance()
-        ctx.movements.add(Movement(type = MovementType.UNBLOCKED, workItemId = item.id, day = ctx.day, reason = "decision: unblock"))
+        ctx.movements.add(
+            Movement(type = MovementType.UNBLOCKED, workItemId = item.id, day = SimulationDay(ctx.day), reason = "decision: unblock"),
+        )
     }
 
     private fun applyAdd(
@@ -147,7 +150,9 @@ object SimulationEngine {
             if (wipCount >= policySet.wipLimit) break
             val item = current[idx]
             current[idx] = item.advance()
-            ctx.movements.add(Movement(type = MovementType.MOVED, workItemId = item.id, day = ctx.day, reason = "auto: started"))
+            ctx.movements.add(
+                Movement(type = MovementType.MOVED, workItemId = item.id, day = SimulationDay(ctx.day), reason = "auto: started"),
+            )
             wipCount++
         }
 
