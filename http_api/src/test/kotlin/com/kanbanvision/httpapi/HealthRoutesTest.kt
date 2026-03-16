@@ -19,6 +19,8 @@ import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
@@ -28,6 +30,7 @@ import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class HealthRoutesTest {
     private val testModule =
@@ -62,5 +65,27 @@ class HealthRoutesTest {
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals("ok", body["status"]?.jsonPrimitive?.content)
+        }
+
+    @Test
+    fun `unhandled exception in application returns 500 with requestId`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureSerialization()
+                configureStatusPages()
+                routing {
+                    @Suppress("TooGenericExceptionThrown")
+                    get("/boom") { throw RuntimeException("intentional error") }
+                }
+            }
+
+            val response = client.get("/boom")
+
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("Internal server error", body["error"]?.jsonPrimitive?.content)
+            assertNotNull(body["requestId"])
         }
 }

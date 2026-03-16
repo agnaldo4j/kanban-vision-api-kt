@@ -40,7 +40,7 @@ fun Route.boardRoutes() {
         get("/{id}", getBoardByIdSpec()) {
             val id =
                 call.parameters["id"]
-                    ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing board id"))
+                    ?: return@get call.respondWithDomainError(DomainError.ValidationError("Missing board id"))
             getBoard.execute(GetBoardQuery(id = id)).fold(
                 ifLeft = { error -> call.respondWithDomainError(error) },
                 ifRight = { board -> call.respond(BoardResponse(board.id.value, board.name)) },
