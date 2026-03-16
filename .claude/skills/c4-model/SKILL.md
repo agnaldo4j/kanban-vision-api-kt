@@ -55,7 +55,7 @@ http_api/src/main/kotlin/com/kanbanvision/httpapi/plugins/
 http_api/src/main/kotlin/com/kanbanvision/httpapi/di/
 
 # Persistência
-sql_persistence/src/main/kotlin/com/kanbanvision/sqlpersistence/repositories/
+sql_persistence/src/main/kotlin/com/kanbanvision/persistence/repositories/
 ```
 
 ### Passo 2 — Atualize a seção no README
