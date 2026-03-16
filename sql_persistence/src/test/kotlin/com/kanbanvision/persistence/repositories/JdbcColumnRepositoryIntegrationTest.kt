@@ -141,4 +141,25 @@ class JdbcColumnRepositoryIntegrationTest {
             assertTrue(found.isLeft())
             assertIs<DomainError.ColumnNotFound>(found.leftOrNull())
         }
+
+    @Test
+    fun `save with name containing special characters persists correctly`() =
+        runBlocking {
+            val column = newColumn(name = "In Progress / Revisão & \"Done\"")
+
+            repository.save(column)
+
+            val result = repository.findById(column.id)
+            assertTrue(result.isRight())
+            assertEquals("In Progress / Revisão & \"Done\"", result.getOrNull()?.name)
+        }
+
+    @Test
+    fun `findById with non-UUID string returns ColumnNotFound`() =
+        runBlocking<Unit> {
+            val result = repository.findById(ColumnId("not-a-valid-uuid"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
+        }
 }
