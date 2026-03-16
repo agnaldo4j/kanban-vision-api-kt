@@ -139,7 +139,7 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
                 body<DomainErrorResponse>()
             }
             code(HttpStatusCode.BadRequest) {
-                description = "Tipo de decisão inválido ou dados malformados. `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                description = "Tipo de decisão inválido ou dados malformados. `errors` lista os campos inválidos."
                 body<ValidationErrorResponse>()
             }
             code(HttpStatusCode.InternalServerError) {
