@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.model.decision.Decision
 import com.kanbanvision.domain.model.policy.PolicySet
 import com.kanbanvision.domain.model.scenario.ScenarioConfig
 import com.kanbanvision.domain.model.scenario.SimulationState
@@ -10,6 +11,7 @@ import com.kanbanvision.domain.model.workitem.WorkItemState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class SimulationEngineBehaviorTest {
     private val scenarioId = ScenarioId.generate()
@@ -19,6 +21,12 @@ class SimulationEngineBehaviorTest {
     private fun inProgress(title: String): WorkItem =
         WorkItem
             .create(title)
+            .advance()
+
+    private fun done(title: String): WorkItem =
+        WorkItem
+            .create(title)
+            .advance()
             .advance()
 
     // ─────────────────────────────────────────────
@@ -111,5 +119,26 @@ class SimulationEngineBehaviorTest {
         assertEquals(ServiceClass.EXPEDITE, startedItem.serviceClass)
         val standardItem = result.newState.items.first { it.serviceClass == ServiceClass.STANDARD }
         assertEquals(WorkItemState.TODO, standardItem.state)
+    }
+
+    // ─────────────────────────────────────────────
+    // Edge cases
+    // ─────────────────────────────────────────────
+
+    @Test
+    fun `MOVE_ITEM on DONE item is silently ignored`() {
+        val item = done("Already done")
+        val state = emptyState.copy(items = listOf(item))
+
+        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id.value)), seed = 0L)
+
+        assertEquals(
+            WorkItemState.DONE,
+            result.newState.items
+                .first()
+                .state,
+        )
+        assertTrue(result.snapshot.movements.none { it.reason == "decision: move" })
+        assertEquals(0, result.snapshot.metrics.throughput)
     }
 }
