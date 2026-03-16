@@ -1,5 +1,6 @@
 plugins {
     id("kanban.kotlin-common")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 dependencies {
@@ -10,6 +11,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:6.3.0")
     implementation("org.postgresql:postgresql:42.7.5")
     implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
@@ -23,7 +25,7 @@ dependencies {
 // JdbcCardRepository$query$2) produced by the Kotlin compiler and contain unreachable
 // addSuppressed branches that cannot be exercised without deliberately crashing the JDBC driver.
 // Applied to both report and verification so the two tasks stay in sync.
-val jacocoExcludes = listOf("**/*\$query\$*.class")
+val jacocoExcludes = listOf("**/*\$query\$*.class", "**/*\$\$serializer.class", "**/*\$Companion.class")
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     classDirectories.setFrom(
