@@ -8,7 +8,7 @@
 | Data      | 2026-03-16                                                   |
 | Autores   | @agnaldo4j                                                   |
 | Branch    | feat/adr-0002-ciclo5-qualidade-dto-consistencia              |
-| PR        | (preencher após abrir o PR)                                  |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/52    |
 | Supersede | —                                                            |
 
 ---
@@ -158,7 +158,7 @@ estabilidade dos 66 testes existentes nem exigir mudanças em configurações de
 - [x] **Tarefa 4** — `./gradlew testAll` — BUILD SUCCESSFUL, zero violações Detekt/KtLint,
       cobertura ≥ 90%
 
-- [ ] **Tarefa 5** — Preencher o campo `PR` com a URL do PR aberto
+- [x] **Tarefa 5** — Campo `PR` preenchido: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/52
 
 ---
 
