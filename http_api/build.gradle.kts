@@ -62,9 +62,9 @@ dependencies {
     implementation("io.ktor:ktor-server-call-logging-jvm:3.1.2")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.1.2")
 
-    implementation("io.insert-koin:koin-core:4.1.0")
-    implementation("io.insert-koin:koin-ktor:4.1.0")
-    implementation("io.insert-koin:koin-logger-slf4j:4.1.0")
+    implementation("io.insert-koin:koin-core:4.1.1")
+    implementation("io.insert-koin:koin-ktor:4.1.1")
+    implementation("io.insert-koin:koin-logger-slf4j:4.1.1")
 
     implementation("io.github.smiley4:ktor-openapi:5.6.0")
     implementation("io.github.smiley4:ktor-swagger-ui:5.6.0")
@@ -73,7 +73,7 @@ dependencies {
 
     testImplementation("io.ktor:ktor-server-test-host-jvm:3.1.2")
     testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.1.2")
-    testImplementation("io.insert-koin:koin-test-junit5:4.1.0")
+    testImplementation("io.insert-koin:koin-test-junit5:4.1.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
