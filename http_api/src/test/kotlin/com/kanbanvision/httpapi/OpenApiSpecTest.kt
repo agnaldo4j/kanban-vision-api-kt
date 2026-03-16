@@ -20,6 +20,8 @@ import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
+import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
 import io.ktor.client.request.get
@@ -58,6 +60,8 @@ class OpenApiSpecTest {
             single { GetScenarioUseCase(get()) }
             single { RunDayUseCase(get(), get()) }
             single { GetDailySnapshotUseCase(get()) }
+            single { GetMovementsByDayUseCase(get()) }
+            single { GetFlowMetricsRangeUseCase(get()) }
         }
 
     @Test
@@ -123,6 +127,12 @@ class OpenApiSpecTest {
             assertTrue(paths["/api/v1/scenarios/{scenarioId}/run"]?.jsonObject?.containsKey("post") == true)
             assertTrue(
                 paths["/api/v1/scenarios/{scenarioId}/days/{day}/snapshot"]?.jsonObject?.containsKey("get") == true,
+            )
+            assertTrue(
+                paths["/api/v1/scenarios/{scenarioId}/days/{day}/movements"]?.jsonObject?.containsKey("get") == true,
+            )
+            assertTrue(
+                paths["/api/v1/scenarios/{scenarioId}/metrics"]?.jsonObject?.containsKey("get") == true,
             )
         }
 

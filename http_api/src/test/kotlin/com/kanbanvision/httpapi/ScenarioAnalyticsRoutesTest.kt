@@ -1,17 +1,13 @@
 package com.kanbanvision.httpapi
 
-import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.policy.PolicySet
+import com.kanbanvision.domain.model.movement.Movement
+import com.kanbanvision.domain.model.movement.MovementType
 import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
 import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationState
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.valueobjects.WorkItemId
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -37,40 +33,37 @@ import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class ScenarioRunDayRoutesTest {
+class ScenarioAnalyticsRoutesTest {
     private val scenarioId = ScenarioId("scenario-test-id")
-    private val tenantId = TenantId("tenant-test-id")
-    private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 42L)
-    private val scenario = Scenario(id = scenarioId, tenantId = tenantId, config = config)
-    private val state =
-        SimulationState(
-            currentDay = SimulationDay(1),
-            policySet = PolicySet(wipLimit = 3),
-            items = emptyList(),
+    private val movement =
+        Movement(
+            type = MovementType.MOVED,
+            workItemId = WorkItemId("item-1"),
+            day = SimulationDay(1),
+            reason = "WIP available",
         )
     private val snapshot =
         DailySnapshot(
             scenarioId = scenarioId,
             day = SimulationDay(1),
-            metrics = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0),
-            movements = emptyList(),
+            metrics = FlowMetrics(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.5),
+            movements = listOf(movement),
         )
 
     private val scenarioRepository = mockk<ScenarioRepository>()
@@ -101,7 +94,7 @@ class ScenarioRunDayRoutesTest {
         }
 
     @Test
-    fun `POST scenarios run day returns 200 with snapshot`() =
+    fun `GET movements by day returns 200 with movement list`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -112,26 +105,19 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
-            coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
-            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns null.right()
-            coEvery { scenarioRepository.saveState(scenarioId, any()) } answers { secondArg<SimulationState>().right() }
-            coEvery { snapshotRepository.save(any()) } answers { firstArg<DailySnapshot>().right() }
+            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements")
 
             assertEquals(HttpStatusCode.OK, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["day"])
-            assertNotNull(body["metrics"])
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+            assertEquals(1, body.size)
+            assertEquals("MOVED", body[0].jsonObject["type"]?.jsonPrimitive?.content)
+            assertEquals("item-1", body[0].jsonObject["workItemId"]?.jsonPrimitive?.content)
         }
 
     @Test
-    fun `POST scenarios run day returns 409 when day already executed`() =
+    fun `GET movements by day returns 404 when snapshot not found`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -142,24 +128,18 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
-            coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
-            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
+            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(99)) } returns null.right()
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/99/movements")
 
-            assertEquals(HttpStatusCode.Conflict, response.status)
+            assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertNotNull(body["error"])
             assertNotNull(body["requestId"])
         }
 
     @Test
-    fun `POST scenarios run day with unknown decision type returns 400`() =
+    fun `GET movements by day with day 0 returns 400`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -170,11 +150,7 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[{"type":"INVALID_TYPE","payload":{}}]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/0/movements")
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -183,7 +159,7 @@ class ScenarioRunDayRoutesTest {
         }
 
     @Test
-    fun `POST scenarios run day returns 404 when scenario not found`() =
+    fun `GET flow metrics range returns 200 with daily metrics list`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -194,18 +170,76 @@ class ScenarioRunDayRoutesTest {
                 configureRouting()
             }
 
-            coEvery { scenarioRepository.findById(scenarioId) } returns
-                DomainError.ScenarioNotFound(scenarioId.value).left()
+            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns listOf(snapshot).right()
 
-            val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[]}""")
-                }
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=1")
 
-            assertEquals(HttpStatusCode.NotFound, response.status)
+            assertEquals(HttpStatusCode.OK, response.status)
+            val items = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+            assertEquals(1, items.size)
+            val first = items[0].jsonObject
+            assertEquals(1, first["day"]?.jsonPrimitive?.content?.toInt())
+            assertEquals(1, first["throughput"]?.jsonPrimitive?.content?.toInt())
+        }
+
+    @Test
+    fun `GET flow metrics range returns empty list when no snapshots in range`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns emptyList<DailySnapshot>().right()
+
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+            assertEquals(0, body.size)
+        }
+
+    @Test
+    fun `GET flow metrics range with invalid params returns 400`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=5&toDay=1")
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
+            assertNotNull(body["errors"])
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
+    fun `GET flow metrics range missing fromDay returns 400`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?toDay=5")
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["errors"])
             assertNotNull(body["requestId"])
         }
 }
