@@ -8,7 +8,7 @@ dependencies {
     implementation(project(":usecases"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-    implementation("com.zaxxer:HikariCP:6.3.0")
+    implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("org.postgresql:postgresql:42.7.5")
     implementation("org.flywaydb:flyway-core:10.21.0")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:10.21.0")
