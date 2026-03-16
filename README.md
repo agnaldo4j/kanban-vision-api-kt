@@ -312,7 +312,7 @@ classDiagram
     +ScenarioId id
     +TenantId tenantId
     +ScenarioConfig config
-    +create(tenantId, config) Scenario$
+    +create(tenantId, config) Scenario
   }
   class ScenarioConfig {
     +Int wipLimit
