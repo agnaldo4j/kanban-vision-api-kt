@@ -56,7 +56,7 @@ private fun getMovementsByDaySpec(): RouteConfig.() -> Unit =
                 body<List<MovementResponse>>()
             }
             code(HttpStatusCode.NotFound) {
-                description = "Snapshot não encontrado para o `day` informado."
+                description = "Cenário ou snapshot não encontrado — `scenarioId` inválido ou dia ainda não simulado."
                 body<DomainErrorResponse>()
             }
             code(HttpStatusCode.BadRequest) {

@@ -131,7 +131,7 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
                 body<DailySnapshotResponse>()
             }
             code(HttpStatusCode.Conflict) {
-                description = "O dia já foi executado anteriormente. Verificar o dia atual via `GET /scenarios/{scenarioId}`."
+                description = "O dia já foi executado anteriormente. Verificar o dia atual via `GET /api/v1/scenarios/{scenarioId}`."
                 body<DomainErrorResponse>()
             }
             code(HttpStatusCode.NotFound) {
@@ -139,8 +139,8 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
                 body<DomainErrorResponse>()
             }
             code(HttpStatusCode.BadRequest) {
-                description = "Tipo de decisão inválido ou dados malformados. `error` descreve o campo inválido."
-                body<DomainErrorResponse>()
+                description = "Tipo de decisão inválido ou dados malformados. `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                body<ValidationErrorResponse>()
             }
             code(HttpStatusCode.InternalServerError) {
                 description = "Erro de persistência inesperado."
@@ -171,7 +171,7 @@ private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
                 body<DailySnapshotResponse>()
             }
             code(HttpStatusCode.NotFound) {
-                description = "Snapshot não encontrado para o `day` informado."
+                description = "Cenário ou snapshot não encontrado — `scenarioId` inválido ou dia ainda não simulado."
                 body<DomainErrorResponse>()
             }
             code(HttpStatusCode.BadRequest) {
