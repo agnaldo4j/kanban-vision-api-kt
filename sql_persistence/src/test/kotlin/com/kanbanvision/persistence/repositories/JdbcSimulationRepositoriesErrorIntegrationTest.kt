@@ -45,7 +45,7 @@ class JdbcSimulationRepositoriesErrorIntegrationTest {
         }
 
     @Test
-    fun `JdbcScenarioRepository save returns PersistenceError when pool is closed`() =
+    fun `JdbcScenarioRepository findById returns PersistenceError when pool is closed`() =
         runBlocking<Unit> {
             val result = scenarioRepository.findById(ScenarioId("any-id"))
 

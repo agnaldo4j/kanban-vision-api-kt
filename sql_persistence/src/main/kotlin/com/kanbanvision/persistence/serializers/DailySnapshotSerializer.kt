@@ -8,6 +8,7 @@ import com.kanbanvision.domain.model.scenario.SimulationDay
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
 import com.kanbanvision.domain.model.valueobjects.WorkItemId
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
