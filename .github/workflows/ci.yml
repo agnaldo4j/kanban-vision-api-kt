@@ -109,7 +109,7 @@ jobs:
       - name: Find existing Detekt comment
         id: find-detekt
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
