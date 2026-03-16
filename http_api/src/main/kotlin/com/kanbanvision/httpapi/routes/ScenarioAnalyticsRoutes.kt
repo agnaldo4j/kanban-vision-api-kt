@@ -1,5 +1,8 @@
 package com.kanbanvision.httpapi.routes
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.movement.Movement
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
@@ -104,12 +107,12 @@ private suspend fun ApplicationCall.handleGetFlowMetricsRange(getFlowMetricsRang
     val scenarioId =
         parameters["scenarioId"]
             ?: return respondWithDomainError(DomainError.ValidationError("Missing scenario id"))
-    val fromDay =
-        request.queryParameters["fromDay"]?.toIntOrNull()
-            ?: return respondWithDomainError(DomainError.ValidationError("fromDay must be a valid integer"))
-    val toDay =
-        request.queryParameters["toDay"]?.toIntOrNull()
-            ?: return respondWithDomainError(DomainError.ValidationError("toDay must be a valid integer"))
+    val fromDayResult = parseIntQueryParam("fromDay")
+    val toDayResult = parseIntQueryParam("toDay")
+    if (fromDayResult.isLeft()) return respondWithDomainError(fromDayResult.leftOrNull()!!)
+    if (toDayResult.isLeft()) return respondWithDomainError(toDayResult.leftOrNull()!!)
+    val fromDay = fromDayResult.getOrNull()!!
+    val toDay = toDayResult.getOrNull()!!
     MDC.putCloseable("scenarioId", scenarioId).use {
         getFlowMetricsRange
             .execute(
@@ -119,6 +122,11 @@ private suspend fun ApplicationCall.handleGetFlowMetricsRange(getFlowMetricsRang
                 ifRight = { dailyMetrics -> respond(dailyMetrics.map { it.toResponse() }) },
             )
     }
+}
+
+private fun ApplicationCall.parseIntQueryParam(name: String): Either<DomainError.ValidationError, Int> {
+    val raw = request.queryParameters[name] ?: return DomainError.ValidationError("Missing $name").left()
+    return raw.toIntOrNull()?.right() ?: DomainError.ValidationError("$name must be an integer").left()
 }
 
 private fun Movement.toResponse() = MovementResponse(type = type.name, workItemId = workItemId.value, day = day.value, reason = reason)

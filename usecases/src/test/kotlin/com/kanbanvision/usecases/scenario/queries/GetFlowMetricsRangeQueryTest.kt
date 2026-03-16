@@ -49,5 +49,6 @@ class GetFlowMetricsRangeQueryTest {
         assertIs<DomainError.ValidationError>(error)
         assertTrue(error.message.contains("Scenario id must not be blank"))
         assertTrue(error.message.contains("fromDay must be at least 1"))
+        assertTrue(error.message.contains("toDay must be greater than or equal to fromDay"))
     }
 }
