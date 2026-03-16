@@ -325,7 +325,11 @@ classDiagram
     +List~WorkItem~ items
   }
   class SimulationEngine {
-    +runDay(state, decisions) DailySnapshot
+    +runDay(scenarioId, state, decisions, seed) SimulationResult
+  }
+  class SimulationResult {
+    +SimulationState newState
+    +DailySnapshot snapshot
   }
   class DailySnapshot {
     +ScenarioId scenarioId
@@ -383,12 +387,14 @@ classDiagram
   SimulationState "1" --> "1" PolicySet : aplica
   SimulationEngine ..> SimulationState : processa
   SimulationEngine ..> Decision : aplica
-  SimulationEngine ..> DailySnapshot : produz
+  SimulationEngine ..> SimulationResult : produz
+  SimulationResult "1" --> "1" SimulationState : novo estado
+  SimulationResult "1" --> "1" DailySnapshot : snapshot
   DailySnapshot "1" --> "1" FlowMetrics : contém
   DailySnapshot "1" *-- "0..*" Movement : registra
   WorkItem --> WorkItemState : tem estado
   Decision --> DecisionType : é do tipo
-```
+  ```
 
 ---
 
