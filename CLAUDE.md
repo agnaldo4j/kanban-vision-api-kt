@@ -39,21 +39,29 @@ sql_persistence → usecases
 http_api → sql_persistence   (wiring only, via Koin DI)
 ```
 
-- **domain** — Pure Kotlin. No framework dependencies. Contains entities (`Board`, `Card`, `Column`) and value objects (`BoardId`, `CardId`, `ColumnId`). Repository ports (interfaces) are defined here under `repositories/`.
-- **usecases** — Application layer. Depends on `domain` via `api()`. Follows CQS pattern: each use case accepts a `Command` or `Query` object. Use cases receive repository ports via constructor injection.
-- **sql_persistence** — JDBC + HikariCP + PostgreSQL. Implements domain repository interfaces. `DatabaseFactory` initialises the connection pool and runs schema creation via raw SQL. H2 is available for tests.
-- **http_api** — Entry point. Ktor (Netty engine) + Koin DI. `Main.kt` wires everything. Plugins live in `plugins/` (Observability, Serialization, StatusPages, Routing, OpenApi). Routes live in `routes/`. `AppModule` binds repository implementations to domain ports and wires use cases.
+- **domain** — Pure Kotlin. No framework dependencies. Contains board entities (`Board`, `Card`, `Column`) and simulation entities (`Tenant`, `Scenario`, `ScenarioConfig`, `SimulationDay`, `SimulationState`, `SimulationResult`, `DailySnapshot`) plus work items (`WorkItem`, `WorkItemState`, `ServiceClass`), decisions (`Decision`, `DecisionId`, `DecisionType`), movements (`Movement`, `MovementType`), metrics (`FlowMetrics`), policies (`PolicySet`), and the simulation engine (`SimulationEngine`). Value objects: `BoardId`, `CardId`, `ColumnId`, `TenantId`, `ScenarioId`, `WorkItemId`.
+- **usecases** — Application layer. Depends on `domain` via `api()`. Follows CQS pattern: each use case accepts a `Command` or `Query` object. Use cases receive repository ports via constructor injection. **Repository interfaces (ports) live here under `repositories/`**, not in domain.
+- **sql_persistence** — JDBC + HikariCP + PostgreSQL. Implements all repository interfaces. `DatabaseFactory` initialises the connection pool and runs schema creation via raw SQL. Uses `kotlinx.serialization` for JSON serialization of complex types (`SimulationState`, `DailySnapshot`) via private surrogate data classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
+- **http_api** — Entry point. Ktor (Netty engine) + Koin DI. `Main.kt` wires everything. Plugins: Observability (MDC + requestId), Serialization, StatusPages, Routing, OpenApi. Routes: `BoardRoutes`, `CardRoutes`, `ColumnRoutes`, `HealthRoutes`, `ScenarioRoutes`. `AppModule` binds repository implementations to ports and wires all use cases.
 
 ## Key Conventions
 
 - **Convention plugin**: `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` applies Kotlin JVM plugin, sets `jvmToolchain(21)`, configures Detekt, KtLint, JaCoCo, and JUnit Platform for all modules. All submodule `build.gradle.kts` apply `id("kanban.kotlin-common")`.
 - **Versions**: Dependency versions are declared inline in each module's `build.gradle.kts`. There is no `libs.versions.toml`.
-- **Kotlin serialization plugin** is applied in `http_api` using `id("org.jetbrains.kotlin.plugin.serialization")` (no version) because the plugin is already on the classpath from `buildSrc`.
+- **Kotlin serialization plugin** is applied in `http_api` and `sql_persistence` using `id("org.jetbrains.kotlin.plugin.serialization")` (no version) because the plugin is already on the classpath from `buildSrc`.
 - **Domain stays pure**: `:domain` module must have zero framework dependencies.
-- **Ports-and-adapters**: Repository interfaces are defined in `domain/repositories/`. Implementations are in `sql_persistence/repositories/`. Routes call use cases, never repositories directly.
+- **Ports-and-adapters**: Repository interfaces (ports) are defined in `usecases/repositories/`. Implementations are in `sql_persistence/repositories/`. Routes call use cases, never repositories directly.
 - **CQS pattern**: Use cases in `:usecases` are separated into commands (`Command` interface with `validate()`) and queries (`Query` interface). Example: `CreateBoardUseCase` accepts `CreateBoardCommand`.
+- **Error handling**: Domain errors are modelled as `Either<DomainError, T>` using Arrow-kt. Use cases use `either { ensure(...) { } }` with `zipOrAccumulate` for multi-field validation. Routes call `.fold(ifLeft = { respondWithDomainError(it) }, ifRight = { ... })`.
 - **Coverage gate**: JaCoCo enforces 90% minimum instruction coverage per module. Build fails if not met.
 - **Package root**: `com.kanbanvision`
+
+## Known Pitfalls
+
+- **MockK + `@JvmInline value class`**: `any()` matcher with typed inline value classes (e.g., `any<ScenarioId>()`) may fail at runtime. Use specific values or untyped `any()` for the first argument when mocking methods that accept inline value class parameters.
+- **Detekt `LargeClass` threshold**: 200 lines. Test files that grow beyond this must be split into focused test classes (e.g., `ScenarioCreationRoutesTest`, `ScenarioRunDayRoutesTest`, `ScenarioQueryRoutesTest`).
+- **`CreateScenarioUseCase` generates its own ID**: The use case calls `Scenario.create()` internally which generates a new `ScenarioId`. When mocking `scenarioRepository.saveState(...)` in tests for this use case, use `any()` for the scenarioId argument instead of a fixed value.
+- **`IntegrationTestSetup.closeDataSource()` / `reinitDataSource()`**: Use these helpers in `@BeforeEach`/`@AfterEach` to force `PersistenceError` paths in JDBC integration tests.
 
 ## Code Quality
 
@@ -65,7 +73,7 @@ All quality tools run as part of `./gradlew testAll`:
 | KtLint 1.5.0 | Code formatting | Kotlin official style |
 | JaCoCo | Coverage verification | 90% minimum instruction coverage |
 
-Detekt is configured with `warningsAsErrors = true`. Key thresholds: cyclomatic complexity 10, max line length 140, max functions per class 15.
+Detekt is configured with `warningsAsErrors = true`. Key thresholds: cyclomatic complexity 10, max line length 140, max functions per class 15, max lines per class 200.
 
 ## CI/CD
 
@@ -84,7 +92,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on 
 | DI | Koin 4.1.0 |
 | JDBC | Raw JDBC + HikariCP 6.3.0 |
 | Production DB | PostgreSQL 42.7.5 |
-| Test DB | H2 2.3.232 (in-memory) |
+| Test DB | Embedded PostgreSQL (zonky) |
+| Functional types | Arrow-kt (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit 5.11.4 + MockK 1.14.2 |
 | OpenAPI | ktor-openapi 5.0.2 + ktor-swagger-ui 5.0.2 |
 | Static analysis | Detekt 1.23.7 |
