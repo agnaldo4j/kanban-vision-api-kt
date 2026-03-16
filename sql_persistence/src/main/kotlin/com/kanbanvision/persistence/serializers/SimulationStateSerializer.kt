@@ -8,6 +8,7 @@ import com.kanbanvision.domain.model.workitem.ServiceClass
 import com.kanbanvision.domain.model.workitem.WorkItem
 import com.kanbanvision.domain.model.workitem.WorkItemState
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
