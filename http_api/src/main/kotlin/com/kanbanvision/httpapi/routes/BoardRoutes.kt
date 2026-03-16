@@ -3,6 +3,8 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.board.commands.CreateBoardCommand
@@ -49,6 +51,8 @@ fun Route.boardRoutes() {
 
 private fun createBoardSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "createBoard"
+        summary = "Cria um novo quadro Kanban"
         tags("boards")
         description = "Cria um novo quadro Kanban."
         request {
@@ -63,13 +67,20 @@ private fun createBoardSpec(): RouteConfig.() -> Unit =
                 body<BoardResponse>()
             }
             code(HttpStatusCode.BadRequest) {
-                description = "Nome do quadro inválido ou em branco."
+                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }
 
 private fun getBoardByIdSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getBoardById"
+        summary = "Retorna um quadro pelo identificador"
         tags("boards")
         description = "Busca um quadro pelo seu identificador único."
         request {
@@ -84,7 +95,12 @@ private fun getBoardByIdSpec(): RouteConfig.() -> Unit =
                 body<BoardResponse>()
             }
             code(HttpStatusCode.NotFound) {
-                description = "Quadro não encontrado."
+                description = "Quadro não encontrado para o `id` informado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }

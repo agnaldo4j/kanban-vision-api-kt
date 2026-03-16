@@ -15,11 +15,13 @@ fun Route.healthRoutes() {
 
 private fun healthSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getHealth"
+        summary = "Verifica a saúde da aplicação (liveness)"
         tags("health")
         description = "Verifica se a aplicação está em execução (liveness probe)."
         response {
             code(HttpStatusCode.OK) {
-                description = "Aplicação operacional."
+                description = "Aplicação operacional. O campo `status` retorna \"ok\"."
                 body<HealthResponse>()
             }
         }

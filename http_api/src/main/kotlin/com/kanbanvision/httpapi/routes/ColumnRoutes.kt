@@ -3,6 +3,8 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.usecases.column.CreateColumnUseCase
 import com.kanbanvision.usecases.column.GetColumnUseCase
 import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
@@ -38,6 +40,8 @@ fun Route.columnRoutes() {
 
 private fun createColumnSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "createColumn"
+        summary = "Cria uma nova coluna em um quadro"
         tags("columns")
         description = "Cria uma nova coluna em um quadro Kanban."
         request {
@@ -52,13 +56,24 @@ private fun createColumnSpec(): RouteConfig.() -> Unit =
                 body<ColumnResponse>()
             }
             code(HttpStatusCode.BadRequest) {
-                description = "Dados da coluna inválidos."
+                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.NotFound) {
+                description = "Quadro (`boardId`) não encontrado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }
 
 private fun getColumnByIdSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getColumnById"
+        summary = "Retorna uma coluna pelo identificador"
         tags("columns")
         description = "Busca uma coluna pelo seu identificador único."
         request {
@@ -73,13 +88,20 @@ private fun getColumnByIdSpec(): RouteConfig.() -> Unit =
                 body<ColumnResponse>()
             }
             code(HttpStatusCode.NotFound) {
-                description = "Coluna não encontrada."
+                description = "Coluna não encontrada para o `id` informado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }
 
 private fun listColumnsByBoardSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "listColumnsByBoard"
+        summary = "Lista todas as colunas de um quadro"
         tags("columns")
         description = "Lista todas as colunas de um quadro."
         request {
@@ -92,6 +114,14 @@ private fun listColumnsByBoardSpec(): RouteConfig.() -> Unit =
             code(HttpStatusCode.OK) {
                 description = "Lista de colunas do quadro."
                 body<List<ColumnResponse>>()
+            }
+            code(HttpStatusCode.NotFound) {
+                description = "Quadro (`boardId`) não encontrado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }

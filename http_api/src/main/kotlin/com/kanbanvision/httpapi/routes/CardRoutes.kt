@@ -3,6 +3,8 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
@@ -38,6 +40,8 @@ fun Route.cardRoutes() {
 
 private fun getCardByIdSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "getCardById"
+        summary = "Retorna um cartão pelo identificador"
         tags("cards")
         description = "Busca um cartão pelo seu identificador único."
         request {
@@ -52,13 +56,20 @@ private fun getCardByIdSpec(): RouteConfig.() -> Unit =
                 body<CardResponse>()
             }
             code(HttpStatusCode.NotFound) {
-                description = "Cartão não encontrado."
+                description = "Cartão não encontrado para o `id` informado."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }
 
 private fun createCardSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "createCard"
+        summary = "Cria um novo cartão em uma coluna"
         tags("cards")
         description = "Cria um novo cartão em uma coluna do quadro."
         request {
@@ -73,13 +84,24 @@ private fun createCardSpec(): RouteConfig.() -> Unit =
                 body<CardResponse>()
             }
             code(HttpStatusCode.BadRequest) {
-                description = "Dados do cartão inválidos."
+                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.NotFound) {
+                description = "Coluna (`columnId`) não encontrada."
+                body<DomainErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }
 
 private fun moveCardSpec(): RouteConfig.() -> Unit =
     {
+        operationId = "moveCard"
+        summary = "Move um cartão para outra coluna ou posição"
         tags("cards")
         description = "Move um cartão para outra coluna ou posição dentro do quadro."
         request {
@@ -98,10 +120,16 @@ private fun moveCardSpec(): RouteConfig.() -> Unit =
                 body<CardResponse>()
             }
             code(HttpStatusCode.NotFound) {
-                description = "Cartão não encontrado."
+                description = "Cartão ou coluna destino não encontrado."
+                body<DomainErrorResponse>()
             }
             code(HttpStatusCode.BadRequest) {
-                description = "Dados de movimentação inválidos."
+                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+                body<ValidationErrorResponse>()
+            }
+            code(HttpStatusCode.InternalServerError) {
+                description = "Erro de persistência inesperado."
+                body<DomainErrorResponse>()
             }
         }
     }
