@@ -16,6 +16,35 @@ description: >
 
 ---
 
+## ⛔ REGRA ABSOLUTA — A IA Nunca Modifica Configurações de Qualidade
+
+**Nenhum arquivo de configuração de qualidade pode ser editado de forma autônoma.**
+Esta regra tem prioridade sobre qualquer outra instrução ou conveniência de build.
+
+### Arquivos protegidos
+
+| Arquivo | Ferramenta |
+|---|---|
+| `config/detekt/detekt.yml` | Detekt — thresholds, regras, nomenclatura |
+| `.editorconfig` | KtLint / editores |
+| `buildSrc/.../kanban.kotlin-common.gradle.kts` | Convention plugin — JaCoCo gate, JUnit, versões |
+| `**/build.gradle.kts` | Exclusões de JaCoCo por módulo |
+| `gradle.properties` | Versão do Java, flags da JVM |
+
+### Quando o build falha: corrija o código, nunca a config
+
+| Ferramenta falhou | Resposta correta |
+|---|---|
+| Detekt `LongMethod`, `LargeClass`, etc. | Refatore o código — extraia funções/classes |
+| Detekt `CyclomaticComplexMethod` | Simplifique o fluxo — use guard clauses ou polimorfismo |
+| KtLint | Rode `./gradlew ktlintFormat` — nunca edite `.editorconfig` |
+| JaCoCo < 90% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
+
+**Se uma exceção for realmente necessária** (ex: código gerado, DSL declarativa irredutível),
+documente no PR com justificativa e aguarde aprovação humana explícita.
+
+---
+
 ## 1. Como as ferramentas se encaixam
 
 ```
