@@ -5,6 +5,7 @@ import com.kanbanvision.httpapi.routes.CardResponse
 import com.kanbanvision.httpapi.routes.CreateBoardRequest
 import com.kanbanvision.httpapi.routes.CreateCardRequest
 import com.kanbanvision.httpapi.routes.CreateScenarioRequest
+import com.kanbanvision.httpapi.routes.DailyMetricsResponse
 import com.kanbanvision.httpapi.routes.DailySnapshotResponse
 import com.kanbanvision.httpapi.routes.DecisionRequest
 import com.kanbanvision.httpapi.routes.FlowMetricsResponse
@@ -141,5 +142,13 @@ class DtoTest {
         assertEquals(resp, resp.copy())
         assertEquals("s1", resp.scenarioId)
         assertNotEquals(resp, resp.copy(scenarioId = "s2"))
+    }
+
+    @Test
+    fun `DailyMetricsResponse equality and copy`() {
+        val resp = DailyMetricsResponse(day = 1, throughput = 2, wipCount = 3, blockedCount = 0, avgAgingDays = 1.5)
+        assertEquals(resp, resp.copy())
+        assertEquals(1, resp.day)
+        assertNotEquals(resp, resp.copy(day = 2))
     }
 }

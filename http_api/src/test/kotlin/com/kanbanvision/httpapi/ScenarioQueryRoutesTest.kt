@@ -33,6 +33,8 @@ import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
+import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
 import io.ktor.client.request.get
@@ -92,6 +94,8 @@ class ScenarioQueryRoutesTest {
             single { GetScenarioUseCase(get()) }
             single { RunDayUseCase(get(), get()) }
             single { GetDailySnapshotUseCase(get()) }
+            single { GetMovementsByDayUseCase(get()) }
+            single { GetFlowMetricsRangeUseCase(get()) }
         }
 
     @Test

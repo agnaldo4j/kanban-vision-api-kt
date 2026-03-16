@@ -4,6 +4,7 @@ import com.kanbanvision.httpapi.routes.boardRoutes
 import com.kanbanvision.httpapi.routes.cardRoutes
 import com.kanbanvision.httpapi.routes.columnRoutes
 import com.kanbanvision.httpapi.routes.healthRoutes
+import com.kanbanvision.httpapi.routes.scenarioAnalyticsRoutes
 import com.kanbanvision.httpapi.routes.scenarioRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.routing.route
@@ -17,6 +18,7 @@ fun Application.configureRouting() {
             cardRoutes()
             columnRoutes()
             scenarioRoutes()
+            scenarioAnalyticsRoutes()
         }
     }
 }
