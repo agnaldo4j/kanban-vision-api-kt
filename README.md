@@ -348,10 +348,10 @@ classDiagram
   }
   class WorkItemState {
     <<enumeration>>
-    WAITING
+    TODO
     IN_PROGRESS
-    DONE
     BLOCKED
+    DONE
   }
   class Decision {
     +DecisionId id
