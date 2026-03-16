@@ -427,6 +427,8 @@ CreateScenarioCommand    → CreateScenarioUseCase        → ScenarioId
 RunDayCommand            → RunDayUseCase                → DailySnapshot
 GetScenarioQuery         → GetScenarioUseCase           → ScenarioWithState
 GetDailySnapshotQuery    → GetDailySnapshotUseCase      → DailySnapshot
+GetMovementsByDayQuery   → GetMovementsByDayUseCase     → List<Movement>
+GetFlowMetricsRangeQuery → GetFlowMetricsRangeUseCase   → List<FlowMetrics>
 ```
 
 ---
@@ -473,7 +475,7 @@ useCase.execute(command).fold(
 |---|---|
 | `domain` | Entidades, objetos de valor, motor de simulação, regras de negócio puras |
 | `usecases` | Casos de uso, interfaces de repositório (ports), CQS |
-| `sql_persistence` | Implementações JDBC, serialização JSON de estado, schema SQL |
+| `sql_persistence` | Implementações JDBC, serialização JSON de estado, migrations Flyway |
 | `http_api` | Rotas HTTP, serialização, injeção de dependências, ponto de entrada |
 
 ---
@@ -486,15 +488,16 @@ useCase.execute(command).fold(
 | HTTP | Ktor 3 (Netty) |
 | Serialização | kotlinx.serialization |
 | Injeção de dependência | Koin 4 |
-| Pool de conexões | HikariCP |
+| Pool de conexões | HikariCP 7.0.2 |
+| Migrations | Flyway 10.21.0 |
 | Banco de produção | PostgreSQL |
 | Banco de testes | Embedded PostgreSQL (zonky) |
 | Logging | SLF4J + MDC |
 | Testes | JUnit 5 + MockK |
-| Documentação API | ktor-openapi + Swagger UI |
+| Documentação API | ktor-openapi 5.6.0 + Swagger UI |
 | Análise estática | Detekt |
 | Estilo de código | KtLint |
-| Cobertura | JaCoCo (mínimo 90%) |
+| Cobertura | JaCoCo (mínimo 95%) |
 | Build | Gradle 8 (Kotlin DSL) |
 | Java | Java 21 |
 
@@ -529,8 +532,8 @@ usecases/
                         TenantRepository, ScenarioRepository, SnapshotRepository
 
 sql_persistence/
-├── DatabaseFactory.kt        (schema: boards, columns, cards, tenants, scenarios,
-│                              scenario_states, daily_snapshots)
+├── DatabaseFactory.kt        (HikariCP pool + Flyway migrations)
+├── resources/db/migration/   V1__initial_schema.sql, V2__add_indexes_and_constraints.sql
 ├── repositories/             JdbcBoardRepository, JdbcCardRepository, JdbcColumnRepository,
 │                             JdbcTenantRepository, JdbcScenarioRepository, JdbcSnapshotRepository
 └── serializers/              SimulationStateSerializer, DailySnapshotSerializer
@@ -580,6 +583,8 @@ Todas as rotas seguem o prefixo `/api/v1`. Documentação interativa disponível
 | `GET` | `/api/v1/scenarios/{scenarioId}` | Retorna o cenário e o estado atual |
 | `POST` | `/api/v1/scenarios/{scenarioId}/run` | Executa um dia de simulação |
 | `GET` | `/api/v1/scenarios/{scenarioId}/days/{day}/snapshot` | Retorna o snapshot de um dia |
+| `GET` | `/api/v1/scenarios/{scenarioId}/days/{day}/movements` | Lista os movimentos de um dia |
+| `GET` | `/api/v1/scenarios/{scenarioId}/metrics?fromDay=X&toDay=Y` | Agrega métricas de fluxo em um intervalo |
 
 ### Exemplos curl — Simulação
 
@@ -685,7 +690,7 @@ java -jar http_api/build/libs/kanban-vision-api.jar
 O pipeline de qualidade exige:
 - **Detekt** — análise estática sem violações (`warningsAsErrors = true`)
 - **KtLint** — estilo de código consistente
-- **JaCoCo** — cobertura mínima de 90% de instruções por módulo
+- **JaCoCo** — cobertura mínima de 95% de instruções por módulo
 
 ---
 
@@ -742,7 +747,7 @@ docker ps | grep kanban-db
 docker start kanban-db
 ```
 
-### JaCoCo falhando com cobertura abaixo de 90%
+### JaCoCo falhando com cobertura abaixo de 95%
 
 ```bash
 ./gradlew :sql_persistence:test :sql_persistence:jacocoTestCoverageVerification
