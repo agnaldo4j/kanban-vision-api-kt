@@ -263,9 +263,13 @@ sequenceDiagram
   C->>R: POST /api/v1/scenarios/{id}/run {decisions:[]}
   R->>UC: RunDayUseCase.execute(RunDayCommand)
   UC->>SR: findById(scenarioId)
-  SR->>DB: SELECT scenarios + scenario_states
-  DB-->>SR: rows
-  SR-->>UC: ScenarioWithState
+  SR->>DB: SELECT scenarios
+  DB-->>SR: scenario
+  SR-->>UC: Scenario
+  UC->>SR: findState(scenarioId)
+  SR->>DB: SELECT scenario_states
+  DB-->>SR: state
+  SR-->>UC: ScenarioState
   UC->>SE: runDay(currentState, decisions)
   SE-->>UC: SimulationResult(snapshot, newState)
   UC->>SR: saveState(scenarioId, newState)
