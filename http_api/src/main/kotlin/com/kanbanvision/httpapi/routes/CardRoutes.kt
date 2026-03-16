@@ -78,25 +78,29 @@ private fun createCardSpec(): RouteConfig.() -> Unit =
                 required = true
             }
         }
-        response {
-            code(HttpStatusCode.Created) {
-                description = "Cartão criado com sucesso."
-                body<CardResponse>()
-            }
-            code(HttpStatusCode.BadRequest) {
-                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
-                body<ValidationErrorResponse>()
-            }
-            code(HttpStatusCode.NotFound) {
-                description = "Coluna (`columnId`) não encontrada."
-                body<DomainErrorResponse>()
-            }
-            code(HttpStatusCode.InternalServerError) {
-                description = "Erro de persistência inesperado."
-                body<DomainErrorResponse>()
-            }
+        applyCreateCardResponses()
+    }
+
+private fun RouteConfig.applyCreateCardResponses() {
+    response {
+        code(HttpStatusCode.Created) {
+            description = "Cartão criado com sucesso."
+            body<CardResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.NotFound) {
+            description = "Coluna (`columnId`) não encontrada."
+            body<DomainErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
         }
     }
+}
 
 private fun moveCardSpec(): RouteConfig.() -> Unit =
     {
@@ -114,25 +118,29 @@ private fun moveCardSpec(): RouteConfig.() -> Unit =
                 required = true
             }
         }
-        response {
-            code(HttpStatusCode.OK) {
-                description = "Cartão movido com sucesso."
-                body<CardResponse>()
-            }
-            code(HttpStatusCode.NotFound) {
-                description = "Cartão ou coluna destino não encontrado."
-                body<DomainErrorResponse>()
-            }
-            code(HttpStatusCode.BadRequest) {
-                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
-                body<ValidationErrorResponse>()
-            }
-            code(HttpStatusCode.InternalServerError) {
-                description = "Erro de persistência inesperado."
-                body<DomainErrorResponse>()
-            }
+        applyMoveCardResponses()
+    }
+
+private fun RouteConfig.applyMoveCardResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Cartão movido com sucesso."
+            body<CardResponse>()
+        }
+        code(HttpStatusCode.NotFound) {
+            description = "Cartão ou coluna destino não encontrado."
+            body<DomainErrorResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
         }
     }
+}
 
 private suspend fun ApplicationCall.handleGetCard(getCard: GetCardUseCase) {
     val id =

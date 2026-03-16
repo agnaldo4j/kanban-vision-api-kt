@@ -50,25 +50,29 @@ private fun createColumnSpec(): RouteConfig.() -> Unit =
                 required = true
             }
         }
-        response {
-            code(HttpStatusCode.Created) {
-                description = "Coluna criada com sucesso."
-                body<ColumnResponse>()
-            }
-            code(HttpStatusCode.BadRequest) {
-                description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
-                body<ValidationErrorResponse>()
-            }
-            code(HttpStatusCode.NotFound) {
-                description = "Quadro (`boardId`) não encontrado."
-                body<DomainErrorResponse>()
-            }
-            code(HttpStatusCode.InternalServerError) {
-                description = "Erro de persistência inesperado."
-                body<DomainErrorResponse>()
-            }
+        applyCreateColumnResponses()
+    }
+
+private fun RouteConfig.applyCreateColumnResponses() {
+    response {
+        code(HttpStatusCode.Created) {
+            description = "Coluna criada com sucesso."
+            body<ColumnResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.NotFound) {
+            description = "Quadro (`boardId`) não encontrado."
+            body<DomainErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
         }
     }
+}
 
 private fun getColumnByIdSpec(): RouteConfig.() -> Unit =
     {

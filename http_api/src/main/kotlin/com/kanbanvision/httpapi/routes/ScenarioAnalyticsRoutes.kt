@@ -50,25 +50,29 @@ private fun getMovementsByDaySpec(): RouteConfig.() -> Unit =
                 required = true
             }
         }
-        response {
-            code(HttpStatusCode.OK) {
-                description = "Lista de movimentos do dia."
-                body<List<MovementResponse>>()
-            }
-            code(HttpStatusCode.NotFound) {
-                description = "Snapshot não encontrado para o `day` informado."
-                body<DomainErrorResponse>()
-            }
-            code(HttpStatusCode.BadRequest) {
-                description = "Parâmetro `day` inválido — deve ser inteiro ≥ 1."
-                body<ValidationErrorResponse>()
-            }
-            code(HttpStatusCode.InternalServerError) {
-                description = "Erro de persistência inesperado."
-                body<DomainErrorResponse>()
-            }
+        applyGetMovementsByDayResponses()
+    }
+
+private fun RouteConfig.applyGetMovementsByDayResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Lista de movimentos do dia."
+            body<List<MovementResponse>>()
+        }
+        code(HttpStatusCode.NotFound) {
+            description = "Cenário ou snapshot não encontrado — `scenarioId` inválido ou dia ainda não simulado."
+            body<DomainErrorResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Parâmetro `day` inválido — deve ser inteiro ≥ 1."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
         }
     }
+}
 
 private fun getFlowMetricsRangeSpec(): RouteConfig.() -> Unit =
     {
@@ -90,21 +94,25 @@ private fun getFlowMetricsRangeSpec(): RouteConfig.() -> Unit =
                 required = true
             }
         }
-        response {
-            code(HttpStatusCode.OK) {
-                description = "Lista de métricas diárias no intervalo solicitado."
-                body<List<DailyMetricsResponse>>()
-            }
-            code(HttpStatusCode.BadRequest) {
-                description = "Parâmetros `fromDay`/`toDay` inválidos — devem ser inteiros com `toDay ≥ fromDay`."
-                body<ValidationErrorResponse>()
-            }
-            code(HttpStatusCode.InternalServerError) {
-                description = "Erro de persistência inesperado."
-                body<DomainErrorResponse>()
-            }
+        applyGetFlowMetricsRangeResponses()
+    }
+
+private fun RouteConfig.applyGetFlowMetricsRangeResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Lista de métricas diárias no intervalo solicitado."
+            body<List<DailyMetricsResponse>>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Parâmetros `fromDay`/`toDay` inválidos — devem ser inteiros com `toDay ≥ fromDay`."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
         }
     }
+}
 
 private suspend fun ApplicationCall.handleGetMovementsByDay(getMovementsByDay: GetMovementsByDayUseCase) {
     val scenarioId =
