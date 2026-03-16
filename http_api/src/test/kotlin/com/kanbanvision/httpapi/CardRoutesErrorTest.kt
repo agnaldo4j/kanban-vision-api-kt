@@ -1,10 +1,9 @@
 package com.kanbanvision.httpapi
 
 import arrow.core.left
-import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.valueobjects.BoardId
+import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -23,6 +22,7 @@ import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -33,7 +33,6 @@ import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
@@ -42,10 +41,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class ColumnRoutesTest {
-    private val boardId = BoardId.generate()
+class CardRoutesErrorTest {
     private val columnId = ColumnId.generate()
-    private val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
+    private val cardId = CardId.generate()
+
+    @Suppress("UnusedPrivateProperty")
+    private val card = Card(id = cardId, columnId = columnId, title = "Task", description = "Do it", position = 0)
 
     private val boardRepository = mockk<BoardRepository>()
     private val cardRepository = mockk<CardRepository>()
@@ -67,7 +68,7 @@ class ColumnRoutesTest {
         }
 
     @Test
-    fun `POST columns creates column and returns 201`() =
+    fun `PATCH cards move returns 404 when card not found`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -78,89 +79,13 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
-            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
-            coEvery { columnRepository.findById(any()) } returns column.right()
+            coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.CardNotFound("nonexistent").left()
 
             val response =
-                client.post("/api/v1/columns") {
+                client.patch("/api/v1/cards/nonexistent/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    setBody("""{"columnId":"${columnId.value}","position":0}""")
                 }
-
-            assertEquals(HttpStatusCode.Created, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
-            assertNotNull(body["id"])
-        }
-
-    @Test
-    fun `POST columns with blank name returns 400`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            val response =
-                client.post("/api/v1/columns") {
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":""}""")
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            val firstError =
-                body["errors"]
-                    ?.jsonArray
-                    ?.get(0)
-                    ?.jsonPrimitive
-                    ?.content
-            assertEquals("Column name must not be blank", firstError)
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `GET columns by id returns column`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { columnRepository.findById(columnId) } returns column.right()
-
-            val response = client.get("/api/v1/columns/${columnId.value}")
-
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(columnId.value, body["id"]?.jsonPrimitive?.content)
-            assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
-        }
-
-    @Test
-    fun `GET columns by id returns 404 when not found`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { columnRepository.findById(any()) } returns DomainError.ColumnNotFound("nonexistent-id").left()
-
-            val response = client.get("/api/v1/columns/nonexistent-id")
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -169,7 +94,7 @@ class ColumnRoutesTest {
         }
 
     @Test
-    fun `unexpected repository error in column creation returns 500`() =
+    fun `PATCH cards move with blank columnId returns 400`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -180,12 +105,58 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
+            val response =
+                client.patch("/api/v1/cards/${cardId.value}/move") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"columnId":"","position":0}""")
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["errors"])
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
+    fun `GET cards by id returns 404 when not found`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound("nonexistent").left()
+
+            val response = client.get("/api/v1/cards/nonexistent")
+
+            assertEquals(HttpStatusCode.NotFound, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["error"])
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
+    fun `unexpected repository error in card creation returns 500`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureRouting()
+            }
+
+            coEvery { cardRepository.findByColumnId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.post("/api/v1/columns") {
+                client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    setBody("""{"columnId":"${columnId.value}","title":"Task"}""")
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
@@ -195,7 +166,7 @@ class ColumnRoutesTest {
         }
 
     @Test
-    fun `GET boards boardId columns returns list`() =
+    fun `GET cards by id returns 500 on persistence error`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -206,38 +177,18 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(boardId) } returns listOf(column).right()
+            coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/boards/${boardId.value}/columns")
+            val response = client.get("/api/v1/cards/${cardId.value}")
 
-            assertEquals(HttpStatusCode.OK, response.status)
-        }
-
-    @Test
-    fun `GET boards boardId columns returns 404 when board not found`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureRouting()
-            }
-
-            coEvery { columnRepository.findByBoardId(any()) } returns
-                DomainError.BoardNotFound("nonexistent-id").left()
-
-            val response = client.get("/api/v1/boards/nonexistent-id/columns")
-
-            assertEquals(HttpStatusCode.NotFound, response.status)
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
+            assertEquals("Internal server error", body["error"]?.jsonPrimitive?.content)
             assertNotNull(body["requestId"])
         }
 
     @Test
-    fun `GET boards boardId columns returns 500 on persistence error`() =
+    fun `PATCH cards move returns 500 on persistence error`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -248,14 +199,17 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(any()) } returns
-                DomainError.PersistenceError("DB failure").left()
+            coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/boards/${boardId.value}/columns")
+            val response =
+                client.patch("/api/v1/cards/${cardId.value}/move") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"columnId":"${columnId.value}","position":0}""")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
+            assertEquals("Internal server error", body["error"]?.jsonPrimitive?.content)
             assertNotNull(body["requestId"])
         }
 }
