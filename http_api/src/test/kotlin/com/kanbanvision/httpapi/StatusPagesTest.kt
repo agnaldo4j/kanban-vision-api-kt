@@ -17,6 +17,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
+// ContentTransformationException is abstract in Ktor 3.x and cannot be instantiated directly.
+// A concrete subclass is required to exercise the StatusPages handler in tests.
 private class TestContentTransformationException(
     message: String,
 ) : ContentTransformationException(message)
