@@ -17,7 +17,7 @@ services:
       DATABASE_URL: "jdbc:postgresql://postgres:5432/kanbanvision"
       DATABASE_USER: "kanban"
       DATABASE_PASSWORD: "kanban"
-      JWT_SECRET: "local-dev-secret-change-in-production"
+      JWT_SECRET: "${JWT_SECRET:-dev-secret-change-in-production}"
       JWT_ISSUER: "kanban-vision-api"
       JWT_AUDIENCE: "kanban-vision-clients"
       JWT_TTL_MS: "86400000"

@@ -12,13 +12,14 @@ resources:
 
 # Secret is generated from k8s/secrets.env — never committed.
 # Copy k8s/secrets.env.example to k8s/secrets.env and fill in real values.
+# Kustomize appends a content hash to the name (e.g. kanban-vision-secret-abc123)
+# and updates all references automatically. When secret values change, re-apply and
+# run: kubectl rollout restart deployment/kanban-vision-api -n kanban-vision
 secretGenerator:
   - name: kanban-vision-secret
     namespace: kanban-vision
     envs:
       - secrets.env
-    options:
-      disableNameSuffixHash: true
 
 # Override image tag per environment without editing base manifests.
 images:
