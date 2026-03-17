@@ -14,7 +14,7 @@ class DomainMetricsTest {
         metrics.recordSimulationDayExecuted()
         metrics.recordSimulationDayExecuted()
 
-        assertEquals(2.0, registry.counter("kanban.simulation.days.executed.total").count())
+        assertEquals(2.0, registry.counter("kanban.simulation.days.executed").count())
     }
 
     @Test
@@ -22,6 +22,6 @@ class DomainMetricsTest {
         val registry = SimpleMeterRegistry()
         val metrics = DomainMetrics(registry)
 
-        assertEquals(0.0, registry.counter("kanban.simulation.days.executed.total").count())
+        assertEquals(0.0, registry.counter("kanban.simulation.days.executed").count())
     }
 }

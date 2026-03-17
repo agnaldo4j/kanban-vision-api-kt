@@ -43,7 +43,7 @@ O plugin `MicrometerMetrics` do Ktor instrui automaticamente:
 
 | Métrica | Tipo | Descrição |
 |---|---|---|
-| `kanban.simulation.days.executed.total` | Counter | Incrementado após cada `RunDayUseCase` bem-sucedido |
+| `kanban.simulation.days.executed` | Counter | Incrementado após cada `RunDayUseCase` bem-sucedido |
 
 **Labels**: todas as métricas de domínio usam **baixa cardinalidade** — nunca `scenarioId`, `requestId` ou outros UUIDs como label. Isso evita explosão de cardinalidade no TSDB do Prometheus.
 

@@ -8,7 +8,7 @@ class DomainMetrics(
 ) {
     private val simulationDaysExecuted: Counter =
         Counter
-            .builder("kanban.simulation.days.executed.total")
+            .builder("kanban.simulation.days.executed")
             .description("Total number of simulation days executed")
             .register(registry)
 
