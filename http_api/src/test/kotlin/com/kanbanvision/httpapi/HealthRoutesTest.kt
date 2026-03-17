@@ -3,6 +3,7 @@ package com.kanbanvision.httpapi
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
+import com.kanbanvision.httpapi.plugins.configureRateLimit
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
@@ -61,6 +62,7 @@ class HealthRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 

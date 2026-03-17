@@ -25,5 +25,12 @@ fun Application.configureStatusPages() {
             log.error("Unhandled exception [requestId={}]", requestId, cause)
             call.respond(HttpStatusCode.InternalServerError, DomainErrorResponse(error = "Internal server error", requestId = requestId))
         }
+        status(HttpStatusCode.TooManyRequests) { call, _ ->
+            val requestId = call.attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
+            call.respond(
+                HttpStatusCode.TooManyRequests,
+                DomainErrorResponse(error = "Too Many Requests", requestId = requestId),
+            )
+        }
     }
 }

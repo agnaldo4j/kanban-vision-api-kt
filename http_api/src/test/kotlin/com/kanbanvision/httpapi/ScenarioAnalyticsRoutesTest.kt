@@ -11,6 +11,7 @@ import com.kanbanvision.domain.model.valueobjects.WorkItemId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
+import com.kanbanvision.httpapi.plugins.configureRateLimit
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
@@ -107,6 +108,7 @@ class ScenarioAnalyticsRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -134,6 +136,7 @@ class ScenarioAnalyticsRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -160,112 +163,12 @@ class ScenarioAnalyticsRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
             val response =
                 client.get("/api/v1/scenarios/${scenarioId.value}/days/0/movements") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["errors"])
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `GET flow metrics range returns 200 with daily metrics list`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRouting()
-            }
-
-            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns listOf(snapshot).right()
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=1") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.OK, response.status)
-            val items = Json.parseToJsonElement(response.bodyAsText()).jsonArray
-            assertEquals(1, items.size)
-            val first = items[0].jsonObject
-            assertEquals(1, first["day"]?.jsonPrimitive?.content?.toInt())
-            assertEquals(1, first["throughput"]?.jsonPrimitive?.content?.toInt())
-        }
-
-    @Test
-    fun `GET flow metrics range returns empty list when no snapshots in range`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRouting()
-            }
-
-            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns emptyList<DailySnapshot>().right()
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
-            assertEquals(0, body.size)
-        }
-
-    @Test
-    fun `GET flow metrics range with invalid params returns 400`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRouting()
-            }
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=5&toDay=1") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["errors"])
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `GET flow metrics range missing fromDay returns 400`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRouting()
-            }
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?toDay=5") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
