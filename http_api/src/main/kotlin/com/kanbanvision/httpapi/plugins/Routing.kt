@@ -7,18 +7,21 @@ import com.kanbanvision.httpapi.routes.healthRoutes
 import com.kanbanvision.httpapi.routes.scenarioAnalyticsRoutes
 import com.kanbanvision.httpapi.routes.scenarioRoutes
 import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 
 fun Application.configureRouting() {
     routing {
         healthRoutes()
-        route("/api/v1") {
-            boardRoutes()
-            cardRoutes()
-            columnRoutes()
-            scenarioRoutes()
-            scenarioAnalyticsRoutes()
+        authenticate("jwt-auth") {
+            route("/api/v1") {
+                boardRoutes()
+                cardRoutes()
+                columnRoutes()
+                scenarioRoutes()
+                scenarioAnalyticsRoutes()
+            }
         }
     }
 }

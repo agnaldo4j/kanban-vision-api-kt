@@ -22,11 +22,13 @@ import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
@@ -76,6 +78,7 @@ class CardRoutesErrorTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -85,6 +88,7 @@ class CardRoutesErrorTest {
                 client.patch("/api/v1/cards/nonexistent/move") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${columnId.value}","position":0}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
@@ -102,6 +106,7 @@ class CardRoutesErrorTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -109,6 +114,7 @@ class CardRoutesErrorTest {
                 client.patch("/api/v1/cards/${cardId.value}/move") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"","position":0}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -126,12 +132,16 @@ class CardRoutesErrorTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound("nonexistent").left()
 
-            val response = client.get("/api/v1/cards/nonexistent")
+            val response =
+                client.get("/api/v1/cards/nonexistent") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -148,6 +158,7 @@ class CardRoutesErrorTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -157,6 +168,7 @@ class CardRoutesErrorTest {
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${columnId.value}","title":"Task"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
@@ -174,12 +186,16 @@ class CardRoutesErrorTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/cards/${cardId.value}")
+            val response =
+                client.get("/api/v1/cards/${cardId.value}") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -196,6 +212,7 @@ class CardRoutesErrorTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -205,6 +222,7 @@ class CardRoutesErrorTest {
                 client.patch("/api/v1/cards/${cardId.value}/move") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${columnId.value}","position":0}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)

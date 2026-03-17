@@ -23,10 +23,12 @@ import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
@@ -42,6 +44,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
+@Suppress("LargeClass")
 class ColumnRoutesTest {
     private val boardId = BoardId.generate()
     private val columnId = ColumnId.generate()
@@ -75,6 +78,7 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -86,6 +90,7 @@ class ColumnRoutesTest {
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
@@ -103,6 +108,7 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -110,6 +116,7 @@ class ColumnRoutesTest {
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"boardId":"${boardId.value}","name":""}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -133,12 +140,16 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { columnRepository.findById(columnId) } returns column.right()
 
-            val response = client.get("/api/v1/columns/${columnId.value}")
+            val response =
+                client.get("/api/v1/columns/${columnId.value}") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -155,12 +166,16 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { columnRepository.findById(any()) } returns DomainError.ColumnNotFound("nonexistent-id").left()
 
-            val response = client.get("/api/v1/columns/nonexistent-id")
+            val response =
+                client.get("/api/v1/columns/nonexistent-id") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -177,6 +192,7 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -186,6 +202,7 @@ class ColumnRoutesTest {
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
@@ -203,12 +220,16 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { columnRepository.findByBoardId(boardId) } returns listOf(column).right()
 
-            val response = client.get("/api/v1/boards/${boardId.value}/columns")
+            val response =
+                client.get("/api/v1/boards/${boardId.value}/columns") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
         }
@@ -222,13 +243,17 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { columnRepository.findByBoardId(any()) } returns
                 DomainError.BoardNotFound("nonexistent-id").left()
 
-            val response = client.get("/api/v1/boards/nonexistent-id/columns")
+            val response =
+                client.get("/api/v1/boards/nonexistent-id/columns") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -245,13 +270,17 @@ class ColumnRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { columnRepository.findByBoardId(any()) } returns
                 DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/boards/${boardId.value}/columns")
+            val response =
+                client.get("/api/v1/boards/${boardId.value}/columns") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

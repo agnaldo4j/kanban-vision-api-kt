@@ -34,7 +34,9 @@ import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -102,12 +104,16 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
@@ -125,12 +131,16 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(99)) } returns null.right()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/99/movements")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/99/movements") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -147,10 +157,14 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/0/movements")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/0/movements") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -167,12 +181,16 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns listOf(snapshot).right()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=1")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=1") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val items = Json.parseToJsonElement(response.bodyAsText()).jsonArray
@@ -191,12 +209,16 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns emptyList<DailySnapshot>().right()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
@@ -212,10 +234,14 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=5&toDay=1")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=5&toDay=1") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -232,10 +258,14 @@ class ScenarioAnalyticsRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?toDay=5")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?toDay=5") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

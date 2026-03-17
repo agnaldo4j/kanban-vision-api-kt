@@ -1,6 +1,8 @@
 package com.kanbanvision.httpapi.plugins
 
 import io.github.smiley4.ktoropenapi.OpenApi
+import io.github.smiley4.ktoropenapi.config.AuthScheme
+import io.github.smiley4.ktoropenapi.config.AuthType
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.server.application.Application
@@ -25,9 +27,20 @@ fun Application.configureOpenApi() {
             tag("cards") { description = "Cartões e movimentações" }
             tag("scenarios") { description = "Motor de simulação — criação e execução de cenários" }
             tag("health") { description = "Liveness e readiness da aplicação" }
+            tag("auth") { description = "Emissão de tokens (somente ambiente de desenvolvimento)" }
+        }
+        security {
+            securityScheme("BearerAuth") {
+                type = AuthType.HTTP
+                scheme = AuthScheme.BEARER
+                bearerFormat = "JWT"
+            }
         }
     }
+    configureOpenApiRoutes()
+}
 
+private fun Application.configureOpenApiRoutes() {
     routing {
         route("/api.json") {
             openApi()

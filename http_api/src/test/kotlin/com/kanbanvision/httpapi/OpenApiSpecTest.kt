@@ -72,6 +72,7 @@ class OpenApiSpecTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -95,6 +96,7 @@ class OpenApiSpecTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -115,6 +117,7 @@ class OpenApiSpecTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -144,6 +147,7 @@ class OpenApiSpecTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -170,6 +174,7 @@ class OpenApiSpecTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -195,6 +200,7 @@ class OpenApiSpecTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
