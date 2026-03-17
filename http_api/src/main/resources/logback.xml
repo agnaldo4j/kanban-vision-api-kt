@@ -1,13 +1,31 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- Text appender: used in development (default) -->
+    <appender name="STDOUT_TEXT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [rid=%X{requestId}] - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="INFO">
-        <appender-ref ref="STDOUT"/>
-    </root>
+    <!-- JSON appender: used in production when LOG_FORMAT=json -->
+    <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+        </encoder>
+    </appender>
+
+    <!-- Route to JSON or TEXT based on LOG_FORMAT env var -->
+    <if condition='property("LOG_FORMAT").equals("json")'>
+        <then>
+            <root level="INFO">
+                <appender-ref ref="STDOUT_JSON"/>
+            </root>
+        </then>
+        <else>
+            <root level="INFO">
+                <appender-ref ref="STDOUT_TEXT"/>
+            </root>
+        </else>
+    </if>
 
     <logger name="io.ktor" level="INFO"/>
     <logger name="org.jetbrains.exposed" level="INFO"/>
