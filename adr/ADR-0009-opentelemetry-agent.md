@@ -65,7 +65,7 @@ O agente é baixado como jar no `Dockerfile` e injetado via `-javaagent`. Auto-i
 - Zero alteração em `domain/`, `usecases/`, `sql_persistence/`
 - Auto-instrumentação cobre 95% dos spans úteis (HTTP in, DB out)
 - Log bridge injeta `traceId`/`spanId` no MDC sem código extra
-- Amplamente testado com JVM 21; suporte oficial para Ktor 3.x via `ktor-2.0` instrumentation
+- Amplamente testado com JVM 21; o módulo de instrumentação é chamado `ktor-2.0` (nomenclatura interna do OTel Agent), mas cobre Ktor 2.x e 3.x — confirmado na [matriz de compatibilidade oficial](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/docs/supported-libraries.md)
 - Configuração inteiramente por variáveis de ambiente — sem recompilação
 
 **Contras:**
@@ -148,7 +148,7 @@ Usar `micrometer-tracing-bridge-otel` (já usamos Micrometer para métricas).
 
 ### Fase 3 — Span manual (opcional, baixo risco)
 
-- [ ] **9.** Adicionar `opentelemetry-api:2.14.0` como dependência `implementation` **somente em `http_api/build.gradle.kts`** (não em `usecases/` nem `domain/`)
+- [ ] **9.** Adicionar `opentelemetry-api:1.47.0` como dependência `implementation` **somente em `http_api/build.gradle.kts`** (não em `usecases/` nem `domain/`) — versão alinhada com o que o agente v2.14.0 empacota internamente; veja skill `/opentelemetry`
 - [ ] **10.** Criar `SpanHelper.kt` em `http_api/` com função de extensão que envolve uma suspending lambda em um span nomeado
 - [ ] **11.** Envolver a chamada a `runDayUseCase.execute(...)` em `ScenarioRoutes.kt` com o span `simulation.run_day`
 

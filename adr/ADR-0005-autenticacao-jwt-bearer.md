@@ -4,11 +4,11 @@
 
 | Campo     | Valor                                                        |
 |-----------|--------------------------------------------------------------|
-| Status    | Proposta                                                     |
+| Status    | Aceita                                                       |
 | Data      | 2026-03-16                                                   |
 | Autores   | @agnaldo4j                                                   |
 | Branch    | feat/adr-0005-autenticacao-jwt-bearer                        |
-| PR        | —                                                            |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/57    |
 | Supersede | —                                                            |
 
 ---

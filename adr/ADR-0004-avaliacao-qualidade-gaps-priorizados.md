@@ -402,7 +402,7 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 | ADR-0006  | GAP-F | Logging Estruturado JSON                 | —                    | ✅ Aceita  |
 | ADR-0007  | GAP-D | Métricas Micrometer/Prometheus           | —                    | ✅ Aceita  |
 | ADR-0008  | GAP-V | Pipeline CI/CD (build + push + deploy)   | GAP-G concluído      | ✅ Aceita  |
-| ADR-0009  | GAP-O | OpenTelemetry Agent Integration          | GAP-G concluído      | Aceita    |
+| ADR-0009  | GAP-O | OpenTelemetry Agent Integration          | GAP-G concluído      | ✅ Aceita  |
 | ADR-0010  | GAP-H | Domain Events                            | GAP-P concluído      | Pendente  |
 | ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | Pendente  |
 | ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Pendente  |
