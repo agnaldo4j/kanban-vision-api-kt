@@ -115,6 +115,18 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | `/local-and-production-environment` | Criar Dockerfile, docker-compose, manifestos Kubernetes (Deployment, Service, Ingress, HPA, PDB) e operar o ambiente local com Minikube |
 | `/evolutionary-change` | Planejar e executar mudanças de forma incremental/normativa, evitando crises estruturais, regressões e esgotamento de contexto LLM — aplica o J-Curve, Identity Threat Theory e protocolo 1-gap-por-sessão |
 
+## Gap Execution Protocol
+
+Before starting any gap from ADR-0004, read [`docs/gap-execution-protocol.md`](docs/gap-execution-protocol.md).
+It defines: gap type classification (`[N]`/`[M]`/`[E]`), J-Curve tolerances (Safety + Patience limits),
+the session protocol (pre/during/post gap checklist), and the cycle execution order (P1 → P4).
+
+**Key rules:**
+- 1 gap per LLM session — never stack gaps
+- `[E]` gaps require an approved ADR before any code
+- `./gradlew testAll` must be green before opening a PR
+- JaCoCo ≥ 95% and Detekt 0 violations are non-negotiable Safety limits
+
 ## CI/CD
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on pull requests against `main`. Two jobs:

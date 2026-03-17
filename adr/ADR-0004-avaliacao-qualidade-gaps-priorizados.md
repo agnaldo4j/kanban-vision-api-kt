@@ -467,7 +467,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[M]` **GAP-U** — Alertas Prometheus + Dashboard Grafana → PR #64
 
 **Ciclo Domínio (P3):**
-- [ ] `[N]` **GAP-W** *(parcialmente concluído nesta revisão)* — Criar `docs/gap-execution-protocol.md` com J-curve tolerances explícitas e checklist de execução pré/pós gap. Adicionar `evolutionary-change` no protocolo do `CLAUDE.md` com referência a este arquivo
+- [x] `[N]` **GAP-W** — Criar `docs/gap-execution-protocol.md` com J-curve tolerances explícitas e checklist de execução pré/pós gap. Adicionar seção `Gap Execution Protocol` no `CLAUDE.md` com referência ao arquivo → PR #66
 - [ ] `[E→ADR-0007]` **GAP-O** — Escrever ADR-0007 (decisão: configuração do OTel Agent, exporters, sampling). Só após aprovação e GAP-G concluído: configurar variáveis OTel no `Dockerfile`/`docker-compose`, verificar spans HTTP/JDBC, adicionar span manual no `RunDayUseCase`
 - [ ] `[N]` **GAP-P** — Extrair interface `SimulationEnginePort` em `usecases/`, implementada por `SimulationEngine` (habilita mock em testes de use case e span manual via injeção)
 - [ ] `[N]` **GAP-Q** — Logar stack trace do erro original em `JdbcBoardRepository` (e demais) com `log.error("Persistence error", e)` antes de mapear para `DomainError.PersistenceError`
