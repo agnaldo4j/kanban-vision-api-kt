@@ -398,13 +398,15 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 
 | ADR       | Gap   | Título                               | Pré-requisitos       | Status    |
 |-----------|-------|--------------------------------------|----------------------|-----------|
-| ADR-0005  | GAP-A | Autenticação e Autorização (JWT/OAuth2) | —                 | Pendente  |
-| ADR-0006  | GAP-V | Pipeline CI/CD (build + push + deploy) | GAP-G concluído   | Pendente  |
-| ADR-0007  | GAP-O | OpenTelemetry Agent Integration      | GAP-G concluído      | Pendente  |
-| ADR-0008  | GAP-H | Domain Events                        | GAP-P concluído      | Pendente  |
-| ADR-0009  | GAP-K | Contract Tests com Pact              | GAP-G concluído      | Pendente  |
-| ADR-0010  | GAP-R | Domain API Build Module (usecases-api/) | build time > 2min | Pendente  |
-| ADR-0011  | GAP-M | Schema Boundaries e JSON blob no DB  | —                    | Pendente  |
+| ADR-0005  | GAP-A | Autenticação e Autorização (JWT/OAuth2)  | —                    | ✅ Aceita  |
+| ADR-0006  | GAP-F | Logging Estruturado JSON                 | —                    | ✅ Aceita  |
+| ADR-0007  | GAP-D | Métricas Micrometer/Prometheus           | —                    | ✅ Aceita  |
+| ADR-0008  | GAP-V | Pipeline CI/CD (build + push + deploy)   | GAP-G concluído      | ✅ Aceita  |
+| ADR-0009  | GAP-O | OpenTelemetry Agent Integration          | GAP-G concluído      | ✅ Aceita  |
+| ADR-0010  | GAP-H | Domain Events                            | GAP-P concluído      | Pendente  |
+| ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | Pendente  |
+| ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Pendente  |
+| ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | —                    | Pendente  |
 
 > **Como usar esta tabela:** antes de executar qualquer gap `E`, abra uma sessão LLM
 > dedicada para escrever a ADR correspondente. Só após a ADR estar merged inicie a
@@ -468,7 +470,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 
 **Ciclo Domínio (P3):**
 - [x] `[N]` **GAP-W** — Adicionar seção `Gap Execution Protocol` no `CLAUDE.md` com J-Curve tolerances, classificação `[N]`/`[M]`/`[E]`, checklist de sessão e ordem dos ciclos → PR #66
-- [ ] `[E→ADR-0007]` **GAP-O** — Escrever ADR-0007 (decisão: configuração do OTel Agent, exporters, sampling). Só após aprovação e GAP-G concluído: configurar variáveis OTel no `Dockerfile`/`docker-compose`, verificar spans HTTP/JDBC, adicionar span manual no `RunDayUseCase`
+- [ ] `[E→ADR-0009]` **GAP-O** — ADR-0009 escrita e aceita (branch `feat/adr-0009-otel-agent`). Implementação: configurar OTel Java Agent no `Dockerfile`/`docker-compose`, provisionar Grafana Tempo, verificar spans HTTP/JDBC e correlação de logs
 - [ ] `[N]` **GAP-P** — Extrair interface `SimulationEnginePort` em `usecases/`, implementada por `SimulationEngine` (habilita mock em testes de use case e span manual via injeção)
 - [ ] `[N]` **GAP-Q** — Logar stack trace do erro original em `JdbcBoardRepository` (e demais) com `log.error("Persistence error", e)` antes de mapear para `DomainError.PersistenceError`
 - [ ] `[M]` **GAP-S** — Adicionar custom Detekt rule ou Gradle constraint impedindo import direto de `JdbcBoardRepository` fora do `AppModule`
