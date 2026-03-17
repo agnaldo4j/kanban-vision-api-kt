@@ -1,9 +1,13 @@
 package com.kanbanvision.httpapi
 
-import arrow.core.left
-import com.kanbanvision.domain.errors.DomainError
+import arrow.core.right
+import com.kanbanvision.domain.model.metrics.FlowMetrics
+import com.kanbanvision.domain.model.movement.Movement
+import com.kanbanvision.domain.model.movement.MovementType
+import com.kanbanvision.domain.model.scenario.DailySnapshot
 import com.kanbanvision.domain.model.scenario.SimulationDay
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.valueobjects.WorkItemId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -40,15 +44,33 @@ import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class ScenarioAnalyticsEdgeCasesTest {
+class ScenarioAnalyticsMetricsRoutesTest {
     private val scenarioId = ScenarioId("scenario-test-id")
+    private val snapshot =
+        DailySnapshot(
+            scenarioId = scenarioId,
+            day = SimulationDay(1),
+            metrics = FlowMetrics(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.5),
+            movements =
+                listOf(
+                    Movement(
+                        type = MovementType.MOVED,
+                        workItemId = WorkItemId("item-1"),
+                        day = SimulationDay(1),
+                        reason = "WIP available",
+                    ),
+                ),
+        )
+
     private val snapshotRepository = mockk<SnapshotRepository>()
 
     private val testModule =
@@ -77,7 +99,7 @@ class ScenarioAnalyticsEdgeCasesTest {
         }
 
     @Test
-    fun `GET movements by day with non-integer day returns 400`() =
+    fun `GET flow metrics range returns 200 with daily metrics list`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -90,19 +112,23 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureRouting()
             }
 
+            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns listOf(snapshot).right()
+
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/movements") {
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=1") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["errors"])
-            assertNotNull(body["requestId"])
+            assertEquals(HttpStatusCode.OK, response.status)
+            val items = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+            assertEquals(1, items.size)
+            val first = items[0].jsonObject
+            assertEquals(1, first["day"]?.jsonPrimitive?.content?.toInt())
+            assertEquals(1, first["throughput"]?.jsonPrimitive?.content?.toInt())
         }
 
     @Test
-    fun `GET movements by day returns 500 on persistence error`() =
+    fun `GET flow metrics range returns empty list when no snapshots in range`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -115,95 +141,65 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureRouting()
             }
 
-            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns
-                DomainError.PersistenceError("DB failure").left()
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.InternalServerError, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `GET flow metrics range missing toDay returns 400`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRateLimit()
-                configureRouting()
-            }
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["errors"])
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `GET flow metrics range non-integer fromDay returns 400`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRateLimit()
-                configureRouting()
-            }
-
-            val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=abc&toDay=5") {
-                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["errors"])
-            assertNotNull(body["requestId"])
-        }
-
-    @Test
-    fun `GET flow metrics range returns 500 on persistence error`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureObservability()
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRateLimit()
-                configureRouting()
-            }
-
-            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns
-                DomainError.PersistenceError("DB failure").left()
+            coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns emptyList<DailySnapshot>().right()
 
             val response =
                 client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
-            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+            assertEquals(0, body.size)
+        }
+
+    @Test
+    fun `GET flow metrics range with invalid params returns 400`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRateLimit()
+                configureRouting()
+            }
+
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=5&toDay=1") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertNotNull(body["error"])
+            assertNotNull(body["errors"])
+            assertNotNull(body["requestId"])
+        }
+
+    @Test
+    fun `GET flow metrics range missing fromDay returns 400`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRateLimit()
+                configureRouting()
+            }
+
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?toDay=5") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["errors"])
             assertNotNull(body["requestId"])
         }
 }

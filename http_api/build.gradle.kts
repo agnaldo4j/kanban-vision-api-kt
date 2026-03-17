@@ -71,6 +71,7 @@ dependencies {
     implementation("io.github.smiley4:ktor-openapi:5.6.0")
     implementation("io.github.smiley4:ktor-swagger-ui:5.6.0")
 
+    implementation("io.ktor:ktor-server-rate-limit-jvm:3.1.2")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.1.2")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
 

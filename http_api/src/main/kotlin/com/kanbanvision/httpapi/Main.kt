@@ -5,6 +5,7 @@ import com.kanbanvision.httpapi.plugins.configureAuthentication
 import com.kanbanvision.httpapi.plugins.configureMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
+import com.kanbanvision.httpapi.plugins.configureRateLimit
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
@@ -58,6 +59,7 @@ fun Application.module() {
     configureSerialization()
     configureStatusPages()
     configureAuthentication()
+    configureRateLimit()
     configureRouting()
     configureDevAuthRoutes()
 }

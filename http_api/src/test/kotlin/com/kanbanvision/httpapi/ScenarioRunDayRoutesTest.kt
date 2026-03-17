@@ -15,6 +15,7 @@ import com.kanbanvision.domain.model.valueobjects.TenantId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
+import com.kanbanvision.httpapi.plugins.configureRateLimit
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
@@ -115,6 +116,7 @@ class ScenarioRunDayRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -147,6 +149,7 @@ class ScenarioRunDayRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -177,6 +180,7 @@ class ScenarioRunDayRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -203,6 +207,7 @@ class ScenarioRunDayRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -232,6 +237,7 @@ class ScenarioRunDayRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
@@ -241,8 +247,7 @@ class ScenarioRunDayRoutesTest {
             coEvery { scenarioRepository.saveState(scenarioId, any()) } answers {
                 secondArg<SimulationState>().right()
             }
-            coEvery { snapshotRepository.save(any()) } returns
-                DomainError.InvalidDecision("Cannot apply decision in current state").left()
+            coEvery { snapshotRepository.save(any()) } returns DomainError.InvalidDecision("Cannot apply decision in current state").left()
 
             val response =
                 client.post("/api/v1/scenarios/${scenarioId.value}/run") {
@@ -267,6 +272,7 @@ class ScenarioRunDayRoutesTest {
                 configureSerialization()
                 configureStatusPages()
                 configureTestAuthentication()
+                configureRateLimit()
                 configureRouting()
             }
 
