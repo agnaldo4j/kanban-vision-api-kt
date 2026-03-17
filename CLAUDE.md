@@ -117,15 +117,42 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 
 ## Gap Execution Protocol
 
-Before starting any gap from ADR-0004, read [`docs/gap-execution-protocol.md`](docs/gap-execution-protocol.md).
-It defines: gap type classification (`[N]`/`[M]`/`[E]`), J-Curve tolerances (Safety + Patience limits),
-the session protocol (pre/during/post gap checklist), and the cycle execution order (P1 → P4).
+> Read this before starting any gap from ADR-0004. Full rationale: skill `/evolutionary-change`.
 
-**Key rules:**
-- 1 gap per LLM session — never stack gaps
-- `[E]` gaps require an approved ADR before any code
-- `./gradlew testAll` must be green before opening a PR
-- JaCoCo ≥ 95% and Detekt 0 violations are non-negotiable Safety limits
+**Gap type classification:**
+
+| Type | Meaning | Action |
+|------|---------|--------|
+| `[N]` Normative | Adds/improves without breaking contracts or layer identity | Execute directly. 1 gap per session. |
+| `[M]` Medium | Adds a new concept or infra artefact | 1 design session + 1 focused PR. |
+| `[E]` Structural | Changes contracts, layers or system identity | ADR approved before any code. |
+
+**J-Curve Safety limits — never violate:**
+
+| Measure | Limit |
+|---------|-------|
+| JaCoCo coverage | ≥ 95% per module |
+| Detekt violations | 0 (`warningsAsErrors = true`) |
+| KtLint | 0 errors (`./gradlew ktlintFormat` before commit) |
+| `./gradlew testAll` | Green before opening PR |
+| PR size | ≤ 400 changed lines |
+
+**Session protocol (1 gap per LLM session):**
+
+Pre-gap: pull main → create branch `feat/gap-X-slug` → re-read CLAUDE.md + ADR-0004 section → read the 2–3 target files.
+
+During: implement only the planned gap. If PR touches > 5 files: stop and split.
+
+Post-gap: `./gradlew testAll` green → mark gap `[x]` in ADR-0004 → open PR `feat(gap-X): description` → close session.
+
+**Execution order (from `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`):**
+
+```
+P1 Hardening:   GAP-B → GAP-C → GAP-A                              ✅ done
+P2 Operations:  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ done
+P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K
+P4 Excellence:  GAP-T → GAP-N → GAP-R → GAP-L → GAP-M
+```
 
 ## CI/CD
 
