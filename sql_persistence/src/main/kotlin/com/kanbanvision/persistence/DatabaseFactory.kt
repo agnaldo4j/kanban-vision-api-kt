@@ -23,6 +23,14 @@ object DatabaseFactory {
     lateinit var dataSource: HikariDataSource
         private set
 
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    fun isReady(): Boolean =
+        try {
+            dataSource.connection.use { it.isValid(2) }
+        } catch (e: Exception) {
+            false
+        }
+
     fun init(config: DatabaseConfig) {
         if (::dataSource.isInitialized) {
             dataSource.close()

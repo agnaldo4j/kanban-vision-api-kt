@@ -18,8 +18,20 @@ import io.ktor.server.routing.routing
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
+private const val SHUTDOWN_GRACE_PERIOD_MS = 1_000L
+private const val SHUTDOWN_TIMEOUT_MS = 5_000L
+
 fun main() {
-    embeddedServer(Netty, module = Application::module).start(wait = true)
+    val server = embeddedServer(Netty, module = Application::module)
+    Runtime.getRuntime().addShutdownHook(
+        Thread {
+            server.stop(
+                gracePeriodMillis = SHUTDOWN_GRACE_PERIOD_MS,
+                timeoutMillis = SHUTDOWN_TIMEOUT_MS,
+            )
+        },
+    )
+    server.start(wait = true)
 }
 
 fun Application.module() {
