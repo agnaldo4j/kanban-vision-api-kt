@@ -6,7 +6,6 @@ metadata:
   labels:
     app.kubernetes.io/name: kanban-vision-api
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
 spec:

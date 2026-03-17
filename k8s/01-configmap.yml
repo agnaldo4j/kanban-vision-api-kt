@@ -5,6 +5,8 @@ metadata:
   namespace: kanban-vision
   labels:
     app.kubernetes.io/name: kanban-vision-api
+# DATABASE_URL references 'postgres-svc' — deploy a PostgreSQL Service + StatefulSet
+# in the same namespace, or override this value to point to an external managed DB.
 data:
   PORT: "8080"
   DATABASE_URL: "jdbc:postgresql://postgres-svc:5432/kanbanvision"

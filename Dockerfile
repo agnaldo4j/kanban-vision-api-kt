@@ -10,6 +10,7 @@ COPY gradlew gradlew
 COPY gradle gradle
 COPY gradle.properties gradle.properties
 COPY settings.gradle.kts settings.gradle.kts
+COPY build.gradle.kts build.gradle.kts
 COPY buildSrc buildSrc
 
 COPY domain/build.gradle.kts domain/build.gradle.kts
@@ -17,7 +18,7 @@ COPY usecases/build.gradle.kts usecases/build.gradle.kts
 COPY sql_persistence/build.gradle.kts sql_persistence/build.gradle.kts
 COPY http_api/build.gradle.kts http_api/build.gradle.kts
 
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q 2>/dev/null || true
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q
 
 # Copy sources and build fat JAR
 COPY domain/src domain/src
@@ -39,4 +40,4 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.io.tmpdir=/tmp", "-jar", "app.jar"]
