@@ -8,7 +8,7 @@
 | Data      | 2026-03-16                                                   |
 | Autores   | @agnaldo4j                                                   |
 | Branch    | —                                                            |
-| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/56    |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/56 |
 | Supersede | —                                                            |
 
 ---

@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 JWT_DEV_MODE=true ./gradlew :http_api:run
 ```
 
-> **Java version**: This project requires Java 21. It is pinned via `gradle.properties` (`org.gradle.java.home`). The system default is Java 25 which is incompatible with Gradle 8.13.
+> **Java version**: This project requires Java 21. It is pinned via `gradle.properties` (`org.gradle.java.home`). Gradle 8.13 is incompatible with Java versions newer than 21 — ensure `JAVA_HOME` points to a Java 21 JDK before running any Gradle command.
 
 ### Docker / docker-compose
 

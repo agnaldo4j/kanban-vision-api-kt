@@ -36,9 +36,13 @@ Serviços disponíveis:
 ### Com Gradle (desenvolvimento local)
 
 ```bash
-# 1. Configure Java 21 (obrigatório — o projeto não é compatível com Java 25+)
+# 1. Configure Java 21
+# macOS — localizar o Java 21 instalado
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
-echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+# Editar (não apendar) a propriedade no gradle.properties local:
+# org.gradle.java.home=/caminho/para/jdk21
+# Alternativa sem alterar arquivos do repositório:
+export ORG_GRADLE_PROJECT_org_gradle_java_home="$JAVA_HOME"
 
 # 2. Compile e rode todos os testes + quality gates
 ./gradlew testAll
