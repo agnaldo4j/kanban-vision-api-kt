@@ -115,6 +115,45 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | `/local-and-production-environment` | Criar Dockerfile, docker-compose, manifestos Kubernetes (Deployment, Service, Ingress, HPA, PDB) e operar o ambiente local com Minikube |
 | `/evolutionary-change` | Planejar e executar mudanças de forma incremental/normativa, evitando crises estruturais, regressões e esgotamento de contexto LLM — aplica o J-Curve, Identity Threat Theory e protocolo 1-gap-por-sessão |
 
+## Gap Execution Protocol
+
+> Read this section before starting any gap from ADR-0004. Full rationale: skill `/evolutionary-change`.
+
+**Gap type classification:**
+
+| Type | Meaning | Action |
+|------|---------|--------|
+| `[N]` Normative | Adds/improves without breaking contracts or layer identity | Execute directly. 1 gap per session. |
+| `[M]` Medium | Adds a new concept or infra artefact | 1 design session + 1 focused PR. |
+| `[E]` Structural | Changes contracts, layers or system identity | ADR approved before any code. |
+
+**J-Curve Safety limits — never violate:**
+
+| Measure | Limit |
+|---------|-------|
+| JaCoCo coverage | ≥ 95% per module |
+| Detekt violations | 0 (`warningsAsErrors: true` in `config/detekt/detekt.yml`) |
+| KtLint | 0 errors (`./gradlew ktlintFormat` before commit) |
+| `./gradlew testAll` | Green before opening PR |
+| PR size | ≤ 400 changed lines |
+
+**Session protocol (1 gap per LLM session):**
+
+Pre-gap: pull main → create branch `feat/gap-X-slug` → re-read CLAUDE.md + ADR-0004 section → read the 2–3 target files.
+
+During: implement only the planned gap. If PR touches > 5 files: stop and split.
+
+Post-gap: `./gradlew testAll` green → mark gap `[x]` in ADR-0004 → open PR `feat(gap-X): description` → close session.
+
+**Execution order (from `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`):**
+
+```
+P1 Hardening:   GAP-B → GAP-C → GAP-A                              ✅ done
+P2 Operations:  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ done
+P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K
+P4 Excellence:  GAP-T → GAP-N → GAP-R → GAP-L → GAP-M
+```
+
 ## CI/CD
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on pull requests against `main`. Two jobs:
