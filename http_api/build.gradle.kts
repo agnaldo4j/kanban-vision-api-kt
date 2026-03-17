@@ -71,6 +71,9 @@ dependencies {
     implementation("io.github.smiley4:ktor-openapi:5.6.0")
     implementation("io.github.smiley4:ktor-swagger-ui:5.6.0")
 
+    implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.1.2")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
+
     implementation("ch.qos.logback:logback-classic:1.5.18")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("org.codehaus.janino:janino:3.1.12")

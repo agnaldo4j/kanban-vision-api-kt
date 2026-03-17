@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi
 
+import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -47,6 +48,7 @@ class HealthRoutesTest {
             single { CreateColumnUseCase(get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
+            single { mockk<DomainMetrics>(relaxed = true) }
         }
 
     @Test

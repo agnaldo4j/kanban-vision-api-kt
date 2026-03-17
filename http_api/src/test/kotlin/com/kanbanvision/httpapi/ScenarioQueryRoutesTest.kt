@@ -12,6 +12,7 @@ import com.kanbanvision.domain.model.scenario.SimulationDay
 import com.kanbanvision.domain.model.scenario.SimulationState
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
 import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -98,6 +99,7 @@ class ScenarioQueryRoutesTest {
             single { GetDailySnapshotUseCase(get()) }
             single { GetMovementsByDayUseCase(get()) }
             single { GetFlowMetricsRangeUseCase(get()) }
+            single { mockk<DomainMetrics>(relaxed = true) }
         }
 
     @Test

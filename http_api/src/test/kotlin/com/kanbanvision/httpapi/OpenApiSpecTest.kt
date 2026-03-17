@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi
 
+import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
@@ -62,6 +63,7 @@ class OpenApiSpecTest {
             single { GetDailySnapshotUseCase(get()) }
             single { GetMovementsByDayUseCase(get()) }
             single { GetFlowMetricsRangeUseCase(get()) }
+            single { mockk<DomainMetrics>(relaxed = true) }
         }
 
     @Test
