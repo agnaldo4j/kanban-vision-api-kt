@@ -40,6 +40,7 @@ private fun getMovementsByDaySpec(): RouteConfig.() -> Unit =
         summary = "Retorna movimentos de itens de um dia da simulação"
         tags("scenarios")
         description = "Retorna os movimentos de itens ocorridos em um dia específico da simulação."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("scenarioId") {
                 description = "UUID do cenário."
@@ -80,6 +81,7 @@ private fun getFlowMetricsRangeSpec(): RouteConfig.() -> Unit =
         summary = "Retorna métricas de fluxo Kanban por intervalo de dias"
         tags("scenarios")
         description = "Retorna as métricas de fluxo agregadas por dia em um intervalo da simulação."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("scenarioId") {
                 description = "UUID do cenário."

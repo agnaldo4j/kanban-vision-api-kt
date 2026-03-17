@@ -44,6 +44,7 @@ private fun createColumnSpec(): RouteConfig.() -> Unit =
         summary = "Cria uma nova coluna em um quadro"
         tags("columns")
         description = "Cria uma nova coluna em um quadro Kanban."
+        applyBearerAuthSecurity()
         request {
             body<CreateColumnRequest> {
                 description = "Dados da coluna a ser criada."
@@ -80,6 +81,7 @@ private fun getColumnByIdSpec(): RouteConfig.() -> Unit =
         summary = "Retorna uma coluna pelo identificador"
         tags("columns")
         description = "Busca uma coluna pelo seu identificador único."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("id") {
                 description = "UUID da coluna."
@@ -108,6 +110,7 @@ private fun listColumnsByBoardSpec(): RouteConfig.() -> Unit =
         summary = "Lista todas as colunas de um quadro"
         tags("columns")
         description = "Lista todas as colunas de um quadro."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("boardId") {
                 description = "UUID do quadro."

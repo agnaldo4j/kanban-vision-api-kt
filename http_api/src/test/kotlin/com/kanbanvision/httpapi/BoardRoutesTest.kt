@@ -44,6 +44,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class BoardRoutesTest {
     private val boardId = BoardId.generate()
     private val board = Board(id = boardId, name = "My Board")
@@ -234,6 +235,27 @@ class BoardRoutesTest {
                 }
 
             assertEquals(correlationId, response.headers["X-Request-ID"])
+        }
+
+    @Test
+    fun `request to api v1 without token returns 401`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRouting()
+            }
+
+            val response = client.get("/api/v1/boards/any-id")
+
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("Token inválido ou ausente", body["error"]?.jsonPrimitive?.content)
+            assertNotNull(body["requestId"])
         }
 
     @Test

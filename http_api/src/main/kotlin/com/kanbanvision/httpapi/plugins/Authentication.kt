@@ -13,10 +13,16 @@ import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("Authentication")
 
+private const val DEFAULT_SECRET_PLACEHOLDER = "dev-secret-change-in-production"
+
 fun Application.configureAuthentication() {
     val config = environment.config
+    val secret = config.property("jwt.secret").getString()
+    if (secret == DEFAULT_SECRET_PLACEHOLDER) {
+        log.warn("JWT secret is set to the default placeholder. Set JWT_SECRET env var in production.")
+    }
     configureAuthentication(
-        secret = config.property("jwt.secret").getString(),
+        secret = secret,
         issuer = config.property("jwt.issuer").getString(),
         audience = config.property("jwt.audience").getString(),
         realm = config.property("jwt.realm").getString(),
