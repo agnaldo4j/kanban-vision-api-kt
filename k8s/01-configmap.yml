@@ -15,12 +15,12 @@ data:
   JWT_AUDIENCE: "kanban-vision-clients"
   JWT_TTL_MS: "86400000"
   LOG_FORMAT: "json"
-  # OpenTelemetry — traces are disabled by default in K8s because this repo does not
-  # deploy a Tempo/OTLP collector Service. Enable by overriding OTEL_TRACES_EXPORTER
-  # to "otlp" and setting OTEL_EXPORTER_OTLP_ENDPOINT in a per-environment overlay
-  # (e.g., kustomization.yaml patches) once a collector is available in the cluster.
+  # OpenTelemetry — traces are disabled by default because this repo does not deploy
+  # a Tempo/OTLP collector Service. To enable tracing in an environment that has a
+  # collector, add a kustomization.yaml patch that sets:
+  #   OTEL_TRACES_EXPORTER: "otlp"
+  #   OTEL_EXPORTER_OTLP_ENDPOINT: "http://<collector-host>:<port>"
   OTEL_SERVICE_NAME: "kanban-vision-api"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=production"
   OTEL_LOGS_EXPORTER: "none"

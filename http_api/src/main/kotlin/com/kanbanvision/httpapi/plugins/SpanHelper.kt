@@ -4,13 +4,17 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
+import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 
 /**
  * Wraps a suspending [block] in an OpenTelemetry span named [spanName].
  *
- * The span is made current for the duration of [block] so that nested
- * auto-instrumented spans (HTTP, JDBC) become children of this span.
+ * Uses [asContextElement] to attach the OTel context to the coroutine context so the
+ * span remains current across suspension points and thread hops (e.g., [kotlinx.coroutines.Dispatchers.IO]
+ * used by JDBC repositories). This ensures nested auto-instrumented spans (HTTP, JDBC)
+ * become children of this span regardless of which thread the coroutine resumes on.
  *
  * [CancellationException] is re-thrown without being recorded as an error span,
  * since coroutine cancellations are not application errors.
@@ -32,9 +36,12 @@ suspend fun <T> withSpan(
             .setSpanKind(SpanKind.INTERNAL)
             .setParent(Context.current())
             .startSpan()
-    val scope = span.makeCurrent()
+    val otelContext = span.storeInContext(Context.current())
     return try {
-        val result = block()
+        val result =
+            withContext(otelContext.asContextElement()) {
+                block()
+            }
         span.setStatus(StatusCode.OK)
         result
     } catch (ex: CancellationException) {
@@ -50,7 +57,6 @@ suspend fun <T> withSpan(
         span.recordException(ex)
         throw ex
     } finally {
-        scope.close()
         span.end()
     }
 }
