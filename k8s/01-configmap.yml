@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kanban-vision-config
+  namespace: kanban-vision
+  labels:
+    app.kubernetes.io/name: kanban-vision-api
+data:
+  PORT: "8080"
+  DATABASE_URL: "jdbc:postgresql://postgres-svc:5432/kanbanvision"
+  DATABASE_USER: "kanban"
+  JWT_ISSUER: "kanban-vision-api"
+  JWT_AUDIENCE: "kanban-vision-clients"
+  JWT_TTL_MS: "86400000"
+  LOG_FORMAT: "json"
