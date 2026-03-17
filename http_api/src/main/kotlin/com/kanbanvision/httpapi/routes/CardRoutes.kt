@@ -44,6 +44,7 @@ private fun getCardByIdSpec(): RouteConfig.() -> Unit =
         summary = "Retorna um cartão pelo identificador"
         tags("cards")
         description = "Busca um cartão pelo seu identificador único."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("id") {
                 description = "UUID do cartão."
@@ -72,6 +73,7 @@ private fun createCardSpec(): RouteConfig.() -> Unit =
         summary = "Cria um novo cartão em uma coluna"
         tags("cards")
         description = "Cria um novo cartão em uma coluna do quadro."
+        applyBearerAuthSecurity()
         request {
             body<CreateCardRequest> {
                 description = "Dados do cartão a ser criado."
@@ -108,6 +110,7 @@ private fun moveCardSpec(): RouteConfig.() -> Unit =
         summary = "Move um cartão para outra coluna ou posição"
         tags("cards")
         description = "Move um cartão para outra coluna ou posição dentro do quadro."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("id") {
                 description = "UUID do cartão a ser movido."

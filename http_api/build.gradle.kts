@@ -57,6 +57,8 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core-jvm:3.1.2")
     implementation("io.ktor:ktor-server-netty-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-auth-jvm:3.1.2")
+    implementation("io.ktor:ktor-server-auth-jwt-jvm:3.1.2")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:3.1.2")
     implementation("io.ktor:ktor-server-status-pages-jvm:3.1.2")
     implementation("io.ktor:ktor-server-call-logging-jvm:3.1.2")

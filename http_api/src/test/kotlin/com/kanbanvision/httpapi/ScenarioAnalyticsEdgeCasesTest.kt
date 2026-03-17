@@ -30,7 +30,9 @@ import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -80,10 +82,14 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/movements")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/movements") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -100,13 +106,17 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns
                 DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -123,10 +133,14 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -143,10 +157,14 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=abc&toDay=5")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=abc&toDay=5") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -163,13 +181,17 @@ class ScenarioAnalyticsEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns
                 DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

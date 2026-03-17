@@ -21,11 +21,13 @@ import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
@@ -74,6 +76,7 @@ class CardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -85,6 +88,7 @@ class CardRoutesTest {
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${columnId.value}","title":"Task","description":"Do it"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
@@ -102,6 +106,7 @@ class CardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -109,6 +114,7 @@ class CardRoutesTest {
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${columnId.value}","title":""}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -132,6 +138,7 @@ class CardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -147,6 +154,7 @@ class CardRoutesTest {
                 client.patch("/api/v1/cards/${cardId.value}/move") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"${targetColumnId.value}","position":1}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
@@ -161,12 +169,16 @@ class CardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { cardRepository.findById(cardId) } returns card.right()
 
-            val response = client.get("/api/v1/cards/${cardId.value}")
+            val response =
+                client.get("/api/v1/cards/${cardId.value}") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

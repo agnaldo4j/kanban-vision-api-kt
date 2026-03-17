@@ -36,7 +36,9 @@ import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -95,13 +97,17 @@ class ScenarioQueryEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { scenarioRepository.findById(scenarioId) } returns
                 DomainError.PersistenceError("DB down").left()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -118,10 +124,14 @@ class ScenarioQueryEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/snapshot")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/snapshot") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -130,6 +140,7 @@ class ScenarioQueryEdgeCasesTest {
         }
 
     @Test
+    @Suppress("LongMethod")
     fun `GET scenarios snapshot returns 200 with movements`() =
         testApplication {
             install(Koin) { modules(testModule) }
@@ -138,6 +149,7 @@ class ScenarioQueryEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -155,7 +167,10 @@ class ScenarioQueryEdgeCasesTest {
                 )
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshotWithMovements.right()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -171,13 +186,17 @@ class ScenarioQueryEdgeCasesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns
                 DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot")
+            val response =
+                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

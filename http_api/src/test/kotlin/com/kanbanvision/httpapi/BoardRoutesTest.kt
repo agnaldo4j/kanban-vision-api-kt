@@ -22,10 +22,12 @@ import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
@@ -42,6 +44,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class BoardRoutesTest {
     private val boardId = BoardId.generate()
     private val board = Board(id = boardId, name = "My Board")
@@ -74,6 +77,7 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -84,6 +88,7 @@ class BoardRoutesTest {
                 client.post("/api/v1/boards") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"name":"My Board"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
@@ -101,6 +106,7 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -108,6 +114,7 @@ class BoardRoutesTest {
                 client.post("/api/v1/boards") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"name":""}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -131,12 +138,16 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { boardRepository.findById(boardId) } returns board.right()
 
-            val response = client.get("/api/v1/boards/${boardId.value}")
+            val response =
+                client.get("/api/v1/boards/${boardId.value}") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -153,12 +164,16 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound("nonexistent-id").left()
 
-            val response = client.get("/api/v1/boards/nonexistent-id")
+            val response =
+                client.get("/api/v1/boards/nonexistent-id") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -175,6 +190,7 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -185,6 +201,7 @@ class BoardRoutesTest {
                 client.post("/api/v1/boards") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"name":"My Board"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             val requestId = response.headers["X-Request-ID"]
@@ -201,6 +218,7 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -213,9 +231,31 @@ class BoardRoutesTest {
                     contentType(ContentType.Application.Json)
                     setBody("""{"name":"My Board"}""")
                     headers.append("X-Request-ID", correlationId)
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(correlationId, response.headers["X-Request-ID"])
+        }
+
+    @Test
+    fun `request to api v1 without token returns 401`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRouting()
+            }
+
+            val response = client.get("/api/v1/boards/any-id")
+
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("Token inválido ou ausente", body["error"]?.jsonPrimitive?.content)
+            assertNotNull(body["requestId"])
         }
 
     @Test
@@ -227,12 +267,16 @@ class BoardRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
             coEvery { boardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val response = client.get("/api/v1/boards/some-id")
+            val response =
+                client.get("/api/v1/boards/some-id") {
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject

@@ -53,6 +53,7 @@ private fun createScenarioSpec(): RouteConfig.() -> Unit =
         summary = "Cria um cenário de simulação Kanban"
         tags("scenarios")
         description = "Cria um novo cenário de simulação Kanban para um tenant."
+        applyBearerAuthSecurity()
         request {
             body<CreateScenarioRequest> {
                 description = "Configuração do cenário: tenant, WIP limit, tamanho do time e semente aleatória."
@@ -89,6 +90,7 @@ private fun getScenarioSpec(): RouteConfig.() -> Unit =
         summary = "Retorna um cenário pelo identificador"
         tags("scenarios")
         description = "Retorna o cenário e o estado atual da simulação pelo seu identificador."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("scenarioId") {
                 description = "UUID do cenário."
@@ -117,6 +119,7 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
         summary = "Executa um dia de simulação"
         tags("scenarios")
         description = "Executa um dia de simulação, aplicando as decisões fornecidas pelo usuário."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("scenarioId") {
                 description = "UUID do cenário."
@@ -161,6 +164,7 @@ private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
         summary = "Retorna o snapshot de métricas de um dia da simulação"
         tags("scenarios")
         description = "Retorna o snapshot de métricas e movimentações de um dia específico da simulação."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("scenarioId") {
                 description = "UUID do cenário."

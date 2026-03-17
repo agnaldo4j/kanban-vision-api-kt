@@ -31,10 +31,12 @@ import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
@@ -88,6 +90,7 @@ class ScenarioCreationRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -102,6 +105,7 @@ class ScenarioCreationRoutesTest {
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"tenantId":"${tenantId.value}","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
@@ -118,6 +122,7 @@ class ScenarioCreationRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -125,6 +130,7 @@ class ScenarioCreationRoutesTest {
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"tenantId":"","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -142,6 +148,7 @@ class ScenarioCreationRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -151,6 +158,7 @@ class ScenarioCreationRoutesTest {
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"tenantId":"${tenantId.value}","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
@@ -168,6 +176,7 @@ class ScenarioCreationRoutesTest {
                 configureOpenApi()
                 configureSerialization()
                 configureStatusPages()
+                configureTestAuthentication()
                 configureRouting()
             }
 
@@ -177,6 +186,7 @@ class ScenarioCreationRoutesTest {
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"tenantId":"${tenantId.value}","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)

@@ -55,6 +55,7 @@ private fun createBoardSpec(): RouteConfig.() -> Unit =
         summary = "Cria um novo quadro Kanban"
         tags("boards")
         description = "Cria um novo quadro Kanban."
+        applyBearerAuthSecurity()
         request {
             body<CreateBoardRequest> {
                 description = "Nome do quadro a ser criado."
@@ -83,6 +84,7 @@ private fun getBoardByIdSpec(): RouteConfig.() -> Unit =
         summary = "Retorna um quadro pelo identificador"
         tags("boards")
         description = "Busca um quadro pelo seu identificador único."
+        applyBearerAuthSecurity()
         request {
             pathParameter<String>("id") {
                 description = "UUID do quadro."

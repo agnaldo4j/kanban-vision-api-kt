@@ -94,6 +94,10 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | `/db-migrations` | Gerenciar Flyway migrations e schema PostgreSQL |
 | `/c4-model` | Atualizar diagramas C4 no README após mudanças de arquitetura |
 | `/definition-of-done` | Verificar critérios de conclusão antes de marcar uma tarefa como done |
+| `/microservices-modular-monolith` | Avaliar boundaries de módulos, decidir extração para microserviço, planejar migração incremental |
+| `/opentelemetry` | Implementar logs JSON, métricas Prometheus, distributed tracing (OTel Agent), health check com dependências e stack Grafana local |
+| `/local-and-production-environment` | Criar Dockerfile, docker-compose, manifestos Kubernetes (Deployment, Service, Ingress, HPA, PDB) e operar o ambiente local com Minikube |
+| `/evolutionary-change` | Planejar e executar mudanças de forma incremental/normativa, evitando crises estruturais, regressões e esgotamento de contexto LLM — aplica o J-Curve, Identity Threat Theory e protocolo 1-gap-por-sessão |
 
 ## CI/CD
 
