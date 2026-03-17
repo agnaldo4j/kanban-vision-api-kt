@@ -77,7 +77,11 @@ class ScenarioCreationRoutesTest {
             single { ListColumnsByBoardUseCase(get()) }
             single { CreateScenarioUseCase(get(), get()) }
             single { GetScenarioUseCase(get()) }
-            single { RunDayUseCase(get(), get()) }
+            single<com.kanbanvision.usecases.ports.SimulationEnginePort> {
+                com.kanbanvision.usecases.ports
+                    .DefaultSimulationEngine()
+            }
+            single { RunDayUseCase(get(), get(), get()) }
             single { GetDailySnapshotUseCase(get()) }
             single { GetMovementsByDayUseCase(get()) }
             single { GetFlowMetricsRangeUseCase(get()) }

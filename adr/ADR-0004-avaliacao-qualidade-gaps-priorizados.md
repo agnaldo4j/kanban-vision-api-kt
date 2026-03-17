@@ -471,7 +471,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 **Ciclo Domínio (P3):**
 - [x] `[N]` **GAP-W** — Adicionar seção `Gap Execution Protocol` no `CLAUDE.md` com J-Curve tolerances, classificação `[N]`/`[M]`/`[E]`, checklist de sessão e ordem dos ciclos → PR #66
 - [x] `[E→ADR-0009]` **GAP-O** — OTel Java Agent no Dockerfile (stage dedicado), Grafana Tempo no docker-compose, variáveis OTel no K8s ConfigMap, `SpanHelper.kt` + span `simulation.run_day` em ScenarioRoutes → PR #69
-- [ ] `[N]` **GAP-P** — Extrair interface `SimulationEnginePort` em `usecases/`, implementada por `SimulationEngine` (habilita mock em testes de use case e span manual via injeção)
+- [x] `[N]` **GAP-P** — Extrair interface `SimulationEnginePort` em `usecases/`, implementada por `SimulationEngine` (habilita mock em testes de use case e span manual via injeção) — PR #70
 - [ ] `[N]` **GAP-Q** — Logar stack trace do erro original em `JdbcBoardRepository` (e demais) com `log.error("Persistence error", e)` antes de mapear para `DomainError.PersistenceError`
 - [ ] `[M]` **GAP-S** — Adicionar custom Detekt rule ou Gradle constraint impedindo import direto de `JdbcBoardRepository` fora do `AppModule`
 - [ ] `[M]` **GAP-I** — Mover validações de invariantes de `Column`/`Card` para `Board.addColumn()` / `Board.addCard()`

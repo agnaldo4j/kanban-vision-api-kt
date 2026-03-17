@@ -15,6 +15,8 @@ import com.kanbanvision.usecases.card.MoveCardUseCase
 import com.kanbanvision.usecases.column.CreateColumnUseCase
 import com.kanbanvision.usecases.column.GetColumnUseCase
 import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
+import com.kanbanvision.usecases.ports.DefaultSimulationEngine
+import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
@@ -43,6 +45,7 @@ object AppModule {
             single<TenantRepository> { JdbcTenantRepository() }
             single<ScenarioRepository> { JdbcScenarioRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }
+            single<SimulationEnginePort> { DefaultSimulationEngine() }
 
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
@@ -54,7 +57,7 @@ object AppModule {
             single { ListColumnsByBoardUseCase(get()) }
             single { CreateScenarioUseCase(get(), get()) }
             single { GetScenarioUseCase(get()) }
-            single { RunDayUseCase(get(), get()) }
+            single { RunDayUseCase(get(), get(), get()) }
             single { GetDailySnapshotUseCase(get()) }
             single { GetMovementsByDayUseCase(get()) }
             single { GetFlowMetricsRangeUseCase(get()) }
