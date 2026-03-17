@@ -73,7 +73,7 @@ e **continuous process** (processo contínuo).
 | **Test-Driven Development (TDD)** | Escreva o teste antes do código. Red → Green → Refactor. | JUnit 5 + MockK. Todo use case começa por um teste falhando. |
 | **Planning Game** | Negocie escopo e velocidade a cada iteração. | ADR-first: gap planejado, estimado e aprovado antes da execução. |
 | **Whole Team** | Cliente, dev e QA no mesmo time. | Product owner define o gap; dev e LLM executam; CI valida. |
-| **Pair Programming** | Dois desenvolvedores em um código ao mesmo tempo. | Sesssões LLM + developer = par moderno. |
+| **Pair Programming** | Dois desenvolvedores em um código ao mesmo tempo. | Sessões LLM + developer = par moderno. |
 
 #### Continuous Process
 
@@ -142,7 +142,7 @@ Organizações adotam Kanban por uma de três motivações:
 | **Orientação a Serviço** | Satisfazer clientes insatisfeitos | Externo: fit-for-purpose, previsibilidade, confiança |
 | **Sobrevivência** | Criar uma organização inovadora e adaptável | Institucional: mudança evolutiva, cultura, longevidade |
 
-### 3.3 Os Seis Princípios Gerais
+### 3.3 As Seis Práticas Gerais
 
 #### Práticas Operacionais (executadas pelo time)
 
