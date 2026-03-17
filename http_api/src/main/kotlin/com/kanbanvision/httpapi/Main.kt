@@ -58,8 +58,8 @@ fun Application.module() {
     configureOpenApi()
     configureSerialization()
     configureStatusPages()
-    configureAuthentication()
     configureRateLimit()
+    configureAuthentication()
     configureRouting()
     configureDevAuthRoutes()
 }
