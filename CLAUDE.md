@@ -114,6 +114,7 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | `/opentelemetry` | Implementar logs JSON, métricas Prometheus, distributed tracing (OTel Agent), health check com dependências e stack Grafana local |
 | `/local-and-production-environment` | Criar Dockerfile, docker-compose, manifestos Kubernetes (Deployment, Service, Ingress, HPA, PDB) e operar o ambiente local com Minikube |
 | `/evolutionary-change` | Planejar e executar mudanças de forma incremental/normativa, evitando crises estruturais, regressões e esgotamento de contexto LLM — aplica o J-Curve, Identity Threat Theory e protocolo 1-gap-por-sessão |
+| `/xp-kanban` | Aplicar Extreme Programming (TDD, CI, refactoring, small releases) e o Método Kanban (visualizar, limitar WIP, fluxo, políticas explícitas) como motores complementares de evolução do produto e da engenharia |
 
 ## Gap Execution Protocol
 
