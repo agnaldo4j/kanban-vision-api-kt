@@ -32,6 +32,10 @@ spec:
         fsGroup: 1000
       containers:
         - name: api
+          # Replace with a fully-qualified registry reference before deploying:
+          #   docker build -t <registry>/kanban-vision-api:1.0.0 .
+          #   docker push <registry>/kanban-vision-api:1.0.0
+          # For Minikube: eval $(minikube docker-env) && docker build -t kanban-vision-api:1.0.0 .
           image: kanban-vision-api:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
