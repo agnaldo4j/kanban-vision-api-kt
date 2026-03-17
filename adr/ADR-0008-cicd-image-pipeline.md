@@ -8,7 +8,7 @@
 | Data      | 2026-03-17                                               |
 | Autores   | @agnaldo4j                                               |
 | Branch    | feat/adr-0008-cicd-image-pipeline                        |
-| PR        | (preencher após abrir o PR)                              |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/63 |
 | Supersede | —                                                        |
 
 ---
