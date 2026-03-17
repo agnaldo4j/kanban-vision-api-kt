@@ -1,6 +1,7 @@
 package com.kanbanvision.httpapi
 
 import com.kanbanvision.httpapi.plugins.withSpan
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -20,6 +21,17 @@ class SpanHelperTest {
             runBlocking {
                 withSpan("test.span.error") {
                     throw IllegalStateException("simulated error")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `withSpan propagates CancellationException without recording as error`() {
+        assertThrows<CancellationException> {
+            runBlocking {
+                withSpan("test.span.cancelled") {
+                    throw CancellationException("cancelled")
                 }
             }
         }

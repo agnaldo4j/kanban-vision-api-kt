@@ -8,16 +8,8 @@ datasources:
     uid: tempo
     jsonData:
       httpMethod: GET
-      tracesToLogsV2:
-        datasourceUid: loki
-        spanStartTimeShift: "-1h"
-        spanEndTimeShift: "1h"
-        filterByTraceID: true
-        filterBySpanID: false
       serviceMap:
         datasourceUid: prometheus
       nodeGraph:
         enabled: true
-      lokiSearch:
-        datasourceUid: loki
     isDefault: false
