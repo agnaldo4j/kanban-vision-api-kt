@@ -117,7 +117,7 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 
 ## Gap Execution Protocol
 
-> Read this before starting any gap from ADR-0004. Full rationale: skill `/evolutionary-change`.
+> Read this section before starting any gap from ADR-0004. Full rationale: skill `/evolutionary-change`.
 
 **Gap type classification:**
 
@@ -132,7 +132,7 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | Measure | Limit |
 |---------|-------|
 | JaCoCo coverage | ≥ 95% per module |
-| Detekt violations | 0 (`warningsAsErrors = true`) |
+| Detekt violations | 0 (`warningsAsErrors: true` in `config/detekt/detekt.yml`) |
 | KtLint | 0 errors (`./gradlew ktlintFormat` before commit) |
 | `./gradlew testAll` | Green before opening PR |
 | PR size | ≤ 400 changed lines |
