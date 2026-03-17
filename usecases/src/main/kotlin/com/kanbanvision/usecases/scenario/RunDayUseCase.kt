@@ -7,7 +7,7 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.scenario.DailySnapshot
 import com.kanbanvision.domain.model.scenario.SimulationState
 import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.simulation.SimulationEngine
+import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.scenario.commands.RunDayCommand
@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
 class RunDayUseCase(
     private val scenarioRepository: ScenarioRepository,
     private val snapshotRepository: SnapshotRepository,
+    private val simulationEngine: SimulationEnginePort,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -27,7 +28,7 @@ class RunDayUseCase(
             val scenario = scenarioRepository.findById(id).bind()
             val state = scenarioRepository.findState(id).bind()
             guardDuplicate(id, state).bind()
-            val result = SimulationEngine.runDay(id, state, command.decisions, scenario.config.seedValue)
+            val result = simulationEngine.runDay(id, state, command.decisions, scenario.config.seedValue)
             val (snapshot, duration) = timed { persistResult(id, result.newState, result.snapshot) }
             log.info("Day run: scenario={} day={} duration={}ms", id.value, state.currentDay.value, duration.inWholeMilliseconds)
             snapshot
