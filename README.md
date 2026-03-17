@@ -16,6 +16,9 @@ git clone https://github.com/agnaldo4j/kanban-vision-api-kt.git
 cd kanban-vision-api-kt
 
 # 2. Suba o stack completo (API + PostgreSQL + Prometheus + Grafana)
+GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
+
+# Opcional: habilitar endpoint POST /auth/token para geração de JWT em desenvolvimento
 JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 ```
 
@@ -849,8 +852,8 @@ GitHub Actions (`.github/workflows/ci.yml`) — dois jobs:
 | Evento | Ação |
 |---|---|
 | Pull Request | Build da imagem (sem push) — valida Dockerfile |
-| Push para `main` | Build + push para GHCR como `latest` e `sha-<short>` |
-| Tag `v*.*.*` | Build + push como `v<version>` |
+| Push para `main` | Build + push: `sha-<short>` + `latest` |
+| Tag `v*.*.*` | Build + push: `sha-<short>` + `v<version>` + `latest` |
 
 Registry: `ghcr.io/agnaldo4j/kanban-vision-api-kt`
 

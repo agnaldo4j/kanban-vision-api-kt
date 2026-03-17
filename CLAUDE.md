@@ -127,8 +127,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on 
 
 **Job `build`** (runs after `quality`):
 1. On pull requests: builds Docker image only (no push) — validates Dockerfile
-2. On `main` push or `v*.*.*` tag: builds + pushes to GHCR (`ghcr.io/<owner>/kanban-vision-api-kt`)
-   - Tags: `sha-<short>`, `latest` (main), `v<version>` (tags)
+2. On `main` push: builds + pushes to GHCR — tags: `sha-<short>` + `latest`
+3. On `v*.*.*` tag: builds + pushes to GHCR — tags: `sha-<short>` + `v<version>` + `latest`
    - Layer cache via GitHub Actions cache
 
 ## Stack
