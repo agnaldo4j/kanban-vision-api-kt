@@ -22,11 +22,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build fat JAR (http_api module)
 ./gradlew :http_api:buildFatJar
 
-# Run the application
-./gradlew :http_api:run
+# Run the application (dev mode — exposes POST /auth/token)
+JWT_DEV_MODE=true ./gradlew :http_api:run
 ```
 
 > **Java version**: This project requires Java 21. It is pinned via `gradle.properties` (`org.gradle.java.home`). The system default is Java 25 which is incompatible with Gradle 8.13.
+
+### Docker / docker-compose
+
+```bash
+# Start full stack (app + PostgreSQL + Prometheus + Grafana)
+GRAFANA_ADMIN_PASSWORD=admin docker-compose up --build
+
+# Dev mode with token endpoint enabled
+JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker-compose up --build
+
+# Ports: API=8080, Prometheus=9090, Grafana=3000
+```
+
+> `LOG_FORMAT=json` is set automatically in docker-compose. Grafana dashboard auto-provisioned at http://localhost:3000 (user: admin).
 
 ## Architecture
 
@@ -42,7 +56,7 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 - **domain** — Pure Kotlin. No framework dependencies. Contains board entities (`Board`, `Card`, `Column`) and simulation entities (`Tenant`, `Scenario`, `ScenarioConfig`, `SimulationDay`, `SimulationState`, `SimulationResult`, `DailySnapshot`) plus work items (`WorkItem`, `WorkItemState`, `ServiceClass`), decisions (`Decision`, `DecisionId`, `DecisionType`), movements (`Movement`, `MovementType`), metrics (`FlowMetrics`), policies (`PolicySet`), and the simulation engine (`SimulationEngine`). Value objects: `BoardId`, `CardId`, `ColumnId`, `TenantId`, `ScenarioId`, `WorkItemId`.
 - **usecases** — Application layer. Depends on `domain` via `api()`. Follows CQS pattern: each use case accepts a `Command` or `Query` object. Use cases receive repository ports via constructor injection. **Repository interfaces (ports) live here under `repositories/`**, not in domain.
 - **sql_persistence** — JDBC + HikariCP + PostgreSQL. Implements all repository interfaces. `DatabaseFactory` initialises the connection pool and runs Flyway migrations (`db/migration/V1__initial_schema.sql`, `V2__add_indexes_and_constraints.sql`). Uses `kotlinx.serialization` for JSON serialization of complex types (`SimulationState`, `DailySnapshot`) via private surrogate data classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
-- **http_api** — Entry point. Ktor (Netty engine) + Koin DI. `Main.kt` wires everything. Plugins: Observability (MDC + requestId), Serialization, StatusPages, Routing, OpenApi. Routes: `BoardRoutes`, `CardRoutes`, `ColumnRoutes`, `HealthRoutes`, `ScenarioRoutes` (includes analytics: movements by day, flow metrics range). `AppModule` binds repository implementations to ports and wires all use cases.
+- **http_api** — Entry point. Ktor (Netty engine) + Koin DI. `Main.kt` wires everything. Plugins: Observability (MDC + requestId), Authentication (JWT Bearer), Metrics (Micrometer/Prometheus), RateLimit (100 req/min per IP), Serialization, StatusPages, Routing, OpenApi. Routes: `BoardRoutes`, `CardRoutes`, `ColumnRoutes`, `HealthRoutes`, `ScenarioRoutes` (includes analytics: movements by day, flow metrics range), `AuthRoutes` (dev-only token endpoint). `AppModule` binds repository implementations to ports and wires all use cases.
 
 ## Key Conventions
 
@@ -62,6 +76,8 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 - **Detekt `LargeClass` threshold**: 200 lines. Test files that grow beyond this must be split into focused test classes (e.g., `ScenarioCreationRoutesTest`, `ScenarioRunDayRoutesTest`, `ScenarioQueryRoutesTest`).
 - **`CreateScenarioUseCase` generates its own ID**: The use case calls `Scenario.create()` internally which generates a new `ScenarioId`. When mocking `scenarioRepository.saveState(...)` in tests for this use case, use `any()` for the scenarioId argument instead of a fixed value.
 - **`IntegrationTestSetup.closeDataSource()` / `reinitDataSource()`**: Use these helpers in `@BeforeEach`/`@AfterEach` to force `PersistenceError` paths in JDBC integration tests.
+- **JWT_DEV_MODE**: The `POST /auth/token` endpoint is only mounted when `JWT_DEV_MODE=true`. In tests that exercise `AuthRoutes`, ensure this env var or the Koin module sets dev mode. Production deployments must never set this to `true`.
+- **Prometheus metric naming**: Micrometer converts dots to underscores and appends `_total` to counters. `Counter.builder("kanban.simulation.days.executed")` → Prometheus exposes as `kanban_simulation_days_executed_total`.
 
 ## Code Quality
 
@@ -101,26 +117,41 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on pull requests against `main`:
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on pull requests against `main`. Two jobs:
 
+**Job `quality`** (runs on every PR and push):
 1. Setup Java 21 (Temurin)
 2. Run `./gradlew testAll` (includes Detekt, KtLint, tests, JaCoCo coverage gate)
 3. Upload artifacts (14-day retention): test reports, Detekt reports, JaCoCo coverage
+4. Post Detekt analysis summary and JaCoCo coverage diff as PR comments
+
+**Job `build`** (runs after `quality`):
+1. On pull requests: builds Docker image only (no push) — validates Dockerfile
+2. On `main` push or `v*.*.*` tag: builds + pushes to GHCR (`ghcr.io/<owner>/kanban-vision-api-kt`)
+   - Tags: `sha-<short>`, `latest` (main), `v<version>` (tags)
+   - Layer cache via GitHub Actions cache
 
 ## Stack
 
 | Concern | Library |
 |---|---|
 | HTTP | Ktor 3.1.2 (Netty engine) |
+| Authentication | JWT Bearer (`ktor-server-auth-jwt`) |
+| Rate Limiting | `ktor-server-rate-limit` (100 req/min per IP) |
 | Serialization | kotlinx.serialization |
 | DI | Koin 4.1.1 |
 | JDBC | Raw JDBC + HikariCP 7.0.2 |
 | DB Migrations | Flyway 10.21.0 |
 | Production DB | PostgreSQL 42.7.5 |
 | Test DB | Embedded PostgreSQL (zonky) |
+| Metrics | Micrometer + Prometheus (`/metrics`) |
+| Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit 5.11.4 + MockK 1.14.2 |
 | OpenAPI | ktor-openapi 5.6.0 + ktor-swagger-ui 5.6.0 |
 | Static analysis | Detekt 1.23.7 |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo |
+| Containerisation | Docker multi-stage (`eclipse-temurin:21-jre`) + docker-compose |
+| Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
+| Observability stack | Prometheus 2.54 + Grafana 11.3 (auto-provisioned dashboard + alerts) |

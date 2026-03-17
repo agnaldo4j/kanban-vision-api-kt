@@ -4,11 +4,11 @@
 
 | Campo     | Valor                                                        |
 |-----------|--------------------------------------------------------------|
-| Status    | Proposta                                                     |
+| Status    | Aceita                                                       |
 | Data      | 2026-03-16                                                   |
 | Autores   | @agnaldo4j                                                   |
 | Branch    | —                                                            |
-| PR        | —                                                            |
+| PR        | #56                                                          |
 | Supersede | —                                                            |
 
 ---
@@ -453,18 +453,18 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 
 > Cada linha é **1 sessão LLM + 1 PR**. `[N]` = executar diretamente. `[M]` = discutir design na sessão antes do código. `[E→ADR-XXXX]` = escrever e aprovar a ADR indicada **antes** de iniciar a sessão de implementação.
 
-**Ciclo Hardening (P1):**
-- [ ] `[N]` **GAP-B** — Separar em dois endpoints: `GET /health/live` (retorna 200 sempre — liveness) e `GET /health/ready` (verifica `DatabaseFactory.dataSource.connection` — readiness). Retornar `503 Service Unavailable` se PostgreSQL não responder. Manter `GET /health` para retrocompatibilidade
-- [ ] `[N]` **GAP-C** — Adicionar `addShutdownHook` em `Main.kt` para `server.stop(gracePeriodMillis = 1000, timeoutMillis = 5000)`
-- [ ] `[E→ADR-0005]` **GAP-A** — Escrever ADR-0005 (decisão de mecanismo: JWT vs API Key vs OAuth2). Só após aprovação: implementar middleware de autenticação em todas as rotas
+**Ciclo Hardening (P1): ✅ CONCLUÍDO**
+- [x] `[N]` **GAP-B** — `/health/live` + `/health/ready` com DB check → PR #58
+- [x] `[N]` **GAP-C** — Graceful shutdown em `Main.kt` → PR #58
+- [x] `[E→ADR-0005]` **GAP-A** — JWT Bearer authentication (ADR-0005) → PR #57
 
-**Ciclo Operações (P2):**
-- [ ] `[N]` **GAP-F** — Adicionar `net.logstash.logback:logstash-logback-encoder:8.0` em `http_api/build.gradle.kts`. Atualizar `logback.xml` com appender JSON (`LogstashEncoder`) condicional via variável `LOG_FORMAT=json` (texto em dev, JSON em produção). Incluir `traceId` e `spanId` como campos MDC no encoder para correlação futura com OTel
-- [ ] `[M]` **GAP-D** — Adicionar `ktor-server-metrics-micrometer-jvm:3.1.2` + `micrometer-registry-prometheus:1.14.4`. Criar `plugins/Metrics.kt` com `configureMetrics()`: JVM metrics, plugin Ktor (instrumenta todas as rotas automaticamente), `DomainMetrics` para métricas de negócio (`kanban.simulation.days.executed.total`, `kanban.scenario.wip.current`). Endpoint `GET /metrics` para scraping. Labels de baixa cardinalidade apenas (sem UUIDs)
-- [ ] `[M]` **GAP-E** — Adicionar rate limiting via `ktor-server-rate-limit-jvm:3.1.2` ou NGINX upstream
-- [ ] `[M]` **GAP-G** — Criar `Dockerfile` multi-stage: stage `builder` (`eclipse-temurin:21-jdk`) executa `./gradlew :http_api:buildFatJar`; stage `runtime` (`eclipse-temurin:21-jre`) copia o jar + OTel Java Agent (versão fixada `2.12.0`), cria usuário não-root `appuser`, define `HEALTHCHECK` via `/health/ready`, expõe `8080`. Criar `docker-compose.yml` (dev: `app` + `postgres` com health check). Criar `docker-compose.observability.yml` (overlay: OTel Collector + Prometheus + Grafana + Loki + Tempo). Criar manifestos Kubernetes em `k8s/`: `namespace.yaml`, `configmap.yaml`, `secret.template.yaml`, `deployment.yaml` (com `startupProbe`/`livenessProbe`/`readinessProbe` via `/health/live` e `/health/ready`, `resources.requests/limits`, `RollingUpdate maxSurge=1 maxUnavailable=0`, `securityContext.runAsNonRoot=true`), `service.yaml`, `ingress.yaml`, `hpa.yaml` (CPU target 70%), `pdb.yaml` (minAvailable=1). Configurar `prometheus.yml` com scrape de `/metrics` a cada 15s
-- [ ] `[E→ADR-0006]` **GAP-V** — Escrever ADR-0006 (decisão: registry, estratégia de tagging, deploy automático vs manual). Só após aprovação: adicionar job `docker` no CI com build, Trivy scan, push para GHCR, deploy K8s
-- [ ] `[M]` **GAP-U** — Configurar alertas no Grafana Alerting ou `prometheus-alerts.yml`: taxa de erros HTTP > 5% por 2min, latência P95 > 2s por 5min, pool HikariCP > 90%, `up{job="kanban-vision-api"} == 0` por 30s
+**Ciclo Operações (P2): ✅ CONCLUÍDO**
+- [x] `[N]` **GAP-F** — Logging estruturado JSON (`logstash-logback-encoder`) → PR #59
+- [x] `[M]` **GAP-D** — Métricas Micrometer/Prometheus + `DomainMetrics` → PR #60
+- [x] `[M]` **GAP-E** — Rate limiting global (`ktor-server-rate-limit`) → PR #61
+- [x] `[M]` **GAP-G** — Dockerfile multi-stage + docker-compose + K8s manifests → PR #62
+- [x] `[E→ADR-0006]` **GAP-V** — CI/CD pipeline build+push Docker (ADR-0008) → PR #63
+- [x] `[M]` **GAP-U** — Alertas Prometheus + Dashboard Grafana → PR #64
 
 **Ciclo Domínio (P3):**
 - [ ] `[N]` **GAP-W** *(parcialmente concluído nesta revisão)* — Criar `docs/gap-execution-protocol.md` com J-curve tolerances explícitas e checklist de execução pré/pós gap. Adicionar `evolutionary-change` no protocolo do `CLAUDE.md` com referência a este arquivo

@@ -8,19 +8,37 @@
 
 ## Quick Start
 
+### Com Docker Compose (recomendado)
+
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/agnaldo4j/kanban-vision-api-kt.git
 cd kanban-vision-api-kt
 
-# 2. Configure Java 21 (obrigatório — o projeto não é compatível com Java 25+)
+# 2. Suba o stack completo (API + PostgreSQL + Prometheus + Grafana)
+JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker-compose up --build
+```
+
+Serviços disponíveis:
+| Serviço | URL |
+|---|---|
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger |
+| Métricas | http://localhost:8080/metrics |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 (admin / admin) |
+
+### Com Gradle (desenvolvimento local)
+
+```bash
+# 1. Configure Java 21 (obrigatório — o projeto não é compatível com Java 25+)
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
 
-# 3. Compile e rode todos os testes + quality gates
+# 2. Compile e rode todos os testes + quality gates
 ./gradlew testAll
 
-# 4. Suba o banco de dados
+# 3. Suba apenas o banco de dados
 docker run -d --name kanban-db \
   -e POSTGRES_DB=kanbanvision \
   -e POSTGRES_USER=kanban \
@@ -28,7 +46,7 @@ docker run -d --name kanban-db \
   -p 5432:5432 \
   postgres:16
 
-# 5. Execute a aplicação (modo dev: habilita endpoint /auth/token para obter JWT)
+# 4. Execute a aplicação (modo dev: habilita endpoint /auth/token para obter JWT)
 JWT_DEV_MODE=true ./gradlew :http_api:run
 ```
 
@@ -732,7 +750,17 @@ docker run -d \
   postgres:16
 ```
 
-### Subir a aplicação
+### Com Docker Compose (recomendado)
+
+```bash
+# Stack completo: API + PostgreSQL + Prometheus + Grafana
+GRAFANA_ADMIN_PASSWORD=<senha> docker-compose up --build
+
+# Com dev token habilitado
+JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=<senha> docker-compose up --build
+```
+
+### Subir a aplicação (Gradle)
 
 ```bash
 # Modo desenvolvimento (token endpoint disponível)
@@ -748,6 +776,70 @@ JWT_DEV_MODE=true ./gradlew :http_api:run
 ./gradlew :http_api:buildFatJar
 java -jar http_api/build/libs/kanban-vision-api.jar
 ```
+
+### Build da imagem Docker
+
+```bash
+docker build -t kanban-vision-api:local .
+docker run -p 8080:8080 \
+  -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/kanbanvision \
+  -e JWT_SECRET=dev-secret \
+  kanban-vision-api:local
+```
+
+---
+
+## Kubernetes
+
+Manifestos prontos em `k8s/`, aplicáveis com `kubectl` ou `kustomize`:
+
+```bash
+# Preencher secrets (editar k8s/secrets.env.example → k8s/secrets.env)
+cp k8s/secrets.env.example k8s/secrets.env
+# editar k8s/secrets.env com valores reais
+
+# Deploy completo via kustomize
+kubectl apply -k k8s/
+
+# Verificar rollout
+kubectl rollout status deployment/kanban-vision-api -n kanban-vision
+```
+
+| Manifesto | Recurso |
+|---|---|
+| `00-namespace.yml` | Namespace `kanban-vision` |
+| `01-configmap.yml` | Variáveis de configuração (não-sensíveis) |
+| `02-secret.template.yml` | Template de Secret (preencher antes do deploy) |
+| `03-deployment.yml` | Deployment com liveness/readiness/startup probes + rolling update |
+| `04-service.yml` | Service ClusterIP |
+| `05-ingress.yml` | Ingress |
+| `06-hpa.yml` | HorizontalPodAutoscaler (CPU target 70%) |
+| `07-pdb.yml` | PodDisruptionBudget (minAvailable=1) |
+
+As probes utilizam `/health/live` (liveness) e `/health/ready` (readiness).
+
+---
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci.yml`) — dois jobs:
+
+### Job `quality` — todo PR e push para `main`
+
+1. Setup Java 21 (Temurin)
+2. `./gradlew testAll` — Detekt + KtLint + testes + JaCoCo (≥ 95% por módulo)
+3. Upload de artefatos (14 dias): relatórios de teste, Detekt, JaCoCo
+4. Comentários automáticos no PR: Detekt summary + JaCoCo coverage diff
+
+### Job `build` — roda após `quality`
+
+| Evento | Ação |
+|---|---|
+| Pull Request | Build da imagem (sem push) — valida Dockerfile |
+| Push para `main` | Build + push para GHCR como `latest` e `sha-<short>` |
+| Tag `v*.*.*` | Build + push como `v<version>` |
+
+Registry: `ghcr.io/agnaldo4j/kanban-vision-api-kt`
 
 ---
 
