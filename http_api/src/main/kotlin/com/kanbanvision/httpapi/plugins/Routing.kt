@@ -6,6 +6,7 @@ import com.kanbanvision.httpapi.routes.columnRoutes
 import com.kanbanvision.httpapi.routes.healthRoutes
 import com.kanbanvision.httpapi.routes.scenarioAnalyticsRoutes
 import com.kanbanvision.httpapi.routes.scenarioRoutes
+import com.kanbanvision.persistence.DatabaseFactory
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.route
@@ -13,7 +14,7 @@ import io.ktor.server.routing.routing
 
 fun Application.configureRouting() {
     routing {
-        healthRoutes()
+        healthRoutes(::isDatabaseReady)
         authenticate("jwt-auth") {
             route("/api/v1") {
                 boardRoutes()
@@ -25,3 +26,5 @@ fun Application.configureRouting() {
         }
     }
 }
+
+private fun isDatabaseReady(): Boolean = DatabaseFactory.isReady()

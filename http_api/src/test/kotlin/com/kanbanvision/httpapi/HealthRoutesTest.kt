@@ -5,6 +5,7 @@ import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
+import com.kanbanvision.httpapi.routes.healthRoutes
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
@@ -66,6 +67,51 @@ class HealthRoutesTest {
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals("ok", body["status"]?.jsonPrimitive?.content)
+        }
+
+    @Test
+    fun `GET health live returns 200`() =
+        testApplication {
+            application {
+                configureSerialization()
+                routing { healthRoutes { true } }
+            }
+
+            val response = client.get("/health/live")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("ok", body["status"]?.jsonPrimitive?.content)
+        }
+
+    @Test
+    fun `GET health ready returns 200 when database is available`() =
+        testApplication {
+            application {
+                configureSerialization()
+                routing { healthRoutes { true } }
+            }
+
+            val response = client.get("/health/ready")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("ok", body["status"]?.jsonPrimitive?.content)
+        }
+
+    @Test
+    fun `GET health ready returns 503 when database is unavailable`() =
+        testApplication {
+            application {
+                configureSerialization()
+                routing { healthRoutes { false } }
+            }
+
+            val response = client.get("/health/ready")
+
+            assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("unavailable", body["status"]?.jsonPrimitive?.content)
         }
 
     @Test

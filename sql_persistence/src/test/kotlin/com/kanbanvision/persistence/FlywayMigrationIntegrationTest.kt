@@ -115,4 +115,19 @@ class FlywayMigrationIntegrationTest {
             conn.rollback()
         }
     }
+
+    @Test
+    fun `isReady returns true when database is available`() {
+        assertTrue(DatabaseFactory.isReady())
+    }
+
+    @Test
+    fun `isReady returns false when database is unavailable`() {
+        IntegrationTestSetup.closeDataSource()
+        try {
+            assertTrue(!DatabaseFactory.isReady())
+        } finally {
+            IntegrationTestSetup.reinitDataSource()
+        }
+    }
 }

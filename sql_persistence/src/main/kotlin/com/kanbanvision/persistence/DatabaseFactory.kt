@@ -3,6 +3,8 @@ package com.kanbanvision.persistence
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 data class DatabaseConfig(
     val url: String,
@@ -19,9 +21,29 @@ object DatabaseFactory {
     private const val KEEPALIVE_TIME_MS = 120_000L
     private const val LEAK_DETECTION_THRESHOLD_MS = 60_000L
     private const val POOL_NAME = "KanbanVisionPool"
+    private const val READINESS_VALIDATION_TIMEOUT_SECS = 2
+    private const val READINESS_CHECK_TIMEOUT_MS = 3_000L
 
     lateinit var dataSource: HikariDataSource
         private set
+
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    fun isReady(): Boolean {
+        val check =
+            CompletableFuture.supplyAsync {
+                try {
+                    dataSource.connection.use { it.isValid(READINESS_VALIDATION_TIMEOUT_SECS) }
+                } catch (e: Exception) {
+                    false
+                }
+            }
+        return try {
+            check.get(READINESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        } catch (e: Exception) {
+            check.cancel(true)
+            false
+        }
+    }
 
     fun init(config: DatabaseConfig) {
         if (::dataSource.isInitialized) {
