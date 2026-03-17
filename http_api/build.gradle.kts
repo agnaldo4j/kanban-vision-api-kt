@@ -72,6 +72,8 @@ dependencies {
     implementation("io.github.smiley4:ktor-swagger-ui:5.6.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("org.codehaus.janino:janino:3.1.12")
 
     testImplementation("io.ktor:ktor-server-test-host-jvm:3.1.2")
     testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.1.2")
