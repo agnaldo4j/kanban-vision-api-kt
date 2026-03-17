@@ -1,0 +1,10 @@
+.git
+.github
+.gradle
+**/build
+**/.kotlin
+**/node_modules
+*.md
+.dockerignore
+docker-compose*.yml
+k8s/
