@@ -1,0 +1,70 @@
+groups:
+  - name: kanban-vision-api
+    rules:
+
+      # Alert when the HTTP 5xx error rate exceeds 5% over a 5-minute window.
+      # Threshold: sum(rate(5xx)) / sum(rate(all)) > 0.05
+      - alert: HighHttpErrorRate
+        expr: |
+          (
+            sum by (instance) (rate(ktor_http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+            sum by (instance) (rate(ktor_http_server_requests_seconds_count[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx error rate on {{ $labels.instance }}"
+          description: >
+            HTTP 5xx error rate is {{ printf "%.1f" (mul $value 100) }}%
+            (threshold: 5%) over the last 5 minutes.
+
+      # Alert when the 95th-percentile HTTP response latency exceeds 2 seconds.
+      # Uses the histogram_quantile function on the ktor request histogram.
+      - alert: HighHttpLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, instance) (
+              rate(ktor_http_server_requests_seconds_bucket[5m])
+            )
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP P95 latency on {{ $labels.instance }}"
+          description: >
+            P95 HTTP response latency is {{ printf "%.2f" $value }}s
+            (threshold: 2s) over the last 5 minutes.
+
+      # Alert when the HikariCP connection pool is more than 90% utilised.
+      # Prolonged pool exhaustion leads to connection-timeout errors.
+      - alert: HikariPoolExhaustion
+        expr: |
+          (
+            hikaricp_connections_active
+            /
+            hikaricp_connections_max
+          ) > 0.9
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HikariCP connection pool near exhaustion on {{ $labels.instance }}"
+          description: >
+            HikariCP pool is {{ printf "%.0f" (mul $value 100) }}% utilised
+            (threshold: 90%) for more than 2 minutes.
+
+      # Alert when the scrape target disappears (up metric equals 0).
+      # This fires within 1 minute of the service becoming unreachable.
+      - alert: ServiceDown
+        expr: up{job="kanban-vision-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "kanban-vision-api is down on {{ $labels.instance }}"
+          description: >
+            The scrape target {{ $labels.instance }} has been unreachable
+            for more than 1 minute.
