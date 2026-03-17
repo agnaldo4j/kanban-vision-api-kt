@@ -463,7 +463,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[M]` **GAP-D** — Métricas Micrometer/Prometheus + `DomainMetrics` → PR #60
 - [x] `[M]` **GAP-E** — Rate limiting global (`ktor-server-rate-limit`) → PR #61
 - [x] `[M]` **GAP-G** — Dockerfile multi-stage + docker-compose + K8s manifests → PR #62
-- [x] `[E→ADR-0006]` **GAP-V** — CI/CD pipeline build+push Docker (ADR-0008) → PR #63
+- [x] `[E→ADR-0008]` **GAP-V** — CI/CD pipeline build+push Docker (ADR-0008) → PR #63
 - [x] `[M]` **GAP-U** — Alertas Prometheus + Dashboard Grafana → PR #64
 
 **Ciclo Domínio (P3):**

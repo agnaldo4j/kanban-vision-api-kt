@@ -16,8 +16,10 @@ git clone https://github.com/agnaldo4j/kanban-vision-api-kt.git
 cd kanban-vision-api-kt
 
 # 2. Suba o stack completo (API + PostgreSQL + Prometheus + Grafana)
-JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker-compose up --build
+JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 ```
+
+> Credenciais do Grafana: usuário definido por `GRAFANA_ADMIN_USER` (padrão `admin`), senha obrigatória via `GRAFANA_ADMIN_PASSWORD`.
 
 Serviços disponíveis:
 | Serviço | URL |
@@ -26,7 +28,7 @@ Serviços disponíveis:
 | Swagger UI | http://localhost:8080/swagger |
 | Métricas | http://localhost:8080/metrics |
 | Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 (admin / admin) |
+| Grafana | http://localhost:3000 |
 
 ### Com Gradle (desenvolvimento local)
 
@@ -754,10 +756,10 @@ docker run -d \
 
 ```bash
 # Stack completo: API + PostgreSQL + Prometheus + Grafana
-GRAFANA_ADMIN_PASSWORD=<senha> docker-compose up --build
+GRAFANA_ADMIN_PASSWORD=<senha> docker compose up --build
 
 # Com dev token habilitado
-JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=<senha> docker-compose up --build
+JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=<senha> docker compose up --build
 ```
 
 ### Subir a aplicação (Gradle)
@@ -781,11 +783,22 @@ java -jar http_api/build/libs/kanban-vision-api.jar
 
 ```bash
 docker build -t kanban-vision-api:local .
+
+# macOS / Windows (Docker Desktop)
 docker run -p 8080:8080 \
   -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/kanbanvision \
   -e JWT_SECRET=dev-secret \
   kanban-vision-api:local
+
+# Linux (Docker Engine sem Docker Desktop)
+docker run -p 8080:8080 \
+  --add-host=host.docker.internal:host-gateway \
+  -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/kanbanvision \
+  -e JWT_SECRET=dev-secret \
+  kanban-vision-api:local
 ```
+
+> Para uso em produção, prefira `docker compose up` ou os manifestos Kubernetes — ambos usam a rede interna do stack (sem `host.docker.internal`).
 
 ---
 
@@ -809,7 +822,7 @@ kubectl rollout status deployment/kanban-vision-api -n kanban-vision
 |---|---|
 | `00-namespace.yml` | Namespace `kanban-vision` |
 | `01-configmap.yml` | Variáveis de configuração (não-sensíveis) |
-| `02-secret.template.yml` | Template de Secret (preencher antes do deploy) |
+| `02-secret.template.yml` | Referência/template de Secret — **não é aplicado pelo kustomize**; o deploy usa `k8s/secrets.env` via `secretGenerator` em `kustomization.yaml` |
 | `03-deployment.yml` | Deployment com liveness/readiness/startup probes + rolling update |
 | `04-service.yml` | Service ClusterIP |
 | `05-ingress.yml` | Ingress |

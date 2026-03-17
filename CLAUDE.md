@@ -32,15 +32,15 @@ JWT_DEV_MODE=true ./gradlew :http_api:run
 
 ```bash
 # Start full stack (app + PostgreSQL + Prometheus + Grafana)
-GRAFANA_ADMIN_PASSWORD=admin docker-compose up --build
+GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 
 # Dev mode with token endpoint enabled
-JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker-compose up --build
+JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 
 # Ports: API=8080, Prometheus=9090, Grafana=3000
 ```
 
-> `LOG_FORMAT=json` is set automatically in docker-compose. Grafana dashboard auto-provisioned at http://localhost:3000 (user: admin).
+> `LOG_FORMAT=json` is set automatically in docker-compose. Grafana auto-provisioned at http://localhost:3000 — user: `GRAFANA_ADMIN_USER` (default `admin`), password: `GRAFANA_ADMIN_PASSWORD` (required).
 
 ## Architecture
 
