@@ -8,6 +8,7 @@ import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.httpapi.metrics.DomainMetrics
+import com.kanbanvision.httpapi.plugins.withSpan
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
@@ -267,15 +268,17 @@ private suspend fun ApplicationCall.handleRunDay(
                     }
                 Decision(id = DecisionId.generate(), type = type, payload = d.payload)
             }
-        runDay.execute(RunDayCommand(scenarioId = scenarioId, decisions = decisions)).fold(
-            ifLeft = { error -> respondWithDomainError(error) },
-            ifRight = { snapshot ->
-                domainMetrics.recordSimulationDayExecuted()
-                MDC.putCloseable("day", snapshot.day.value.toString()).use {
-                    respond(snapshot.toResponse())
-                }
-            },
-        )
+        withSpan("simulation.run_day") {
+            runDay.execute(RunDayCommand(scenarioId = scenarioId, decisions = decisions)).fold(
+                ifLeft = { error -> respondWithDomainError(error) },
+                ifRight = { snapshot ->
+                    domainMetrics.recordSimulationDayExecuted()
+                    MDC.putCloseable("day", snapshot.day.value.toString()).use {
+                        respond(snapshot.toResponse())
+                    }
+                },
+            )
+        }
     }
 }
 

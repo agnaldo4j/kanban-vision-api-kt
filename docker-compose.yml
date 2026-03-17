@@ -10,6 +10,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      tempo:
+        condition: service_started
     ports:
       - "8080:8080"
     environment:
@@ -23,6 +25,14 @@ services:
       JWT_TTL_MS: "86400000"
       JWT_DEV_MODE: "${JWT_DEV_MODE:-false}"
       LOG_FORMAT: "json"
+      # ── OpenTelemetry (traces exported to Grafana Tempo via OTLP gRPC) ──────
+      OTEL_SERVICE_NAME: "kanban-vision-api"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=local"
+      OTEL_LOGS_EXPORTER: "none"
+      OTEL_METRICS_EXPORTER: "none"
+      OTEL_TRACES_EXPORTER: "otlp"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health/live || exit 1"]
       interval: 10s
@@ -50,6 +60,19 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # ── Grafana Tempo (distributed tracing backend) ──────────────────────────────
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: kanban-vision-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "3200:3200"   # Tempo HTTP API (queried by Grafana)
+    volumes:
+      - ./observability/tempo.yml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    restart: unless-stopped
+
   # ── Prometheus ───────────────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -75,6 +98,7 @@ services:
     container_name: kanban-vision-grafana
     depends_on:
       - prometheus
+      - tempo
     ports:
       - "3000:3000"
     environment:
@@ -91,3 +115,4 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  tempo_data:
