@@ -7,9 +7,9 @@ groups:
       - alert: HighHttpErrorRate
         expr: |
           (
-            sum(rate(ktor_http_server_requests_seconds_count{status=~"5.."}[5m]))
+            sum by (instance) (rate(ktor_http_server_requests_seconds_count{status=~"5.."}[5m]))
             /
-            sum(rate(ktor_http_server_requests_seconds_count[5m]))
+            sum by (instance) (rate(ktor_http_server_requests_seconds_count[5m]))
           ) > 0.05
         for: 5m
         labels:
@@ -25,7 +25,7 @@ groups:
       - alert: HighHttpLatencyP95
         expr: |
           histogram_quantile(0.95,
-            sum by (le) (
+            sum by (le, instance) (
               rate(ktor_http_server_requests_seconds_bucket[5m])
             )
           ) > 2

@@ -209,7 +209,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kanban_vision_simulation_days_executed_total[1m])",
+          "expr": "rate(kanban_simulation_days_executed_total[1m])",
           "legendFormat": "Simulation days/s",
           "refId": "A"
         }
