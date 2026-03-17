@@ -21,7 +21,7 @@ services:
       JWT_ISSUER: "kanban-vision-api"
       JWT_AUDIENCE: "kanban-vision-clients"
       JWT_TTL_MS: "86400000"
-      JWT_DEV_MODE: "true"
+      JWT_DEV_MODE: "${JWT_DEV_MODE:-false}"
       LOG_FORMAT: "json"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health/live || exit 1"]
