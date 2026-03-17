@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi.di
 
+import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.persistence.repositories.JdbcBoardRepository
 import com.kanbanvision.persistence.repositories.JdbcCardRepository
 import com.kanbanvision.persistence.repositories.JdbcColumnRepository
@@ -26,11 +27,16 @@ import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.koin.dsl.module
 
 object AppModule {
     val koinModule =
         module {
+            single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+            single { DomainMetrics(get()) }
+
             single<BoardRepository> { JdbcBoardRepository() }
             single<CardRepository> { JdbcCardRepository() }
             single<ColumnRepository> { JdbcColumnRepository() }

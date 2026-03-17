@@ -6,6 +6,7 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.scenario.Scenario
 import com.kanbanvision.domain.model.scenario.SimulationState
 import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -79,6 +80,7 @@ class ScenarioCreationRoutesTest {
             single { GetDailySnapshotUseCase(get()) }
             single { GetMovementsByDayUseCase(get()) }
             single { GetFlowMetricsRangeUseCase(get()) }
+            single { mockk<DomainMetrics>(relaxed = true) }
         }
 
     @Test

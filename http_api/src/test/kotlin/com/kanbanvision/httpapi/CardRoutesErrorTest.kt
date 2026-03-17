@@ -5,6 +5,7 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRouting
@@ -67,6 +68,7 @@ class CardRoutesErrorTest {
             single { CreateColumnUseCase(get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
+            single { mockk<DomainMetrics>(relaxed = true) }
         }
 
     @Test
