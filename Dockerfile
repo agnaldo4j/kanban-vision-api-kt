@@ -17,6 +17,7 @@ COPY domain/build.gradle.kts domain/build.gradle.kts
 COPY usecases/build.gradle.kts usecases/build.gradle.kts
 COPY sql_persistence/build.gradle.kts sql_persistence/build.gradle.kts
 COPY http_api/build.gradle.kts http_api/build.gradle.kts
+COPY config config
 
 RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q
 

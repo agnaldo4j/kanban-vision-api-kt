@@ -9,3 +9,4 @@ out/
 .DS_Store
 local.properties
 .env
+k8s/secrets.env
