@@ -99,8 +99,8 @@ Em push de tag semver (`v*.*.*`), a imagem recebe adicionalmente o tag de versã
 ## Consequências
 
 **Positivas:**
-- Cada merge em `main` produz uma imagem `ghcr.io/<owner>/kanban-vision-api:sha-<sha>`
-- Cada tag `v*.*.*` produz `ghcr.io/<owner>/kanban-vision-api:v1.2.3` + `latest`
+- Cada merge em `main` produz uma imagem `ghcr.io/agnaldo4j/kanban-vision-api-kt:sha-<sha>` + `latest`
+- Cada tag `v*.*.*` produz `ghcr.io/agnaldo4j/kanban-vision-api-kt:v1.2.3` + `sha-<sha>` + `latest`
 - Falhas de build de imagem bloqueiam o PR antes do merge
 - Rastreabilidade completa: commit → imagem → tag semântica
 
