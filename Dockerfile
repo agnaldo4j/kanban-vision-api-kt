@@ -19,7 +19,9 @@ COPY sql_persistence/build.gradle.kts sql_persistence/build.gradle.kts
 COPY http_api/build.gradle.kts http_api/build.gradle.kts
 COPY config config
 
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q
+# Remove local JDK path override — the container's JAVA_HOME is used instead
+RUN sed -i '/^org\.gradle\.java\.home/d' gradle.properties && \
+    chmod +x gradlew && ./gradlew dependencies --no-daemon -q
 
 # Copy sources and build fat JAR
 COPY domain/src domain/src
