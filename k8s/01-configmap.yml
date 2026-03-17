@@ -15,3 +15,12 @@ data:
   JWT_AUDIENCE: "kanban-vision-clients"
   JWT_TTL_MS: "86400000"
   LOG_FORMAT: "json"
+  # OpenTelemetry — override OTEL_EXPORTER_OTLP_ENDPOINT per environment
+  # to point to your Tempo / OTLP collector instance.
+  OTEL_SERVICE_NAME: "kanban-vision-api"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=production"
+  OTEL_LOGS_EXPORTER: "none"
+  OTEL_METRICS_EXPORTER: "none"
+  OTEL_TRACES_EXPORTER: "otlp"
