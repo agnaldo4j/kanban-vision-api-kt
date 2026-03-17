@@ -8,7 +8,7 @@
 | Data      | 2026-03-17                                         |
 | Autores   | @agnaldo4j                                         |
 | Branch    | feat/adr-0009-otel-agent                           |
-| PR        | (preencher após abrir o PR)                        |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/68 |
 | Gap       | GAP-O — P3 Domínio                                 |
 | Supersede | —                                                  |
 
