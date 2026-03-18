@@ -61,10 +61,10 @@ class ScenarioAnalyticsEdgeCasesTest {
             single<SnapshotRepository> { snapshotRepository }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
-            single { CreateCardUseCase(get()) }
+            single { CreateCardUseCase(get(), get(), get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
-            single { CreateColumnUseCase(get()) }
+            single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
             single { CreateScenarioUseCase(get(), get()) }

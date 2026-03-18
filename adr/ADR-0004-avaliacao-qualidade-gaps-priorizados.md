@@ -474,7 +474,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-P** — Extrair interface `SimulationEnginePort` em `usecases/`, implementada por `SimulationEngine` (habilita mock em testes de use case e span manual via injeção) — PR #70
 - [x] `[N]` **GAP-Q** — Logar stack trace do erro original em `JdbcBoardRepository` (e demais) com `log.error("Persistence error", e)` antes de mapear para `DomainError.PersistenceError` — PR #71
 - [x] `[M]` **GAP-S** — Adicionar custom Detekt rule ou Gradle constraint impedindo import direto de `JdbcBoardRepository` fora do `AppModule` — PR #72
-- [ ] `[M]` **GAP-I** — Mover validações de invariantes de `Column`/`Card` para `Board.addColumn()` / `Board.addCard()`
+- [x] `[M]` **GAP-I** — Mover validações de invariantes de `Column`/`Card` para `Board.addColumn()` / `Board.addCard()` — PR #73
 - [ ] `[M]` **GAP-J** — Adicionar parâmetros `page` e `size` nos endpoints de lista
 - [ ] `[E→ADR-0008]` **GAP-H** — Escrever ADR-0008 (modelo de Domain Events e mecanismo de publicação). Requer GAP-P concluído. Só após aprovação: implementar eventos e listeners
 - [ ] `[E→ADR-0009]` **GAP-K** — Escrever ADR-0009 (estratégia de contract testing com Pact). Requer GAP-G concluído. Só após aprovação: configurar Pact broker e escrever consumer tests
