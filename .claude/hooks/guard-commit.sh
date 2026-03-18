@@ -20,10 +20,15 @@ if [ -z "$STAGED_KT" ]; then
 fi
 
 echo "🔍 Kotlin files staged — running ktlintFormat..." >&2
-./gradlew ktlintFormat --quiet 2>&1 >&2
+if ! ./gradlew ktlintFormat --quiet 2>&1 >&2; then
+  printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"ktlintFormat failed — fix formatting errors and recommit"}}'
+  exit 0
+fi
 
-# Check if ktlintFormat changed any staged files
-REFORMATTED=$(git diff --name-only | grep '\.kt$' || true)
+# Check only the originally staged Kotlin files for reformatting (ignore pre-existing unstaged changes)
+REFORMATTED=$(echo "$STAGED_KT" | tr ' ' '\n' | while read -r f; do
+  git diff --name-only -- "$f" 2>/dev/null
+done | sort -u | grep '\.kt$' || true)
 
 if [ -n "$REFORMATTED" ]; then
   echo "" >&2

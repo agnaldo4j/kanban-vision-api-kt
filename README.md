@@ -1,5 +1,5 @@
 [![CI](https://github.com/agnaldo4j/kanban-vision-api-kt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/agnaldo4j/kanban-vision-api-kt/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/agnaldo4j/kanban-vision-api-kt/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/agnaldo4j/kanban-vision-api-kt)
+[![codecov](https://codecov.io/gh/agnaldo4j/kanban-vision-api-kt/graph/badge.svg)](https://codecov.io/gh/agnaldo4j/kanban-vision-api-kt)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/agnaldo4j/kanban-vision-api-kt)](https://github.com/agnaldo4j/kanban-vision-api-kt/commits/main)
 
@@ -47,7 +47,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
-> Java 21 required for local Gradle builds. See [Development Guide](../../wiki/Development-Guide).
+> Java 21 required for local Gradle builds. See [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
 
 ---
 
@@ -55,12 +55,12 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 
 | Page | Description |
 |---|---|
-| [Architecture](../../wiki/Architecture) | Hexagonal arch, C4 diagrams, modules, CQS, error handling |
-| [Development Guide](../../wiki/Development-Guide) | Local setup, testing, quality gates, troubleshooting |
-| [API Reference](../../wiki/API-Reference) | Endpoints, JWT auth, OpenAPI |
-| [Observability](../../wiki/Observability) | Prometheus, Grafana dashboards, OTel Agent, structured logs |
-| [Operations](../../wiki/Operations) | Docker, Kubernetes manifests, CI/CD, env vars |
-| [Quality Analysis](../../wiki/Quality-Analysis) | 18-skill scorecard (8.5/10), gap roadmap |
+| [Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) | Hexagonal arch, C4 diagrams, modules, CQS, error handling |
+| [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) | Local setup, testing, quality gates, troubleshooting |
+| [API Reference](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/API-Reference) | Endpoints, JWT auth, OpenAPI |
+| [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel Agent, structured logs |
+| [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Docker, Kubernetes manifests, CI/CD, env vars |
+| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (8.5/10), gap roadmap |
 
 ---
 

@@ -5,7 +5,7 @@
 > tome decisões consistentes sem precisar perguntar a cada vez.
 
 Estas políticas são a **fonte canônica de verdade** sobre como o trabalho flui neste projeto.
-Estão versionadas em `.claude/docs/politicas-explicitas.md` e referenciadas no `CLAUDE.md`.
+Estão versionadas em `docs/politicas-explicitas.md` e referenciadas no `CLAUDE.md`.
 Qualquer mudança deve ser feita via PR com justificativa explícita.
 
 ---
@@ -158,9 +158,9 @@ Nenhum PR pode ser mergeado se qualquer uma delas for violada.
 
 ## Referências
 
-- Skill: [xp-kanban](.claude/skills/xp-kanban/SKILL.md)
-- Skill: [evolutionary-change](.claude/skills/evolutionary-change/SKILL.md)
-- Skill: [definition-of-done](.claude/skills/definition-of-done/SKILL.md)
+- Skill: [xp-kanban](../.claude/skills/xp-kanban/SKILL.md)
+- Skill: [evolutionary-change](../.claude/skills/evolutionary-change/SKILL.md)
+- Skill: [definition-of-done](../.claude/skills/definition-of-done/SKILL.md)
 - GitHub Project #6: https://github.com/users/agnaldo4j/projects/6
-- ADR-0004: `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`
+- ADR-0004: [`adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`](../adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md)
 - CLAUDE.md — seção "Kanban Board Protocol"

@@ -65,5 +65,5 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 ## Docs
 
 - **Explicit policies**: `docs/politicas-explicitas.md` — column criteria, pull policy, quality gates, ADR rules, branch naming.
-- **Quality analysis**: `README.md` → section "Avaliação de Qualidade" — 18-skill scorecard (8.5/10).
+- **Quality analysis**: [Wiki — Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) — 18-skill scorecard (8.5/10).
 - **ADR roadmap**: `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md` — gap list P1–P4.
