@@ -1000,23 +1000,29 @@ O rate limit é de 100 requisições por minuto por IP. Reduza a frequência das
 
 ## Avaliação de Qualidade
 
-Análise realizada com base nas skills do projeto (clean-architecture, ddd, solid-principles, kotlin-quality-pipeline, testing-and-observability, opentelemetry, microservices-modular-monolith) após a conclusão dos Ciclos P1 (Hardening), P2 (Operações) e P3 parcial (Domínio, GAP-I concluído).
+Análise realizada com base nas 18 skills do projeto após a conclusão dos Ciclos P1 (Hardening), P2 (Operações) e P3 parcial (Domínio, GAP-I concluído). Cada linha corresponde a uma skill do projeto.
 
-| Dimensão | Nota | Destaque |
-|---|---|---|
-| Tratamento de Erros | 9.3/10 | `Either<DomainError,T>` consistente em todas as camadas; `PersistenceError` com log.error() + guard CancellationException |
-| Pipeline de Qualidade | 9.3/10 | Detekt + KtLint + JaCoCo ≥ 95% no CI; `warningsAsErrors=true`; comentários automáticos no PR |
-| Clean Architecture | 9.2/10 | Dependency Rule rigorosa; ports em `usecases/repositories/`; domain sem framework; ForbiddenImport Detekt rule (GAP-S) |
-| Princípios SOLID | 9.2/10 | SRP por use case; DIP via interfaces; OCP em `DomainError`; ISP em ports focados |
-| Prontidão para Produção | 8.5/10 | JWT Bearer, Rate Limiting, Health Checks reais, Graceful Shutdown, Dockerfile multi-stage, K8s manifests |
-| Governança Evolutiva | 8.5/10 | ADR-first com 9 ADRs ativas; Gap Execution Protocol documentado no CLAUDE.md; skill evolutionary-change |
-| Design de Banco | 8.5/10 | Flyway 3 migrations; índices de performance (V2); unicidade de nome de coluna por board (V3); schema versionado |
-| DDD | 8.3/10 | Board como Aggregate Root com `addColumn()`/`addCard()` enforçando invariantes; Value Objects imutáveis (`@JvmInline`) |
-| Testes | 8.2/10 | Unitários com MockK (given-when-then); integração com Embedded PostgreSQL; Koin + testApplication |
-| Observabilidade | 8.2/10 | Logs JSON (Logstash), MDC com requestId, Prometheus + Grafana auto-provisionado, alertas, OTel Java Agent |
-| Modularidade | 7.8/10 | 4 módulos bem definidos; ForbiddenImport guard no Detekt; extração para microserviço viável |
-| OpenAPI | 7.5/10 | Swagger UI funcional via ktor-openapi; specs completas nos endpoints principais |
-| **Média geral** | **8.5/10** | |
+| Skill | Dimensão | Nota | Destaque |
+|---|---|---|---|
+| `/fp-oo-kotlin` | FP/OO + Either + Arrow-kt | 9.3/10 | `Either<DomainError,T>` consistente em todas as camadas; Arrow-kt Raise DSL; `PersistenceError` com guard `CancellationException`; Value Objects `@JvmInline` imutáveis |
+| `/kotlin-quality-pipeline` | Pipeline de Qualidade | 9.3/10 | Detekt + KtLint + JaCoCo ≥ 95% no CI; `warningsAsErrors=true`; comentários automáticos de coverage diff no PR |
+| `/clean-architecture` | Clean Architecture | 9.2/10 | Dependency Rule rigorosa; ports em `usecases/repositories/`; domain sem framework; ForbiddenImport Detekt rule (GAP-S) bloqueia violações |
+| `/solid-principles` | Princípios SOLID | 9.2/10 | SRP por use case; DIP via interfaces de repositório; OCP na hierarquia `DomainError`; ISP com ports focados; LSP nas implementações JDBC |
+| `/adr` | Governança ADR | 9.0/10 | 9 ADRs ativas com ADR-first enforçado; rastreabilidade branch↔PR↔commit; workflow de 8 passos documentado |
+| `/definition-of-done` | Definition of Done | 8.8/10 | DOD checklist em todas as ADRs; CI gates automáticos bloqueiam merge; sem PRs sem DOD verificado |
+| `/screaming-architecture` | Screaming Architecture | 8.8/10 | Pacotes `board/`, `column/`, `card/`, `scenario/` comunicam domínio; `routes/` e `plugins/` refletem intenção; não nomes de framework |
+| `/local-and-production-environment` | Prontidão para Produção | 8.5/10 | Dockerfile multi-stage (`eclipse-temurin:21-jre`), docker-compose, K8s manifests (Namespace, ConfigMap, Deployment, HPA, PDB, Ingress) |
+| `/evolutionary-change` | Mudança Evolutiva | 8.5/10 | Gap Execution Protocol (1-gap-por-sessão) no CLAUDE.md; J-Curve Safety limits; ordem de dependências entre gaps respeitada |
+| `/db-migrations` | Design de Banco | 8.5/10 | Flyway 3 migrations versionadas; índices de performance (V2); UNIQUE constraint `(board_id, name)` (V3); schema evolutivo sem drop |
+| `/c4-model` | Documentação C4 | 8.5/10 | C4 Levels 1-3 + diagramas de sequência + diagrama de classes no README; atualizado a cada feature significativa |
+| `/ddd` | Domain-Driven Design | 8.3/10 | `Board` como Aggregate Root com `addColumn()`/`addCard()` enforçando invariantes; Bounded Context explícito; Value Objects imutáveis |
+| `/testing-and-observability` | Testes | 8.2/10 | Unitários MockK (given-when-then, sucesso e erro); integração com Embedded PostgreSQL (zonky); `testApplication` + Koin para rotas |
+| `/opentelemetry` | Observabilidade | 8.2/10 | Logs JSON (Logstash), MDC com `requestId`, Prometheus + Grafana auto-provisionado, alertas, OTel Java Agent (auto-instrumentação) |
+| `/refactoring` | Refactoring | 8.0/10 | GAP-I eliminou lógica duplicada nos use cases (Strangler Fig); ForbiddenImport previne regressões; sem `LargeClass` violations |
+| `/xp-kanban` | XP + Kanban | 8.0/10 | TDD visível nos PRs; CI obrigatório; small releases via 1-gap-per-session; o produto é um simulador Kanban (*eating your own dogfood*) |
+| `/microservices-modular-monolith` | Modularidade | 7.8/10 | 4 módulos com boundaries claros; ForbiddenImport guard no Detekt; extração para microserviço viável sem reescrita |
+| `/openapi-quality` | OpenAPI | 7.5/10 | Swagger UI funcional via `ktor-openapi`; specs completas nos endpoints principais; exemplos e códigos de erro documentados |
+| **—** | **Média geral** | **8.5/10** | |
 
 ### Histórico de evolução
 
