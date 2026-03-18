@@ -406,3 +406,4 @@ mutation {
 - Skill: [refactoring](../refactoring/SKILL.md)
 - Skill: [testing-and-observability](../testing-and-observability/SKILL.md)
 - ADR-0004: `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`
+- Políticas explícitas: `docs/politicas-explicitas.md`

@@ -118,7 +118,7 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | `/evolutionary-change` | Planejar e executar mudanças de forma incremental/normativa, evitando crises estruturais, regressões e esgotamento de contexto LLM — aplica o J-Curve, Identity Threat Theory e protocolo 1-gap-por-sessão |
 | `/xp-kanban` | Aplicar Extreme Programming (TDD, CI, refactoring, small releases) e o Método Kanban (visualizar, limitar WIP, fluxo, políticas explícitas) como motores complementares de evolução do produto e da engenharia. **Inclui Board Protocol** — pull do topo do Todo, WIP limit 1, encerramento pós-merge |
 
-> **Políticas explícitas do projeto**: `.claude/docs/politicas-explicitas.md`
+> **Políticas explícitas do projeto**: `docs/politicas-explicitas.md`
 > Contém critérios de coluna, pull policy, políticas de qualidade, ADR, sessão, branches e arquitetura.
 
 ## Kanban Board Protocol

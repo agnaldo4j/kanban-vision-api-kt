@@ -158,9 +158,9 @@ Nenhum PR pode ser mergeado se qualquer uma delas for violada.
 
 ## Referências
 
-- Skill: [xp-kanban](../skills/xp-kanban/SKILL.md)
-- Skill: [evolutionary-change](../skills/evolutionary-change/SKILL.md)
-- Skill: [definition-of-done](../skills/definition-of-done/SKILL.md)
+- Skill: [xp-kanban](.claude/skills/xp-kanban/SKILL.md)
+- Skill: [evolutionary-change](.claude/skills/evolutionary-change/SKILL.md)
+- Skill: [definition-of-done](.claude/skills/definition-of-done/SKILL.md)
 - GitHub Project #6: https://github.com/users/agnaldo4j/projects/6
 - ADR-0004: `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`
 - CLAUDE.md — seção "Kanban Board Protocol"
