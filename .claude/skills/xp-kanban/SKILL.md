@@ -297,7 +297,85 @@ XP + Kanban:
 
 ---
 
-## 6. Sinais de Alerta
+## 6. Board Protocol — GitHub Project #6
+
+O board https://github.com/users/agnaldo4j/projects/6 é a **fonte de verdade** sobre o que
+está sendo feito agora. Este protocolo define como Claude interage com ele.
+
+### 6.1 Início de Sessão — Pull do Topo do Todo
+
+```bash
+# 1. Verificar estado atual do board
+gh project item-list 6 --owner agnaldo4j --format json | \
+  jq '.items[] | {title: .title, status: .status}'
+
+# 2. Se há item em Doing → continuar aquele item (não iniciar novo)
+# 3. Se Doing vazio → puxar o PRIMEIRO item do topo de Todo
+
+# 4. Mover o item de Todo → Doing
+gh api graphql -f query='
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: "PVT_kwHNWUfOAUhH_w"
+    itemId: "<ITEM_ID>"
+    fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"
+    value: { singleSelectOptionId: "75426285" }  # Doing
+  }) { projectV2Item { id } }
+}'
+
+# 5. Criar branch a partir de main atualizado
+git checkout main && git pull origin main
+git checkout -b feat/gap-X-slug
+```
+
+**Regra de pull**: sempre o item no **topo do Todo** — nunca escolha por conveniência.
+
+### 6.2 Encerramento — Após Merge do PR
+
+```bash
+# 1. Atualizar main local
+git checkout main && git pull origin main
+
+# 2. Deletar branch local e remota
+git branch -d feat/gap-X-slug
+git push origin --delete feat/gap-X-slug  # se necessário
+
+# 3. Mover card: Doing → Done
+gh api graphql -f query='
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: "PVT_kwHNWUfOAUhH_w"
+    itemId: "<ITEM_ID>"
+    fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"
+    value: { singleSelectOptionId: "ca259842" }  # Done
+  }) { projectV2Item { id } }
+}'
+
+# 4. Marcar gap [x] no ADR-0004
+# 5. Atualizar memory/project_adr_progress.md
+# 6. Encerrar a sessão
+```
+
+### 6.3 IDs de Referência — GitHub Project
+
+| Recurso | ID |
+|---|---|
+| Project ID | `PVT_kwHNWUfOAUhH_w` |
+| Status Field ID | `PVTSSF_lAHNWUfOAUhH_84P7ZSQ` |
+| Status: Backlog | `8dfbb2d5` |
+| Status: Todo | `0fab6fb9` |
+| Status: Doing | `75426285` |
+| Status: Done | `ca259842` |
+
+### 6.4 WIP Limit — Regra de Ouro
+
+> **WIP limit: 1**. Nunca mais de um item em Doing.
+> Se Doing já tem um item → termine-o antes de puxar o próximo.
+> "Pare de iniciar. Comece a terminar." — David J. Anderson
+
+---
+
+## 7. Sinais de Alerta
 
 ### No código (XP)
 - Classe com > 200 linhas → SRP violado → extraia
@@ -313,7 +391,7 @@ XP + Kanban:
 
 ---
 
-## 7. Referências
+## 8. Referências
 
 - Beck, Kent. *Extreme Programming Explained: Embrace Change* (White Book). Addison-Wesley, 1999.
 - Anderson, David J. *Kanban: Successful Evolutionary Change for Your Technology Business* (Blue Book). Blue Hole Press, 2010.

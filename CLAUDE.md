@@ -116,7 +116,60 @@ Skills are stored in `.claude/skills/` and loaded automatically by Claude Code. 
 | `/opentelemetry` | Implementar logs JSON, métricas Prometheus, distributed tracing (OTel Agent), health check com dependências e stack Grafana local |
 | `/local-and-production-environment` | Criar Dockerfile, docker-compose, manifestos Kubernetes (Deployment, Service, Ingress, HPA, PDB) e operar o ambiente local com Minikube |
 | `/evolutionary-change` | Planejar e executar mudanças de forma incremental/normativa, evitando crises estruturais, regressões e esgotamento de contexto LLM — aplica o J-Curve, Identity Threat Theory e protocolo 1-gap-por-sessão |
-| `/xp-kanban` | Aplicar Extreme Programming (TDD, CI, refactoring, small releases) e o Método Kanban (visualizar, limitar WIP, fluxo, políticas explícitas) como motores complementares de evolução do produto e da engenharia |
+| `/xp-kanban` | Aplicar Extreme Programming (TDD, CI, refactoring, small releases) e o Método Kanban (visualizar, limitar WIP, fluxo, políticas explícitas) como motores complementares de evolução do produto e da engenharia. **Inclui Board Protocol** — pull do topo do Todo, WIP limit 1, encerramento pós-merge |
+
+> **Políticas explícitas do projeto**: `.claude/docs/politicas-explicitas.md`
+> Contém critérios de coluna, pull policy, políticas de qualidade, ADR, sessão, branches e arquitetura.
+
+## Kanban Board Protocol
+
+> Políticas completas em `.claude/docs/politicas-explicitas.md`.
+> GitHub Project #6: https://github.com/users/agnaldo4j/projects/6
+> Skill de referência: `/xp-kanban` → seção "Board Protocol".
+
+### Início de sessão — obrigatório antes de qualquer código
+
+```bash
+# 1. Verificar o board — há item em Doing?
+gh project item-list 6 --owner agnaldo4j --format json | \
+  jq '.items[] | select(.status.name == "Doing") | {title: .title, id: .id}'
+
+# 2a. Se há item em Doing → continuar aquele item
+# 2b. Se Doing vazio → puxar o PRIMEIRO item do topo de Todo
+gh project item-list 6 --owner agnaldo4j --format json | \
+  jq '[.items[] | select(.status.name == "Todo")] | first | {title: .title, id: .id}'
+
+# 3. Mover o item para Doing
+gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
+  projectId: "PVT_kwHNWUfOAUhH_w" itemId: "<ID>"
+  fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"
+  value: { singleSelectOptionId: "75426285" }}) { projectV2Item { id } }}'
+
+# 4. Criar branch a partir de main atualizado
+git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
+```
+
+### Após merge do PR — encerramento obrigatório
+
+```bash
+# 1. Atualizar main e deletar branch
+git checkout main && git pull origin main
+git branch -d feat/gap-X-slug
+git push origin --delete feat/gap-X-slug 2>/dev/null || true
+
+# 2. Mover card: Doing → Done
+gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
+  projectId: "PVT_kwHNWUfOAUhH_w" itemId: "<ID>"
+  fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"
+  value: { singleSelectOptionId: "ca259842" }}) { projectV2Item { id } }}'
+
+# 3. Marcar gap [x] no ADR-0004 + atualizar memory/project_adr_progress.md
+# 4. Encerrar a sessão
+```
+
+**WIP limit: 1** — nunca mais de um item em Doing. "Pare de iniciar. Comece a terminar."
+
+---
 
 ## Gap Execution Protocol
 
