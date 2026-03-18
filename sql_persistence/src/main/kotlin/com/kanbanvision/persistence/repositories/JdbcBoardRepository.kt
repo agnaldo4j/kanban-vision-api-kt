@@ -8,15 +8,25 @@ import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.BoardRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 class JdbcBoardRepository : BoardRepository {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private companion object {
         const val COL_ID = 1
         const val COL_NAME = 2
         const val COL_CREATED_AT = 3
+    }
+
+    private fun toPersistenceError(e: Throwable): DomainError {
+        if (e is CancellationException) throw e
+        log.error("Persistence error", e)
+        return DomainError.PersistenceError(e.message ?: "Database error")
     }
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
@@ -42,7 +52,7 @@ class JdbcBoardRepository : BoardRepository {
                         conn.commit()
                     }
                     board
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findById(id: BoardId): Either<DomainError, Board> =
@@ -58,7 +68,7 @@ class JdbcBoardRepository : BoardRepository {
                         }
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { board -> board?.right() ?: DomainError.BoardNotFound(id.value).left() },
                 )
         }
