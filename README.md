@@ -1024,6 +1024,29 @@ Análise realizada com base nas 18 skills do projeto após a conclusão dos Cicl
 | `/openapi-quality` | OpenAPI | 7.5/10 | Swagger UI funcional via `ktor-openapi`; specs completas nos endpoints principais; exemplos e códigos de erro documentados |
 | **—** | **Média geral** | **8.5/10** | |
 
+### Pontos de melhoria por skill
+
+| Skill | Lacuna principal | Gap / Próximo passo |
+|---|---|---|
+| `/fp-oo-kotlin` | `zipOrAccumulate` subutilizado — validações multi-campo acumulam erros individualmente em vez de coletar todos de uma vez | Refatorar `validate()` dos Commands para usar `zipOrAccumulate` |
+| `/kotlin-quality-pipeline` | Versões de dependência declaradas inline em cada módulo (sem `libs.versions.toml`), aumentando risco de divergência; sem PITest (mutation testing) | GAP-L — PITest |
+| `/clean-architecture` | `SimulationEngine` ainda é um `object` singleton exportado pelo `domain`; a interface `SimulationEnginePort` existe em `usecases` mas o domain não a implementa via DI | Interface port já criada (GAP-P ✅); eliminar referência direta ao singleton |
+| `/solid-principles` | Use cases hidratam aggregates manualmente (load board + load columns + `board.copy(...)`) — lógica repetida viola SRP | Extrair padrão de hidratação em helper ou domain service |
+| `/adr` | GAPs H, K, J, T, N, R, L e M ainda pendentes de ADR ou implementação; "1 gap per session" é regra manual, não enforçada por ferramenta | Continuar Ciclo P3 (GAP-J) e P4 (GAP-T, GAP-N, GAP-L, GAP-M) |
+| `/definition-of-done` | Checklist DOD verificado manualmente no PR; não há template de PR automatizado que force cada item | Adicionar PR template com checklist DOD em `.github/pull_request_template.md` |
+| `/screaming-architecture` | Commands e Queries vivem em `cqs/` separado dos use cases em vez de ao lado deles; não há separação de pacote entre "Board Management" e "Simulation Engine" como bounded contexts distintos | GAP-T — Context Map; reorganização de pacote como futura melhoria |
+| `/local-and-production-environment` | `Deployment` K8s sem `startupProbe`; `secrets.env.example` vazio (sem exemplos reais); sem Helm chart ou Sealed Secrets para gestão de segredos em produção | Adicionar `startupProbe` ao `03-deployment.yml`; documentar rotação de secrets |
+| `/evolutionary-change` | Não há Kanban board ou GitHub Project rastreando quais gaps estão em progresso, bloqueados ou aguardando revisão; dependências entre gaps verificadas manualmente | Criar GitHub Project com colunas por ciclo (P3/P4) para visualizar WIP |
+| `/db-migrations` | JSON blobs em `scenario_states` e `daily_snapshots` são opacos ao banco — impossível filtrar por métrica sem deserializar na aplicação; sem particionamento em `daily_snapshots(scenario_id, day)` | GAP-M — Schema boundaries; extrair campos críticos para colunas nativas |
+| `/c4-model` | Diagrama C4 Level 3 para os módulos `sql_persistence` e `usecases` ausentes; sem diagrama de interação entre os bounded contexts Board Management e Simulation Engine | Adicionar C4 Level 3 para `sql_persistence` e `usecases` no README |
+| `/ddd` | Nenhum Domain Event emitido quando estado muda (`WorkItem` bloqueado, dia executado) — impossibilita event-driven analytics; `Tenant` é anêmico (sem invariantes); sem Context Map explícito | GAP-H — Domain Events; GAP-T — Context Map |
+| `/testing-and-observability` | Sem contract tests (Pact) — extrair `SimulationEngine` para microserviço quebraria a API sem aviso; sem testes de carga para `SimulationEngine.runDay()` com muitos `WorkItem`s | GAP-K — Contract tests (Pact) |
+| `/opentelemetry` | `traceId`/`spanId` ausentes no MDC — logs não correlacionam com traces; OTel Java Agent configurado no Dockerfile mas sem Grafana Tempo ou dashboard de traces; sem métrica de throughput por cenário | Adicionar `traceId` ao MDC no `ObservabilityPlugin`; configurar Tempo no docker-compose |
+| `/refactoring` | `CreateCardUseCase` e `CreateColumnUseCase` duplicam o padrão load→hydrate→`addX`→catch→save; candidato a extração de template ou domain service de hidratação | Extrair helper `BoardHydrationService` ou método de extensão reutilizável |
+| `/xp-kanban` | Sem política explícita de refactoring antes de cada feature PR; sem WIP limit visível nas issues/PRs além da regra de 1-gap-por-sessão no CLAUDE.md | Documentar política de refactoring e WIP limit no CLAUDE.md ou GitHub Project |
+| `/microservices-modular-monolith` | `http_api` depende do módulo `usecases` completo (implementação + interfaces) — sem módulo `usecases-api` com só as interfaces; Detekt ForbiddenImport bloqueia `JdbcRepository` mas não bloqueia import de classes de implementação de `usecases` em `http_api` | GAP-R — API Build Module (`usecases-api`) |
+| `/openapi-quality` | Nenhum exemplo de request/response nos endpoints; `500 PersistenceError` não diferenciado de outros erros internos; JWT Bearer não documentado no esquema OpenAPI (apenas em texto no README) | GAP-N — Exemplos OpenAPI; adicionar `securitySchemes` Bearer à spec |
+
 ### Histórico de evolução
 
 | Ciclo | ADR | Nota estimada |
