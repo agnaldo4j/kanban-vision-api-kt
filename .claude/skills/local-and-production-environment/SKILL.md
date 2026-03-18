@@ -1,5 +1,3 @@
-argument-hint: "[environment task, e.g.: Dockerfile, k8s deployment (optional)]"
-allowed-tools: Read, Grep, Glob, Bash
 ---
 name: local-and-production-environment
 description: >
@@ -8,6 +6,8 @@ description: >
   Kubernetes, ou ao depurar o ambiente de execução. Cobre o caminho completo:
   build da imagem → execução local → Kubernetes local (Minikube) → produção (K8s).
   Complementa opentelemetry (stack de observabilidade) e adr (decisão de infraestrutura).
+argument-hint: "[environment task, e.g.: Dockerfile, k8s deployment (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Ambiente Local e Produção: Docker, Podman, Minikube e Kubernetes

@@ -1,5 +1,3 @@
-argument-hint: "[file or use case to apply FP/OO techniques (optional)]"
-allowed-tools: Read, Grep, Glob
 ---
 name: fp-oo-kotlin
 description: >
@@ -8,6 +6,8 @@ description: >
   imutabilidade, compor transformações e decidir quando usar FP vs OO. Cobre os
   princípios do Uncle Bob sobre a complementaridade dos paradigmas e as técnicas
   práticas do Arrow-kt (Either, Raise, Optics).
+argument-hint: "[file or use case to apply FP/OO techniques (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Programação Funcional + OO em Kotlin

@@ -1,5 +1,3 @@
-argument-hint: "[domain concept or bounded context to model (optional)]"
-allowed-tools: Read, Grep, Glob
 ---
 name: ddd
 description: >
@@ -7,6 +5,8 @@ description: >
   neste projeto. Use este skill ao criar Entities, Value Objects, Aggregates, Domain Services,
   Domain Events, Repositories, ao definir Bounded Contexts, ao fazer EventStorming, ou ao
   avaliar se o modelo está rico ou anêmico. Complementa clean-architecture e screaming-architecture.
+argument-hint: "[domain concept or bounded context to model (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Domain-Driven Design (DDD)

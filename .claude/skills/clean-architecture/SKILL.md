@@ -1,5 +1,3 @@
-argument-hint: "[class, module or dependency to evaluate (optional)]"
-allowed-tools: Read, Grep, Glob
 ---
 name: clean-architecture
 description: >
@@ -7,6 +5,8 @@ description: >
   avaliar e evoluir qualquer parte deste projeto. Use este skill ao criar módulos,
   camadas, casos de uso, adaptadores, boundaries ou ao decidir onde uma classe
   ou dependência deve residir. Complementa o skill screaming-architecture.
+argument-hint: "[class, module or dependency to evaluate (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Clean Architecture

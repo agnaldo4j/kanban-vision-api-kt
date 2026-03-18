@@ -1,5 +1,3 @@
-argument-hint: "[file or class to refactor (optional)]"
-allowed-tools: Read, Grep, Glob
 ---
 name: refactoring
 description: >
@@ -8,6 +6,8 @@ description: >
   skill ao revisar PRs, ao encontrar métodos longos, classes grandes, código
   duplicado ou qualquer sinal de degradação de design. Baseado em
   https://refactoring.guru/pt-br/refactoring
+argument-hint: "[file or class to refactor (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Refactoring — Identificar Smells e Aplicar Técnicas

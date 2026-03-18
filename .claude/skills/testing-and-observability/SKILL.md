@@ -1,5 +1,3 @@
-argument-hint: "[use case, route or class to write tests for (optional)]"
-allowed-tools: Read, Grep, Glob, Bash
 ---
 name: testing-and-observability
 description: >
@@ -7,6 +5,8 @@ description: >
   SLF4J, MDC e regras Detekt de comentários. Use ao escrever testes novos, configurar
   logging, propagar contexto de rastreamento ou documentar código público.
   Complementa kotlin-quality-pipeline (Detekt/KtLint/JaCoCo/Gradle).
+argument-hint: "[use case, route or class to write tests for (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Testes e Observabilidade — JUnit · MockK · SLF4J · MDC · Detekt Comments

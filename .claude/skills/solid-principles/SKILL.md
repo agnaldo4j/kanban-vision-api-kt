@@ -1,5 +1,3 @@
-argument-hint: "[class or module to review (optional)]"
-allowed-tools: Read, Grep, Glob
 ---
 name: solid-principles
 description: >
@@ -7,6 +5,8 @@ description: >
   qualquer código neste projeto. Use este skill ao criar classes, interfaces, casos
   de uso, adaptadores ou módulos — e ao avaliar se código existente precisa ser
   reestruturado. Complementa clean-architecture e screaming-architecture.
+argument-hint: "[class or module to review (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Princípios SOLID — Aplicação e Verificação

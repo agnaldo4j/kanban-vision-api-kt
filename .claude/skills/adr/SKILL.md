@@ -1,5 +1,3 @@
-argument-hint: "[ADR topic or gap description, e.g.: GAP-J pagination]"
-allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 name: adr
 description: >
@@ -8,6 +6,8 @@ description: >
   padrão ou design. Toda mudança relevante deve ter uma ADR aprovada antes do código
   ser escrito. A ADR garante explicitamente DOD, qualidade de código, manutenibilidade
   e aderência à arquitetura hexagonal do projeto.
+argument-hint: "[ADR topic or gap description, e.g.: GAP-J pagination]"
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
 # Architecture Decision Records (ADR)

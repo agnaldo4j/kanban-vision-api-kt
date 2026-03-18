@@ -1,8 +1,8 @@
-argument-hint: "[gap or change description, e.g.: GAP-J pagination]"
-allowed-tools: Read, Grep, Glob
 ---
 name: evolutionary-change
 description: Planeje e execute mudanças evolutivas no projeto sem causar crises estruturais, degradação de qualidade ou desperdício de contexto de LLMs. Use este skill ao decidir como abordar gaps técnicos, refatorações, upgrades de dependências, mudanças de arquitetura ou qualquer intervenção no sistema que carregue risco.
+argument-hint: "[gap or change description, e.g.: GAP-J pagination]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Evolutionary Change

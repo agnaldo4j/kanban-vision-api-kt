@@ -1,5 +1,3 @@
-argument-hint: "[feature, route or component changed]"
-allowed-tools: Read, Grep, Glob, Edit
 ---
 name: c4-model
 description: >
@@ -7,6 +5,8 @@ description: >
   diagramas de sequência e diagramas de classe do projeto no README.md.
   Use sempre que uma nova feature, rota, caso de uso, entidade ou módulo for adicionado.
   Referência: https://c4model.com
+argument-hint: "[feature, route or component changed]"
+allowed-tools: Read, Grep, Glob, Edit
 ---
 
 # C4 Model — Diagramas de Arquitetura

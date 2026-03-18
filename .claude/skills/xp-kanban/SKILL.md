@@ -1,5 +1,3 @@
-argument-hint: "[gap, session context or practice to apply (optional)]"
-allowed-tools: Read, Grep, Glob, Bash
 ---
 name: xp-kanban
 description: >
@@ -8,6 +6,8 @@ description: >
   práticas técnicas (TDD, refactoring, CI, pair programming), visualizar fluxo de trabalho,
   limitar WIP, gerenciar políticas explícitas e conduzir mudanças evolutivas e humanas
   no time e no produto. Complementa evolutionary-change, ddd e definition-of-done.
+argument-hint: "[gap, session context or practice to apply (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Extreme Programming + Método Kanban
