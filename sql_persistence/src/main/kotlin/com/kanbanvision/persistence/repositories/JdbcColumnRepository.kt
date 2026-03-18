@@ -9,6 +9,7 @@ import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
@@ -24,6 +25,7 @@ class JdbcColumnRepository : ColumnRepository {
     }
 
     private fun toPersistenceError(e: Throwable): DomainError {
+        if (e is CancellationException) throw e
         log.error("Persistence error", e)
         return DomainError.PersistenceError(e.message ?: "Database error")
     }

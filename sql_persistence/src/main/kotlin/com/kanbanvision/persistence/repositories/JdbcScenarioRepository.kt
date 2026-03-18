@@ -12,6 +12,7 @@ import com.kanbanvision.domain.model.valueobjects.TenantId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.serializers.SimulationStateSerializer
 import com.kanbanvision.usecases.repositories.ScenarioRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
@@ -28,6 +29,7 @@ class JdbcScenarioRepository : ScenarioRepository {
     }
 
     private fun toPersistenceError(e: Throwable): DomainError {
+        if (e is CancellationException) throw e
         log.error("Persistence error", e)
         return DomainError.PersistenceError(e.message ?: "Database error")
     }

@@ -8,6 +8,7 @@ import com.kanbanvision.domain.model.tenant.Tenant
 import com.kanbanvision.domain.model.valueobjects.TenantId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.TenantRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
@@ -16,6 +17,7 @@ class JdbcTenantRepository : TenantRepository {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private fun toPersistenceError(e: Throwable): DomainError {
+        if (e is CancellationException) throw e
         log.error("Persistence error", e)
         return DomainError.PersistenceError(e.message ?: "Database error")
     }

@@ -9,6 +9,7 @@ import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.CardRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
@@ -33,6 +34,7 @@ class JdbcCardRepository : CardRepository {
     }
 
     private fun toPersistenceError(e: Throwable): DomainError {
+        if (e is CancellationException) throw e
         log.error("Persistence error", e)
         return DomainError.PersistenceError(e.message ?: "Database error")
     }
