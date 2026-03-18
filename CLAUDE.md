@@ -53,9 +53,9 @@ sql_persistence → usecases
 http_api → sql_persistence   (wiring only, via Koin DI)
 ```
 
-- **domain** — Pure Kotlin. No framework dependencies. Contains board entities (`Board`, `Card`, `Column`) and simulation entities (`Tenant`, `Scenario`, `ScenarioConfig`, `SimulationDay`, `SimulationState`, `SimulationResult`, `DailySnapshot`) plus work items (`WorkItem`, `WorkItemState`, `ServiceClass`), decisions (`Decision`, `DecisionId`, `DecisionType`), movements (`Movement`, `MovementType`), metrics (`FlowMetrics`), policies (`PolicySet`), and the simulation engine (`SimulationEngine`). Value objects: `BoardId`, `CardId`, `ColumnId`, `TenantId`, `ScenarioId`, `WorkItemId`.
+- **domain** — Pure Kotlin. No framework dependencies. `Board` is the Aggregate Root for Board Management: `Board.addColumn(name)` enforces column name uniqueness per board, and `Board.addCard(column, title, description)` validates that the column belongs to the board before creating a card. Contains board entities (`Board`, `Card`, `Column`) and simulation entities (`Tenant`, `Scenario`, `ScenarioConfig`, `SimulationDay`, `SimulationState`, `SimulationResult`, `DailySnapshot`) plus work items (`WorkItem`, `WorkItemState`, `ServiceClass`), decisions (`Decision`, `DecisionId`, `DecisionType`), movements (`Movement`, `MovementType`), metrics (`FlowMetrics`), policies (`PolicySet`), and the simulation engine (`SimulationEngine`). Value objects: `BoardId`, `CardId`, `ColumnId`, `TenantId`, `ScenarioId`, `WorkItemId`.
 - **usecases** — Application layer. Depends on `domain` via `api()`. Follows CQS pattern: each use case accepts a `Command` or `Query` object. Use cases receive repository ports via constructor injection. **Repository interfaces (ports) live here under `repositories/`**, not in domain.
-- **sql_persistence** — JDBC + HikariCP + PostgreSQL. Implements all repository interfaces. `DatabaseFactory` initialises the connection pool and runs Flyway migrations (`db/migration/V1__initial_schema.sql`, `V2__add_indexes_and_constraints.sql`). Uses `kotlinx.serialization` for JSON serialization of complex types (`SimulationState`, `DailySnapshot`) via private surrogate data classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
+- **sql_persistence** — JDBC + HikariCP + PostgreSQL. Implements all repository interfaces. `DatabaseFactory` initialises the connection pool and runs Flyway migrations (`db/migration/V1__initial_schema.sql`, `V2__add_indexes_and_constraints.sql`, `V3__unique_column_name_per_board.sql` — UNIQUE constraint on `(board_id, name)` in `columns`). Uses `kotlinx.serialization` for JSON serialization of complex types (`SimulationState`, `DailySnapshot`) via private surrogate data classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
 - **http_api** — Entry point. Ktor (Netty engine) + Koin DI. `Main.kt` wires everything. Plugins: Observability (MDC + requestId), Authentication (JWT Bearer), Metrics (Micrometer/Prometheus), RateLimit (100 req/min per IP), Serialization, StatusPages, Routing, OpenApi. Routes: `BoardRoutes`, `CardRoutes`, `ColumnRoutes`, `HealthRoutes`, `ScenarioRoutes` (includes analytics: movements by day, flow metrics range), `AuthRoutes` (dev-only token endpoint). `AppModule` binds repository implementations to ports and wires all use cases.
 
 ## Key Conventions
@@ -78,6 +78,8 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 - **`IntegrationTestSetup.closeDataSource()` / `reinitDataSource()`**: Use these helpers in `@BeforeEach`/`@AfterEach` to force `PersistenceError` paths in JDBC integration tests.
 - **JWT_DEV_MODE**: The `POST /auth/token` endpoint is only mounted when `JWT_DEV_MODE=true`. In tests that exercise `AuthRoutes`, ensure this env var or the Koin module sets dev mode. Production deployments must never set this to `true`.
 - **Prometheus metric naming**: Micrometer converts dots to underscores and appends `_total` to counters. `Counter.builder("kanban.simulation.days.executed")` → Prometheus exposes as `kanban_simulation_days_executed_total`.
+- **Board aggregate hydration**: `JdbcBoardRepository.findById()` returns a `Board` with `columns = emptyList()`. Use cases that need the aggregate to enforce invariants must explicitly load existing columns/cards from their respective repositories and build a hydrated board (`board.copy(columns = existingColumns)`) before calling `board.addColumn()` or `board.addCard()`. Similarly, `JdbcColumnRepository.findById()` returns a `Column` with `cards = emptyList()` — hydrate with `column.copy(cards = existingCards)` before passing to `board.addCard()`.
+- **`raise()` inside `either {}` blocks**: `raise()` is a member of the Arrow-kt `Raise<E>` interface available implicitly inside `either {}` DSL blocks. Do NOT add `import arrow.core.raise.raise` — it is not a top-level function. Use it directly within the block or call `raise(...)` without any import.
 
 ## Code Quality
 
@@ -151,7 +153,7 @@ Post-gap: `./gradlew testAll` green → mark gap `[x]` in ADR-0004 → open PR `
 ```
 P1 Hardening:   GAP-B → GAP-C → GAP-A                              ✅ done
 P2 Operations:  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ done
-P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K
+P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I ✅ → GAP-J → GAP-H → GAP-K
 P4 Excellence:  GAP-T → GAP-N → GAP-R → GAP-L → GAP-M
 ```
 

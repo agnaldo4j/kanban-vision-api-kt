@@ -249,6 +249,15 @@ sequenceDiagram
 
   C->>R: POST /api/v1/columns {boardId, name} + Bearer <token>
   R->>UC: CreateColumnUseCase.execute(CreateColumnCommand)
+  UC->>REPO: findById(boardId)
+  REPO->>DB: SELECT boards
+  DB-->>REPO: board
+  UC->>REPO: findByBoardId(boardId)
+  REPO->>DB: SELECT columns
+  DB-->>REPO: existingColumns
+  Note over UC: board.copy(columns=existingColumns)
+  UC->>UC: hydratedBoard.addColumn(name)
+  Note over UC: Board enforça unicidade de nome
   UC->>REPO: save(column)
   REPO->>DB: INSERT INTO columns
   DB-->>REPO: ok
@@ -257,6 +266,18 @@ sequenceDiagram
 
   C->>R: POST /api/v1/cards {columnId, title} + Bearer <token>
   R->>UC: CreateCardUseCase.execute(CreateCardCommand)
+  UC->>REPO: findById(columnId)
+  REPO->>DB: SELECT columns
+  DB-->>REPO: column
+  UC->>REPO: findById(column.boardId)
+  REPO->>DB: SELECT boards
+  DB-->>REPO: board
+  UC->>REPO: findByColumnId(columnId)
+  REPO->>DB: SELECT cards
+  DB-->>REPO: existingCards
+  Note over UC: column.copy(cards=existingCards)
+  UC->>UC: board.addCard(hydratedColumn, title)
+  Note over UC: Board valida que coluna pertence ao board
   UC->>REPO: save(card)
   REPO->>DB: INSERT INTO cards
   DB-->>REPO: ok
@@ -324,6 +345,9 @@ classDiagram
   class Board {
     +BoardId id
     +String name
+    +List~Column~ columns
+    +addColumn(name) Column
+    +addCard(column, title, description) Card
   }
   class Column {
     +ColumnId id
@@ -564,6 +588,10 @@ useCase.execute(command).fold(
 | Cobertura | JaCoCo (mínimo 95%) |
 | Build | Gradle 8 (Kotlin DSL) |
 | Java | Java 21 |
+| Tracing | OpenTelemetry Java Agent (auto-instrumentação) |
+| Stack de observabilidade | Prometheus 2.54 + Grafana 11.3 (dashboard + alertas auto-provisionados) |
+| Containerisation | Docker multi-stage (`eclipse-temurin:21-jre`) + docker-compose |
+| Kubernetes | Manifestos em `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
 
 ---
 
@@ -597,7 +625,8 @@ usecases/
 
 sql_persistence/
 ├── DatabaseFactory.kt        (HikariCP pool + Flyway migrations)
-├── resources/db/migration/   V1__initial_schema.sql, V2__add_indexes_and_constraints.sql
+├── resources/db/migration/   V1__initial_schema.sql, V2__add_indexes_and_constraints.sql,
+│                             V3__unique_column_name_per_board.sql
 ├── repositories/             JdbcBoardRepository, JdbcCardRepository, JdbcColumnRepository,
 │                             JdbcTenantRepository, JdbcScenarioRepository, JdbcSnapshotRepository
 └── serializers/              SimulationStateSerializer, DailySnapshotSerializer
@@ -966,6 +995,38 @@ O rate limit é de 100 requisições por minuto por IP. Reduza a frequência das
 ./gradlew ktlintFormat   # corrige formatação automaticamente
 ./gradlew detekt         # lista violações Detekt
 ```
+
+---
+
+## Avaliação de Qualidade
+
+Análise realizada com base nas skills do projeto (clean-architecture, ddd, solid-principles, kotlin-quality-pipeline, testing-and-observability, opentelemetry, microservices-modular-monolith) após a conclusão dos Ciclos P1 (Hardening), P2 (Operações) e P3 parcial (Domínio, GAP-I concluído).
+
+| Dimensão | Nota | Destaque |
+|---|---|---|
+| Tratamento de Erros | 9.3/10 | `Either<DomainError,T>` consistente em todas as camadas; `PersistenceError` com log.error() + guard CancellationException |
+| Pipeline de Qualidade | 9.3/10 | Detekt + KtLint + JaCoCo ≥ 95% no CI; `warningsAsErrors=true`; comentários automáticos no PR |
+| Clean Architecture | 9.2/10 | Dependency Rule rigorosa; ports em `usecases/repositories/`; domain sem framework; ForbiddenImport Detekt rule (GAP-S) |
+| Princípios SOLID | 9.2/10 | SRP por use case; DIP via interfaces; OCP em `DomainError`; ISP em ports focados |
+| Prontidão para Produção | 8.5/10 | JWT Bearer, Rate Limiting, Health Checks reais, Graceful Shutdown, Dockerfile multi-stage, K8s manifests |
+| Governança Evolutiva | 8.5/10 | ADR-first com 9 ADRs ativas; Gap Execution Protocol documentado no CLAUDE.md; skill evolutionary-change |
+| Design de Banco | 8.5/10 | Flyway 3 migrations; índices de performance (V2); unicidade de nome de coluna por board (V3); schema versionado |
+| DDD | 8.3/10 | Board como Aggregate Root com `addColumn()`/`addCard()` enforçando invariantes; Value Objects imutáveis (`@JvmInline`) |
+| Testes | 8.2/10 | Unitários com MockK (given-when-then); integração com Embedded PostgreSQL; Koin + testApplication |
+| Observabilidade | 8.2/10 | Logs JSON (Logstash), MDC com requestId, Prometheus + Grafana auto-provisionado, alertas, OTel Java Agent |
+| Modularidade | 7.8/10 | 4 módulos bem definidos; ForbiddenImport guard no Detekt; extração para microserviço viável |
+| OpenAPI | 7.5/10 | Swagger UI funcional via ktor-openapi; specs completas nos endpoints principais |
+| **Média geral** | **8.5/10** | |
+
+### Histórico de evolução
+
+| Ciclo | ADR | Nota estimada |
+|---|---|---|
+| Baseline (Fases 1-5) | — | 7.0/10 |
+| Ciclos de Qualidade (ADR-0002) | Q1-Q5 | 7.5/10 |
+| Avaliação de Gaps (ADR-0004) | — | 7.8/10 |
+| P1 Hardening + P2 Operações | GAP-A…V | 8.2/10 |
+| P3 Domínio (GAP-W…I) | GAP-W,O,P,Q,S,I | **8.5/10** |
 
 ---
 
