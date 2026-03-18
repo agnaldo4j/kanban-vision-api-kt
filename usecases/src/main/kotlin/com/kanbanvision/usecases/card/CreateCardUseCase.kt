@@ -3,16 +3,19 @@ package com.kanbanvision.usecases.card
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.CreateCardCommand
+import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
+import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
 
 class CreateCardUseCase(
     private val cardRepository: CardRepository,
+    private val columnRepository: ColumnRepository,
+    private val boardRepository: BoardRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -24,14 +27,16 @@ class CreateCardUseCase(
                 timed {
                     either {
                         val columnId = ColumnId(command.columnId)
-                        val existing = cardRepository.findByColumnId(columnId).bind()
+                        val column = columnRepository.findById(columnId).bind()
+                        val board = boardRepository.findById(column.boardId).bind()
+                        val existingCards = cardRepository.findByColumnId(columnId).bind()
+                        val hydratedColumn = column.copy(cards = existingCards)
                         val card =
-                            Card.create(
-                                columnId = columnId,
-                                title = command.title,
-                                description = command.description,
-                                position = existing.size,
-                            )
+                            try {
+                                board.addCard(hydratedColumn, command.title, command.description)
+                            } catch (e: IllegalArgumentException) {
+                                raise(DomainError.ValidationError(e.message ?: "Invalid card"))
+                            }
                         cardRepository.save(card).bind()
                         card.id
                     }

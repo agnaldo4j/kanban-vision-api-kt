@@ -162,4 +162,15 @@ class JdbcColumnRepositoryIntegrationTest {
             assertTrue(result.isLeft())
             assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
         }
+
+    @Test
+    fun `save with duplicate name on same board returns PersistenceError`() =
+        runBlocking<Unit> {
+            repository.save(newColumn("To Do"))
+
+            val result = repository.save(newColumn("To Do"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+        }
 }

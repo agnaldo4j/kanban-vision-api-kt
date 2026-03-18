@@ -3,6 +3,7 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -50,6 +51,7 @@ import kotlin.test.assertNotNull
 class ColumnRoutesTest {
     private val boardId = BoardId.generate()
     private val columnId = ColumnId.generate()
+    private val board = Board(id = boardId, name = "Test Board")
     private val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
 
     private val boardRepository = mockk<BoardRepository>()
@@ -63,10 +65,10 @@ class ColumnRoutesTest {
             single<ColumnRepository> { columnRepository }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
-            single { CreateCardUseCase(get()) }
+            single { CreateCardUseCase(get(), get(), get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
-            single { CreateColumnUseCase(get()) }
+            single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
             single { mockk<DomainMetrics>(relaxed = true) }
@@ -86,6 +88,7 @@ class ColumnRoutesTest {
                 configureRouting()
             }
 
+            coEvery { boardRepository.findById(any()) } returns board.right()
             coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
             coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
             coEvery { columnRepository.findById(any()) } returns column.right()
