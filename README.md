@@ -1,5 +1,5 @@
 [![CI](https://github.com/agnaldo4j/kanban-vision-api-kt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/agnaldo4j/kanban-vision-api-kt/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A595%25-brightgreen)](#)
+[![codecov](https://codecov.io/gh/agnaldo4j/kanban-vision-api-kt/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/agnaldo4j/kanban-vision-api-kt)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/agnaldo4j/kanban-vision-api-kt)](https://github.com/agnaldo4j/kanban-vision-api-kt/commits/main)
 
