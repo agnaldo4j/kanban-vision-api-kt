@@ -1,3 +1,5 @@
+argument-hint: "[task, PR or gap to verify (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 name: definition-of-done
 description: >

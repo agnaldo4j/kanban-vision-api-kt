@@ -1,3 +1,5 @@
+argument-hint: "[domain concept or bounded context to model (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: ddd
 description: >

@@ -1,3 +1,5 @@
+argument-hint: "[package, module or class to evaluate (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: screaming-architecture
 description: >

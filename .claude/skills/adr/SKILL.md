@@ -1,3 +1,5 @@
+argument-hint: "[ADR topic or gap description, e.g.: GAP-J pagination]"
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 name: adr
 description: >

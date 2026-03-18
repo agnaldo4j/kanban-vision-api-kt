@@ -1,3 +1,5 @@
+argument-hint: "[module or boundary to evaluate (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: microservices-modular-monolith
 description: >

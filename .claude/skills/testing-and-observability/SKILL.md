@@ -1,3 +1,5 @@
+argument-hint: "[use case, route or class to write tests for (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 name: testing-and-observability
 description: >

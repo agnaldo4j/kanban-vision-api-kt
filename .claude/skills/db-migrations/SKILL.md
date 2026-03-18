@@ -1,3 +1,14 @@
+---
+name: db-migrations
+description: >
+  Gerencie o ciclo de vida do schema PostgreSQL com Flyway neste projeto.
+  Use ao criar novas migrations, alterar tabelas existentes, depurar conflitos
+  de checksum ou planejar mudanças de schema. Cobre Flyway naming conventions,
+  estratégia forward-only, HikariCP e o módulo sql_persistence.
+argument-hint: "[migration task or schema change description]"
+allowed-tools: Read, Grep, Glob, Bash
+---
+
 # Database Migrations e Estrutura PostgreSQL
 
 > **Escopo deste skill:** como gerenciar o ciclo de vida do schema PostgreSQL com

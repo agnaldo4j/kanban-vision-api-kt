@@ -1,3 +1,5 @@
+argument-hint: "[gap, session context or practice to apply (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 name: xp-kanban
 description: >

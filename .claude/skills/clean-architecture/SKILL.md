@@ -1,3 +1,5 @@
+argument-hint: "[class, module or dependency to evaluate (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: clean-architecture
 description: >

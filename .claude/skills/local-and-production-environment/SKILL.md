@@ -1,3 +1,5 @@
+argument-hint: "[environment task, e.g.: Dockerfile, k8s deployment (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 name: local-and-production-environment
 description: >

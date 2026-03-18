@@ -1,3 +1,5 @@
+argument-hint: "[file or class to refactor (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: refactoring
 description: >

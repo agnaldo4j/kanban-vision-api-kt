@@ -1,3 +1,5 @@
+argument-hint: "[class or module to review (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: solid-principles
 description: >

@@ -1,3 +1,5 @@
+argument-hint: "[file or use case to apply FP/OO techniques (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 name: fp-oo-kotlin
 description: >

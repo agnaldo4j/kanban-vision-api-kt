@@ -1,3 +1,5 @@
+argument-hint: "[feature, route or component changed]"
+allowed-tools: Read, Grep, Glob, Edit
 ---
 name: c4-model
 description: >

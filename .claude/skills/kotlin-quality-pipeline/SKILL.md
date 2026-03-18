@@ -1,3 +1,5 @@
+argument-hint: "[module or violation to fix (optional)]"
+allowed-tools: Read, Grep, Glob, Bash, Edit
 ---
 name: kotlin-quality-pipeline
 description: >

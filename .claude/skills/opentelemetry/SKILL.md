@@ -1,3 +1,5 @@
+argument-hint: "[observability concern, e.g.: traces, metrics, logs (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 name: opentelemetry
 description: >

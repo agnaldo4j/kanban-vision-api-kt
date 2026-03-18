@@ -1,3 +1,5 @@
+argument-hint: "[route file or endpoint to audit (optional)]"
+allowed-tools: Read, Grep, Glob, Edit
 ---
 name: openapi-quality
 description: >
