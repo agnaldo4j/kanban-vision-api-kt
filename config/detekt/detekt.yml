@@ -64,6 +64,12 @@ style:
   ThrowsCount:
     active: true
     max: 2
+  ForbiddenImport:
+    active: true
+    imports:
+      - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
+        reason: 'Import Jdbc*Repository only in AppModule.kt (DI wiring). Depend on repository interfaces from usecases/repositories/ instead.'
+    excludes: ['**/di/AppModule.kt']
   ForbiddenComment:
     active: true
     comments: ['FIXME:', 'HACK:']
