@@ -91,7 +91,7 @@ class CreateColumnUseCaseTest {
         }
 
     @Test
-    fun `execute returns PersistenceError when board repository returns error`() =
+    fun `execute returns BoardNotFound when board repository returns error`() =
         runTest {
             coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound(boardId.value).left()
 

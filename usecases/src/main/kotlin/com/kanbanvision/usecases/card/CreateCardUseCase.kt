@@ -32,10 +32,11 @@ class CreateCardUseCase(
                         val existingCards = cardRepository.findByColumnId(columnId).bind()
                         val hydratedColumn = column.copy(cards = existingCards)
                         val card =
-                            Either
-                                .catch { board.addCard(hydratedColumn, command.title, command.description) }
-                                .mapLeft { e -> DomainError.ValidationError(e.message ?: "Invalid card") }
-                                .bind()
+                            try {
+                                board.addCard(hydratedColumn, command.title, command.description)
+                            } catch (e: IllegalArgumentException) {
+                                raise(DomainError.ValidationError(e.message ?: "Invalid card"))
+                            }
                         cardRepository.save(card).bind()
                         card.id
                     }

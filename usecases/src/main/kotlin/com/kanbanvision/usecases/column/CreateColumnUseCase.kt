@@ -29,10 +29,11 @@ class CreateColumnUseCase(
                         val existingColumns = columnRepository.findByBoardId(boardId).bind()
                         val hydratedBoard = board.copy(columns = existingColumns)
                         val column =
-                            Either
-                                .catch { hydratedBoard.addColumn(command.name) }
-                                .mapLeft { e -> DomainError.ValidationError(e.message ?: "Invalid column") }
-                                .bind()
+                            try {
+                                hydratedBoard.addColumn(command.name)
+                            } catch (e: IllegalArgumentException) {
+                                raise(DomainError.ValidationError(e.message ?: "Invalid column"))
+                            }
                         columnRepository.save(column).bind()
                         column.id
                     }
