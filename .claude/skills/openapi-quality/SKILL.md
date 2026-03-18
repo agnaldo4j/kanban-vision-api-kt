@@ -5,6 +5,8 @@ description: >
   (Ktor + ktor-openapi DSL). Use quando adicionar, revisar ou corrigir specs
   de rotas HTTP. Garante conformidade com OAS 3.x e máxima qualidade no
   Swagger UI.
+argument-hint: "[route file or endpoint to audit (optional)]"
+allowed-tools: Read, Grep, Glob, Edit
 ---
 
 # OpenAPI Quality — Ktor + ktor-openapi

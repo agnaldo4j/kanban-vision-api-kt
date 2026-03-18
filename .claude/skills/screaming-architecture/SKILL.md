@@ -5,6 +5,8 @@ description: >
   e avaliar a estrutura de pacotes, módulos e camadas deste projeto. Use este skill
   sempre que criar um novo módulo, pacote, caso de uso, rota ou classe — e ao revisar
   se a estrutura atual ainda comunica a intenção de negócio corretamente.
+argument-hint: "[package, module or class to evaluate (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Screaming Architecture

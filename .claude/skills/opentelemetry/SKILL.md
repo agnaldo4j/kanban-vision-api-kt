@@ -6,6 +6,8 @@ description: >
   com dependências, ou ao configurar o stack local de observabilidade. Cobre o caminho
   incremental desde o estado atual (MDC + logs de texto) até observabilidade completa
   (logs JSON → métricas Prometheus → traces distribuídos → alertas Grafana).
+argument-hint: "[observability concern, e.g.: traces, metrics, logs (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # OpenTelemetry, Prometheus & Grafana

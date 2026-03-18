@@ -5,6 +5,8 @@ description: >
   modular e microserviços. Use este skill ao decidir como organizar módulos, definir
   boundaries entre domínios, planejar uma migração incremental ou justificar a escolha
   de permanecer como monólito. Complementa clean-architecture, ddd e screaming-architecture.
+argument-hint: "[module or boundary to evaluate (optional)]"
+allowed-tools: Read, Grep, Glob
 ---
 
 # Microservices Patterns & Monólito Modular

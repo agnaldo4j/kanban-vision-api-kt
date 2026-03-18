@@ -5,6 +5,8 @@ description: >
   Gradle 8 (Kotlin DSL), Detekt, KtLint e JaCoCo. Use este skill sempre que for
   adicionar código novo, corrigir violações, ajustar exclusões de cobertura ou
   configurar qualquer uma dessas ferramentas.
+argument-hint: "[module or violation to fix (optional)]"
+allowed-tools: Read, Grep, Glob, Bash, Edit
 ---
 
 # Pipeline de Qualidade Kotlin — Detekt · KtLint · JaCoCo · Gradle 8

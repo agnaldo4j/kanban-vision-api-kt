@@ -5,6 +5,8 @@ description: >
   as complete. Applies to all downstream platform work. Every checkbox must be
   confirmed or explicitly justified as not applicable. If any box is unchecked
   without justification, the item is NOT done — do not mark it as such.
+argument-hint: "[task, PR or gap to verify (optional)]"
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Definition of Done — Platform Downstream
