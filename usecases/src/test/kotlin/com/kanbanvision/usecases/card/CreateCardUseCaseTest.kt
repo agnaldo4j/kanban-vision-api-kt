@@ -82,7 +82,7 @@ class CreateCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns ValidationError when column does not belong to board`() =
+    fun `execute returns ValidationError when retrieved board id does not match column boardId`() =
         runTest {
             val otherBoardId = BoardId.generate()
             val otherBoard = Board(id = otherBoardId, name = "Other Board")
@@ -106,6 +106,18 @@ class CreateCardUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `execute returns BoardNotFound when board repository returns error`() =
+        runTest {
+            coEvery { columnRepository.findById(columnId) } returns column.right()
+            coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId.value).left()
+
+            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = "Task"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.BoardNotFound>(result.leftOrNull())
         }
 
     @Test
