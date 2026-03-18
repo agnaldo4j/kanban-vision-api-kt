@@ -11,9 +11,12 @@ import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.CardRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 class JdbcCardRepository : CardRepository {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private companion object {
         const val COL_ID = 1
         const val COL_COLUMN_ID = 2
@@ -27,6 +30,11 @@ class JdbcCardRepository : CardRepository {
         const val PARAM_DESCRIPTION = 3
         const val PARAM_POSITION = 4
         const val PARAM_WHERE_ID = 5
+    }
+
+    private fun toPersistenceError(e: Throwable): DomainError {
+        log.error("Persistence error", e)
+        return DomainError.PersistenceError(e.message ?: "Database error")
     }
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
@@ -59,7 +67,7 @@ class JdbcCardRepository : CardRepository {
                         conn.commit()
                     }
                     card
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findById(id: CardId): Either<DomainError, Card> =
@@ -78,7 +86,7 @@ class JdbcCardRepository : CardRepository {
                             }
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { card -> card?.right() ?: DomainError.CardNotFound(id.value).left() },
                 )
         }
@@ -95,7 +103,7 @@ class JdbcCardRepository : CardRepository {
                         applyAndPersist(conn, card, transform)
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { updated -> updated?.right() ?: DomainError.CardNotFound(id.value).left() },
                 )
         }
@@ -156,7 +164,7 @@ class JdbcCardRepository : CardRepository {
                                 }
                             }
                     }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     private fun java.sql.ResultSet.toCard() =

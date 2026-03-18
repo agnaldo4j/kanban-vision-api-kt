@@ -10,8 +10,16 @@ import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.TenantRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 
 class JdbcTenantRepository : TenantRepository {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    private fun toPersistenceError(e: Throwable): DomainError {
+        log.error("Persistence error", e)
+        return DomainError.PersistenceError(e.message ?: "Database error")
+    }
+
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
     override suspend fun findById(id: TenantId): Either<DomainError, Tenant> =
@@ -27,7 +35,7 @@ class JdbcTenantRepository : TenantRepository {
                         }
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { tenant -> tenant?.right() ?: DomainError.TenantNotFound(id.value).left() },
                 )
         }

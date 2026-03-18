@@ -11,13 +11,21 @@ import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 
 class JdbcColumnRepository : ColumnRepository {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private companion object {
         const val COL_ID = 1
         const val COL_BOARD_ID = 2
         const val COL_NAME = 3
         const val COL_POSITION = 4
+    }
+
+    private fun toPersistenceError(e: Throwable): DomainError {
+        log.error("Persistence error", e)
+        return DomainError.PersistenceError(e.message ?: "Database error")
     }
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
@@ -46,7 +54,7 @@ class JdbcColumnRepository : ColumnRepository {
                         conn.commit()
                     }
                     column
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findById(id: ColumnId): Either<DomainError, Column> =
@@ -62,7 +70,7 @@ class JdbcColumnRepository : ColumnRepository {
                         }
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { column -> column?.right() ?: DomainError.ColumnNotFound(id.value).left() },
                 )
         }
@@ -82,7 +90,7 @@ class JdbcColumnRepository : ColumnRepository {
                                 }
                             }
                     }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     private fun java.sql.ResultSet.toColumn() =

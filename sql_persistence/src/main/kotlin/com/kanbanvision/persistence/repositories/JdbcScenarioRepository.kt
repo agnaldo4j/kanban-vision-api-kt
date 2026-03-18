@@ -14,14 +14,22 @@ import com.kanbanvision.persistence.serializers.SimulationStateSerializer
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 
 class JdbcScenarioRepository : ScenarioRepository {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private companion object {
         const val COL_ID = 1
         const val COL_TENANT_ID = 2
         const val COL_WIP_LIMIT = 3
         const val COL_TEAM_SIZE = 4
         const val COL_SEED_VALUE = 5
+    }
+
+    private fun toPersistenceError(e: Throwable): DomainError {
+        log.error("Persistence error", e)
+        return DomainError.PersistenceError(e.message ?: "Database error")
     }
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
@@ -52,7 +60,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                         conn.commit()
                     }
                     scenario
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findById(id: ScenarioId): Either<DomainError, Scenario> =
@@ -69,7 +77,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                             }
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { s -> s?.right() ?: DomainError.ScenarioNotFound(id.value).left() },
                 )
         }
@@ -98,7 +106,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                         conn.commit()
                     }
                     state
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findState(scenarioId: ScenarioId): Either<DomainError, SimulationState> =
@@ -117,7 +125,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                             }
                     }
                 }.fold(
-                    ifLeft = { e -> DomainError.PersistenceError(e.message ?: "Database error").left() },
+                    ifLeft = { toPersistenceError(it).left() },
                     ifRight = { s -> s?.right() ?: DomainError.ScenarioNotFound(scenarioId.value).left() },
                 )
         }

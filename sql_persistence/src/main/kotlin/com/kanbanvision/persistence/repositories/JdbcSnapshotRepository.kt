@@ -10,12 +10,20 @@ import com.kanbanvision.persistence.serializers.DailySnapshotSerializer
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 
 class JdbcSnapshotRepository : SnapshotRepository {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private companion object {
         const val COL_SCENARIO_ID = 1
         const val COL_DAY = 2
         const val COL_JSON = 3
+    }
+
+    private fun toPersistenceError(e: Throwable): DomainError {
+        log.error("Persistence error", e)
+        return DomainError.PersistenceError(e.message ?: "Database error")
     }
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
@@ -42,7 +50,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                         conn.commit()
                     }
                     snapshot
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findByDay(
@@ -64,7 +72,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                                 }
                             }
                     }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 
     override suspend fun findAllByScenario(scenarioId: ScenarioId): Either<DomainError, List<DailySnapshot>> =
@@ -84,6 +92,6 @@ class JdbcSnapshotRepository : SnapshotRepository {
                                 }
                             }
                     }
-                }.mapLeft { e -> DomainError.PersistenceError(e.message ?: "Database error") }
+                }.mapLeft(::toPersistenceError)
         }
 }
