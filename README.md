@@ -1,7 +1,13 @@
 [![CI](https://github.com/agnaldo4j/kanban-vision-api-kt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/agnaldo4j/kanban-vision-api-kt/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A595%25-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/java-21-orange.svg)](https://adoptium.net/)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.x-purple.svg)](https://kotlinlang.org/)
+[![Last Commit](https://img.shields.io/github/last-commit/agnaldo4j/kanban-vision-api-kt)](https://github.com/agnaldo4j/kanban-vision-api-kt/commits/main)
+
+[![Kotlin](https://img.shields.io/badge/kotlin-2.1.20-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Ktor](https://img.shields.io/badge/ktor-3.1.2-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
+[![Arrow](https://img.shields.io/badge/arrow--kt-2.0.1-E91E63)](https://arrow-kt.io/)
+[![Java](https://img.shields.io/badge/java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/agnaldo4j/kanban-vision-api-kt/pkgs/container/kanban-vision-api-kt)
 
 # Kanban Vision API
 
