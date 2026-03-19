@@ -84,7 +84,7 @@ class StepRoutesTest {
             single { ListColumnsByBoardUseCase(get()) }
             single { CreateStepUseCase(get()) }
             single { GetStepUseCase(get()) }
-            single { ListStepsByBoardUseCase(get()) }
+            single { ListStepsByBoardUseCase(get(), get()) }
             single { mockk<DomainMetrics>(relaxed = true) }
         }
 
@@ -164,6 +164,7 @@ class StepRoutesTest {
             }
 
             coEvery { columnRepository.findByBoardId(boardId) } returns listOf(step).right()
+            coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
                 client.get("/api/v1/boards/${boardId.value}/steps") {
@@ -215,6 +216,7 @@ class StepRoutesTest {
             }
 
             coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB error").left()
+            coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
                 client.get("/api/v1/boards/${boardId.value}/steps") {
@@ -256,7 +258,7 @@ class StepRoutesTest {
                     ?.get(0)
                     ?.jsonPrimitive
                     ?.content
-            assertEquals("Column name must not be blank", firstError)
+            assertEquals("Step name must not be blank", firstError)
             assertNotNull(body["requestId"])
         }
 
@@ -304,7 +306,7 @@ class StepRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.BoardNotFound("missing-board").left()
+            coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound("missing-board").left()
 
             val response =
                 client.get("/api/v1/boards/missing-board/steps") {

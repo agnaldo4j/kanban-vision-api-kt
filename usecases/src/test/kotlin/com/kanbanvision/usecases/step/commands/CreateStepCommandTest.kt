@@ -3,6 +3,7 @@ package com.kanbanvision.usecases.step.commands
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.team.AbilityName
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -39,6 +40,7 @@ class CreateStepCommandTest {
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             ).validate()
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        val error = assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertEquals("Step name must not be blank", error.message)
     }
 }

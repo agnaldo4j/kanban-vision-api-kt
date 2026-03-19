@@ -60,7 +60,7 @@ object AppModule {
             single { ListColumnsByBoardUseCase(get()) }
             single { CreateStepUseCase(get()) }
             single { GetStepUseCase(get()) }
-            single { ListStepsByBoardUseCase(get()) }
+            single { ListStepsByBoardUseCase(get(), get()) }
             single { CreateScenarioUseCase(get(), get()) }
             single { GetScenarioUseCase(get()) }
             single { RunDayUseCase(get(), get(), get()) }

@@ -209,7 +209,7 @@ private suspend fun ApplicationCall.handleListColumns(listColumnsByBoard: ListCo
 data class CreateColumnRequest(
     val boardId: String,
     val name: String,
-    val requiredAbility: AbilityName,
+    val requiredAbility: AbilityName = AbilityName.DEVELOPER,
 )
 
 @Serializable

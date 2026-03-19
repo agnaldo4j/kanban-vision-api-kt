@@ -72,6 +72,19 @@ class JdbcColumnRepositoryIntegrationTest {
             assertEquals(column.boardId, found.boardId)
             assertEquals(column.name, found.name)
             assertEquals(column.position, found.position)
+            assertEquals(column.requiredAbility, found.requiredAbility)
+        }
+
+    @Test
+    fun `save persists deployer required ability`() =
+        runBlocking {
+            val column = newColumn(name = "Deploy", requiredAbility = AbilityName.DEPLOYER)
+
+            repository.save(column)
+
+            val result = repository.findById(column.id)
+            assertTrue(result.isRight())
+            assertEquals(AbilityName.DEPLOYER, result.getOrNull()?.requiredAbility)
         }
 
     @Test

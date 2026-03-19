@@ -42,13 +42,13 @@ data class Column(
 
     fun assignWorker(
         worker: Worker,
-        currentAssignments: Map<String, ColumnId>,
-    ): Map<String, ColumnId> {
+        currentAssignments: Map<Worker, ColumnId>,
+    ): Map<Worker, ColumnId> {
         ensureCanAssign(worker)
-        val assignedColumnId = currentAssignments[worker.name]
+        val assignedColumnId = currentAssignments[worker]
         require(assignedColumnId == null || assignedColumnId == id) {
             "Worker '${worker.name}' is already assigned to another column (${assignedColumnId?.value})"
         }
-        return currentAssignments + (worker.name to id)
+        return currentAssignments + (worker to id)
     }
 }

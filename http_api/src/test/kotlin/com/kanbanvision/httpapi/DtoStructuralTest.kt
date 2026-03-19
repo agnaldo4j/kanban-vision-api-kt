@@ -27,6 +27,12 @@ class DtoStructuralTest {
     }
 
     @Test
+    fun `CreateColumnRequest default required ability is developer`() {
+        val req = CreateColumnRequest(boardId = "b1", name = "To Do")
+        assertEquals(AbilityName.DEVELOPER, req.requiredAbility)
+    }
+
+    @Test
     fun `ColumnResponse equality and copy`() {
         val resp =
             ColumnResponse(

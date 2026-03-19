@@ -130,7 +130,7 @@ class ColumnTest {
             )
 
         val firstAssignments = productColumn.assignWorker(worker, emptyMap())
-        assertEquals(productColumn.id, firstAssignments[worker.name])
+        assertEquals(productColumn.id, firstAssignments[worker])
         assertThrows<IllegalArgumentException> { devColumn.assignWorker(worker, firstAssignments) }
     }
 }

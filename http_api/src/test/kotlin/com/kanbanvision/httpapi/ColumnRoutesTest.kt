@@ -149,6 +149,37 @@ class ColumnRoutesTest {
         }
 
     @Test
+    fun `POST columns without requiredAbility defaults to developer`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRateLimit()
+                configureRouting()
+            }
+
+            coEvery { boardRepository.findById(any()) } returns board.right()
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
+            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
+            coEvery { columnRepository.findById(any()) } returns column.copy(requiredAbility = AbilityName.DEVELOPER).right()
+
+            val response =
+                client.post("/api/v1/columns") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
+
+            assertEquals(HttpStatusCode.Created, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertEquals("DEVELOPER", body["requiredAbility"]?.jsonPrimitive?.content)
+        }
+
+    @Test
     fun `GET columns by id returns column`() =
         testApplication {
             install(Koin) { modules(testModule) }

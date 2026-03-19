@@ -24,24 +24,16 @@ val coverageExcludes =
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     classDirectories.setFrom(
-        files(
-            classDirectories.files.map {
-                fileTree(it) {
-                    exclude(coverageExcludes)
-                }
-            },
-        ),
+        sourceSets.main.get().output.asFileTree.matching {
+            exclude(coverageExcludes)
+        },
     )
 }
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     classDirectories.setFrom(
-        files(
-            classDirectories.files.map {
-                fileTree(it) {
-                    exclude(coverageExcludes)
-                }
-            },
-        ),
+        sourceSets.main.get().output.asFileTree.matching {
+            exclude(coverageExcludes)
+        },
     )
 }
