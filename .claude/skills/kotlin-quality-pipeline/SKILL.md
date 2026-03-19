@@ -710,6 +710,37 @@ Checklist antes de commitar:
 - [ ] Sem imports wildcard?
 - [ ] `./gradlew testAll` verde?
 
+### Ao corrigir comentários de PR
+
+Sempre que um comentário de revisão (humano ou Copilot) for endereçado, **responda
+ao comentário no GitHub imediatamente após o push** — nunca deixe a resposta para depois.
+Isso evita desalinhamento entre o que foi corrigido e o que o revisor vê na interface.
+
+**Protocolo obrigatório — execute nesta ordem:**
+
+```bash
+# 1. Faça a correção no código
+# 2. Commit e push
+git add <arquivo> && git commit -m "fix: ..." && git push
+
+# 3. Responda cada comentário — referenciando o commit hash
+gh api repos/<owner>/<repo>/pulls/comments/<comment-id>/replies \
+  -X POST -f body="Corrigido no commit <hash> — <descrição objetiva do que mudou>."
+```
+
+**Como obter os IDs dos comentários pendentes:**
+
+```bash
+gh api repos/<owner>/<repo>/pulls/<pr-number>/comments \
+  --jq '.[] | {id: .id, line: .line, body: .body}'
+```
+
+**Regras da resposta:**
+- Mencione o **commit hash** (curto) onde a correção foi aplicada
+- Descreva **o que mudou** em uma frase (ex: "threshold atualizado de 90% → 95%")
+- Não deixe comentários sem resposta após o push — o GitHub os marca como "outdated"
+  no diff mas continua exibindo na aba de comentários, causando confusão
+
 ### Ao mexer em configuração de qualidade
 
 | Mudança | Aprovação necessária |
