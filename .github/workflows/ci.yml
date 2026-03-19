@@ -130,11 +130,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: |
-            domain/build/reports/jacoco/test/jacocoTestReport.xml
-            usecases/build/reports/jacoco/test/jacocoTestReport.xml
-            sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml
-            http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          files: domain/build/reports/jacoco/test/jacocoTestReport.xml,usecases/build/reports/jacoco/test/jacocoTestReport.xml,sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,http_api/build/reports/jacoco/test/jacocoTestReport.xml
           flags: unittests
           fail_ci_if_error: true
           verbose: true
