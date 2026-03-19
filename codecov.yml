@@ -1,0 +1,15 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+
+fixes:
+  - "com/kanbanvision/domain/::domain/src/main/kotlin/com/kanbanvision/domain/"
+  - "com/kanbanvision/usecases/::usecases/src/main/kotlin/com/kanbanvision/usecases/"
+  - "com/kanbanvision/httpapi/::http_api/src/main/kotlin/com/kanbanvision/httpapi/"
+  - "com/kanbanvision/persistence/::sql_persistence/src/main/kotlin/com/kanbanvision/persistence/"
