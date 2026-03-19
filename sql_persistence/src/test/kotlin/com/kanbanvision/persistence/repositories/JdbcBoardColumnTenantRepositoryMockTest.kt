@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.repositories
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.domain.model.valueobjects.TenantId
@@ -61,7 +62,7 @@ class JdbcBoardColumnTenantRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val column = Column(ColumnId("c1"), BoardId("b1"), "Todo", 0)
+                val column = Column(ColumnId("c1"), BoardId("b1"), "Todo", 0, AbilityName.PRODUCT_MANAGER)
                 val result = columnRepo.save(column)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())

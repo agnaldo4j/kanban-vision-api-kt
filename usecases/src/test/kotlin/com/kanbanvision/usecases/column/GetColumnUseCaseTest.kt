@@ -4,6 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.column.queries.GetColumnQuery
@@ -20,7 +21,14 @@ class GetColumnUseCaseTest {
     private val useCase = GetColumnUseCase(columnRepository)
 
     private val columnId = ColumnId.generate()
-    private val column = Column(id = columnId, boardId = BoardId.generate(), name = "To Do", position = 0)
+    private val column =
+        Column(
+            id = columnId,
+            boardId = BoardId.generate(),
+            name = "To Do",
+            position = 0,
+            requiredAbility = AbilityName.PRODUCT_MANAGER,
+        )
 
     @Test
     fun `execute returns column when found`() =

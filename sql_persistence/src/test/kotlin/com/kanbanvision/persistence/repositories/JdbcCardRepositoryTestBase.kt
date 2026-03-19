@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.repositories
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -44,6 +45,7 @@ abstract class JdbcCardRepositoryTestBase {
                     boardId = board.id,
                     name = "Test Column",
                     position = 0,
+                    requiredAbility = AbilityName.DEVELOPER,
                 )
             columnRepository.save(column)
             existingColumnId = column.id

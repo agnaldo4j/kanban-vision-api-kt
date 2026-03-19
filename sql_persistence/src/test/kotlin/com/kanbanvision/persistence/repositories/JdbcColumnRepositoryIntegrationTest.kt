@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.repositories
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.IntegrationTestSetup
@@ -47,11 +48,13 @@ class JdbcColumnRepositoryIntegrationTest {
     private fun newColumn(
         name: String = "Test Column",
         position: Int = 0,
+        requiredAbility: AbilityName = AbilityName.DEVELOPER,
     ) = Column(
         id = ColumnId(UUID.randomUUID().toString()),
         boardId = existingBoardId!!,
         name = name,
         position = position,
+        requiredAbility = requiredAbility,
     )
 
     @Test
@@ -131,6 +134,7 @@ class JdbcColumnRepositoryIntegrationTest {
                     boardId = BoardId(UUID.randomUUID().toString()),
                     name = "Orphan",
                     position = 0,
+                    requiredAbility = AbilityName.DEVELOPER,
                 )
 
             val result = repository.save(orphanColumn)

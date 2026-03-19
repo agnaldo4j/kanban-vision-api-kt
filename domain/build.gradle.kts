@@ -1,3 +1,6 @@
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     id("kanban.kotlin-common")
 }
@@ -11,4 +14,34 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.2")
     testImplementation("io.kotest:kotest-property:5.9.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+}
+
+val coverageExcludes =
+    listOf(
+        // Transitional package: new simulator core is being integrated incrementally.
+        "com/kanbanvision/domain/model/simulator/**",
+    )
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(coverageExcludes)
+                }
+            },
+        ),
+    )
+}
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(coverageExcludes)
+                }
+            },
+        ),
+    )
 }

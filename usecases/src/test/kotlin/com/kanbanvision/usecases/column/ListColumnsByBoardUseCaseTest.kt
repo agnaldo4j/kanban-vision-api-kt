@@ -4,6 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.column.queries.ListColumnsByBoardQuery
@@ -27,8 +28,20 @@ class ListColumnsByBoardUseCaseTest {
         runTest {
             val columns =
                 listOf(
-                    Column(id = ColumnId.generate(), boardId = boardId, name = "To Do", position = 0),
-                    Column(id = ColumnId.generate(), boardId = boardId, name = "In Progress", position = 1),
+                    Column(
+                        id = ColumnId.generate(),
+                        boardId = boardId,
+                        name = "To Do",
+                        position = 0,
+                        requiredAbility = AbilityName.PRODUCT_MANAGER,
+                    ),
+                    Column(
+                        id = ColumnId.generate(),
+                        boardId = boardId,
+                        name = "In Progress",
+                        position = 1,
+                        requiredAbility = AbilityName.DEVELOPER,
+                    ),
                 )
             coEvery { columnRepository.findByBoardId(boardId) } returns columns.right()
 

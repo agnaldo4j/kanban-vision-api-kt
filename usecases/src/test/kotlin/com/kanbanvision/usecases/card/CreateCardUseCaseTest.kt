@@ -6,6 +6,7 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.CreateCardCommand
@@ -30,7 +31,14 @@ class CreateCardUseCaseTest {
     private val boardId = BoardId.generate()
     private val columnId = ColumnId.generate()
     private val board = Board(id = boardId, name = "My Board")
-    private val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
+    private val column =
+        Column(
+            id = columnId,
+            boardId = boardId,
+            name = "To Do",
+            position = 0,
+            requiredAbility = AbilityName.PRODUCT_MANAGER,
+        )
 
     @Test
     fun `execute saves card and returns its id when column is empty`() =

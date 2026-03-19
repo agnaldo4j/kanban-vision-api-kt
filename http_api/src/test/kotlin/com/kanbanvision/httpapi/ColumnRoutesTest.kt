@@ -5,6 +5,7 @@ import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
@@ -52,7 +53,14 @@ class ColumnRoutesTest {
     private val boardId = BoardId.generate()
     private val columnId = ColumnId.generate()
     private val board = Board(id = boardId, name = "Test Board")
-    private val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
+    private val column =
+        Column(
+            id = columnId,
+            boardId = boardId,
+            name = "To Do",
+            position = 0,
+            requiredAbility = AbilityName.PRODUCT_MANAGER,
+        )
 
     private val boardRepository = mockk<BoardRepository>()
     private val cardRepository = mockk<CardRepository>()
@@ -96,13 +104,14 @@ class ColumnRoutesTest {
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    setBody("""{"boardId":"${boardId.value}","name":"To Do","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
+            assertEquals("PRODUCT_MANAGER", body["requiredAbility"]?.jsonPrimitive?.content)
             assertNotNull(body["id"])
         }
 
@@ -123,7 +132,7 @@ class ColumnRoutesTest {
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":""}""")
+                    setBody("""{"boardId":"${boardId.value}","name":"","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -164,6 +173,7 @@ class ColumnRoutesTest {
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals(columnId.value, body["id"]?.jsonPrimitive?.content)
             assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
+            assertEquals("PRODUCT_MANAGER", body["requiredAbility"]?.jsonPrimitive?.content)
         }
 
     @Test
@@ -212,7 +222,7 @@ class ColumnRoutesTest {
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    setBody("""{"boardId":"${boardId.value}","name":"To Do","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

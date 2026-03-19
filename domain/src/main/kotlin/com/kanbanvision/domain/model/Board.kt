@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import java.time.Instant
 
@@ -16,10 +17,13 @@ data class Board(
         }
     }
 
-    fun addColumn(name: String): Column {
+    fun addColumn(
+        name: String,
+        requiredAbility: AbilityName,
+    ): Column {
         require(name.isNotBlank()) { "Column name must not be blank" }
         require(columns.none { it.name == name }) { "Column name '$name' already exists on this board" }
-        return Column.create(boardId = id, name = name, position = columns.size)
+        return Column.create(boardId = id, name = name, position = columns.size, requiredAbility = requiredAbility)
     }
 
     fun addCard(

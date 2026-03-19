@@ -80,6 +80,14 @@ class DtoTest {
     }
 
     @Test
+    fun `CreateScenarioRequest default seedValue is zero`() {
+        val req = CreateScenarioRequest(tenantId = "tenant-default", wipLimit = 4, teamSize = 3)
+        assertEquals(0L, req.seedValue)
+        assertEquals(4, req.wipLimit)
+        assertEquals(3, req.teamSize)
+    }
+
+    @Test
     fun `DecisionRequest equality and copy`() {
         val req = DecisionRequest(type = "MOVE_ITEM", payload = mapOf("workItemId" to "w1"))
         assertEquals(req, req.copy())

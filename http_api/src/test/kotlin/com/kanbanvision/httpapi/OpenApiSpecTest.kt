@@ -26,6 +26,9 @@ import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
+import com.kanbanvision.usecases.step.CreateStepUseCase
+import com.kanbanvision.usecases.step.GetStepUseCase
+import com.kanbanvision.usecases.step.ListStepsByBoardUseCase
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
@@ -58,6 +61,9 @@ class OpenApiSpecTest {
             single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
+            single { CreateStepUseCase(get()) }
+            single { GetStepUseCase(get()) }
+            single { ListStepsByBoardUseCase(get()) }
             single { CreateScenarioUseCase(get(), get()) }
             single { GetScenarioUseCase(get()) }
             single<com.kanbanvision.usecases.ports.SimulationEnginePort> {
@@ -116,6 +122,28 @@ class OpenApiSpecTest {
             assertTrue(paths["/api/v1/columns"]?.jsonObject?.containsKey("post") == true)
             assertTrue(paths["/api/v1/columns/{id}"]?.jsonObject?.containsKey("get") == true)
             assertTrue(paths["/api/v1/boards/{boardId}/columns"]?.jsonObject?.containsKey("get") == true)
+        }
+
+    @Test
+    fun `openapi spec contains step routes`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRateLimit()
+                configureRouting()
+            }
+
+            val paths =
+                Json.parseToJsonElement(client.get("/api.json").bodyAsText()).jsonObject["paths"]?.jsonObject
+            assertNotNull(paths)
+
+            assertTrue(paths["/api/v1/steps"]?.jsonObject?.containsKey("post") == true)
+            assertTrue(paths["/api/v1/steps/{id}"]?.jsonObject?.containsKey("get") == true)
+            assertTrue(paths["/api/v1/boards/{boardId}/steps"]?.jsonObject?.containsKey("get") == true)
         }
 
     @Test
