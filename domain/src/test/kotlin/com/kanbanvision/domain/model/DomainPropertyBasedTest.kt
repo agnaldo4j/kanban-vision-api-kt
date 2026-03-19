@@ -10,7 +10,8 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -19,7 +20,7 @@ import kotlin.test.assertTrue
 class DomainPropertyBasedTest {
     @Test
     fun `flow metrics accept any non-negative generated values`() {
-        runBlocking {
+        runTest {
             checkAll(
                 Arb.int(0..10_000),
                 Arb.int(0..10_000),
@@ -37,7 +38,7 @@ class DomainPropertyBasedTest {
 
     @Test
     fun `flow metrics reject any negative throughput`() {
-        runBlocking {
+        runTest {
             checkAll(
                 Arb.int(Int.MIN_VALUE..-1),
                 Arb.int(0..100),
@@ -53,7 +54,7 @@ class DomainPropertyBasedTest {
 
     @Test
     fun `scenario config accepts generated positive limits and team sizes`() {
-        runBlocking {
+        runTest {
             checkAll(
                 Arb.int(1..10_000),
                 Arb.int(1..1_000),
@@ -69,7 +70,7 @@ class DomainPropertyBasedTest {
 
     @Test
     fun `scenario config rejects non-positive wip limit`() {
-        runBlocking {
+        runTest {
             checkAll(
                 Arb.int(Int.MIN_VALUE..0),
                 Arb.int(1..100),
@@ -84,7 +85,7 @@ class DomainPropertyBasedTest {
 
     @Test
     fun `simulation day accepts all positive generated days`() {
-        runBlocking {
+        runTest {
             checkAll(Arb.int(1..10_000)) { day ->
                 val simulationDay = SimulationDay(day)
                 assertEquals(day, simulationDay.value)
@@ -94,7 +95,7 @@ class DomainPropertyBasedTest {
 
     @Test
     fun `simulation day rejects non-positive values`() {
-        runBlocking {
+        runTest {
             checkAll(Arb.int(Int.MIN_VALUE..0)) { nonPositiveDay ->
                 assertFailsWith<IllegalArgumentException> { SimulationDay(nonPositiveDay) }
             }
@@ -102,8 +103,8 @@ class DomainPropertyBasedTest {
     }
 
     @Test
-    fun `board id accepts all generated non-blank values`() {
-        runBlocking {
+    fun `board id accepts non-blank and rejects blank generated strings`() {
+        runTest {
             checkAll(Arb.string(minSize = 1, maxSize = 64)) { value ->
                 if (value.isBlank()) {
                     assertFailsWith<IllegalArgumentException> { BoardId(value) }
@@ -116,7 +117,7 @@ class DomainPropertyBasedTest {
 
     @Test
     fun `board id rejects all whitespace-only generated values`() {
-        runBlocking {
+        runTest {
             checkAll(Arb.int(1..64)) { size ->
                 val blankValue = " ".repeat(size)
                 assertFailsWith<IllegalArgumentException> { BoardId(blankValue) }
@@ -125,13 +126,12 @@ class DomainPropertyBasedTest {
     }
 
     @Test
-    fun `board id generate is non-blank and uuid-like`() {
-        runBlocking {
-            checkAll(Arb.int(1..50)) {
-                val generated = BoardId.generate().value
-                assertTrue(generated.isNotBlank())
-                assertTrue(generated.length >= 32)
-            }
+    fun `board id generate returns parseable uuid`() {
+        repeat(50) {
+            val generated = BoardId.generate().value
+            assertTrue(generated.isNotBlank())
+            assertEquals(36, generated.length)
+            UUID.fromString(generated)
         }
     }
 }
