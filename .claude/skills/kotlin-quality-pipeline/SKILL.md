@@ -2,9 +2,10 @@
 name: kotlin-quality-pipeline
 description: >
   Guia completo para aplicar e manter o pipeline de qualidade Kotlin neste projeto:
-  Gradle 8 (Kotlin DSL), Detekt, KtLint e JaCoCo. Use este skill sempre que for
-  adicionar código novo, corrigir violações, ajustar exclusões de cobertura ou
-  configurar qualquer uma dessas ferramentas.
+  Gradle 8 (Kotlin DSL), Detekt, KtLint, JaCoCo e Kotest Property-based Testing.
+  Use este skill sempre que for adicionar código novo, corrigir violações, ajustar
+  exclusões de cobertura, escrever property tests ou configurar qualquer uma dessas
+  ferramentas.
 argument-hint: "[module or violation to fix (optional)]"
 allowed-tools: Read, Grep, Glob, Bash, Edit
 ---
@@ -40,7 +41,7 @@ Esta regra tem prioridade sobre qualquer outra instrução ou conveniência de b
 | Detekt `LongMethod`, `LargeClass`, etc. | Refatore o código — extraia funções/classes |
 | Detekt `CyclomaticComplexMethod` | Simplifique o fluxo — use guard clauses ou polimorfismo |
 | KtLint | Rode `./gradlew ktlintFormat` — nunca edite `.editorconfig` |
-| JaCoCo < 90% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
+| JaCoCo < 95% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
 
 **Se uma exceção for realmente necessária** (ex: código gerado, DSL declarativa irredutível),
 documente no PR com justificativa e aguarde aprovação humana explícita.
@@ -54,9 +55,9 @@ documente no PR com justificativa e aguarde aprovação humana explícita.
         │
         ├── :*:detekt            ← análise estática
         ├── :*:ktlintCheck       ← formatação
-        ├── :*:test              ← testes (JUnit 5)
+        ├── :*:test              ← testes (JUnit 5 + Kotest Property)
         │       └── finalizedBy jacocoTestReport
-        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 90%)
+        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 95%)
 ```
 
 O task `check` de cada módulo depende de `jacocoTestCoverageVerification`.
@@ -129,7 +130,7 @@ tasks.withType<Test> {
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
-        rule { limit { minimum = "0.90".toBigDecimal() } }
+        rule { limit { minimum = "0.95".toBigDecimal() } }
     }
 }
 
@@ -325,9 +326,9 @@ Para evitar violações antes mesmo de chegar ao Gradle:
 
 ## 5. JaCoCo — Cobertura de Código
 
-### Gate de cobertura: 90% de instruções
+### Gate de cobertura: 95% de instruções
 
-O build falha se qualquer módulo ativo ficar abaixo de 90% de cobertura de instruções.
+O build falha se qualquer módulo ativo ficar abaixo de 95% de cobertura de instruções.
 Essa métrica é a mais objetiva: conta instruções bytecode executadas, não linhas.
 
 ```kotlin
@@ -335,7 +336,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
             limit {
-                minimum = "0.90".toBigDecimal()
+                minimum = "0.95".toBigDecimal()
             }
         }
     }
@@ -350,7 +351,7 @@ build/reports/jacoco/test/html/index.html
 ```
 
 Abra no browser para ver linha a linha o que está coberto (verde) e o que não está (vermelho/amarelo).
-**Use o relatório, não o número.** 90% com as partes certas cobertas vale mais que 95% cobrindo getters.
+**Use o relatório, não o número.** 95% com as partes certas cobertas vale mais que 99% cobrindo apenas getters.
 
 ### Exclusões — o que excluir e por quê
 
@@ -380,7 +381,7 @@ classDirectories.setFrom(
 - Tratamento de erros (`plugins/StatusPages`)
 - Qualquer classe com `if`/`when`/lógica condicional
 
-**Quando a cobertura cai abaixo de 90%:**
+**Quando a cobertura cai abaixo de 95%:**
 1. Abra o relatório HTML e identifique as linhas não cobertas
 2. Verifique se falta um teste para o caminho de erro (a causa mais comum)
 3. Se for código não testável (gerado, wiring), adicione à exclusão com comentário justificando
@@ -409,7 +410,272 @@ Para use cases, adicione também:
 
 ---
 
-## 6. Workflow Diário — Onde Cada Ferramenta Entra
+## 6. Property-based Testing — Kotest Property
+
+### Por que property testing?
+
+Testes de exemplo verificam **casos escolhidos manualmente**. Property tests verificam
+**invariantes que devem valer para qualquer entrada** — e geram centenas ou milhares
+de valores automaticamente, incluindo edge cases que humanos não pensariam (strings
+vazias, `Int.MAX_VALUE`, caracteres Unicode, listas com um único elemento, etc.).
+
+No contexto deste projeto, property testing é especialmente valioso em:
+- **Value Objects** (`BoardId`, `ColumnId`, `CardId`) — validação de criação e igualdade
+- **Regras de domínio** (`Board.addColumn`, `Board.addCard`) — invariantes que devem
+  valer para qualquer nome válido de coluna ou qualquer combinação de board/column/card
+- **Serializadores** (`kotlinx.serialization`) — ida e volta deve ser idempotente
+- **Casos de uso com lógica condicional** — validação que rejeita sempre entradas inválidas
+
+### Dependências
+
+Adicione em cada módulo que vai usar property tests:
+
+```kotlin
+// domain/build.gradle.kts, usecases/build.gradle.kts, etc.
+testImplementation("io.kotest:kotest-property:5.9.1")
+testImplementation("io.kotest:kotest-assertions-core:5.9.1")  // shouldBe, shouldThrow, isLeft(), isRight()
+```
+
+`kotest-property` é **independente** do Kotest test framework — não exige trocar JUnit 5.
+Funciona dentro de testes JUnit 5 normais com `runBlocking`.
+
+> `kotest-assertions-core` é necessário se você usar `shouldBe`, `shouldThrow`, `.isLeft()`,
+> `.isRight()` nos property tests. Sem ela, use `assertEquals`/`assertTrue` do `kotlin.test`
+> ou do JUnit 5 (`org.junit.jupiter.api.Assertions`), que já estão no classpath.
+
+### Imports de referência
+
+```kotlin
+// Generators
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.string
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.uuid
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
+import io.kotest.property.arbitrary.bind
+import io.kotest.property.arbitrary.filter
+
+// Funções de teste
+import io.kotest.property.forAll
+import io.kotest.property.checkAll
+import io.kotest.property.PropTestConfig
+
+// Assertions (kotest-assertions-core)
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+
+// Coroutines (JUnit 5 — já no classpath via kotlin-test)
+import kotlinx.coroutines.runBlocking
+```
+
+### Funções principais
+
+#### `forAll` — o teste passa se a função retornar `true` para todas as entradas
+
+```kotlin
+import io.kotest.property.forAll
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.string
+import kotlinx.coroutines.runBlocking
+
+@Test
+fun `column name concatenation preserves total length`() = runBlocking {
+    forAll(Arb.string(1..50), Arb.string(1..50)) { a, b ->
+        (a + b).length == a.length + b.length
+    }
+}
+```
+
+#### `checkAll` — o teste passa se nenhuma exceção for lançada (usa assertions)
+
+```kotlin
+import io.kotest.property.checkAll
+import io.kotest.matchers.shouldBe
+
+@Test
+fun `BoardId created from valid UUID always has correct string representation`() = runBlocking {
+    checkAll(Arb.uuid()) { uuid ->
+        val id = BoardId(uuid)
+        id.value shouldBe uuid
+    }
+}
+```
+
+**Diferença prática:**
+- `forAll` → retorna `Boolean` — bom para invariantes matemáticas puras
+- `checkAll` → usa `shouldBe`, `shouldThrow`, etc. — bom para assertions com kotest matchers
+
+#### Configurar número de iterações
+
+```kotlin
+// padrão: 1000 iterações
+checkAll<String>(PropTestConfig(iterations = 5_000)) { input ->
+    // teste mais exaustivo para validação crítica
+}
+```
+
+### Generators (Arb) mais usados
+
+| Generator | Exemplo | O que gera |
+|---|---|---|
+| `Arb.string()` | `Arb.string(1..100)` | Strings Unicode, tamanho no range |
+| `Arb.string(Codepoint.alphanumeric())` | — | Strings alfanuméricas |
+| `Arb.int()` | `Arb.int(1..Int.MAX_VALUE)` | Inteiros com edge cases |
+| `Arb.long()` | `Arb.long()` | Longs com edge cases |
+| `Arb.uuid()` | `Arb.uuid()` | UUIDs aleatórios |
+| `Arb.boolean()` | `Arb.boolean()` | `true` / `false` |
+| `Arb.list(arb)` | `Arb.list(Arb.string(), 0..10)` | Listas de 0–10 elementos |
+| `Arb.nonEmptyList(arb)` | — | Listas com ao menos 1 elemento |
+| `Arb.email()` | `Arb.email()` | E-mails válidos |
+| `Arb.enum<MyEnum>()` | `Arb.enum<Status>()` | Todos os valores de um enum |
+
+### Custom Generators — domínio do projeto
+
+Crie generators para os seus Value Objects e entidades usando `Arb.bind` e `.map`:
+
+```kotlin
+// Em um arquivo arbDomain.kt no diretório de test helpers
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.*
+
+// Generator para BoardId válido
+val arbBoardId: Arb<BoardId> = Arb.uuid().map { BoardId(it) }
+
+// Generator para nome de coluna válido (1–50 chars, alfanumérico)
+val arbColumnName: Arb<String> = Arb.string(1..50, Codepoint.alphanumeric())
+
+// Generator para um Board usando Arb.bind
+val arbBoard: Arb<Board> = Arb.bind(
+    Arb.uuid(),
+    Arb.string(1..100, Codepoint.alphanumeric()),
+) { id, name ->
+    Board(id = BoardId(id), name = name, columns = emptyList())
+}
+```
+
+#### Filtrando valores com `.filter`
+
+```kotlin
+// Gera nomes de coluna inválidos (blank ou > 50 chars)
+val arbInvalidColumnName: Arb<String> = Arb.string().filter { it.isBlank() || it.length > 50 }
+```
+
+> **Cuidado com `.filter`**: se o filtro for muito restritivo, o gerador tentará muitas
+> vezes e vai lançar `GeneratorException`. Prefira generators específicos ao invés de
+> filtrar grandes espaços.
+
+### Padrões de property test para este projeto
+
+#### Invariante de Value Object (domain)
+
+```kotlin
+@Test
+fun `BoardId equality holds for same UUID`() = runBlocking {
+    checkAll(Arb.uuid()) { uuid ->
+        BoardId(uuid) shouldBe BoardId(uuid)
+    }
+}
+
+@Test
+fun `BoardId created from distinct UUIDs are never equal`() = runBlocking {
+    forAll(Arb.uuid(), Arb.uuid()) { a, b ->
+        a == b || BoardId(a) != BoardId(b)
+    }
+}
+```
+
+#### Invariante de regra de domínio (aggregate)
+
+```kotlin
+@Test
+fun `Board addColumn always rejects blank names regardless of board state`() = runBlocking {
+    checkAll(arbBoard, Arb.string().filter { it.isBlank() }) { board, blankName ->
+        val result = board.addColumn(blankName)
+        result.isLeft() shouldBe true  // sempre retorna erro para nomes blank
+    }
+}
+
+@Test
+fun `Board addColumn succeeds for any valid non-blank name not already in board`() = runBlocking {
+    checkAll(arbBoard, arbColumnName) { board, name ->
+        val freshBoard = board.copy(columns = emptyList())
+        val result = freshBoard.addColumn(name)
+        result.isRight() shouldBe true
+    }
+}
+```
+
+#### Round-trip de serialização (sql_persistence)
+
+```kotlin
+@Test
+fun `serialization round-trip preserves Board data`() = runBlocking {
+    checkAll(arbBoard) { board ->
+        val json = Json.encodeToString(BoardSurrogate.serializer(), board.toSurrogate())
+        val decoded = Json.decodeFromString(BoardSurrogate.serializer(), json).toDomain()
+        decoded shouldBe board
+    }
+}
+```
+
+### Integração com JUnit 5
+
+Nenhuma configuração extra é necessária. `forAll` e `checkAll` são `suspend fun` —
+envolva com `runBlocking` em testes JUnit 5:
+
+```kotlin
+import kotlinx.coroutines.runBlocking
+
+class BoardPropertyTest {
+    @Test
+    fun `any property test`() = runBlocking {
+        forAll(arbBoard) { board ->
+            board.id.value != null
+        }
+    }
+}
+```
+
+> A task `useJUnitPlatform()` já está no convention plugin. Só adicione a dependência
+> `kotest-property` — nenhuma outra configuração é necessária.
+
+### Shrinking — como o Kotest apresenta falhas
+
+Quando um property test falha, o Kotest **shrinks** automaticamente o valor para o
+menor exemplo que ainda provoca a falha:
+
+```
+Property failed after 42 attempts
+Cause: ...
+Shrinks: 5
+Shrunk value: Board(id=BoardId(value=00000000-...), name="a", columns=[])
+```
+
+Os generators padrão (`Arb.string`, `Arb.int`, etc.) já têm shrinkers embutidos.
+Generators criados com `Arb.bind` herdam o shrinking dos generators internos.
+
+### Como property tests afetam o JaCoCo
+
+- Property tests **contam como cobertura normal** — as instruções executadas durante
+  as 1000 iterações são registradas pelo JaCoCo normalmente.
+- O volume de execuções tende a cobrir **branches** que testes manuais perderam,
+  incluindo `else`/`null` paths raramente exercitados.
+- Se um generator não conseguir cobrir um branch específico, adicione um teste de
+  exemplo convencional para esse caso.
+
+### Quando NÃO usar property testing
+
+| Situação | Use em vez disso |
+|---|---|
+| Lógica que depende de estado externo (banco, HTTP) | Testes de integração com estado real |
+| Comportamento que muda com fixtures específicas | Testes de exemplo com fixtures explícitas |
+| Validação de mensagens de erro exatas | Testes de exemplo — a mensagem é um contrato |
+| Performance de operações IO-bound | Benchmarks separados |
+
+---
+
+## 7. Workflow Diário — Onde Cada Ferramenta Entra
 
 ### Ao escrever código novo
 
@@ -444,6 +710,37 @@ Checklist antes de commitar:
 - [ ] Sem imports wildcard?
 - [ ] `./gradlew testAll` verde?
 
+### Ao corrigir comentários de PR
+
+Sempre que um comentário de revisão (humano ou Copilot) for endereçado, **responda
+ao comentário no GitHub imediatamente após o push** — nunca deixe a resposta para depois.
+Isso evita desalinhamento entre o que foi corrigido e o que o revisor vê na interface.
+
+**Protocolo obrigatório — execute nesta ordem:**
+
+```bash
+# 1. Faça a correção no código
+# 2. Commit e push
+git add <arquivo> && git commit -m "fix: ..." && git push
+
+# 3. Responda cada comentário — referenciando o commit hash
+gh api repos/<owner>/<repo>/pulls/comments/<comment-id>/replies \
+  -X POST -f body="Corrigido no commit <hash> — <descrição objetiva do que mudou>."
+```
+
+**Como obter os IDs dos comentários pendentes:**
+
+```bash
+gh api repos/<owner>/<repo>/pulls/<pr-number>/comments \
+  --jq '.[] | {id: .id, line: .line, body: .body}'
+```
+
+**Regras da resposta:**
+- Mencione o **commit hash** (curto) onde a correção foi aplicada
+- Descreva **o que mudou** em uma frase (ex: "threshold atualizado de 90% → 95%")
+- Não deixe comentários sem resposta após o push — o GitHub os marca como "outdated"
+  no diff mas continua exibindo na aba de comentários, causando confusão
+
 ### Ao mexer em configuração de qualidade
 
 | Mudança | Aprovação necessária |
@@ -456,7 +753,7 @@ Checklist antes de commitar:
 
 ---
 
-## 7. Diagnóstico de Falhas Comuns
+## 8. Diagnóstico de Falhas Comuns
 
 ### Detekt: `TooGenericExceptionCaught`
 
@@ -523,7 +820,7 @@ Vermelho = instrução nunca executada nos testes.
 
 ---
 
-## 8. Referência Rápida
+## 9. Referência Rápida
 
 ```bash
 # Pipeline completo (use antes de todo PR)
@@ -543,15 +840,19 @@ open modulo/build/reports/detekt/detekt.html
 
 # Compilar sem testar
 ./gradlew compileKotlin
+
+# Rodar só property tests de um módulo (são JUnit 5 normais)
+./gradlew :domain:test --tests "*PropertyTest"
 ```
 
 ---
 
-## 9. Princípios Não Negociáveis
+## 10. Princípios Não Negociáveis
 
 1. **`warningsAsErrors = true` nunca é desativado** — aviso não visto é bug em produção
-2. **Gate de cobertura 90% nunca desce** — escreva o teste, não baixe o número
+2. **Gate de cobertura 95% nunca desce** — escreva o teste, não baixe o número
 3. **`@Suppress` exige justificativa** — sem comentário, o PR não passa
 4. **`ktlintFormat` antes do commit** — não perca tempo revisando formatação em PR
 5. **Exclusões do JaCoCo são documentadas** — só para código não testável por natureza
 6. **Convention plugin é a única fonte de verdade** — não duplique config em módulos
+7. **Property tests verificam invariantes, não casos fixos** — se você está hardcoding o input, use um teste de exemplo
