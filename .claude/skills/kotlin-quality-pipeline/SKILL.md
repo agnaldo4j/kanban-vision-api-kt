@@ -41,7 +41,7 @@ Esta regra tem prioridade sobre qualquer outra instrução ou conveniência de b
 | Detekt `LongMethod`, `LargeClass`, etc. | Refatore o código — extraia funções/classes |
 | Detekt `CyclomaticComplexMethod` | Simplifique o fluxo — use guard clauses ou polimorfismo |
 | KtLint | Rode `./gradlew ktlintFormat` — nunca edite `.editorconfig` |
-| JaCoCo < 90% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
+| JaCoCo < 95% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
 
 **Se uma exceção for realmente necessária** (ex: código gerado, DSL declarativa irredutível),
 documente no PR com justificativa e aguarde aprovação humana explícita.
@@ -57,7 +57,7 @@ documente no PR com justificativa e aguarde aprovação humana explícita.
         ├── :*:ktlintCheck       ← formatação
         ├── :*:test              ← testes (JUnit 5 + Kotest Property)
         │       └── finalizedBy jacocoTestReport
-        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 90%)
+        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 95%)
 ```
 
 O task `check` de cada módulo depende de `jacocoTestCoverageVerification`.
@@ -130,7 +130,7 @@ tasks.withType<Test> {
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
-        rule { limit { minimum = "0.90".toBigDecimal() } }
+        rule { limit { minimum = "0.95".toBigDecimal() } }
     }
 }
 
@@ -326,9 +326,9 @@ Para evitar violações antes mesmo de chegar ao Gradle:
 
 ## 5. JaCoCo — Cobertura de Código
 
-### Gate de cobertura: 90% de instruções
+### Gate de cobertura: 95% de instruções
 
-O build falha se qualquer módulo ativo ficar abaixo de 90% de cobertura de instruções.
+O build falha se qualquer módulo ativo ficar abaixo de 95% de cobertura de instruções.
 Essa métrica é a mais objetiva: conta instruções bytecode executadas, não linhas.
 
 ```kotlin
@@ -336,7 +336,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
             limit {
-                minimum = "0.90".toBigDecimal()
+                minimum = "0.95".toBigDecimal()
             }
         }
     }
@@ -351,7 +351,7 @@ build/reports/jacoco/test/html/index.html
 ```
 
 Abra no browser para ver linha a linha o que está coberto (verde) e o que não está (vermelho/amarelo).
-**Use o relatório, não o número.** 90% com as partes certas cobertas vale mais que 95% cobrindo getters.
+**Use o relatório, não o número.** 95% com as partes certas cobertas vale mais que 99% cobrindo apenas getters.
 
 ### Exclusões — o que excluir e por quê
 
@@ -381,7 +381,7 @@ classDirectories.setFrom(
 - Tratamento de erros (`plugins/StatusPages`)
 - Qualquer classe com `if`/`when`/lógica condicional
 
-**Quando a cobertura cai abaixo de 90%:**
+**Quando a cobertura cai abaixo de 95%:**
 1. Abra o relatório HTML e identifique as linhas não cobertas
 2. Verifique se falta um teste para o caminho de erro (a causa mais comum)
 3. Se for código não testável (gerado, wiring), adicione à exclusão com comentário justificando
@@ -426,17 +426,48 @@ No contexto deste projeto, property testing é especialmente valioso em:
 - **Serializadores** (`kotlinx.serialization`) — ida e volta deve ser idempotente
 - **Casos de uso com lógica condicional** — validação que rejeita sempre entradas inválidas
 
-### Dependência
+### Dependências
 
 Adicione em cada módulo que vai usar property tests:
 
 ```kotlin
 // domain/build.gradle.kts, usecases/build.gradle.kts, etc.
 testImplementation("io.kotest:kotest-property:5.9.1")
+testImplementation("io.kotest:kotest-assertions-core:5.9.1")  // shouldBe, shouldThrow, isLeft(), isRight()
 ```
 
 `kotest-property` é **independente** do Kotest test framework — não exige trocar JUnit 5.
 Funciona dentro de testes JUnit 5 normais com `runBlocking`.
+
+> `kotest-assertions-core` é necessário se você usar `shouldBe`, `shouldThrow`, `.isLeft()`,
+> `.isRight()` nos property tests. Sem ela, use `assertEquals`/`assertTrue` do `kotlin.test`
+> ou do JUnit 5 (`org.junit.jupiter.api.Assertions`), que já estão no classpath.
+
+### Imports de referência
+
+```kotlin
+// Generators
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.string
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.uuid
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
+import io.kotest.property.arbitrary.bind
+import io.kotest.property.arbitrary.filter
+
+// Funções de teste
+import io.kotest.property.forAll
+import io.kotest.property.checkAll
+import io.kotest.property.PropTestConfig
+
+// Assertions (kotest-assertions-core)
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+
+// Coroutines (JUnit 5 — já no classpath via kotlin-test)
+import kotlinx.coroutines.runBlocking
+```
 
 ### Funções principais
 
@@ -788,7 +819,7 @@ open modulo/build/reports/detekt/detekt.html
 ## 10. Princípios Não Negociáveis
 
 1. **`warningsAsErrors = true` nunca é desativado** — aviso não visto é bug em produção
-2. **Gate de cobertura 90% nunca desce** — escreva o teste, não baixe o número
+2. **Gate de cobertura 95% nunca desce** — escreva o teste, não baixe o número
 3. **`@Suppress` exige justificativa** — sem comentário, o PR não passa
 4. **`ktlintFormat` antes do commit** — não perca tempo revisando formatação em PR
 5. **Exclusões do JaCoCo são documentadas** — só para código não testável por natureza
