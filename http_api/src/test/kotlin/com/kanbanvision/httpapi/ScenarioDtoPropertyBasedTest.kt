@@ -14,7 +14,6 @@ import io.kotest.property.arbitrary.enum
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
 import kotlinx.coroutines.test.runTest
-import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -58,12 +57,12 @@ class ScenarioDtoPropertyBasedTest {
                 Arb.int(1..100),
                 Arb.int(0..20),
                 Arb.enum<MovementType>(),
-            ) { scenarioSeed, dayValue, movementCountSeed, movementType ->
+            ) { scenarioSeed, dayValue, movementCount, movementType ->
                 val snapshot =
                     snapshotWithMovements(
                         scenarioSeed = scenarioSeed,
                         dayValue = dayValue,
-                        movementCountSeed = movementCountSeed,
+                        movementCount = movementCount,
                         movementType = movementType,
                     )
 
@@ -87,16 +86,16 @@ class ScenarioDtoPropertyBasedTest {
     private fun snapshotWithMovements(
         scenarioSeed: Int,
         dayValue: Int,
-        movementCountSeed: Int,
+        movementCount: Int,
         movementType: MovementType,
     ): DailySnapshot {
-        val movementCount = abs(movementCountSeed % 20)
+        val movementTypes = MovementType.entries
         val movements =
             (0 until movementCount).map { idx ->
                 Movement(
-                    type = movementType,
+                    type = movementTypes[(movementType.ordinal + idx) % movementTypes.size],
                     workItemId = WorkItemId("work-item-$scenarioSeed-$idx"),
-                    day = SimulationDay(dayValue),
+                    day = SimulationDay(dayValue + idx),
                     reason = "reason-$idx",
                 )
             }
