@@ -19,6 +19,7 @@ import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
+import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
@@ -50,6 +51,7 @@ class OpenApiSpecTest {
             single<BoardRepository> { mockk(relaxed = true) }
             single<CardRepository> { mockk(relaxed = true) }
             single<ColumnRepository> { mockk(relaxed = true) }
+            single<StepRepository> { mockk(relaxed = true) }
             single<TenantRepository> { mockk(relaxed = true) }
             single<ScenarioRepository> { mockk(relaxed = true) }
             single<SnapshotRepository> { mockk(relaxed = true) }
@@ -61,7 +63,7 @@ class OpenApiSpecTest {
             single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
-            single { CreateStepUseCase(get()) }
+            single { CreateStepUseCase(get(), get()) }
             single { GetStepUseCase(get()) }
             single { ListStepsByBoardUseCase(get(), get()) }
             single { CreateScenarioUseCase(get(), get()) }

@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.model.team
 
-import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -11,26 +11,26 @@ class WorkerTest {
     private val boardId = BoardId.generate()
 
     @Test
-    fun `worker can execute card in column with matching ability`() {
+    fun `worker can execute card in step with matching ability`() {
         val worker =
             Worker(
                 name = "Ana",
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
-        val column =
-            Column.create(
+        val step =
+            Step.create(
                 boardId = boardId,
                 name = "Development",
                 position = 1,
                 requiredAbility = AbilityName.DEVELOPER,
             )
 
-        assertTrue(worker.canExecute(column))
-        column.ensureCanAssign(worker)
+        assertTrue(worker.canExecute(step))
+        step.ensureCanAssign(worker)
     }
 
     @Test
-    fun `worker cannot execute card in column with non-matching ability`() {
+    fun `worker cannot execute card in step with non-matching ability`() {
         val worker =
             Worker(
                 name = "Bruno",
@@ -40,35 +40,35 @@ class WorkerTest {
                         Ability(name = AbilityName.DEPLOYER, seniority = Seniority.SR),
                     ),
             )
-        val column =
-            Column.create(
+        val step =
+            Step.create(
                 boardId = boardId,
                 name = "Development",
                 position = 1,
                 requiredAbility = AbilityName.DEVELOPER,
             )
 
-        assertFalse(worker.canExecute(column))
-        assertThrows<IllegalArgumentException> { column.ensureCanAssign(worker) }
+        assertFalse(worker.canExecute(step))
+        assertThrows<IllegalArgumentException> { step.ensureCanAssign(worker) }
     }
 
     @Test
-    fun `worker cannot execute card in column when required ability does not match`() {
+    fun `worker cannot execute card in step when required ability does not match`() {
         val worker =
             Worker(
                 name = "Carla",
                 abilities = setOf(Ability(name = AbilityName.PRODUCT_MANAGER, seniority = Seniority.JR)),
             )
-        val column =
-            Column.create(
+        val step =
+            Step.create(
                 boardId = boardId,
                 name = "Development",
                 position = 0,
                 requiredAbility = AbilityName.DEVELOPER,
             )
 
-        assertFalse(worker.canExecute(column))
-        assertThrows<IllegalArgumentException> { column.ensureCanAssign(worker) }
+        assertFalse(worker.canExecute(step))
+        assertThrows<IllegalArgumentException> { step.ensureCanAssign(worker) }
     }
 
     @Test

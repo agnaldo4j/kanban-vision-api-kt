@@ -4,7 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -26,6 +26,7 @@ import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.CreateStepUseCase
 import com.kanbanvision.usecases.step.GetStepUseCase
 import com.kanbanvision.usecases.step.ListStepsByBoardUseCase
@@ -57,7 +58,7 @@ class StepRoutesTest {
     private val stepId = ColumnId.generate()
     private val board = Board(id = boardId, name = "Delivery Board")
     private val step =
-        Column(
+        Step(
             id = stepId,
             boardId = boardId,
             name = "Analysis",
@@ -68,12 +69,14 @@ class StepRoutesTest {
     private val boardRepository = mockk<BoardRepository>()
     private val cardRepository = mockk<CardRepository>()
     private val columnRepository = mockk<ColumnRepository>()
+    private val stepRepository = mockk<StepRepository>()
 
     private val testModule =
         module {
             single<BoardRepository> { boardRepository }
             single<CardRepository> { cardRepository }
             single<ColumnRepository> { columnRepository }
+            single<StepRepository> { stepRepository }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
             single { CreateCardUseCase(get(), get(), get()) }
@@ -82,7 +85,7 @@ class StepRoutesTest {
             single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
-            single { CreateStepUseCase(get()) }
+            single { CreateStepUseCase(get(), get()) }
             single { GetStepUseCase(get()) }
             single { ListStepsByBoardUseCase(get(), get()) }
             single { mockk<DomainMetrics>(relaxed = true) }
@@ -103,9 +106,9 @@ class StepRoutesTest {
             }
 
             coEvery { boardRepository.findById(any()) } returns board.right()
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
-            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
-            coEvery { columnRepository.findById(any()) } returns step.right()
+            coEvery { stepRepository.findByBoardId(any()) } returns emptyList<Step>().right()
+            coEvery { stepRepository.save(any()) } answers { firstArg<Step>().right() }
+            coEvery { stepRepository.findById(any()) } returns step.right()
 
             val response =
                 client.post("/api/v1/steps") {
@@ -135,7 +138,7 @@ class StepRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findById(stepId) } returns step.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
 
             val response =
                 client.get("/api/v1/steps/${stepId.value}") {
@@ -163,7 +166,7 @@ class StepRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(boardId) } returns listOf(step).right()
+            coEvery { stepRepository.findByBoardId(boardId) } returns listOf(step).right()
             coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
@@ -188,7 +191,7 @@ class StepRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findById(any()) } returns DomainError.ColumnNotFound("missing-step").left()
+            coEvery { stepRepository.findById(any()) } returns DomainError.StepNotFound("missing-step").left()
 
             val response =
                 client.get("/api/v1/steps/missing-step") {
@@ -215,7 +218,7 @@ class StepRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB error").left()
+            coEvery { stepRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB error").left()
             coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
@@ -277,7 +280,7 @@ class StepRoutesTest {
             }
 
             coEvery { boardRepository.findById(any()) } returns board.right()
-            coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
+            coEvery { stepRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response =
                 client.post("/api/v1/steps") {

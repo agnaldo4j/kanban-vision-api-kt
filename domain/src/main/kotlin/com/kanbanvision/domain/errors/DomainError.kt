@@ -25,6 +25,10 @@ sealed class DomainError {
         val id: String,
     ) : DomainError()
 
+    data class StepNotFound(
+        val id: String,
+    ) : DomainError()
+
     data class PersistenceError(
         val message: String,
     ) : DomainError()

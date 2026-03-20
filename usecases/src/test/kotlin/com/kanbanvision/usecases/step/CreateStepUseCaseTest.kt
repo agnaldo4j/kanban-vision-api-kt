@@ -3,9 +3,12 @@ package com.kanbanvision.usecases.step
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.ColumnId
-import com.kanbanvision.usecases.column.CreateColumnUseCase
+import com.kanbanvision.domain.model.valueobjects.BoardId
+import com.kanbanvision.usecases.repositories.BoardRepository
+import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.commands.CreateStepCommand
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,37 +20,45 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class CreateStepUseCaseTest {
-    private val createColumnUseCase = mockk<CreateColumnUseCase>()
-    private val useCase = CreateStepUseCase(createColumnUseCase)
+    private val boardRepository = mockk<BoardRepository>()
+    private val stepRepository = mockk<StepRepository>()
+    private val useCase = CreateStepUseCase(stepRepository, boardRepository)
+    private val boardId = BoardId.generate()
+    private val board = Board(id = boardId, name = "Delivery")
 
     @Test
-    fun `execute delegates to CreateColumnUseCase and returns id`() =
+    fun `execute creates step and returns id`() =
         runTest {
-            val expectedId = ColumnId.generate()
-            coEvery { createColumnUseCase.execute(any()) } returns expectedId.right()
+            coEvery { boardRepository.findById(boardId) } returns board.right()
+            coEvery { stepRepository.findByBoardId(boardId) } returns emptyList<Step>().right()
+            coEvery { stepRepository.save(any()) } answers { firstArg<Step>().right() }
 
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = "board-1",
+                        boardId = boardId.value,
                         name = "Development",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
                 )
 
             assertTrue(result.isRight())
-            assertEquals(expectedId, result.getOrNull())
+            val createdId = result.getOrNull()
+            assertTrue(createdId != null)
+            assertTrue(createdId.value.isNotBlank())
+            coVerify(exactly = 1) { stepRepository.save(any()) }
         }
 
     @Test
-    fun `execute propagates domain error from CreateColumnUseCase`() =
+    fun `execute propagates domain error from repository`() =
         runTest {
-            coEvery { createColumnUseCase.execute(any()) } returns DomainError.PersistenceError("db").left()
+            coEvery { boardRepository.findById(boardId) } returns board.right()
+            coEvery { stepRepository.findByBoardId(boardId) } returns DomainError.PersistenceError("db").left()
 
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = "board-1",
+                        boardId = boardId.value,
                         name = "Development",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
@@ -63,7 +74,7 @@ class CreateStepUseCaseTest {
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = "board-1",
+                        boardId = boardId.value,
                         name = "",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
@@ -72,6 +83,8 @@ class CreateStepUseCaseTest {
             assertTrue(result.isLeft())
             val error = assertIs<DomainError.ValidationError>(result.leftOrNull())
             assertEquals("Step name must not be blank", error.message)
-            coVerify(exactly = 0) { createColumnUseCase.execute(any()) }
+            coVerify(exactly = 0) { boardRepository.findById(any()) }
+            coVerify(exactly = 0) { stepRepository.findByBoardId(any()) }
+            coVerify(exactly = 0) { stepRepository.save(any()) }
         }
 }

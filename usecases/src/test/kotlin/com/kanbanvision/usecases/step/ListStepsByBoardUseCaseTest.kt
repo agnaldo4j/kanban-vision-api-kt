@@ -9,7 +9,7 @@ import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.board.GetBoardUseCase
-import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
+import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.queries.ListStepsByBoardQuery
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -22,33 +22,17 @@ import kotlin.test.assertTrue
 
 class ListStepsByBoardUseCaseTest {
     private val getBoardUseCase = mockk<GetBoardUseCase>()
-    private val listColumnsByBoardUseCase = mockk<ListColumnsByBoardUseCase>()
-    private val useCase = ListStepsByBoardUseCase(getBoardUseCase, listColumnsByBoardUseCase)
+    private val stepRepository = mockk<StepRepository>()
+    private val useCase = ListStepsByBoardUseCase(getBoardUseCase, stepRepository)
     private val board = Board(id = BoardId.generate(), name = "Board")
 
     @Test
-    fun `execute delegates to ListColumnsByBoardUseCase and returns steps`() =
+    fun `execute lists steps by board`() =
         runTest {
             val boardId = BoardId.generate()
-            val steps: List<Step> =
-                listOf(
-                    Step(
-                        id = ColumnId.generate(),
-                        boardId = boardId,
-                        name = "Analysis",
-                        position = 0,
-                        requiredAbility = AbilityName.PRODUCT_MANAGER,
-                    ),
-                    Step(
-                        id = ColumnId.generate(),
-                        boardId = boardId,
-                        name = "Development",
-                        position = 1,
-                        requiredAbility = AbilityName.DEVELOPER,
-                    ),
-                )
+            val steps = sampleSteps(boardId)
             coEvery { getBoardUseCase.execute(any()) } returns board.right()
-            coEvery { listColumnsByBoardUseCase.execute(any()) } returns steps.right()
+            coEvery { stepRepository.findByBoardId(boardId) } returns steps.right()
 
             val result = useCase.execute(ListStepsByBoardQuery(boardId = boardId.value))
 
@@ -57,10 +41,10 @@ class ListStepsByBoardUseCaseTest {
         }
 
     @Test
-    fun `execute propagates error from ListColumnsByBoardUseCase`() =
+    fun `execute propagates error from repository`() =
         runTest {
             coEvery { getBoardUseCase.execute(any()) } returns board.right()
-            coEvery { listColumnsByBoardUseCase.execute(any()) } returns DomainError.BoardNotFound("missing").left()
+            coEvery { stepRepository.findByBoardId(any()) } returns DomainError.BoardNotFound("missing").left()
 
             val result = useCase.execute(ListStepsByBoardQuery(boardId = "missing"))
 
@@ -87,6 +71,24 @@ class ListStepsByBoardUseCaseTest {
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { getBoardUseCase.execute(any()) }
-            coVerify(exactly = 0) { listColumnsByBoardUseCase.execute(any()) }
+            coVerify(exactly = 0) { stepRepository.findByBoardId(any()) }
         }
+
+    private fun sampleSteps(boardId: BoardId): List<Step> =
+        listOf(
+            Step(
+                id = ColumnId.generate(),
+                boardId = boardId,
+                name = "Analysis",
+                position = 0,
+                requiredAbility = AbilityName.PRODUCT_MANAGER,
+            ),
+            Step(
+                id = ColumnId.generate(),
+                boardId = boardId,
+                name = "Development",
+                position = 1,
+                requiredAbility = AbilityName.DEVELOPER,
+            ),
+        )
 }
