@@ -51,13 +51,53 @@ class RunDayUseCase(
                     "Simulation state boardId (${context.boardId}) does not match scenario boardId (${scenario.boardId})",
                 )
             }
+            ensureAssignmentsConsistency(context).bind()
+        }
+
+    private fun ensureAssignmentsConsistency(context: com.kanbanvision.domain.model.SimulationContext): Either<DomainError, Unit> =
+        either {
             context.workerAssignments.forEach { (workerId, stepId) ->
-                ensure(context.findWorker(workerId) != null) {
+                val worker = context.findWorker(workerId)
+                ensure(worker != null) {
                     DomainError.ValidationError("Simulation context contains assignment for unknown workerId: $workerId")
                 }
-                ensure(context.findStep(stepId) != null) {
+                val step = context.findStep(stepId)
+                ensure(step != null) {
                     DomainError.ValidationError("Simulation context contains assignment for unknown stepId: $stepId")
                 }
+                val resolvedWorker = worker ?: return@forEach
+                val resolvedStep = step ?: return@forEach
+                ensureStepBoardConsistency(context, resolvedStep, stepId).bind()
+                ensureWorkerAbilityConsistency(resolvedWorker, resolvedStep, workerId, stepId).bind()
+            }
+        }
+
+    private fun ensureStepBoardConsistency(
+        context: com.kanbanvision.domain.model.SimulationContext,
+        step: com.kanbanvision.domain.model.Step,
+        stepId: String,
+    ): Either<DomainError, Unit> =
+        either {
+            ensure(step.boardId == context.boardId) {
+                DomainError.ValidationError(
+                    "Simulation context contains assignment for stepId $stepId belonging to board ${step.boardId}, " +
+                        "which does not match context boardId (${context.boardId})",
+                )
+            }
+        }
+
+    private fun ensureWorkerAbilityConsistency(
+        worker: com.kanbanvision.domain.model.Worker,
+        step: com.kanbanvision.domain.model.Step,
+        workerId: String,
+        stepId: String,
+    ): Either<DomainError, Unit> =
+        either {
+            ensure(worker.hasAbility(step.requiredAbility)) {
+                DomainError.ValidationError(
+                    "Simulation context contains assignment of workerId $workerId to stepId $stepId, " +
+                        "but the worker does not have the required ability (${step.requiredAbility})",
+                )
             }
         }
 

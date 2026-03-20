@@ -187,9 +187,12 @@ private fun applyAssignedWorkerExecution(
     if (context == null || context.workerAssignments.isEmpty() || context.steps.isEmpty()) return items
 
     val current = items.toMutableList()
-    context.workerAssignments.forEach { (workerId, stepId) ->
-        applySingleWorkerExecution(current, context, WorkerStepAssignment(workerId = workerId, stepId = stepId), ctx)
-    }
+    context.workerAssignments
+        .entries
+        .sortedWith(compareBy({ it.key }, { it.value }))
+        .forEach { (workerId, stepId) ->
+            applySingleWorkerExecution(current, context, WorkerStepAssignment(workerId = workerId, stepId = stepId), ctx)
+        }
     return current
 }
 
@@ -204,8 +207,9 @@ private fun applySingleWorkerExecution(
     assignment: WorkerStepAssignment,
     ctx: EngineContext,
 ) {
-    val worker = context.findWorker(assignment.workerId) ?: return
-    val step = context.findStep(assignment.stepId) ?: return
+    val worker = context.findWorker(assignment.workerId)
+    val step = context.findStep(assignment.stepId)
+    if (worker == null || step == null || !worker.hasAbility(step.requiredAbility)) return
     val targetIndex = findExecutableCardIndex(current, step.id, step.requiredAbility)
     if (targetIndex < 0) return
 

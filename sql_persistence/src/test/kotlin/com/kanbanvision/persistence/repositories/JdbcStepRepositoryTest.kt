@@ -45,6 +45,19 @@ class JdbcStepRepositoryTest {
         }
 
     @Test
+    fun `findById preserves non column errors`() =
+        runBlocking {
+            val stepId = UUID.randomUUID().toString()
+            coEvery { delegate.findById(stepId) } returns DomainError.PersistenceError("db unavailable").left()
+
+            val result = repository.findById(stepId)
+
+            assertTrue(result.isLeft())
+            val error = assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            assertEquals("db unavailable", error.message)
+        }
+
+    @Test
     fun `findByBoardId maps columns to steps`() =
         runBlocking {
             val boardId = UUID.randomUUID().toString()

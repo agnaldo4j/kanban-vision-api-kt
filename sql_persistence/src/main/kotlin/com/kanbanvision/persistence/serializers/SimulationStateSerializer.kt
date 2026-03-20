@@ -22,10 +22,21 @@ import kotlinx.serialization.json.Json
 @Serializable
 internal data class WorkItemSurrogate(
     val id: String,
+    val columnId: String = "",
     val title: String,
+    val description: String = "",
+    val position: Int = 0,
     val serviceClass: String,
     val state: String,
     val agingDays: Int,
+    val analysisEffort: Int = 0,
+    val developmentEffort: Int = 0,
+    val testEffort: Int = 0,
+    val deployEffort: Int = 0,
+    val remainingAnalysisEffort: Int = analysisEffort,
+    val remainingDevelopmentEffort: Int = developmentEffort,
+    val remainingTestEffort: Int = testEffort,
+    val remainingDeployEffort: Int = deployEffort,
 )
 
 @Serializable
@@ -103,10 +114,21 @@ private fun SimulationState.toSurrogate() =
 private fun Card.toSurrogate() =
     WorkItemSurrogate(
         id = id,
+        columnId = columnId,
         title = title,
+        description = description,
+        position = position,
         serviceClass = serviceClass.name,
         state = state.name,
         agingDays = agingDays,
+        analysisEffort = analysisEffort,
+        developmentEffort = developmentEffort,
+        testEffort = testEffort,
+        deployEffort = deployEffort,
+        remainingAnalysisEffort = remainingAnalysisEffort,
+        remainingDevelopmentEffort = remainingDevelopmentEffort,
+        remainingTestEffort = remainingTestEffort,
+        remainingDeployEffort = remainingDeployEffort,
     )
 
 private fun SimulationStateSurrogate.toDomain() =
@@ -120,10 +142,21 @@ private fun SimulationStateSurrogate.toDomain() =
 private fun WorkItemSurrogate.toDomain() =
     Card(
         id = id,
+        columnId = columnId,
         title = title,
+        description = description,
+        position = position,
         serviceClass = ServiceClass.valueOf(serviceClass),
         state = CardState.valueOf(state),
         agingDays = agingDays,
+        analysisEffort = analysisEffort,
+        developmentEffort = developmentEffort,
+        testEffort = testEffort,
+        deployEffort = deployEffort,
+        remainingAnalysisEffort = remainingAnalysisEffort,
+        remainingDevelopmentEffort = remainingDevelopmentEffort,
+        remainingTestEffort = remainingTestEffort,
+        remainingDeployEffort = remainingDeployEffort,
     )
 
 private fun SimulationContext.toSurrogate() =

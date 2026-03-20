@@ -60,6 +60,46 @@ class SimulationEngineWorkerExecutionTest {
         assertEquals(0, updated.remainingDeployEffort)
     }
 
+    @Test
+    fun `assigned execution skips incompatible worker-step assignment instead of throwing`() {
+        val step = deployStep()
+        val incompatibleWorker =
+            Worker(
+                id = "worker-dev-only",
+                name = "Dev Only",
+                abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
+            )
+        val context = deployContext(step, incompatibleWorker)
+        val item = deployCard(step)
+        val state = emptyState.copy(cards = listOf(item), context = context)
+
+        val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
+        val updated = result.newState.cards.first()
+
+        assertEquals(3, updated.remainingDeployEffort)
+    }
+
+    @Test
+    fun `assigned execution is deterministic regardless of workerAssignments map insertion order`() {
+        val step = deployStep()
+        val lowCapacityWorker = deployWorker(id = "worker-a", seniority = Seniority.JR)
+        val highCapacityWorker = deployWorker(id = "worker-z", seniority = Seniority.SR)
+        val cards = executionCardsForDeterminism(step)
+        val tribes = tribesForWorkers(lowCapacityWorker, highCapacityWorker)
+        val contextAB = contextWithAssignments(step, tribes, linkedMapOf(lowCapacityWorker.id to step.id, highCapacityWorker.id to step.id))
+        val contextBA = contextAB.copy(workerAssignments = assignmentsBA)
+
+        val resultAB = SimulationEngine.runDay(scenarioId, emptyState.copy(cards = cards, context = contextAB), emptyList(), seed = 99L)
+        val resultBA = SimulationEngine.runDay(scenarioId, emptyState.copy(cards = cards, context = contextBA), emptyList(), seed = 99L)
+
+        assertEquals(
+            resultAB.newState.cards.map { it.remainingDeployEffort },
+            resultBA.newState.cards.map { it.remainingDeployEffort },
+        )
+    }
+
+    private val assignmentsBA = linkedMapOf("worker-z" to "step-deploy", "worker-a" to "step-deploy")
+
     private fun assignedExecutionState(): SimulationState {
         val step = deployStep()
         val worker = deployWorker()
@@ -70,19 +110,23 @@ class SimulationEngineWorkerExecutionTest {
 
     private fun deployStep() =
         Step(
+            id = "step-deploy",
             boardId = "board-1",
             name = "Deploy",
             requiredAbility = AbilityName.DEPLOYER,
         )
 
-    private fun deployWorker() =
+    private fun deployWorker(
+        id: String = "worker-1",
+        seniority: Seniority = Seniority.PL,
+    ): Worker =
         Worker(
-            id = "worker-1",
-            name = "Tester 1",
+            id = id,
+            name = "Worker $id",
             abilities =
                 setOf(
-                    Ability(name = AbilityName.TESTER, seniority = Seniority.PL),
-                    Ability(name = AbilityName.DEPLOYER, seniority = Seniority.PL),
+                    Ability(name = AbilityName.TESTER, seniority = seniority),
+                    Ability(name = AbilityName.DEPLOYER, seniority = seniority),
                 ),
         )
 
@@ -96,6 +140,33 @@ class SimulationEngineWorkerExecutionTest {
         tribes = listOf(Tribe(name = "Tribe A", squads = listOf(Squad(name = "Squad A", workers = listOf(worker))))),
         workerAssignments = mapOf(worker.id to step.id),
     )
+
+    private fun contextWithAssignments(
+        step: Step,
+        tribes: List<Tribe>,
+        assignments: Map<String, String>,
+    ) = SimulationContext(
+        organizationId = "org-1",
+        boardId = "board-1",
+        steps = listOf(step),
+        tribes = tribes,
+        workerAssignments = assignments,
+    )
+
+    private fun tribesForWorkers(vararg workers: Worker) =
+        listOf(
+            Tribe(
+                id = "tribe-1",
+                name = "Tribe A",
+                squads = listOf(Squad(id = "squad-1", name = "Squad A", workers = workers.toList())),
+            ),
+        )
+
+    private fun executionCardsForDeterminism(step: Step) =
+        listOf(
+            deployCard(step).copy(id = "card-1", deployEffort = 6, remainingDeployEffort = 6),
+            deployCard(step).copy(id = "card-2", deployEffort = 6, remainingDeployEffort = 6),
+        )
 
     private fun deployCard(step: Step) =
         Card(
