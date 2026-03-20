@@ -9,7 +9,7 @@ data class Card(
     val description: String = "",
     val position: Int = 0,
     val serviceClass: ServiceClass = ServiceClass.STANDARD,
-    val state: WorkItemState = WorkItemState.TODO,
+    val state: CardState = CardState.TODO,
     val agingDays: Int = 0,
     val audit: Audit = Audit(),
 ) {
@@ -48,7 +48,7 @@ data class Card(
                 id = UUID.randomUUID().toString(),
                 title = title,
                 serviceClass = serviceClass,
-                state = WorkItemState.TODO,
+                state = CardState.TODO,
                 agingDays = 0,
             )
     }
@@ -64,15 +64,15 @@ data class Card(
 
     fun advance(): Card =
         when (state) {
-            WorkItemState.TODO -> copy(state = WorkItemState.IN_PROGRESS)
-            WorkItemState.IN_PROGRESS -> copy(state = WorkItemState.DONE)
-            WorkItemState.BLOCKED -> copy(state = WorkItemState.IN_PROGRESS)
-            WorkItemState.DONE -> this
+            CardState.TODO -> copy(state = CardState.IN_PROGRESS)
+            CardState.IN_PROGRESS -> copy(state = CardState.DONE)
+            CardState.BLOCKED -> copy(state = CardState.IN_PROGRESS)
+            CardState.DONE -> this
         }
 
     fun block(): Card {
-        require(state == WorkItemState.IN_PROGRESS) { "Only IN_PROGRESS cards can be blocked" }
-        return copy(state = WorkItemState.BLOCKED)
+        require(state == CardState.IN_PROGRESS) { "Only IN_PROGRESS cards can be blocked" }
+        return copy(state = CardState.BLOCKED)
     }
 
     fun incrementAge(): Card = copy(agingDays = agingDays + 1)

@@ -10,7 +10,4 @@ data class Movement(
     init {
         require(cardId.isNotBlank()) { "Movement cardId must not be blank" }
     }
-
-    @Deprecated("Use cardId", ReplaceWith("cardId"))
-    val workItemId: String get() = cardId
 }

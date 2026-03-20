@@ -41,9 +41,9 @@ class FlywayMigrationIntegrationTest {
         val expectedTables =
             listOf(
                 "boards",
-                "columns",
+                "steps",
                 "cards",
-                "tenants",
+                "organizations",
                 "scenarios",
                 "scenario_states",
                 "daily_snapshots",
@@ -71,36 +71,36 @@ class FlywayMigrationIntegrationTest {
     }
 
     @Test
-    fun `flyway applies at least two versioned migrations`() {
+    fun `flyway applies at least one versioned migration`() {
         DatabaseFactory.dataSource.connection.use { conn ->
             val count =
                 queryCount(
                     conn,
                     "SELECT COUNT(*) FROM flyway_schema_history WHERE type = 'SQL' AND success = true",
                 )
-            assertTrue(count >= 2, "Expected at least 2 successful migrations")
+            assertTrue(count >= 1, "Expected at least 1 successful migration")
             conn.rollback()
         }
     }
 
     @Test
-    fun `V2 migration creates FK index on cards column_id`() {
+    fun `V1 migration creates FK index on cards step_id`() {
         DatabaseFactory.dataSource.connection.use { conn ->
             val count =
                 queryCount(
                     conn,
                     """
                     SELECT COUNT(*) FROM pg_indexes
-                    WHERE tablename = 'cards' AND indexname = 'idx_cards_column_id'
+                    WHERE tablename = 'cards' AND indexname = 'idx_cards_step_id'
                     """.trimIndent(),
                 )
-            assertTrue(count == 1, "idx_cards_column_id should exist")
+            assertTrue(count == 1, "idx_cards_step_id should exist")
             conn.rollback()
         }
     }
 
     @Test
-    fun `V2 migration creates CHECK constraints on scenarios`() {
+    fun `V1 migration creates CHECK constraints on scenarios`() {
         DatabaseFactory.dataSource.connection.use { conn ->
             val count =
                 queryCount(

@@ -20,7 +20,7 @@ class JdbcScenarioRepository : ScenarioRepository {
 
     private companion object {
         const val COL_ID = 1
-        const val COL_TENANT_ID = 2
+        const val COL_ORGANIZATION_ID = 2
         const val COL_WIP_LIMIT = 3
         const val COL_TEAM_SIZE = 4
         const val COL_SEED_VALUE = 5
@@ -42,7 +42,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                         conn
                             .prepareStatement(
                                 """
-                                INSERT INTO scenarios (id, tenant_id, wip_limit, team_size, seed_value)
+                                INSERT INTO scenarios (id, organization_id, wip_limit, team_size, seed_value)
                                 VALUES (?, ?, ?, ?, ?)
                                 ON CONFLICT (id) DO UPDATE SET
                                     wip_limit = EXCLUDED.wip_limit,
@@ -51,7 +51,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, scenario.id)
-                                stmt.setString(COL_TENANT_ID, scenario.tenantId)
+                                stmt.setString(COL_ORGANIZATION_ID, scenario.organizationId)
                                 stmt.setInt(COL_WIP_LIMIT, scenario.config.wipLimit)
                                 stmt.setInt(COL_TEAM_SIZE, scenario.config.teamSize)
                                 stmt.setLong(COL_SEED_VALUE, scenario.config.seedValue)
@@ -70,7 +70,7 @@ class JdbcScenarioRepository : ScenarioRepository {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT id, tenant_id, wip_limit, team_size, seed_value FROM scenarios WHERE id = ?",
+                                "SELECT id, organization_id, wip_limit, team_size, seed_value FROM scenarios WHERE id = ?",
                             ).use { stmt ->
                                 stmt.setString(1, id)
                                 stmt.executeQuery().use { rs -> if (rs.next()) rs.toScenario() else null }
@@ -133,7 +133,7 @@ class JdbcScenarioRepository : ScenarioRepository {
     private fun java.sql.ResultSet.toScenario() =
         Scenario(
             id = getString("id"),
-            tenantId = getString("tenant_id"),
+            organizationId = getString("organization_id"),
             config =
                 ScenarioConfig(
                     wipLimit = getInt("wip_limit"),

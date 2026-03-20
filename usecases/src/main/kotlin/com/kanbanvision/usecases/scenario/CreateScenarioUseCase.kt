@@ -6,14 +6,14 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.ScenarioConfig
 import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
-import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.commands.CreateScenarioCommand
 import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
 
 class CreateScenarioUseCase(
-    private val tenantRepository: TenantRepository,
+    private val organizationRepository: OrganizationRepository,
     private val scenarioRepository: ScenarioRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -21,9 +21,9 @@ class CreateScenarioUseCase(
     suspend fun execute(command: CreateScenarioCommand): Either<DomainError, String> =
         either {
             command.validate().bind()
-            val tenantId = command.tenantId
-            tenantRepository.findById(tenantId).bind()
-            val scenario = buildScenario(tenantId, command)
+            val organizationId = command.organizationId
+            organizationRepository.findById(organizationId).bind()
+            val scenario = buildScenario(organizationId, command)
             val initialState = SimulationState.initial(scenario.config)
             val (id, duration) = timed { persist(scenario, initialState) }
             log.info("Scenario created: id={} duration={}ms", id, duration.inWholeMilliseconds)
@@ -31,11 +31,11 @@ class CreateScenarioUseCase(
         }
 
     private fun buildScenario(
-        tenantId: String,
+        organizationId: String,
         command: CreateScenarioCommand,
     ): Scenario =
         Scenario.create(
-            tenantId = tenantId,
+            organizationId = organizationId,
             config =
                 ScenarioConfig(
                     wipLimit = command.wipLimit,

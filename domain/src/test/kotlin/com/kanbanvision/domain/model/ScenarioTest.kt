@@ -11,29 +11,29 @@ class ScenarioTest {
 
     @Test
     fun `create returns scenario with generated id`() {
-        val tenantId = UUID.randomUUID().toString()
-        val scenario = Scenario.create(tenantId = tenantId, config = config)
+        val organizationId = UUID.randomUUID().toString()
+        val scenario = Scenario.create(organizationId = organizationId, config = config)
         assertTrue(scenario.id.isNotBlank())
         assertEquals(scenario.id, scenario.boardId)
-        assertEquals(tenantId, scenario.tenantId)
+        assertEquals(organizationId, scenario.organizationId)
         assertEquals(config, scenario.config)
     }
 
     @Test
     fun `create generates unique ids`() {
-        val tenantId = UUID.randomUUID().toString()
-        val s1 = Scenario.create(tenantId = tenantId, config = config)
-        val s2 = Scenario.create(tenantId = tenantId, config = config)
+        val organizationId = UUID.randomUUID().toString()
+        val s1 = Scenario.create(organizationId = organizationId, config = config)
+        val s2 = Scenario.create(organizationId = organizationId, config = config)
         assertNotEquals(s1.id, s2.id)
     }
 
     @Test
-    fun `scenario is isolated by tenant`() {
-        val tenant1 = UUID.randomUUID().toString()
-        val tenant2 = UUID.randomUUID().toString()
-        val s1 = Scenario.create(tenantId = tenant1, config = config)
-        val s2 = Scenario.create(tenantId = tenant2, config = config)
-        assertNotEquals(s1.tenantId, s2.tenantId)
+    fun `scenario is isolated by organization`() {
+        val org1 = UUID.randomUUID().toString()
+        val org2 = UUID.randomUUID().toString()
+        val s1 = Scenario.create(organizationId = org1, config = config)
+        val s2 = Scenario.create(organizationId = org2, config = config)
+        assertNotEquals(s1.organizationId, s2.organizationId)
         assertNotEquals(s1.id, s2.id)
     }
 }

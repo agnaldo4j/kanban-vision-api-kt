@@ -14,8 +14,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcTenantRepositoryIntegrationTest {
-    private val repository = JdbcTenantRepository()
+class JdbcOrganizationRepositoryIntegrationTest {
+    private val repository = JdbcOrganizationRepository()
 
     @BeforeAll
     fun initDatabase() {
@@ -27,12 +27,12 @@ class JdbcTenantRepositoryIntegrationTest {
         IntegrationTestSetup.cleanTables()
     }
 
-    private fun insertTenant(
+    private fun insertOrganization(
         id: String,
         name: String,
     ) {
         DatabaseFactory.dataSource.connection.use { conn ->
-            conn.prepareStatement("INSERT INTO tenants (id, name) VALUES (?, ?)").use { stmt ->
+            conn.prepareStatement("INSERT INTO organizations (id, name) VALUES (?, ?)").use { stmt ->
                 stmt.setString(1, id)
                 stmt.setString(2, name)
                 stmt.executeUpdate()
@@ -42,42 +42,42 @@ class JdbcTenantRepositoryIntegrationTest {
     }
 
     @Test
-    fun `findById returns tenant when it exists`() =
+    fun `findById returns organization when it exists`() =
         runBlocking {
             val id = UUID.randomUUID().toString()
-            insertTenant(id, "Test Corp")
+            insertOrganization(id, "Test Corp")
 
             val result = repository.findById(id)
 
             assertTrue(result.isRight())
-            val tenant = result.getOrNull()!!
-            assertEquals(id, tenant.id)
-            assertEquals("Test Corp", tenant.name)
+            val organization = result.getOrNull()!!
+            assertEquals(id, organization.id)
+            assertEquals("Test Corp", organization.name)
         }
 
     @Test
-    fun `findById returns TenantNotFound when tenant does not exist`() =
+    fun `findById returns OrganizationNotFound when organization does not exist`() =
         runBlocking<Unit> {
             val result = repository.findById(UUID.randomUUID().toString())
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.TenantNotFound>(result.leftOrNull())
+            assertIs<DomainError.OrganizationNotFound>(result.leftOrNull())
         }
 
     @Test
-    fun `findById with non-UUID string returns TenantNotFound`() =
+    fun `findById with non-UUID string returns OrganizationNotFound`() =
         runBlocking<Unit> {
             val result = repository.findById("not-a-valid-uuid")
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.TenantNotFound>(result.leftOrNull())
+            assertIs<DomainError.OrganizationNotFound>(result.leftOrNull())
         }
 
     @Test
-    fun `findById returns tenant whose name contains special characters`() =
+    fun `findById returns organization whose name contains special characters`() =
         runBlocking {
             val id = UUID.randomUUID().toString()
-            insertTenant(id, "Empresa 'Ação' & Co.")
+            insertOrganization(id, "Empresa 'Ação' & Co.")
 
             val result = repository.findById(id)
 

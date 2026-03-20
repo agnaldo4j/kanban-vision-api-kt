@@ -12,7 +12,7 @@ private const val MIN_WIP = 1
 private const val MIN_TEAM = 1
 
 data class CreateScenarioCommand(
-    val tenantId: String,
+    val organizationId: String,
     val wipLimit: Int,
     val teamSize: Int,
     val seedValue: Long,
@@ -20,7 +20,7 @@ data class CreateScenarioCommand(
     override fun validate(): Either<DomainError.ValidationError, Unit> =
         either<NonEmptyList<DomainError.ValidationError>, Unit> {
             zipOrAccumulate(
-                { ensure(tenantId.isNotBlank()) { DomainError.ValidationError("Tenant id must not be blank") } },
+                { ensure(organizationId.isNotBlank()) { DomainError.ValidationError("Organization id must not be blank") } },
                 { ensure(wipLimit >= MIN_WIP) { DomainError.ValidationError("WIP limit must be at least 1") } },
                 { ensure(teamSize >= MIN_TEAM) { DomainError.ValidationError("Team size must be at least 1") } },
             ) { _, _, _ -> }

@@ -19,13 +19,13 @@ class JdbcCardRepository : CardRepository {
 
     private companion object {
         const val COL_ID = 1
-        const val COL_COLUMN_ID = 2
+        const val COL_STEP_ID = 2
         const val COL_TITLE = 3
         const val COL_DESCRIPTION = 4
         const val COL_POSITION = 5
         const val COL_CREATED_AT = 6
 
-        const val PARAM_COLUMN_ID = 1
+        const val PARAM_STEP_ID = 1
         const val PARAM_TITLE = 2
         const val PARAM_DESCRIPTION = 3
         const val PARAM_POSITION = 4
@@ -48,17 +48,17 @@ class JdbcCardRepository : CardRepository {
                         conn
                             .prepareStatement(
                                 """
-                                INSERT INTO cards (id, column_id, title, description, position, created_at)
+                                INSERT INTO cards (id, step_id, title, description, position, created_at)
                                 VALUES (?, ?, ?, ?, ?, ?)
                                 ON CONFLICT (id) DO UPDATE SET
-                                    column_id   = EXCLUDED.column_id,
+                                    step_id   = EXCLUDED.step_id,
                                     title       = EXCLUDED.title,
                                     description = EXCLUDED.description,
                                     position    = EXCLUDED.position
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, card.id)
-                                stmt.setString(COL_COLUMN_ID, card.columnId)
+                                stmt.setString(COL_STEP_ID, card.columnId)
                                 stmt.setString(COL_TITLE, card.title)
                                 stmt.setString(COL_DESCRIPTION, card.description)
                                 stmt.setInt(COL_POSITION, card.position)
@@ -78,7 +78,7 @@ class JdbcCardRepository : CardRepository {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT id, column_id, title, description, position, created_at FROM cards WHERE id = ?",
+                                "SELECT id, step_id, title, description, position, created_at FROM cards WHERE id = ?",
                             ).use { stmt ->
                                 stmt.setString(COL_ID, id)
                                 stmt.executeQuery().use { rs ->
@@ -115,7 +115,7 @@ class JdbcCardRepository : CardRepository {
     ): Card? =
         conn
             .prepareStatement(
-                "SELECT id, column_id, title, description, position, created_at" +
+                "SELECT id, step_id, title, description, position, created_at" +
                     " FROM cards WHERE id = ? FOR UPDATE",
             ).use { stmt ->
                 stmt.setString(COL_ID, id)
@@ -133,11 +133,11 @@ class JdbcCardRepository : CardRepository {
                 .prepareStatement(
                     """
                     UPDATE cards
-                    SET column_id = ?, title = ?, description = ?, position = ?
+                    SET step_id = ?, title = ?, description = ?, position = ?
                     WHERE id = ?
                     """.trimIndent(),
                 ).use { stmt ->
-                    stmt.setString(PARAM_COLUMN_ID, updated.columnId)
+                    stmt.setString(PARAM_STEP_ID, updated.columnId)
                     stmt.setString(PARAM_TITLE, updated.title)
                     stmt.setString(PARAM_DESCRIPTION, updated.description)
                     stmt.setInt(PARAM_POSITION, updated.position)
@@ -151,15 +151,16 @@ class JdbcCardRepository : CardRepository {
 
     override suspend fun findByColumnId(columnId: String): Either<DomainError, List<Card>> =
         query {
+            val stepId = columnId
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT id, column_id, title, description, position, created_at" +
-                                    " FROM cards WHERE column_id = ? ORDER BY position",
+                                "SELECT id, step_id, title, description, position, created_at" +
+                                    " FROM cards WHERE step_id = ? ORDER BY position",
                             ).use { stmt ->
-                                stmt.setString(COL_ID, columnId)
+                                stmt.setString(COL_ID, stepId)
                                 stmt.executeQuery().use { rs ->
                                     buildList { while (rs.next()) add(rs.toCard()) }
                                 }
@@ -171,7 +172,7 @@ class JdbcCardRepository : CardRepository {
     private fun java.sql.ResultSet.toCard() =
         Card(
             id = getString("id"),
-            columnId = getString("column_id"),
+            columnId = getString("step_id"),
             title = getString("title"),
             description = getString("description"),
             position = getInt("position"),

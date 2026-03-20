@@ -55,11 +55,11 @@ private fun createScenarioSpec(): RouteConfig.() -> Unit =
         operationId = "createScenario"
         summary = "Cria um cenário de simulação Kanban"
         tags("scenarios")
-        description = "Cria um novo cenário de simulação Kanban para um tenant."
+        description = "Cria um novo cenário de simulação Kanban para uma organização."
         applyBearerAuthSecurity()
         request {
             body<CreateScenarioRequest> {
-                description = "Configuração do cenário: tenant, WIP limit, tamanho do time e semente aleatória."
+                description = "Configuração do cenário: organização, WIP limit, tamanho do time e semente aleatória."
                 required = true
             }
         }
@@ -77,7 +77,7 @@ private fun RouteConfig.applyCreateScenarioResponses() {
             body<ValidationErrorResponse>()
         }
         code(HttpStatusCode.NotFound) {
-            description = "Tenant não encontrado."
+            description = "Organização não encontrada."
             body<DomainErrorResponse>()
         }
         code(HttpStatusCode.InternalServerError) {
@@ -207,7 +207,7 @@ private suspend fun ApplicationCall.handleCreateScenario(createScenario: CreateS
     createScenario
         .execute(
             CreateScenarioCommand(
-                tenantId = request.tenantId,
+                organizationId = request.organizationId,
                 wipLimit = request.wipLimit,
                 teamSize = request.teamSize,
                 seedValue = request.seedValue,
@@ -233,7 +233,7 @@ private suspend fun ApplicationCall.handleGetScenario(getScenario: GetScenarioUs
                 respond(
                     ScenarioResponse(
                         scenarioId = result.scenario.id,
-                        tenantId = result.scenario.tenantId,
+                        organizationId = result.scenario.organizationId,
                         wipLimit = result.scenario.config.wipLimit,
                         teamSize = result.scenario.config.teamSize,
                         seedValue = result.scenario.config.seedValue,

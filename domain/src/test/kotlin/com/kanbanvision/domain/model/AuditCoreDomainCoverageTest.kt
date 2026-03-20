@@ -43,30 +43,30 @@ class AuditCoreDomainCoverageTest {
     }
 
     @Test
-    fun `decision and tenant copies keep audit`() {
+    fun `decision and organization copies keep audit`() {
         val audit = Audit(createdAt = Instant.parse("2026-02-01T00:00:00Z"))
-        val decision = Decision.move("work-item-id").copy(audit = audit)
-        val tenant = Tenant.create("Another").copy(audit = audit)
+        val decision = Decision.move("card-id").copy(audit = audit)
+        val organization = Organization.create("Another").copy(audit = audit)
 
         assertEquals(audit, decision.audit)
-        assertEquals(audit, tenant.audit)
+        assertEquals(audit, organization.audit)
     }
 
     private fun scenarioWithAudit(
         config: ScenarioConfig,
         audit: Audit,
     ): Scenario {
-        val tenant = Tenant.create("Tenant")
-        return Scenario.create(tenantId = tenant.id, config = config).copy(audit = audit)
+        val organization = Organization.create("Organization")
+        return Scenario.create(organizationId = organization.id, config = config).copy(audit = audit)
     }
 
     private fun simulationStateWithAudit(audit: Audit): SimulationState {
         val item =
-            WorkItem(
+            Card(
                 id = UUID.randomUUID().toString(),
                 title = "WI",
                 serviceClass = ServiceClass.STANDARD,
-                state = WorkItemState.TODO,
+                state = CardState.TODO,
                 agingDays = 0,
                 audit = audit,
             )

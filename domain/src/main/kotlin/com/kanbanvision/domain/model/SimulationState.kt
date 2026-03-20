@@ -6,9 +6,6 @@ data class SimulationState(
     val policySet: PolicySet,
     val audit: Audit = Audit(),
 ) {
-    @Deprecated("Use cards", ReplaceWith("cards"))
-    val items: List<Card> get() = cards
-
     companion object {
         fun initial(config: ScenarioConfig): SimulationState =
             SimulationState(

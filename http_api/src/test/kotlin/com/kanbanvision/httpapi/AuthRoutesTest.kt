@@ -52,7 +52,7 @@ class AuthRoutesTest {
             val response =
                 client.post("/auth/token") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"subject":"dev","tenantId":"00000000-0000-0000-0000-000000000001"}""")
+                    setBody("""{"subject":"dev","organizationId":"00000000-0000-0000-0000-000000000001"}""")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)

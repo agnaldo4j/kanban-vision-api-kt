@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 class JdbcStepRepositoryTest {
     private val delegate = mockk<ColumnRepository>()
-    private val repository = JdbcStepRepository(delegate)
+    private val repository = JdbcStepDomainRepository(delegate)
 
     @Test
     fun `save maps step to column and back`() =

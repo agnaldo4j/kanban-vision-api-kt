@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.model
 
-enum class WorkItemState {
+enum class CardState {
     TODO,
     IN_PROGRESS,
     BLOCKED,

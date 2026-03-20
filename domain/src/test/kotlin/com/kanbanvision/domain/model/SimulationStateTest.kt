@@ -27,7 +27,7 @@ class SimulationStateTest {
         val state = SimulationState.initial(config)
         val item = Card.createSimulation("Task")
         val withItem = state.copy(cards = listOf(item))
-        assertEquals(1, withItem.items.size)
+        assertEquals(1, withItem.cards.size)
         assertEquals(PolicySet(wipLimit = 3), withItem.policySet)
     }
 }

@@ -1,42 +1,42 @@
 package com.kanbanvision.domain.model
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class OrganizationTest {
-    private val worker =
-        Worker(
-            name = "Eva",
-            abilities =
-                setOf(
-                    Ability(name = AbilityName.TESTER, seniority = Seniority.PL),
-                    Ability(name = AbilityName.DEPLOYER, seniority = Seniority.PL),
-                ),
-        )
-
     @Test
-    fun `create squad with workers`() {
-        val squad = Squad(name = "Payments", workers = listOf(worker))
-        assertEquals("Payments", squad.name)
-        assertEquals(1, squad.workers.size)
+    fun `create returns organization with generated id and given name`() {
+        val organization = Organization.create("Acme Corp")
+        assertEquals("Acme Corp", organization.name)
+        assertTrue(organization.id.isNotBlank())
     }
 
     @Test
-    fun `create tribe with squads`() {
-        val squad = Squad(name = "Core", workers = listOf(worker))
-        val tribe = Tribe(name = "Platform", squads = listOf(squad))
-        assertEquals("Platform", tribe.name)
-        assertEquals(1, tribe.squads.size)
+    fun `create with blank name throws`() {
+        assertFailsWith<IllegalArgumentException> { Organization.create("") }
     }
 
     @Test
-    fun `squad with blank name throws`() {
-        assertThrows<IllegalArgumentException> { Squad(name = " ", workers = listOf(worker)) }
+    fun `create with whitespace-only name throws`() {
+        assertFailsWith<IllegalArgumentException> { Organization.create("   ") }
     }
 
     @Test
-    fun `tribe with blank name throws`() {
-        assertThrows<IllegalArgumentException> { Tribe(name = " ", squads = emptyList()) }
+    fun `create generates unique ids`() {
+        val org1 = Organization.create("Corp A")
+        val org2 = Organization.create("Corp B")
+        assertNotEquals(org1.id, org2.id)
+    }
+
+    @Test
+    fun `create supports tribes in aggregate root`() {
+        val tribe = Tribe(name = "Core", squads = emptyList())
+        val organization = Organization.create(name = "Acme Corp", tribes = listOf(tribe))
+
+        assertEquals(1, organization.tribes.size)
+        assertEquals("Core", organization.tribes.first().name)
     }
 }

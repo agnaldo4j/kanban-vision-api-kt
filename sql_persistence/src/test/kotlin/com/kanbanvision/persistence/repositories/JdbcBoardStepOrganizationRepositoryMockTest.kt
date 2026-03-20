@@ -16,11 +16,11 @@ import java.sql.SQLException
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-// Covers the conn.use { } addSuppressed path in Board, Step, and Tenant repositories.
-class JdbcBoardColumnTenantRepositoryMockTest {
+// Covers the conn.use { } addSuppressed path in Board, Step, and Organization repositories.
+class JdbcBoardStepOrganizationRepositoryMockTest {
     private val boardRepo = JdbcBoardRepository()
-    private val columnRepo = JdbcColumnRepository()
-    private val tenantRepo = JdbcTenantRepository()
+    private val columnRepo = JdbcStepRepository()
+    private val organizationRepo = JdbcOrganizationRepository()
 
     private fun brokenDataSource(): HikariDataSource {
         val mockDs = mockk<HikariDataSource>()
@@ -89,11 +89,11 @@ class JdbcBoardColumnTenantRepositoryMockTest {
         }
 
     @Test
-    fun `Tenant findById conn close suppresses exception`() =
+    fun `Organization findById conn close suppresses exception`() =
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = tenantRepo.findById("t1")
+                val result = organizationRepo.findById("t1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

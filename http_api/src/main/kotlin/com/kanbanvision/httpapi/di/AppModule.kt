@@ -3,11 +3,11 @@ package com.kanbanvision.httpapi.di
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.persistence.repositories.JdbcBoardRepository
 import com.kanbanvision.persistence.repositories.JdbcCardRepository
-import com.kanbanvision.persistence.repositories.JdbcColumnRepository
+import com.kanbanvision.persistence.repositories.JdbcOrganizationRepository
 import com.kanbanvision.persistence.repositories.JdbcScenarioRepository
 import com.kanbanvision.persistence.repositories.JdbcSnapshotRepository
+import com.kanbanvision.persistence.repositories.JdbcStepDomainRepository
 import com.kanbanvision.persistence.repositories.JdbcStepRepository
-import com.kanbanvision.persistence.repositories.JdbcTenantRepository
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
@@ -21,10 +21,10 @@ import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.repositories.StepRepository
-import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
@@ -46,9 +46,9 @@ object AppModule {
 
             single<BoardRepository> { JdbcBoardRepository() }
             single<CardRepository> { JdbcCardRepository() }
-            single<ColumnRepository> { JdbcColumnRepository() }
-            single<StepRepository> { JdbcStepRepository(get()) }
-            single<TenantRepository> { JdbcTenantRepository() }
+            single<ColumnRepository> { JdbcStepRepository() }
+            single<StepRepository> { JdbcStepDomainRepository(get()) }
+            single<OrganizationRepository> { JdbcOrganizationRepository() }
             single<ScenarioRepository> { JdbcScenarioRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }
             single<SimulationEnginePort> { DefaultSimulationEngine() }

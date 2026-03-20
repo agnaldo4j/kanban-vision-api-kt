@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.simulation
 
 import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.Decision
 import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.PolicySet
@@ -8,8 +9,6 @@ import com.kanbanvision.domain.model.ScenarioConfig
 import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationState
-import com.kanbanvision.domain.model.WorkItem
-import com.kanbanvision.domain.model.WorkItemState
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,18 +19,18 @@ class SimulationEngineDecisionsTest {
     private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
     private val emptyState = SimulationState.initial(config)
 
-    private fun inProgress(title: String): WorkItem =
+    private fun inProgress(title: String): Card =
         Card
             .createSimulation(title)
             .advance()
 
-    private fun blocked(title: String): WorkItem =
+    private fun blocked(title: String): Card =
         Card
             .createSimulation(title)
             .advance()
             .block()
 
-    private fun done(title: String): WorkItem =
+    private fun done(title: String): Card =
         Card
             .createSimulation(title)
             .advance()
@@ -49,7 +48,7 @@ class SimulationEngineDecisionsTest {
         val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
 
         assertEquals(
-            WorkItemState.DONE,
+            CardState.DONE,
             result.newState.cards
                 .first()
                 .state,
@@ -66,7 +65,7 @@ class SimulationEngineDecisionsTest {
         val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
 
         assertEquals(
-            WorkItemState.IN_PROGRESS,
+            CardState.IN_PROGRESS,
             result.newState.cards
                 .first()
                 .state,
@@ -83,7 +82,7 @@ class SimulationEngineDecisionsTest {
         val result = SimulationEngine.runDay(scenarioId, state, decisions, seed = 0L)
 
         assertEquals(
-            WorkItemState.BLOCKED,
+            CardState.BLOCKED,
             result.newState.cards
                 .first()
                 .state,
@@ -101,7 +100,7 @@ class SimulationEngineDecisionsTest {
         val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.unblock(item.id)), seed = 0L)
 
         assertEquals(
-            WorkItemState.IN_PROGRESS,
+            CardState.IN_PROGRESS,
             result.newState.cards
                 .first()
                 .state,
@@ -119,7 +118,7 @@ class SimulationEngineDecisionsTest {
         val added = result.newState.cards.first()
         assertEquals("New story", added.title)
         assertEquals(ServiceClass.EXPEDITE, added.serviceClass)
-        assertEquals(WorkItemState.IN_PROGRESS, added.state)
+        assertEquals(CardState.IN_PROGRESS, added.state)
     }
 
     @Test
@@ -136,24 +135,6 @@ class SimulationEngineDecisionsTest {
 
         assertEquals(1, result.newState.cards.size)
         assertEquals(ServiceClass.STANDARD, added.serviceClass)
-    }
-
-    @Test
-    fun `legacy payload workItemId is still accepted`() {
-        val item = inProgress("Legacy")
-        val state = emptyState.copy(cards = listOf(item))
-        val legacyMove =
-            Decision(
-                id = UUID.randomUUID().toString(),
-                type = com.kanbanvision.domain.model.DecisionType.MOVE_ITEM,
-                payload = mapOf("workItemId" to item.id),
-            )
-
-        val result = SimulationEngine.runDay(scenarioId, state, listOf(legacyMove), seed = 0L)
-        val updated = result.newState.cards.first()
-
-        assertEquals(WorkItemState.DONE, updated.state)
-        assertTrue(result.snapshot.movements.any { it.type == MovementType.COMPLETED && it.cardId == item.id })
     }
 
     @Test

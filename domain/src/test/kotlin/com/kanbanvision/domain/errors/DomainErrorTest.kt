@@ -56,10 +56,10 @@ class DomainErrorTest {
     }
 
     @Test
-    fun `TenantNotFound holds id`() {
-        val error = DomainError.TenantNotFound("tenant-1")
+    fun `OrganizationNotFound holds id`() {
+        val error = DomainError.OrganizationNotFound("organization-1")
         assertIs<DomainError>(error)
-        assertEquals("tenant-1", error.id)
+        assertEquals("organization-1", error.id)
     }
 
     @Test

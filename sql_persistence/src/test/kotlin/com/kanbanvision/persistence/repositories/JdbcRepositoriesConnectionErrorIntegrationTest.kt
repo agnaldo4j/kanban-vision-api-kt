@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JdbcRepositoriesConnectionErrorIntegrationTest {
     private val boardRepository = JdbcBoardRepository()
-    private val columnRepository = JdbcColumnRepository()
+    private val columnRepository = JdbcStepRepository()
     private val cardRepository = JdbcCardRepository()
 
     @BeforeAll

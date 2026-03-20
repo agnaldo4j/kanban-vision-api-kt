@@ -1,13 +1,12 @@
 package com.kanbanvision.domain.simulation
 
 import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.Decision
 import com.kanbanvision.domain.model.PolicySet
 import com.kanbanvision.domain.model.ScenarioConfig
 import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.SimulationState
-import com.kanbanvision.domain.model.WorkItem
-import com.kanbanvision.domain.model.WorkItemState
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,12 +18,12 @@ class SimulationEngineBehaviorTest {
     private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
     private val emptyState = SimulationState.initial(config)
 
-    private fun inProgress(title: String): WorkItem =
+    private fun inProgress(title: String): Card =
         Card
             .createSimulation(title)
             .advance()
 
-    private fun done(title: String): WorkItem =
+    private fun done(title: String): Card =
         Card
             .createSimulation(title)
             .advance()
@@ -55,10 +54,10 @@ class SimulationEngineBehaviorTest {
         val result1 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 1L)
         val result2 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 99L)
 
-        assertEquals(1, result1.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result2.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
-        assertNotNull(result1.newState.cards.firstOrNull { it.state == WorkItemState.IN_PROGRESS })
-        assertNotNull(result2.newState.cards.firstOrNull { it.state == WorkItemState.IN_PROGRESS })
+        assertEquals(1, result1.newState.cards.count { it.state == CardState.IN_PROGRESS })
+        assertEquals(1, result2.newState.cards.count { it.state == CardState.IN_PROGRESS })
+        assertNotNull(result1.newState.cards.firstOrNull { it.state == CardState.IN_PROGRESS })
+        assertNotNull(result2.newState.cards.firstOrNull { it.state == CardState.IN_PROGRESS })
     }
 
     // ─────────────────────────────────────────────
@@ -72,8 +71,8 @@ class SimulationEngineBehaviorTest {
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        assertEquals(2, result.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result.newState.cards.count { it.state == WorkItemState.TODO })
+        assertEquals(2, result.newState.cards.count { it.state == CardState.IN_PROGRESS })
+        assertEquals(1, result.newState.cards.count { it.state == CardState.TODO })
     }
 
     @Test
@@ -83,8 +82,8 @@ class SimulationEngineBehaviorTest {
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        assertEquals(2, result.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result.newState.cards.count { it.state == WorkItemState.TODO })
+        assertEquals(2, result.newState.cards.count { it.state == CardState.IN_PROGRESS })
+        assertEquals(1, result.newState.cards.count { it.state == CardState.TODO })
     }
 
     @Test
@@ -96,8 +95,8 @@ class SimulationEngineBehaviorTest {
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        assertEquals(2, result.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result.newState.cards.count { it.state == WorkItemState.TODO })
+        assertEquals(2, result.newState.cards.count { it.state == CardState.IN_PROGRESS })
+        assertEquals(1, result.newState.cards.count { it.state == CardState.TODO })
     }
 
     // ─────────────────────────────────────────────
@@ -116,10 +115,10 @@ class SimulationEngineBehaviorTest {
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        val startedItem = result.newState.cards.first { it.state == WorkItemState.IN_PROGRESS }
+        val startedItem = result.newState.cards.first { it.state == CardState.IN_PROGRESS }
         assertEquals(ServiceClass.EXPEDITE, startedItem.serviceClass)
         val standardItem = result.newState.cards.first { it.serviceClass == ServiceClass.STANDARD }
-        assertEquals(WorkItemState.TODO, standardItem.state)
+        assertEquals(CardState.TODO, standardItem.state)
     }
 
     // ─────────────────────────────────────────────
@@ -134,7 +133,7 @@ class SimulationEngineBehaviorTest {
         val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
 
         assertEquals(
-            WorkItemState.DONE,
+            CardState.DONE,
             result.newState.cards
                 .first()
                 .state,

@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 class JdbcSnapshotRepositoryIntegrationTest {
     private val repository = JdbcSnapshotRepository()
 
-    private val tenantId = UUID.randomUUID().toString()
+    private val organizationId = UUID.randomUUID().toString()
     private val scenarioId = UUID.randomUUID().toString()
 
     @BeforeAll
@@ -32,22 +32,22 @@ class JdbcSnapshotRepositoryIntegrationTest {
     @BeforeEach
     fun cleanDatabase() {
         IntegrationTestSetup.cleanTables()
-        seedTenantAndScenario()
+        seedOrganizationAndScenario()
     }
 
-    private fun seedTenantAndScenario() {
+    private fun seedOrganizationAndScenario() {
         DatabaseFactory.dataSource.connection.use { conn ->
-            conn.prepareStatement("INSERT INTO tenants (id, name) VALUES (?, ?)").use { stmt ->
-                stmt.setString(1, tenantId)
+            conn.prepareStatement("INSERT INTO organizations (id, name) VALUES (?, ?)").use { stmt ->
+                stmt.setString(1, organizationId)
                 stmt.setString(2, "Test Org")
                 stmt.executeUpdate()
             }
             conn
                 .prepareStatement(
-                    "INSERT INTO scenarios (id, tenant_id, wip_limit, team_size, seed_value) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO scenarios (id, organization_id, wip_limit, team_size, seed_value) VALUES (?, ?, ?, ?, ?)",
                 ).use { stmt ->
                     stmt.setString(1, scenarioId)
-                    stmt.setString(2, tenantId)
+                    stmt.setString(2, organizationId)
                     stmt.setInt(3, 2)
                     stmt.setInt(4, 3)
                     stmt.setLong(5, 42L)
@@ -64,6 +64,50 @@ class JdbcSnapshotRepositoryIntegrationTest {
             metrics = FlowMetrics(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.5),
             movements = emptyList(),
         )
+
+    private fun legacySnapshotJsonWithWorkItemId(): String =
+        """
+        {
+          "scenarioId": "$scenarioId",
+          "day": 2,
+          "metrics": {
+            "throughput": 1,
+            "wipCount": 1,
+            "blockedCount": 0,
+            "avgAgingDays": 1.0
+          },
+          "movements": [
+            {
+              "type": "MOVED",
+              "workItemId": "legacy-work-item-1",
+              "day": 2,
+              "reason": "Legacy payload"
+            }
+          ]
+        }
+        """.trimIndent()
+
+    private fun upsertSnapshotJson(
+        day: Int,
+        snapshotJson: String,
+    ) {
+        DatabaseFactory.dataSource.connection.use { conn ->
+            conn
+                .prepareStatement(
+                    """
+                    INSERT INTO daily_snapshots (scenario_id, day, snapshot_json)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT (scenario_id, day) DO UPDATE SET snapshot_json = EXCLUDED.snapshot_json
+                    """.trimIndent(),
+                ).use { stmt ->
+                    stmt.setString(1, scenarioId)
+                    stmt.setInt(2, day)
+                    stmt.setString(3, snapshotJson)
+                    stmt.executeUpdate()
+                }
+            conn.commit()
+        }
+    }
 
     @Test
     fun `save and findByDay round-trip returns same snapshot`() =
@@ -162,5 +206,19 @@ class JdbcSnapshotRepositoryIntegrationTest {
                     .cardId,
             )
             assertEquals("WIP available", found.movements.first().reason)
+        }
+
+    @Test
+    fun `findByDay decodes legacy movement json with workItemId`() =
+        runBlocking {
+            upsertSnapshotJson(day = 2, snapshotJson = legacySnapshotJsonWithWorkItemId())
+
+            val result = repository.findByDay(scenarioId, SimulationDay(2))
+
+            assertTrue(result.isRight())
+            val found = result.getOrNull()!!
+            assertEquals(1, found.movements.size)
+            assertEquals("legacy-work-item-1", found.movements.first().cardId)
+            assertEquals("Legacy payload", found.movements.first().reason)
         }
 }

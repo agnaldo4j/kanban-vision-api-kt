@@ -124,7 +124,7 @@ class JdbcCardRepositoryMockTest {
         every { mockSelectStmt.executeQuery() } returns mockRs
         every { mockRs.next() } returns true
         every { mockRs.getString("id") } returns "card1"
-        every { mockRs.getString("column_id") } returns "col1"
+        every { mockRs.getString("step_id") } returns "col1"
         every { mockRs.getString("title") } returns "Task"
         every { mockRs.getString("description") } returns ""
         every { mockRs.getInt("position") } returns 0

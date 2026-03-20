@@ -1,100 +1,90 @@
 package com.kanbanvision.domain.model
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.UUID
+import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class CardTest {
-    private val columnId = UUID.randomUUID().toString()
-
     @Test
-    fun `create card with valid data`() {
-        val card = Card.create(columnId = columnId, title = "Task 1", position = 0)
-        assertEquals("Task 1", card.title)
-        assertEquals("", card.description)
-        assertEquals(columnId, card.columnId)
-        assertEquals(0, card.position)
-        assertTrue(card.id.isNotBlank())
+    fun `create returns work item with default STANDARD service class and TODO state`() {
+        val item = Card.createSimulation("Implement feature")
+        assertEquals("Implement feature", item.title)
+        assertEquals(ServiceClass.STANDARD, item.serviceClass)
+        assertEquals(CardState.TODO, item.state)
+        assertEquals(0, item.agingDays)
+        assertTrue(item.id.isNotBlank())
     }
 
     @Test
-    fun `create card with custom description`() {
-        val card = Card.create(columnId = columnId, title = "Task", description = "Details", position = 1)
-        assertEquals("Details", card.description)
-        assertEquals(1, card.position)
+    fun `create with explicit service class`() {
+        val item = Card.createSimulation("Urgent fix", ServiceClass.EXPEDITE)
+        assertEquals(ServiceClass.EXPEDITE, item.serviceClass)
     }
 
     @Test
-    fun `create card generates unique id on each call`() {
-        val card1 = Card.create(columnId = columnId, title = "T1", position = 0)
-        val card2 = Card.create(columnId = columnId, title = "T2", position = 1)
-        assertNotEquals(card1.id, card2.id)
+    fun `create with blank title throws`() {
+        assertFailsWith<IllegalArgumentException> { Card.createSimulation("") }
     }
 
     @Test
-    fun `create card with blank title throws`() {
-        assertThrows<IllegalArgumentException> { Card.create(columnId = columnId, title = "", position = 0) }
+    fun `advance from TODO transitions to IN_PROGRESS`() {
+        val item = Card.createSimulation("Task")
+        val advanced = item.advance()
+        assertEquals(CardState.IN_PROGRESS, advanced.state)
     }
 
     @Test
-    fun `create card with whitespace-only title throws`() {
-        assertThrows<IllegalArgumentException> { Card.create(columnId = columnId, title = "   ", position = 0) }
+    fun `advance from IN_PROGRESS transitions to DONE`() {
+        val item = Card.createSimulation("Task").advance()
+        val done = item.advance()
+        assertEquals(CardState.DONE, done.state)
     }
 
     @Test
-    fun `create card with blank column id throws`() {
-        assertThrows<IllegalArgumentException> { Card.create(columnId = "", title = "Task", position = 0) }
+    fun `advance from BLOCKED transitions to IN_PROGRESS`() {
+        val item = Card.createSimulation("Task").advance().block()
+        val unblocked = item.advance()
+        assertEquals(CardState.IN_PROGRESS, unblocked.state)
     }
 
     @Test
-    fun `card constructor with negative position throws`() {
-        assertThrows<IllegalArgumentException> {
+    fun `advance from DONE returns same item`() {
+        val item = Card.createSimulation("Task").advance().advance()
+        assertEquals(item, item.advance())
+    }
+
+    @Test
+    fun `block transitions IN_PROGRESS to BLOCKED`() {
+        val item = Card.createSimulation("Task").advance()
+        val blocked = item.block()
+        assertEquals(CardState.BLOCKED, blocked.state)
+    }
+
+    @Test
+    fun `block on non-IN_PROGRESS item throws`() {
+        val item = Card.createSimulation("Task")
+        assertFailsWith<IllegalArgumentException> { item.block() }
+    }
+
+    @Test
+    fun `incrementAge increases agingDays by one`() {
+        val item = Card.createSimulation("Task")
+        val aged = item.incrementAge()
+        assertEquals(1, aged.agingDays)
+    }
+
+    @Test
+    fun `negative agingDays throws on construction`() {
+        assertFailsWith<IllegalArgumentException> {
             Card(
                 id = UUID.randomUUID().toString(),
-                columnId = columnId,
                 title = "Task",
-                position = -1,
+                serviceClass = ServiceClass.STANDARD,
+                state = CardState.TODO,
+                agingDays = -1,
             )
         }
-    }
-
-    @Test
-    fun `moveTo updates column and position`() {
-        val card = Card.create(columnId = columnId, title = "Task", position = 0)
-        val targetColumnId = UUID.randomUUID().toString()
-
-        val moved = card.moveTo(targetColumnId, 3)
-
-        assertEquals(targetColumnId, moved.columnId)
-        assertEquals(3, moved.position)
-        assertEquals(card.id, moved.id)
-        assertEquals(card.title, moved.title)
-    }
-
-    @Test
-    fun `moveTo does not mutate original card`() {
-        val card = Card.create(columnId = columnId, title = "Task", position = 0)
-        val targetColumnId = UUID.randomUUID().toString()
-
-        card.moveTo(targetColumnId, 3)
-
-        assertEquals(columnId, card.columnId)
-        assertEquals(0, card.position)
-    }
-
-    @Test
-    fun `moveTo with blank target column throws`() {
-        val card = Card.create(columnId = columnId, title = "Task", position = 0)
-        assertThrows<IllegalArgumentException> { card.moveTo("", 1) }
-    }
-
-    @Test
-    fun `moveTo with negative target position throws`() {
-        val card = Card.create(columnId = columnId, title = "Task", position = 0)
-        val targetColumnId = UUID.randomUUID().toString()
-        assertThrows<IllegalArgumentException> { card.moveTo(targetColumnId, -1) }
     }
 }

@@ -46,17 +46,5 @@ data class Decision(
                 type = DecisionType.ADD_ITEM,
                 payload = mapOf("title" to title, "serviceClass" to serviceClass),
             )
-
-        @Deprecated("Use move(cardId)")
-        fun moveWorkItem(workItemId: String): Decision = move(workItemId)
-
-        @Deprecated("Use block(cardId, reason)")
-        fun blockWorkItem(
-            workItemId: String,
-            reason: String = "blocked",
-        ): Decision = block(workItemId, reason)
-
-        @Deprecated("Use unblock(cardId)")
-        fun unblockWorkItem(workItemId: String): Decision = unblock(workItemId)
     }
 }

@@ -21,18 +21,18 @@ class DomainIdValidationCoverageTest {
     }
 
     @Test
-    fun `scenario tenant and work item reject blank ids`() {
+    fun `scenario organization and card reject blank ids`() {
         assertFailsWith<IllegalArgumentException> {
-            Scenario(id = "", tenantId = "tenant-1", config = ScenarioConfig(1, 1, 0L))
+            Scenario(id = "", organizationId = "organization-1", config = ScenarioConfig(1, 1, 0L))
         }
         assertFailsWith<IllegalArgumentException> {
-            Scenario(id = "scenario-1", tenantId = "", config = ScenarioConfig(1, 1, 0L))
+            Scenario(id = "scenario-1", organizationId = "", config = ScenarioConfig(1, 1, 0L))
         }
         assertFailsWith<IllegalArgumentException> {
-            Tenant(id = "", name = "Tenant")
+            Organization(id = "", name = "Organization")
         }
         assertFailsWith<IllegalArgumentException> {
-            WorkItem(id = "", title = "Item", serviceClass = ServiceClass.STANDARD, state = WorkItemState.TODO, agingDays = 0)
+            Card(id = "", title = "Item", serviceClass = ServiceClass.STANDARD, state = CardState.TODO, agingDays = 0)
         }
     }
 

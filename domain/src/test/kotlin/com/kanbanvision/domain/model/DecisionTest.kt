@@ -45,11 +45,14 @@ class DecisionTest {
     }
 
     @Test
-    fun `legacy work item decision factories keep compatibility`() {
-        val move = Decision.moveWorkItem("item-1")
-        val block = Decision.blockWorkItem("item-1", "legacy")
-        val unblock = Decision.unblockWorkItem("item-1")
+    fun `decision factories consistently use cardId payload`() {
+        val move = Decision.move("item-1")
+        val block = Decision.block("item-1", "legacy")
+        val unblock = Decision.unblock("item-1")
 
+        assertEquals(DecisionType.MOVE_ITEM, move.type)
+        assertEquals(DecisionType.BLOCK_ITEM, block.type)
+        assertEquals(DecisionType.UNBLOCK_ITEM, unblock.type)
         assertEquals("item-1", move.payload["cardId"])
         assertEquals("item-1", block.payload["cardId"])
         assertEquals("legacy", block.payload["reason"])
