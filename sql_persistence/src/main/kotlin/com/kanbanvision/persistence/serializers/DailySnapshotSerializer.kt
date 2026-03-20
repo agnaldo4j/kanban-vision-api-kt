@@ -21,7 +21,9 @@ private data class FlowMetricsSurrogate(
 @Serializable
 private data class MovementSurrogate(
     val type: String,
-    val cardId: String,
+    val cardId: String? = null,
+    // Backward compatibility for persisted JSON from previous versions.
+    val workItemId: String? = null,
     val day: Int,
     val reason: String,
 )
@@ -66,7 +68,7 @@ internal object DailySnapshotSerializer {
     private fun MovementSurrogate.toDomain() =
         Movement(
             type = MovementType.valueOf(type),
-            cardId = cardId,
+            cardId = cardId ?: workItemId ?: error("Movement cardId/workItemId is missing"),
             day = SimulationDay(day),
             reason = reason,
         )

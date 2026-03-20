@@ -19,13 +19,13 @@ class JdbcCardRepository : CardRepository {
 
     private companion object {
         const val COL_ID = 1
-        const val COL_COLUMN_ID = 2
+        const val COL_STEP_ID = 2
         const val COL_TITLE = 3
         const val COL_DESCRIPTION = 4
         const val COL_POSITION = 5
         const val COL_CREATED_AT = 6
 
-        const val PARAM_COLUMN_ID = 1
+        const val PARAM_STEP_ID = 1
         const val PARAM_TITLE = 2
         const val PARAM_DESCRIPTION = 3
         const val PARAM_POSITION = 4
@@ -58,7 +58,7 @@ class JdbcCardRepository : CardRepository {
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, card.id)
-                                stmt.setString(COL_COLUMN_ID, card.columnId)
+                                stmt.setString(COL_STEP_ID, card.columnId)
                                 stmt.setString(COL_TITLE, card.title)
                                 stmt.setString(COL_DESCRIPTION, card.description)
                                 stmt.setInt(COL_POSITION, card.position)
@@ -137,7 +137,7 @@ class JdbcCardRepository : CardRepository {
                     WHERE id = ?
                     """.trimIndent(),
                 ).use { stmt ->
-                    stmt.setString(PARAM_COLUMN_ID, updated.columnId)
+                    stmt.setString(PARAM_STEP_ID, updated.columnId)
                     stmt.setString(PARAM_TITLE, updated.title)
                     stmt.setString(PARAM_DESCRIPTION, updated.description)
                     stmt.setInt(PARAM_POSITION, updated.position)
@@ -151,6 +151,7 @@ class JdbcCardRepository : CardRepository {
 
     override suspend fun findByColumnId(columnId: String): Either<DomainError, List<Card>> =
         query {
+            val stepId = columnId
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
@@ -159,7 +160,7 @@ class JdbcCardRepository : CardRepository {
                                 "SELECT id, step_id, title, description, position, created_at" +
                                     " FROM cards WHERE step_id = ? ORDER BY position",
                             ).use { stmt ->
-                                stmt.setString(COL_ID, columnId)
+                                stmt.setString(COL_ID, stepId)
                                 stmt.executeQuery().use { rs ->
                                     buildList { while (rs.next()) add(rs.toCard()) }
                                 }

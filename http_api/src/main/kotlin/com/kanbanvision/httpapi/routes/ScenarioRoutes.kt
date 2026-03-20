@@ -55,11 +55,11 @@ private fun createScenarioSpec(): RouteConfig.() -> Unit =
         operationId = "createScenario"
         summary = "Cria um cenário de simulação Kanban"
         tags("scenarios")
-        description = "Cria um novo cenário de simulação Kanban para uma organization."
+        description = "Cria um novo cenário de simulação Kanban para uma organização."
         applyBearerAuthSecurity()
         request {
             body<CreateScenarioRequest> {
-                description = "Configuração do cenário: organization, WIP limit, tamanho do time e semente aleatória."
+                description = "Configuração do cenário: organização, WIP limit, tamanho do time e semente aleatória."
                 required = true
             }
         }
@@ -77,7 +77,7 @@ private fun RouteConfig.applyCreateScenarioResponses() {
             body<ValidationErrorResponse>()
         }
         code(HttpStatusCode.NotFound) {
-            description = "Organization não encontrada."
+            description = "Organização não encontrada."
             body<DomainErrorResponse>()
         }
         code(HttpStatusCode.InternalServerError) {

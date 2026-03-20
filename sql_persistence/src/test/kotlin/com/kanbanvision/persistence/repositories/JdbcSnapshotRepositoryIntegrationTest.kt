@@ -65,6 +65,50 @@ class JdbcSnapshotRepositoryIntegrationTest {
             movements = emptyList(),
         )
 
+    private fun legacySnapshotJsonWithWorkItemId(): String =
+        """
+        {
+          "scenarioId": "$scenarioId",
+          "day": 2,
+          "metrics": {
+            "throughput": 1,
+            "wipCount": 1,
+            "blockedCount": 0,
+            "avgAgingDays": 1.0
+          },
+          "movements": [
+            {
+              "type": "MOVED",
+              "workItemId": "legacy-work-item-1",
+              "day": 2,
+              "reason": "Legacy payload"
+            }
+          ]
+        }
+        """.trimIndent()
+
+    private fun upsertSnapshotJson(
+        day: Int,
+        snapshotJson: String,
+    ) {
+        DatabaseFactory.dataSource.connection.use { conn ->
+            conn
+                .prepareStatement(
+                    """
+                    INSERT INTO daily_snapshots (scenario_id, day, snapshot_json)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT (scenario_id, day) DO UPDATE SET snapshot_json = EXCLUDED.snapshot_json
+                    """.trimIndent(),
+                ).use { stmt ->
+                    stmt.setString(1, scenarioId)
+                    stmt.setInt(2, day)
+                    stmt.setString(3, snapshotJson)
+                    stmt.executeUpdate()
+                }
+            conn.commit()
+        }
+    }
+
     @Test
     fun `save and findByDay round-trip returns same snapshot`() =
         runBlocking {
@@ -162,5 +206,19 @@ class JdbcSnapshotRepositoryIntegrationTest {
                     .cardId,
             )
             assertEquals("WIP available", found.movements.first().reason)
+        }
+
+    @Test
+    fun `findByDay decodes legacy movement json with workItemId`() =
+        runBlocking {
+            upsertSnapshotJson(day = 2, snapshotJson = legacySnapshotJsonWithWorkItemId())
+
+            val result = repository.findByDay(scenarioId, SimulationDay(2))
+
+            assertTrue(result.isRight())
+            val found = result.getOrNull()!!
+            assertEquals(1, found.movements.size)
+            assertEquals("legacy-work-item-1", found.movements.first().cardId)
+            assertEquals("Legacy payload", found.movements.first().reason)
         }
 }

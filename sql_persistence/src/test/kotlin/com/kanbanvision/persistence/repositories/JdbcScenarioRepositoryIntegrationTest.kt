@@ -49,6 +49,44 @@ class JdbcScenarioRepositoryIntegrationTest {
 
     private fun newScenario() = Scenario(id = UUID.randomUUID().toString(), organizationId = organizationId, config = config)
 
+    private fun legacyStateJson(): String =
+        """
+        {
+          "currentDay": 3,
+          "wipLimit": 2,
+          "items": [
+            {
+              "id": "legacy-card-1",
+              "title": "Legacy Item",
+              "serviceClass": "STANDARD",
+              "state": "IN_PROGRESS",
+              "agingDays": 4
+            }
+          ]
+        }
+        """.trimIndent()
+
+    private fun upsertStateJson(
+        scenarioId: String,
+        stateJson: String,
+    ) {
+        DatabaseFactory.dataSource.connection.use { conn ->
+            conn
+                .prepareStatement(
+                    """
+                    INSERT INTO scenario_states (scenario_id, state_json)
+                    VALUES (?, ?)
+                    ON CONFLICT (scenario_id) DO UPDATE SET state_json = EXCLUDED.state_json
+                    """.trimIndent(),
+                ).use { stmt ->
+                    stmt.setString(1, scenarioId)
+                    stmt.setString(2, stateJson)
+                    stmt.executeUpdate()
+                }
+            conn.commit()
+        }
+    }
+
     @Test
     fun `save and findById round-trip returns same scenario`() =
         runBlocking {
@@ -145,5 +183,23 @@ class JdbcScenarioRepositoryIntegrationTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ScenarioNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `findState decodes legacy state json with items field`() =
+        runBlocking {
+            val scenario = newScenario()
+            repository.save(scenario)
+            upsertStateJson(scenario.id, legacyStateJson())
+
+            val result = repository.findState(scenario.id)
+
+            assertTrue(result.isRight())
+            val found = result.getOrNull()!!
+            assertEquals(3, found.currentDay.value)
+            assertEquals(2, found.policySet.wipLimit)
+            assertEquals(1, found.cards.size)
+            assertEquals("legacy-card-1", found.cards.first().id)
+            assertEquals("Legacy Item", found.cards.first().title)
         }
 }

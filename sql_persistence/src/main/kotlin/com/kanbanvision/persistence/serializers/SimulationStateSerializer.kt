@@ -24,7 +24,9 @@ private data class WorkItemSurrogate(
 private data class SimulationStateSurrogate(
     val currentDay: Int,
     val wipLimit: Int,
-    val cards: List<WorkItemSurrogate>,
+    val cards: List<WorkItemSurrogate> = emptyList(),
+    // Backward compatibility for persisted JSON from previous versions.
+    val items: List<WorkItemSurrogate> = emptyList(),
 )
 
 internal object SimulationStateSerializer {
@@ -54,7 +56,7 @@ internal object SimulationStateSerializer {
         SimulationState(
             currentDay = SimulationDay(currentDay),
             policySet = PolicySet(wipLimit = wipLimit),
-            cards = cards.map { it.toDomain() },
+            cards = (cards.takeIf { it.isNotEmpty() } ?: items).map { it.toDomain() },
         )
 
     private fun WorkItemSurrogate.toDomain() =
