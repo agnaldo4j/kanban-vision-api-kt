@@ -7,7 +7,7 @@ import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
-import com.kanbanvision.usecases.column.GetColumnUseCase
+import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.queries.GetStepQuery
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -19,21 +19,22 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class GetStepUseCaseTest {
-    private val getColumnUseCase = mockk<GetColumnUseCase>()
-    private val useCase = GetStepUseCase(getColumnUseCase)
+    private val stepRepository = mockk<StepRepository>()
+    private val useCase = GetStepUseCase(stepRepository)
 
     @Test
-    fun `execute delegates to GetColumnUseCase and returns step`() =
+    fun `execute returns step by id`() =
         runTest {
-            val expectedStep: Step =
+            val columnId = ColumnId.generate()
+            val expectedStep =
                 Step(
-                    id = ColumnId.generate(),
+                    id = columnId,
                     boardId = BoardId.generate(),
                     name = "Analysis",
                     position = 0,
                     requiredAbility = AbilityName.PRODUCT_MANAGER,
                 )
-            coEvery { getColumnUseCase.execute(any()) } returns expectedStep.right()
+            coEvery { stepRepository.findById(columnId) } returns expectedStep.right()
 
             val result = useCase.execute(GetStepQuery(id = expectedStep.id.value))
 
@@ -42,14 +43,14 @@ class GetStepUseCaseTest {
         }
 
     @Test
-    fun `execute propagates error from GetColumnUseCase`() =
+    fun `execute propagates error from repository`() =
         runTest {
-            coEvery { getColumnUseCase.execute(any()) } returns DomainError.ColumnNotFound("missing").left()
+            coEvery { stepRepository.findById(any()) } returns DomainError.StepNotFound("missing").left()
 
             val result = useCase.execute(GetStepQuery(id = "missing"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
+            assertIs<DomainError.StepNotFound>(result.leftOrNull())
         }
 
     @Test
@@ -59,6 +60,6 @@ class GetStepUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
-            coVerify(exactly = 0) { getColumnUseCase.execute(any()) }
+            coVerify(exactly = 0) { stepRepository.findById(any()) }
         }
 }

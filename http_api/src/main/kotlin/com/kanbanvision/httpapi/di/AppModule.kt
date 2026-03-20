@@ -6,6 +6,7 @@ import com.kanbanvision.persistence.repositories.JdbcCardRepository
 import com.kanbanvision.persistence.repositories.JdbcColumnRepository
 import com.kanbanvision.persistence.repositories.JdbcScenarioRepository
 import com.kanbanvision.persistence.repositories.JdbcSnapshotRepository
+import com.kanbanvision.persistence.repositories.JdbcStepRepository
 import com.kanbanvision.persistence.repositories.JdbcTenantRepository
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
@@ -22,6 +23,7 @@ import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
+import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
@@ -45,6 +47,7 @@ object AppModule {
             single<BoardRepository> { JdbcBoardRepository() }
             single<CardRepository> { JdbcCardRepository() }
             single<ColumnRepository> { JdbcColumnRepository() }
+            single<StepRepository> { JdbcStepRepository(get()) }
             single<TenantRepository> { JdbcTenantRepository() }
             single<ScenarioRepository> { JdbcScenarioRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }
@@ -58,7 +61,7 @@ object AppModule {
             single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
-            single { CreateStepUseCase(get()) }
+            single { CreateStepUseCase(get(), get()) }
             single { GetStepUseCase(get()) }
             single { ListStepsByBoardUseCase(get(), get()) }
             single { CreateScenarioUseCase(get(), get()) }

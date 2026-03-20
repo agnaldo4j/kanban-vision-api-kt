@@ -35,6 +35,13 @@ class DomainErrorTest {
     }
 
     @Test
+    fun `StepNotFound holds id`() {
+        val error = DomainError.StepNotFound("step-1")
+        assertIs<DomainError>(error)
+        assertEquals("step-1", error.id)
+    }
+
+    @Test
     fun `PersistenceError holds message`() {
         val error = DomainError.PersistenceError("connection failed")
         assertIs<DomainError>(error)
