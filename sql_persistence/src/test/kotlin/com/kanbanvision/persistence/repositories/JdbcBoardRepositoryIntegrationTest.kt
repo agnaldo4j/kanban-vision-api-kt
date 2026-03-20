@@ -75,7 +75,7 @@ class JdbcBoardRepositoryIntegrationTest {
         }
 
     @Test
-    fun `save with name exceeding step limit returns PersistenceError`() =
+    fun `save with name exceeding db column limit returns PersistenceError`() =
         runBlocking<Unit> {
             val board =
                 Board(

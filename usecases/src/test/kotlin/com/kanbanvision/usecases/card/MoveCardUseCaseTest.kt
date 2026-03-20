@@ -21,7 +21,7 @@ class MoveCardUseCaseTest {
     private val useCase = MoveCardUseCase(cardRepository)
 
     @Test
-    fun `execute moves card to target column at given position`() =
+    fun `execute moves card to target step at given position`() =
         runTest {
             val card = Card.create(stepId = UUID.randomUUID().toString(), title = "Task", position = 0)
             val targetStepId = UUID.randomUUID().toString()

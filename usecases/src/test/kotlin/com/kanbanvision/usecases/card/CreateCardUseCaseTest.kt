@@ -30,7 +30,7 @@ class CreateCardUseCaseTest {
     private val boardId = UUID.randomUUID().toString()
     private val stepId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "My Board")
-    private val column =
+    private val step =
         Step(
             id = stepId,
             boardId = boardId,
@@ -40,9 +40,9 @@ class CreateCardUseCaseTest {
         )
 
     @Test
-    fun `execute saves card and returns its id when column is empty`() =
+    fun `execute saves card and returns its id when step is empty`() =
         runTest {
-            coEvery { stepRepository.findById(stepId) } returns column.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
             coEvery { boardRepository.findById(boardId) } returns board.right()
             coEvery { cardRepository.findByStepId(any()) } returns emptyList<Card>().right()
             coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
@@ -58,7 +58,7 @@ class CreateCardUseCaseTest {
     fun `execute assigns position equal to existing cards count`() =
         runTest {
             val existingCard = Card.create(stepId = stepId, title = "Existing", position = 0)
-            coEvery { stepRepository.findById(stepId) } returns column.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
             coEvery { boardRepository.findById(boardId) } returns board.right()
             coEvery { cardRepository.findByStepId(any()) } returns listOf(existingCard).right()
             coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
@@ -89,11 +89,11 @@ class CreateCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns ValidationError when retrieved board id does not match column boardId`() =
+    fun `execute returns ValidationError when retrieved board id does not match step boardId`() =
         runTest {
             val otherBoardId = UUID.randomUUID().toString()
             val otherBoard = Board(id = otherBoardId, name = "Other Board")
-            coEvery { stepRepository.findById(stepId) } returns column.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
             coEvery { boardRepository.findById(boardId) } returns otherBoard.right()
             coEvery { cardRepository.findByStepId(any()) } returns emptyList<Card>().right()
 
@@ -105,7 +105,7 @@ class CreateCardUseCaseTest {
         }
 
     @Test
-    fun `execute returns StepNotFound when column repository returns error`() =
+    fun `execute returns StepNotFound when step repository returns error`() =
         runTest {
             coEvery { stepRepository.findById(stepId) } returns DomainError.StepNotFound(stepId).left()
 
@@ -118,7 +118,7 @@ class CreateCardUseCaseTest {
     @Test
     fun `execute returns BoardNotFound when board repository returns error`() =
         runTest {
-            coEvery { stepRepository.findById(stepId) } returns column.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
             coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId).left()
 
             val result = useCase.execute(CreateCardCommand(stepId = stepId, title = "Task"))
@@ -130,7 +130,7 @@ class CreateCardUseCaseTest {
     @Test
     fun `execute returns PersistenceError when card repository returns error`() =
         runTest {
-            coEvery { stepRepository.findById(stepId) } returns column.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
             coEvery { boardRepository.findById(boardId) } returns board.right()
             coEvery { cardRepository.findByStepId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
