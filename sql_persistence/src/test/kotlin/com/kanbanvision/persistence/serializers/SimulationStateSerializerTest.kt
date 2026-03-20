@@ -83,6 +83,33 @@ class SimulationStateSerializerTest {
     }
 
     @Test
+    fun `decode supports legacy columnId field`() {
+        val raw =
+            """
+            {
+              "currentDay": 2,
+              "wipLimit": 3,
+              "cards": [
+                {
+                  "id": "legacy-card",
+                  "columnId": "legacy-step-1",
+                  "title": "Legacy",
+                  "serviceClass": "STANDARD",
+                  "state": "TODO",
+                  "agingDays": 0
+                }
+              ]
+            }
+            """.trimIndent()
+
+        val state = SimulationStateSerializer.decode(raw)
+        val card = state.cards.single()
+
+        assertEquals("legacy-card", card.id)
+        assertEquals("legacy-step-1", card.stepId)
+    }
+
+    @Test
     fun `encode and decode preserves card execution fields`() {
         val card = richCard()
         val state =

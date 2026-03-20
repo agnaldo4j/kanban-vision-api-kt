@@ -173,7 +173,7 @@ class CardRoutesTest {
             val response =
                 client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"stepId":"$targetStepId.value","position":1}""")
+                    setBody("""{"stepId":"$targetStepId","position":1}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

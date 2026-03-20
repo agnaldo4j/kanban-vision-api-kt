@@ -14,14 +14,18 @@ import com.kanbanvision.domain.model.Squad
 import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.Tribe
 import com.kanbanvision.domain.model.Worker
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNames
 
 @Serializable
 internal data class WorkItemSurrogate(
     val id: String,
+    @OptIn(ExperimentalSerializationApi::class)
+    @JsonNames("stepId", "columnId")
     val stepId: String = "",
     val title: String,
     val description: String = "",
