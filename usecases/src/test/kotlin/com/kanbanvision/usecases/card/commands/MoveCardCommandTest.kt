@@ -8,12 +8,12 @@ import kotlin.test.assertTrue
 class MoveCardCommandTest {
     @Test
     fun `validate passes with valid data`() {
-        assertTrue(MoveCardCommand(cardId = "card-1", targetStepId = "col-1", newPosition = 0).validate().isRight())
+        assertTrue(MoveCardCommand(cardId = "card-1", targetStepId = "step-1", newPosition = 0).validate().isRight())
     }
 
     @Test
     fun `validate returns error with blank card id`() {
-        val result = MoveCardCommand(cardId = "", targetStepId = "col-1", newPosition = 0).validate()
+        val result = MoveCardCommand(cardId = "", targetStepId = "step-1", newPosition = 0).validate()
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
@@ -27,7 +27,7 @@ class MoveCardCommandTest {
 
     @Test
     fun `validate returns error with negative position`() {
-        val result = MoveCardCommand(cardId = "card-1", targetStepId = "col-1", newPosition = -1).validate()
+        val result = MoveCardCommand(cardId = "card-1", targetStepId = "step-1", newPosition = -1).validate()
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
     }

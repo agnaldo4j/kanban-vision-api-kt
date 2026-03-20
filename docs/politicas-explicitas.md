@@ -10,7 +10,7 @@ Qualquer mudança deve ser feita via PR com justificativa explícita.
 
 ---
 
-## 1. Board — Critérios de Coluna
+## 1. Board — Critérios de Step
 
 ### Backlog
 **Entrada**: identificado como gap, melhoria ou tarefa, independente de prioridade.
@@ -141,7 +141,7 @@ Nenhum PR pode ser mergeado se qualquer uma delas for violada.
 | CQS | Cada use case aceita exatamente um `Command` ou `Query` — nunca primitivos avulsos |
 | Either para erros | Erros modelados como `Either<DomainError, T>` — sem exceções para controle de fluxo |
 | Aggregate Root | Use cases não enforçam invariantes diretamente — delegam ao Aggregate Root |
-| Board hydration | `JdbcBoardRepository.findById()` retorna Board com `columns = emptyList()`. Use cases devem hidratar antes de chamar `board.addColumn()` / `board.addCard()` |
+| Board hydration | `JdbcBoardRepository.findById()` retorna Board com `steps = emptyList()`. Use cases devem hidratar antes de chamar `board.addStep()` / `board.addCard()` |
 
 ---
 

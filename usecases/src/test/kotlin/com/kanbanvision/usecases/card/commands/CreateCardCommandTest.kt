@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class CreateCardCommandTest {
     @Test
     fun `validate passes with valid data`() {
-        assertTrue(CreateCardCommand(stepId = "col-1", title = "Task").validate().isRight())
+        assertTrue(CreateCardCommand(stepId = "step-1", title = "Task").validate().isRight())
     }
 
     @Test
@@ -20,14 +20,14 @@ class CreateCardCommandTest {
 
     @Test
     fun `validate returns error with blank title`() {
-        val result = CreateCardCommand(stepId = "col-1", title = "").validate()
+        val result = CreateCardCommand(stepId = "step-1", title = "").validate()
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
     }
 
     @Test
     fun `validate returns error with whitespace-only title`() {
-        val result = CreateCardCommand(stepId = "col-1", title = "  ").validate()
+        val result = CreateCardCommand(stepId = "step-1", title = "  ").validate()
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
     }

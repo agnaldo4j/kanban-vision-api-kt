@@ -7,19 +7,19 @@ import kotlin.test.assertEquals
 
 class AuditCoreDomainCoverageTest {
     @Test
-    fun `board card column and step expose audit`() {
+    fun `board card and step expose audit`() {
         val audit = Audit(createdAt = Instant.parse("2026-02-01T00:00:00Z"))
         val board = Board(UUID.randomUUID().toString(), "Board", audit = audit)
-        val column = Step(UUID.randomUUID().toString(), board.id, "Analysis", 0, AbilityName.PRODUCT_MANAGER, audit = audit)
-        val card = Card(UUID.randomUUID().toString(), column.id, "Card", position = 0, audit = audit)
-        val step = Step(UUID.randomUUID().toString(), board.id, "Dev", 1, AbilityName.DEVELOPER, audit = audit)
+        val analysisStep = Step(UUID.randomUUID().toString(), board.id, "Analysis", 0, AbilityName.PRODUCT_MANAGER, audit = audit)
+        val card = Card(UUID.randomUUID().toString(), analysisStep.id, "Card", position = 0, audit = audit)
+        val developmentStep = Step(UUID.randomUUID().toString(), board.id, "Dev", 1, AbilityName.DEVELOPER, audit = audit)
 
         assertEquals(audit, board.audit)
         assertEquals(audit.createdAt, board.createdAt)
-        assertEquals(audit, column.audit)
+        assertEquals(audit, analysisStep.audit)
         assertEquals(audit, card.audit)
         assertEquals(audit.createdAt, card.createdAt)
-        assertEquals(audit, step.audit)
+        assertEquals(audit, developmentStep.audit)
     }
 
     @Test
