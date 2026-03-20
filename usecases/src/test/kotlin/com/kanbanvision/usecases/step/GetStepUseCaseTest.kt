@@ -10,6 +10,7 @@ import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.column.GetColumnUseCase
 import com.kanbanvision.usecases.step.queries.GetStepQuery
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -49,5 +50,15 @@ class GetStepUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `execute returns validation error when step query is invalid`() =
+        runTest {
+            val result = useCase.execute(GetStepQuery(id = " "))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            coVerify(exactly = 0) { getColumnUseCase.execute(any()) }
         }
 }

@@ -16,6 +16,7 @@ class ListStepsByBoardUseCase(
 ) {
     suspend fun execute(query: ListStepsByBoardQuery): Either<DomainError, List<Step>> =
         either {
+            query.validate().bind()
             getBoardUseCase.execute(GetBoardQuery(query.boardId)).bind()
             listColumnsByBoardUseCase.execute(ListColumnsByBoardQuery(query.boardId)).bind()
         }

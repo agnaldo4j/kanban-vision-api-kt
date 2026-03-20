@@ -12,6 +12,7 @@ import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.step.queries.ListStepsByBoardQuery
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -76,5 +77,16 @@ class ListStepsByBoardUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `execute returns validation error when list query is invalid`() =
+        runTest {
+            val result = useCase.execute(ListStepsByBoardQuery(boardId = " "))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            coVerify(exactly = 0) { getBoardUseCase.execute(any()) }
+            coVerify(exactly = 0) { listColumnsByBoardUseCase.execute(any()) }
         }
 }
