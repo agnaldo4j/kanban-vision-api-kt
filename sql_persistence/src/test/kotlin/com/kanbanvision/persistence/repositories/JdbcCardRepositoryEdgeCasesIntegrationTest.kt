@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 class JdbcCardRepositoryEdgeCasesIntegrationTest : JdbcCardRepositoryTestBase() {
     @Test
-    fun `save with title exceeding column limit returns PersistenceError`() =
+    fun `save with title exceeding db column limit returns PersistenceError`() =
         runBlocking<Unit> {
             val card = newCard(title = "x".repeat(256))
 

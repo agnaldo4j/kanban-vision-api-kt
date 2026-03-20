@@ -17,12 +17,12 @@ import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
-import com.kanbanvision.usecases.column.CreateColumnUseCase
-import com.kanbanvision.usecases.column.GetColumnUseCase
-import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
-import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.StepRepository
+import com.kanbanvision.usecases.step.CreateStepUseCase
+import com.kanbanvision.usecases.step.GetStepUseCase
+import com.kanbanvision.usecases.step.ListStepsByBoardUseCase
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -49,36 +49,36 @@ import kotlin.test.assertNotNull
 
 class CardRoutesTest {
     private val boardId = UUID.randomUUID().toString()
-    private val columnId = UUID.randomUUID().toString()
+    private val stepId = UUID.randomUUID().toString()
     private val cardId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "Test Board")
-    private val column =
+    private val step =
         Step(
-            id = columnId,
+            id = stepId,
             boardId = boardId,
             name = "To Do",
             position = 0,
             requiredAbility = AbilityName.PRODUCT_MANAGER,
         )
-    private val card = Card(id = cardId, columnId = columnId, title = "Task", description = "Do it", position = 0)
+    private val card = Card(id = cardId, stepId = stepId, title = "Task", description = "Do it", position = 0)
 
     private val boardRepository = mockk<BoardRepository>()
     private val cardRepository = mockk<CardRepository>()
-    private val columnRepository = mockk<ColumnRepository>()
+    private val stepRepository = mockk<StepRepository>()
 
     private val testModule =
         module {
             single<BoardRepository> { boardRepository }
             single<CardRepository> { cardRepository }
-            single<ColumnRepository> { columnRepository }
+            single<StepRepository> { stepRepository }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
             single { CreateCardUseCase(get(), get(), get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
-            single { CreateColumnUseCase(get(), get()) }
-            single { GetColumnUseCase(get()) }
-            single { ListColumnsByBoardUseCase(get()) }
+            single { CreateStepUseCase(get(), get()) }
+            single { GetStepUseCase(get()) }
+            single { ListStepsByBoardUseCase(get(), get()) }
             single { mockk<DomainMetrics>(relaxed = true) }
         }
 
@@ -96,23 +96,23 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            coEvery { columnRepository.findById(columnId) } returns column.right()
+            coEvery { stepRepository.findById(stepId) } returns step.right()
             coEvery { boardRepository.findById(boardId) } returns board.right()
-            coEvery { cardRepository.findByColumnId(any()) } returns emptyList<Card>().right()
+            coEvery { cardRepository.findByStepId(any()) } returns emptyList<Card>().right()
             coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
             coEvery { cardRepository.findById(any()) } returns card.right()
 
             val response =
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"$columnId","title":"Task","description":"Do it"}""")
+                    setBody("""{"stepId":"$stepId","title":"Task","description":"Do it"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals("Task", body["title"]?.jsonPrimitive?.content)
-            assertEquals(columnId, body["columnId"]?.jsonPrimitive?.content)
+            assertEquals(stepId, body["stepId"]?.jsonPrimitive?.content)
         }
 
     @Test
@@ -132,7 +132,7 @@ class CardRoutesTest {
             val response =
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"$columnId","title":""}""")
+                    setBody("""{"stepId":"$stepId","title":""}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -162,8 +162,8 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            val targetColumnId = UUID.randomUUID().toString()
-            val movedCard = card.moveTo(targetColumnId, 1)
+            val targetStepId = UUID.randomUUID().toString()
+            val movedCard = card.moveTo(targetStepId, 1)
 
             coEvery { cardRepository.updateCard(cardId, any()) } answers {
                 secondArg<(Card) -> Card>()(card).right()
@@ -173,7 +173,7 @@ class CardRoutesTest {
             val response =
                 client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"$targetColumnId.value","position":1}""")
+                    setBody("""{"stepId":"$targetStepId","position":1}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

@@ -6,21 +6,16 @@ import com.kanbanvision.persistence.repositories.JdbcCardRepository
 import com.kanbanvision.persistence.repositories.JdbcOrganizationRepository
 import com.kanbanvision.persistence.repositories.JdbcScenarioRepository
 import com.kanbanvision.persistence.repositories.JdbcSnapshotRepository
-import com.kanbanvision.persistence.repositories.JdbcStepDomainRepository
 import com.kanbanvision.persistence.repositories.JdbcStepRepository
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
-import com.kanbanvision.usecases.column.CreateColumnUseCase
-import com.kanbanvision.usecases.column.GetColumnUseCase
-import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.ports.DefaultSimulationEngine
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
-import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -46,8 +41,7 @@ object AppModule {
 
             single<BoardRepository> { JdbcBoardRepository() }
             single<CardRepository> { JdbcCardRepository() }
-            single<ColumnRepository> { JdbcStepRepository() }
-            single<StepRepository> { JdbcStepDomainRepository(get()) }
+            single<StepRepository> { JdbcStepRepository() }
             single<OrganizationRepository> { JdbcOrganizationRepository() }
             single<ScenarioRepository> { JdbcScenarioRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }
@@ -58,9 +52,6 @@ object AppModule {
             single { CreateCardUseCase(get(), get(), get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
-            single { CreateColumnUseCase(get(), get()) }
-            single { GetColumnUseCase(get()) }
-            single { ListColumnsByBoardUseCase(get()) }
             single { CreateStepUseCase(get(), get()) }
             single { GetStepUseCase(get()) }
             single { ListStepsByBoardUseCase(get(), get()) }

@@ -14,7 +14,7 @@ class BoardTest {
         val board = Board.create("My Board")
         assertEquals("My Board", board.name)
         assertTrue(board.id.isNotBlank())
-        assertTrue(board.columns.isEmpty())
+        assertTrue(board.steps.isEmpty())
         assertNotNull(board.createdAt)
     }
 
@@ -36,17 +36,17 @@ class BoardTest {
     }
 
     @Test
-    fun `addColumn returns column with correct boardId and auto position`() {
+    fun `addStep returns step with correct boardId and auto position`() {
         val board = Board.create("My Board")
-        val column = board.addColumn("To Do", AbilityName.PRODUCT_MANAGER)
-        assertEquals(board.id, column.boardId)
-        assertEquals("To Do", column.name)
-        assertEquals(0, column.position)
-        assertEquals(AbilityName.PRODUCT_MANAGER, column.requiredAbility)
+        val step = board.addStep("To Do", AbilityName.PRODUCT_MANAGER)
+        assertEquals(board.id, step.boardId)
+        assertEquals("To Do", step.name)
+        assertEquals(0, step.position)
+        assertEquals(AbilityName.PRODUCT_MANAGER, step.requiredAbility)
     }
 
     @Test
-    fun `addColumn position equals existing columns count`() {
+    fun `addStep position equals existing steps count`() {
         val boardId = UUID.randomUUID().toString()
         val existing =
             Step.create(
@@ -55,19 +55,19 @@ class BoardTest {
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             )
-        val board = Board(id = boardId, name = "My Board", columns = listOf(existing))
-        val column = board.addColumn("In Progress", AbilityName.DEVELOPER)
-        assertEquals(1, column.position)
+        val board = Board(id = boardId, name = "My Board", steps = listOf(existing))
+        val step = board.addStep("In Progress", AbilityName.DEVELOPER)
+        assertEquals(1, step.position)
     }
 
     @Test
-    fun `addColumn with blank name throws`() {
+    fun `addStep with blank name throws`() {
         val board = Board.create("My Board")
-        assertThrows<IllegalArgumentException> { board.addColumn("", AbilityName.PRODUCT_MANAGER) }
+        assertThrows<IllegalArgumentException> { board.addStep("", AbilityName.PRODUCT_MANAGER) }
     }
 
     @Test
-    fun `addColumn with duplicate name throws`() {
+    fun `addStep with duplicate name throws`() {
         val boardId = UUID.randomUUID().toString()
         val existing =
             Step.create(
@@ -76,25 +76,25 @@ class BoardTest {
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             )
-        val board = Board(id = boardId, name = "My Board", columns = listOf(existing))
-        assertThrows<IllegalArgumentException> { board.addColumn("To Do", AbilityName.PRODUCT_MANAGER) }
+        val board = Board(id = boardId, name = "My Board", steps = listOf(existing))
+        assertThrows<IllegalArgumentException> { board.addStep("To Do", AbilityName.PRODUCT_MANAGER) }
     }
 
     @Test
-    fun `addCard returns card with correct columnId and auto position`() {
+    fun `addCard returns card with correct stepId and auto position`() {
         val boardId = UUID.randomUUID().toString()
-        val columnId = UUID.randomUUID().toString()
-        val column =
+        val stepId = UUID.randomUUID().toString()
+        val step =
             Step(
-                id = columnId,
+                id = stepId,
                 boardId = boardId,
                 name = "To Do",
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             )
-        val board = Board(id = boardId, name = "My Board", columns = listOf(column))
-        val card = board.addCard(column, "Fix bug")
-        assertEquals(columnId, card.columnId)
+        val board = Board(id = boardId, name = "My Board", steps = listOf(step))
+        val card = board.addCard(step, "Fix bug")
+        assertEquals(stepId, card.stepId)
         assertEquals("Fix bug", card.title)
         assertEquals(0, card.position)
     }
@@ -102,27 +102,27 @@ class BoardTest {
     @Test
     fun `addCard position equals existing cards count`() {
         val boardId = UUID.randomUUID().toString()
-        val columnId = UUID.randomUUID().toString()
-        val existingCard = Card.create(columnId = columnId, title = "Existing", position = 0)
-        val column =
+        val stepId = UUID.randomUUID().toString()
+        val existingCard = Card.create(stepId = stepId, title = "Existing", position = 0)
+        val step =
             Step(
-                id = columnId,
+                id = stepId,
                 boardId = boardId,
                 name = "To Do",
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
                 cards = listOf(existingCard),
             )
-        val board = Board(id = boardId, name = "My Board", columns = listOf(column))
-        val card = board.addCard(column, "New Card")
+        val board = Board(id = boardId, name = "My Board", steps = listOf(step))
+        val card = board.addCard(step, "New Card")
         assertEquals(1, card.position)
     }
 
     @Test
-    fun `addCard throws when column does not belong to board`() {
+    fun `addCard throws when step does not belong to board`() {
         val boardId = UUID.randomUUID().toString()
         val otherBoardId = UUID.randomUUID().toString()
-        val column =
+        val step =
             Step(
                 id = UUID.randomUUID().toString(),
                 boardId = otherBoardId,
@@ -131,6 +131,6 @@ class BoardTest {
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             )
         val board = Board(id = boardId, name = "My Board")
-        assertThrows<IllegalArgumentException> { board.addCard(column, "Task") }
+        assertThrows<IllegalArgumentException> { board.addCard(step, "Task") }
     }
 }

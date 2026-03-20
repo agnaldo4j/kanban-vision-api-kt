@@ -5,7 +5,7 @@ import java.util.UUID
 
 data class Card(
     val id: String = UUID.randomUUID().toString(),
-    val columnId: String = "",
+    val stepId: String = "",
     val title: String,
     val description: String = "",
     val position: Int = 0,
@@ -46,16 +46,16 @@ data class Card(
 
     companion object {
         fun create(
-            columnId: String,
+            stepId: String,
             title: String,
             description: String = "",
             position: Int,
         ): Card {
-            require(columnId.isNotBlank()) { "Card columnId must not be blank" }
+            require(stepId.isNotBlank()) { "Card stepId must not be blank" }
             require(title.isNotBlank()) { "Card title must not be blank" }
             return Card(
                 id = UUID.randomUUID().toString(),
-                columnId = columnId,
+                stepId = stepId,
                 title = title,
                 description = description,
                 position = position,
@@ -76,12 +76,12 @@ data class Card(
     }
 
     fun moveTo(
-        targetColumnId: String,
+        targetStepId: String,
         newPosition: Int,
     ): Card {
-        require(targetColumnId.isNotBlank()) { "Card target columnId must not be blank" }
+        require(targetStepId.isNotBlank()) { "Card target stepId must not be blank" }
         require(newPosition >= 0) { "Card target position must be non-negative" }
-        return copy(columnId = targetColumnId, position = newPosition)
+        return copy(stepId = targetStepId, position = newPosition)
     }
 
     fun advance(): Card =

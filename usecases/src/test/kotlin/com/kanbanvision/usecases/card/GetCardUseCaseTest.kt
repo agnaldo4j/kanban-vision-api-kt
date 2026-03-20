@@ -23,7 +23,7 @@ class GetCardUseCaseTest {
     @Test
     fun `execute returns card when found`() =
         runTest {
-            val card = Card.create(columnId = UUID.randomUUID().toString(), title = "My Task", position = 0)
+            val card = Card.create(stepId = UUID.randomUUID().toString(), title = "My Task", position = 0)
             coEvery { cardRepository.findById(any()) } returns card.right()
 
             val result = useCase.execute(GetCardQuery(id = card.id))

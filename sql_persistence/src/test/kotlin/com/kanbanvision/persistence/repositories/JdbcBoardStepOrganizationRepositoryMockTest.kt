@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 // Covers the conn.use { } addSuppressed path in Board, Step, and Organization repositories.
 class JdbcBoardStepOrganizationRepositoryMockTest {
     private val boardRepo = JdbcBoardRepository()
-    private val columnRepo = JdbcStepRepository()
+    private val stepRepo = JdbcStepRepository()
     private val organizationRepo = JdbcOrganizationRepository()
 
     private fun brokenDataSource(): HikariDataSource {
@@ -59,8 +59,8 @@ class JdbcBoardStepOrganizationRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val column = Step("c1", "b1", "Todo", 0, AbilityName.PRODUCT_MANAGER)
-                val result = columnRepo.save(column)
+                val step = Step("c1", "b1", "Todo", 0, AbilityName.PRODUCT_MANAGER)
+                val result = stepRepo.save(step)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -71,7 +71,7 @@ class JdbcBoardStepOrganizationRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = columnRepo.findById("c1")
+                val result = stepRepo.findById("c1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -82,7 +82,7 @@ class JdbcBoardStepOrganizationRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = columnRepo.findByBoardId("b1")
+                val result = stepRepo.findByBoardId("b1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

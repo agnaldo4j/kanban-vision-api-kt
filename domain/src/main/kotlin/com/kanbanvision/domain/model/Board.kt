@@ -5,7 +5,7 @@ import java.util.UUID
 data class Board(
     val id: String,
     val name: String,
-    val columns: List<Step> = emptyList(),
+    val steps: List<Step> = emptyList(),
     val audit: Audit = Audit(),
 ) {
     init {
@@ -22,21 +22,21 @@ data class Board(
         }
     }
 
-    fun addColumn(
+    fun addStep(
         name: String,
         requiredAbility: AbilityName,
     ): Step {
         require(name.isNotBlank()) { "Step name must not be blank" }
-        require(columns.none { it.name == name }) { "Step name '$name' already exists on this board" }
-        return Step.create(boardId = id, name = name, position = columns.size, requiredAbility = requiredAbility)
+        require(steps.none { it.name == name }) { "Step name '$name' already exists on this board" }
+        return Step.create(boardId = id, name = name, position = steps.size, requiredAbility = requiredAbility)
     }
 
     fun addCard(
-        column: Step,
+        step: Step,
         title: String,
         description: String = "",
     ): Card {
-        require(column.boardId == id) { "Step ${column.id} does not belong to board $id" }
-        return Card.create(columnId = column.id, title = title, description = description, position = column.cards.size)
+        require(step.boardId == id) { "Step ${step.id} does not belong to board $id" }
+        return Card.create(stepId = step.id, title = title, description = description, position = step.cards.size)
     }
 }

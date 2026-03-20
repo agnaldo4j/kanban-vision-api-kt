@@ -15,15 +15,15 @@ import kotlin.test.assertTrue
 
 class UseCaseValidationPropertyBasedTest {
     @Test
-    fun `create card command accepts generated non-blank column and title`() {
+    fun `create card command accepts generated non-blank step and title`() {
         runTest {
             checkAll(
                 Arb.int(1..1_000_000),
                 Arb.int(1..1_000_000),
-            ) { columnIdSeed, titleSeed ->
-                val columnId = "col-$columnIdSeed"
+            ) { stepIdSeed, titleSeed ->
+                val stepId = "step-$stepIdSeed"
                 val title = "title-$titleSeed"
-                val result = CreateCardCommand(columnId = columnId, title = title).validate()
+                val result = CreateCardCommand(stepId = stepId, title = title).validate()
                 assertTrue(result.isRight())
             }
         }
@@ -36,13 +36,13 @@ class UseCaseValidationPropertyBasedTest {
                 Arb.int(1..1_000_000),
                 Arb.int(1..1_000_000),
                 Arb.int(0..10_000),
-            ) { cardIdSeed, targetColumnIdSeed, newPosition ->
+            ) { cardIdSeed, targetStepIdSeed, newPosition ->
                 val cardId = "card-$cardIdSeed"
-                val targetColumnId = "col-$targetColumnIdSeed"
+                val targetStepId = "step-$targetStepIdSeed"
                 val result =
                     MoveCardCommand(
                         cardId = cardId,
-                        targetColumnId = targetColumnId,
+                        targetStepId = targetStepId,
                         newPosition = newPosition,
                     ).validate()
                 assertTrue(result.isRight())
@@ -57,7 +57,7 @@ class UseCaseValidationPropertyBasedTest {
                 val result =
                     MoveCardCommand(
                         cardId = "card-1",
-                        targetColumnId = "col-1",
+                        targetStepId = "step-1",
                         newPosition = newPosition,
                     ).validate()
                 assertTrue(result.isLeft())

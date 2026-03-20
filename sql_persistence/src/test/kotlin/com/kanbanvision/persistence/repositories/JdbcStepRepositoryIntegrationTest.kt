@@ -44,7 +44,7 @@ class JdbcStepRepositoryIntegrationTest {
             existingBoardId = board.id
         }
 
-    private fun newColumn(
+    private fun newStep(
         name: String = "Test Step",
         position: Int = 0,
         requiredAbility: AbilityName = AbilityName.DEVELOPER,
@@ -57,79 +57,79 @@ class JdbcStepRepositoryIntegrationTest {
     )
 
     @Test
-    fun `save persists column and findById returns it`() =
+    fun `save persists step and findById returns it`() =
         runBlocking {
-            val column = newColumn()
+            val step = newStep()
 
-            repository.save(column)
+            repository.save(step)
 
-            val result = repository.findById(column.id)
+            val result = repository.findById(step.id)
             assertTrue(result.isRight())
             val found = result.getOrNull()
             assertNotNull(found)
-            assertEquals(column.id, found.id)
-            assertEquals(column.boardId, found.boardId)
-            assertEquals(column.name, found.name)
-            assertEquals(column.position, found.position)
-            assertEquals(column.requiredAbility, found.requiredAbility)
+            assertEquals(step.id, found.id)
+            assertEquals(step.boardId, found.boardId)
+            assertEquals(step.name, found.name)
+            assertEquals(step.position, found.position)
+            assertEquals(step.requiredAbility, found.requiredAbility)
         }
 
     @Test
     fun `save persists deployer required ability`() =
         runBlocking {
-            val column = newColumn(name = "Deploy", requiredAbility = AbilityName.DEPLOYER)
+            val step = newStep(name = "Deploy", requiredAbility = AbilityName.DEPLOYER)
 
-            repository.save(column)
+            repository.save(step)
 
-            val result = repository.findById(column.id)
+            val result = repository.findById(step.id)
             assertTrue(result.isRight())
             assertEquals(AbilityName.DEPLOYER, result.getOrNull()?.requiredAbility)
         }
 
     @Test
-    fun `findById returns ColumnNotFound when column does not exist`() =
+    fun `findById returns StepNotFound when step does not exist`() =
         runBlocking<Unit> {
             val result = repository.findById(UUID.randomUUID().toString())
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
+            assertIs<DomainError.StepNotFound>(result.leftOrNull())
         }
 
     @Test
-    fun `save updates existing column on conflict`() =
+    fun `save updates existing step on conflict`() =
         runBlocking {
-            val column = newColumn("Original", position = 0)
-            repository.save(column)
+            val step = newStep("Original", position = 0)
+            repository.save(step)
 
-            repository.save(column.copy(name = "Updated", position = 5))
+            repository.save(step.copy(name = "Updated", position = 5))
 
-            val result = repository.findById(column.id)
+            val result = repository.findById(step.id)
             assertEquals("Updated", result.getOrNull()?.name)
             assertEquals(5, result.getOrNull()?.position)
         }
 
     @Test
-    fun `findByBoardId returns columns ordered by position`() =
+    fun `findByBoardId returns steps ordered by position`() =
         runBlocking {
-            val col0 = newColumn("Backlog", position = 0)
-            val col1 = newColumn("In Progress", position = 1)
-            val col2 = newColumn("Done", position = 2)
-            repository.save(col2)
-            repository.save(col0)
-            repository.save(col1)
+            val step0 = newStep("Backlog", position = 0)
+            val step1 = newStep("In Progress", position = 1)
+            val step2 = newStep("Done", position = 2)
+            repository.save(step2)
+            repository.save(step0)
+            repository.save(step1)
 
             val result = repository.findByBoardId(existingBoardId!!)
 
             assertTrue(result.isRight())
             val found = result.getOrNull()!!
             assertEquals(3, found.size)
-            assertEquals(col0.id, found[0].id)
-            assertEquals(col1.id, found[1].id)
-            assertEquals(col2.id, found[2].id)
+            assertEquals(step0.id, found[0].id)
+            assertEquals(step1.id, found[1].id)
+            assertEquals(step2.id, found[2].id)
         }
 
     @Test
-    fun `findByBoardId returns empty list when board has no columns`() =
+    fun `findByBoardId returns empty list when board has no steps`() =
         runBlocking {
             val result = repository.findByBoardId(existingBoardId!!)
 
@@ -138,9 +138,9 @@ class JdbcStepRepositoryIntegrationTest {
         }
 
     @Test
-    fun `save with non-existent boardId returns PersistenceError and no column is persisted`() =
+    fun `save with non-existent boardId returns PersistenceError and no step is persisted`() =
         runBlocking<Unit> {
-            val orphanColumn =
+            val orphanStep =
                 Step(
                     id = UUID.randomUUID().toString(),
                     boardId = UUID.randomUUID().toString(),
@@ -149,42 +149,42 @@ class JdbcStepRepositoryIntegrationTest {
                     requiredAbility = AbilityName.DEVELOPER,
                 )
 
-            val result = repository.save(orphanColumn)
+            val result = repository.save(orphanStep)
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
-            val found = repository.findById(orphanColumn.id)
+            val found = repository.findById(orphanStep.id)
             assertTrue(found.isLeft())
-            assertIs<DomainError.ColumnNotFound>(found.leftOrNull())
+            assertIs<DomainError.StepNotFound>(found.leftOrNull())
         }
 
     @Test
     fun `save with name containing special characters persists correctly`() =
         runBlocking {
-            val column = newColumn(name = "In Progress / Revisão & \"Done\"")
+            val step = newStep(name = "In Progress / Revisão & \"Done\"")
 
-            repository.save(column)
+            repository.save(step)
 
-            val result = repository.findById(column.id)
+            val result = repository.findById(step.id)
             assertTrue(result.isRight())
             assertEquals("In Progress / Revisão & \"Done\"", result.getOrNull()?.name)
         }
 
     @Test
-    fun `findById with non-UUID string returns ColumnNotFound`() =
+    fun `findById with non-UUID string returns StepNotFound`() =
         runBlocking<Unit> {
             val result = repository.findById("not-a-valid-uuid")
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
+            assertIs<DomainError.StepNotFound>(result.leftOrNull())
         }
 
     @Test
     fun `save with duplicate name on same board returns PersistenceError`() =
         runBlocking<Unit> {
-            repository.save(newColumn("To Do"))
+            repository.save(newStep("To Do"))
 
-            val result = repository.save(newColumn("To Do"))
+            val result = repository.save(newStep("To Do"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
