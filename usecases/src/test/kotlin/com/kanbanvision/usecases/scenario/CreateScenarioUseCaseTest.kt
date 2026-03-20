@@ -43,6 +43,28 @@ class CreateScenarioUseCaseTest {
         }
 
     @Test
+    fun `execute binds simulation state context to scenario organization and board`() =
+        runTest {
+            coEvery { organizationRepository.findById(organizationId) } returns organization.right()
+            coEvery { scenarioRepository.save(any()) } answers { firstArg<Scenario>().right() }
+            coEvery { scenarioRepository.saveState(any(), any()) } answers { secondArg<SimulationState>().right() }
+
+            useCase.execute(command)
+
+            coVerify {
+                scenarioRepository.saveState(
+                    any(),
+                    match { state ->
+                        val context = state.context
+                        context != null &&
+                            context.organizationId == organizationId &&
+                            context.boardId.isNotBlank()
+                    },
+                )
+            }
+        }
+
+    @Test
     fun `execute returns OrganizationNotFound when organization does not exist`() =
         runTest {
             coEvery { organizationRepository.findById(organizationId) } returns DomainError.OrganizationNotFound(organizationId).left()

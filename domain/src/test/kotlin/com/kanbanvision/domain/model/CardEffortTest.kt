@@ -4,11 +4,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
-class SimulatorCardTest {
+class CardEffortTest {
     @Test
     fun `card stores effort required for each ability at creation`() {
         val card =
-            SimulatorCard(
+            Card(
                 title = "Feature A",
                 analysisEffort = 3,
                 developmentEffort = 8,
@@ -29,7 +29,7 @@ class SimulatorCardTest {
     @Test
     fun `card effort can be partially consumed`() {
         val card =
-            SimulatorCard(
+            Card(
                 title = "Feature B",
                 analysisEffort = 4,
                 developmentEffort = 6,
@@ -48,7 +48,7 @@ class SimulatorCardTest {
     @Test
     fun `card consume maps to correct ability effort bucket`() {
         val card =
-            SimulatorCard(
+            Card(
                 title = "Feature C",
                 analysisEffort = 2,
                 developmentEffort = 2,
@@ -70,7 +70,7 @@ class SimulatorCardTest {
     @Test
     fun `card consume with negative points throws`() {
         val card =
-            SimulatorCard(
+            Card(
                 title = "Feature D",
                 analysisEffort = 1,
                 developmentEffort = 1,

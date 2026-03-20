@@ -6,14 +6,14 @@ import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class SimulatorCardLifecycleTest {
+class CardEffortLifecycleTest {
     private val createdAt = Instant.parse("2026-03-19T12:00:00Z")
     private val updatedAt = Instant.parse("2026-03-19T12:10:00Z")
 
     @Test
     fun `remainingEffortFor returns values for all abilities including tester`() {
         val card =
-            SimulatorCard(
+            Card(
                 title = "Feature Y",
                 analysisEffort = 2,
                 developmentEffort = 3,
@@ -30,17 +30,17 @@ class SimulatorCardLifecycleTest {
     @Test
     fun `card validates id title and lifecycle dates`() {
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(id = " ", title = "Card", analysisEffort = 0, developmentEffort = 0, testEffort = 0, deployEffort = 0)
+            Card(id = " ", title = "Card", analysisEffort = 0, developmentEffort = 0, testEffort = 0, deployEffort = 0)
         }
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(title = " ", analysisEffort = 0, developmentEffort = 0, testEffort = 0, deployEffort = 0)
+            Card(title = " ", analysisEffort = 0, developmentEffort = 0, testEffort = 0, deployEffort = 0)
         }
     }
 
     @Test
     fun `card validates updatedDate not before createdDate`() {
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(
+            Card(
                 title = "Card",
                 analysisEffort = 0,
                 developmentEffort = 0,
@@ -54,7 +54,7 @@ class SimulatorCardLifecycleTest {
     @Test
     fun `card validates deletedDate not before createdDate`() {
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(
+            Card(
                 title = "Card",
                 analysisEffort = 0,
                 developmentEffort = 0,
@@ -68,23 +68,23 @@ class SimulatorCardLifecycleTest {
     @Test
     fun `card validates effort values and remaining bounds`() {
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(title = "Card", analysisEffort = -1, developmentEffort = 0, testEffort = 0, deployEffort = 0)
+            Card(title = "Card", analysisEffort = -1, developmentEffort = 0, testEffort = 0, deployEffort = 0)
         }
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(title = "Card", analysisEffort = 0, developmentEffort = -1, testEffort = 0, deployEffort = 0)
+            Card(title = "Card", analysisEffort = 0, developmentEffort = -1, testEffort = 0, deployEffort = 0)
         }
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(title = "Card", analysisEffort = 0, developmentEffort = 0, testEffort = -1, deployEffort = 0)
+            Card(title = "Card", analysisEffort = 0, developmentEffort = 0, testEffort = -1, deployEffort = 0)
         }
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(title = "Card", analysisEffort = 0, developmentEffort = 0, testEffort = 0, deployEffort = -1)
+            Card(title = "Card", analysisEffort = 0, developmentEffort = 0, testEffort = 0, deployEffort = -1)
         }
     }
 
     @Test
     fun `card validates remaining analysis and development bounds`() {
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(
+            Card(
                 title = "Card",
                 analysisEffort = 1,
                 developmentEffort = 1,
@@ -94,7 +94,7 @@ class SimulatorCardLifecycleTest {
             )
         }
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(
+            Card(
                 title = "Card",
                 analysisEffort = 1,
                 developmentEffort = 1,
@@ -108,7 +108,7 @@ class SimulatorCardLifecycleTest {
     @Test
     fun `card validates remaining test and deploy bounds`() {
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(
+            Card(
                 title = "Card",
                 analysisEffort = 1,
                 developmentEffort = 1,
@@ -118,7 +118,7 @@ class SimulatorCardLifecycleTest {
             )
         }
         assertThrows<IllegalArgumentException> {
-            SimulatorCard(
+            Card(
                 title = "Card",
                 analysisEffort = 1,
                 developmentEffort = 1,
@@ -132,7 +132,7 @@ class SimulatorCardLifecycleTest {
     @Test
     fun `consumeEffort updates timestamp and never goes below zero`() {
         val card =
-            SimulatorCard(
+            Card(
                 title = "Feature Z",
                 analysisEffort = 1,
                 developmentEffort = 1,

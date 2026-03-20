@@ -2,6 +2,7 @@ package com.kanbanvision.domain.model
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SimulationStateTest {
@@ -29,5 +30,48 @@ class SimulationStateTest {
         val withItem = state.copy(cards = listOf(item))
         assertEquals(1, withItem.cards.size)
         assertEquals(PolicySet(wipLimit = 3), withItem.policySet)
+    }
+
+    @Test
+    fun `initial state can bind domain context with organization and board`() {
+        val scenario = Scenario.create(organizationId = "org-1", config = config)
+        val worker =
+            Worker(
+                name = "Dev",
+                abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
+            )
+        val tribe =
+            Tribe(
+                name = "Core",
+                squads =
+                    listOf(
+                        Squad(
+                            name = "API",
+                            workers = listOf(worker),
+                        ),
+                    ),
+            )
+
+        val state = SimulationState.initial(scenario = scenario, config = config, tribes = listOf(tribe))
+
+        val context = assertNotNull(state.context)
+        assertEquals(scenario.organizationId, context.organizationId)
+        assertEquals(scenario.boardId, context.boardId)
+        assertEquals(1, context.workers.size)
+        assertEquals(worker.id, context.workers.first().id)
+    }
+
+    @Test
+    fun `initial state with scenario uses empty tribes by default`() {
+        val scenario = Scenario.create(organizationId = "org-2", config = config)
+
+        val state = SimulationState.initial(scenario = scenario, config = config)
+
+        val context = assertNotNull(state.context)
+        assertEquals(scenario.organizationId, context.organizationId)
+        assertEquals(scenario.boardId, context.boardId)
+        assertTrue(context.tribes.isEmpty())
+        assertTrue(context.workers.isEmpty())
+        assertTrue(context.workerAssignments.isEmpty())
     }
 }

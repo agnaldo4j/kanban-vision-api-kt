@@ -3,13 +3,16 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.SimulationContext
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationResult
 import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -115,5 +118,57 @@ class RunDayUseCaseTest {
                     match { it.currentDay == SimulationDay(2) },
                 )
             }
+        }
+
+    @Test
+    fun `execute returns ValidationError when state context does not match scenario`() =
+        runTest {
+            val inconsistentState =
+                state.copy(
+                    context =
+                        SimulationContext(
+                            organizationId = "other-org",
+                            boardId = "other-board",
+                        ),
+                )
+
+            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
+            coEvery { scenarioRepository.findState(scenarioId) } returns inconsistentState.right()
+
+            val result = useCase.execute(command)
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            coVerify(exactly = 0) { snapshotRepository.save(any()) }
+        }
+
+    @Test
+    fun `execute returns ValidationError when context assignment references unknown worker`() =
+        runTest {
+            val step =
+                Step(
+                    boardId = scenario.boardId,
+                    name = "Development",
+                    requiredAbility = AbilityName.DEVELOPER,
+                )
+            val inconsistentState =
+                state.copy(
+                    context =
+                        SimulationContext(
+                            organizationId = scenario.organizationId,
+                            boardId = scenario.boardId,
+                            steps = listOf(step),
+                            workerAssignments = mapOf("missing-worker" to step.id),
+                        ),
+                )
+
+            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
+            coEvery { scenarioRepository.findState(scenarioId) } returns inconsistentState.right()
+
+            val result = useCase.execute(command)
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            coVerify(exactly = 0) { snapshotRepository.save(any()) }
         }
 }
