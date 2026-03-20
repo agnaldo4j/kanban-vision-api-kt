@@ -24,16 +24,16 @@ class GetStepUseCaseTest {
     @Test
     fun `execute returns step by id`() =
         runTest {
-            val columnId = UUID.randomUUID().toString()
+            val stepId = UUID.randomUUID().toString()
             val expectedStep =
                 Step(
-                    id = columnId,
+                    id = stepId,
                     boardId = UUID.randomUUID().toString(),
                     name = "Analysis",
                     position = 0,
                     requiredAbility = AbilityName.PRODUCT_MANAGER,
                 )
-            coEvery { stepRepository.findById(columnId) } returns expectedStep.right()
+            coEvery { stepRepository.findById(stepId) } returns expectedStep.right()
 
             val result = useCase.execute(GetStepQuery(id = expectedStep.id))
 

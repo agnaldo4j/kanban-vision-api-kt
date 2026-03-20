@@ -260,7 +260,7 @@ private fun findExecutableCardIndex(
     ability: AbilityName,
 ): Int =
     cards.indexOfFirst { card ->
-        card.columnId == stepId &&
+        card.stepId == stepId &&
             card.state == CardState.IN_PROGRESS &&
             card.remainingEffortFor(ability) > 0
     }

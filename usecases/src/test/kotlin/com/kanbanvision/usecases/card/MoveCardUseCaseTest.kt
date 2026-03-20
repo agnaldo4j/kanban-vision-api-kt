@@ -23,17 +23,17 @@ class MoveCardUseCaseTest {
     @Test
     fun `execute moves card to target column at given position`() =
         runTest {
-            val card = Card.create(columnId = UUID.randomUUID().toString(), title = "Task", position = 0)
-            val targetColumnId = UUID.randomUUID().toString()
+            val card = Card.create(stepId = UUID.randomUUID().toString(), title = "Task", position = 0)
+            val targetStepId = UUID.randomUUID().toString()
             var transformedCard: Card? = null
             coEvery { cardRepository.updateCard(card.id, any()) } answers {
                 secondArg<(Card) -> Card>()(card).also { transformedCard = it }.right()
             }
 
-            val result = useCase.execute(MoveCardCommand(cardId = card.id, targetColumnId = targetColumnId, newPosition = 2))
+            val result = useCase.execute(MoveCardCommand(cardId = card.id, targetStepId = targetStepId, newPosition = 2))
 
             assertTrue(result.isRight())
-            assertEquals(targetColumnId, transformedCard?.columnId)
+            assertEquals(targetStepId, transformedCard?.stepId)
             assertEquals(2, transformedCard?.position)
         }
 
@@ -47,7 +47,7 @@ class MoveCardUseCaseTest {
                 useCase.execute(
                     MoveCardCommand(
                         cardId = id,
-                        targetColumnId = UUID.randomUUID().toString(),
+                        targetStepId = UUID.randomUUID().toString(),
                         newPosition = 0,
                     ),
                 )
@@ -61,7 +61,7 @@ class MoveCardUseCaseTest {
         runTest {
             val result =
                 useCase.execute(
-                    MoveCardCommand(cardId = "", targetColumnId = UUID.randomUUID().toString(), newPosition = 0),
+                    MoveCardCommand(cardId = "", targetStepId = UUID.randomUUID().toString(), newPosition = 0),
                 )
 
             assertTrue(result.isLeft())
@@ -70,11 +70,11 @@ class MoveCardUseCaseTest {
         }
 
     @Test
-    fun `execute with blank target column id returns ValidationError before querying repository`() =
+    fun `execute with blank target step id returns ValidationError before querying repository`() =
         runTest {
             val result =
                 useCase.execute(
-                    MoveCardCommand(cardId = UUID.randomUUID().toString(), targetColumnId = "", newPosition = 0),
+                    MoveCardCommand(cardId = UUID.randomUUID().toString(), targetStepId = "", newPosition = 0),
                 )
 
             assertTrue(result.isLeft())
@@ -89,7 +89,7 @@ class MoveCardUseCaseTest {
                 useCase.execute(
                     MoveCardCommand(
                         cardId = UUID.randomUUID().toString(),
-                        targetColumnId = UUID.randomUUID().toString(),
+                        targetStepId = UUID.randomUUID().toString(),
                         newPosition = -1,
                     ),
                 )
@@ -108,7 +108,7 @@ class MoveCardUseCaseTest {
                 useCase.execute(
                     MoveCardCommand(
                         cardId = UUID.randomUUID().toString(),
-                        targetColumnId = UUID.randomUUID().toString(),
+                        targetStepId = UUID.randomUUID().toString(),
                         newPosition = 0,
                     ),
                 )

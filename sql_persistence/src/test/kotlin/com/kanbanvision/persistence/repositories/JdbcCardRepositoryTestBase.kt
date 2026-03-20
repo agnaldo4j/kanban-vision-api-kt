@@ -37,7 +37,7 @@ abstract class JdbcCardRepositoryTestBase {
                     audit = Audit(createdAt = Instant.ofEpochMilli(System.currentTimeMillis())),
                 )
             boardRepository.save(board)
-            val column =
+            val step =
                 Step(
                     id = UUID.randomUUID().toString(),
                     boardId = board.id,
@@ -45,8 +45,8 @@ abstract class JdbcCardRepositoryTestBase {
                     position = 0,
                     requiredAbility = AbilityName.DEVELOPER,
                 )
-            columnRepository.save(column)
-            existingColumnId = column.id
+            columnRepository.save(step)
+            existingColumnId = step.id
         }
 
     protected fun newCard(
@@ -54,7 +54,7 @@ abstract class JdbcCardRepositoryTestBase {
         position: Int = 0,
     ) = Card(
         id = UUID.randomUUID().toString(),
-        columnId = existingColumnId!!,
+        stepId = existingColumnId!!,
         title = title,
         description = "Description",
         position = position,

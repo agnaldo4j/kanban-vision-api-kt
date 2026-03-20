@@ -7,13 +7,13 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Step
 import com.kanbanvision.persistence.DatabaseFactory
-import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.StepRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 
-class JdbcStepRepository : ColumnRepository {
+class JdbcStepRepository : StepRepository {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private companion object {
@@ -32,7 +32,7 @@ class JdbcStepRepository : ColumnRepository {
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
-    override suspend fun save(column: Step): Either<DomainError, Step> =
+    override suspend fun save(step: Step): Either<DomainError, Step> =
         query {
             Either
                 .catch {
@@ -48,16 +48,16 @@ class JdbcStepRepository : ColumnRepository {
                                     required_ability = EXCLUDED.required_ability
                                 """.trimIndent(),
                             ).use { stmt ->
-                                stmt.setString(COL_ID, column.id)
-                                stmt.setString(COL_BOARD_ID, column.boardId)
-                                stmt.setString(COL_NAME, column.name)
-                                stmt.setInt(COL_POSITION, column.position)
-                                stmt.setString(COL_REQUIRED_ABILITY, column.requiredAbility.name)
+                                stmt.setString(COL_ID, step.id)
+                                stmt.setString(COL_BOARD_ID, step.boardId)
+                                stmt.setString(COL_NAME, step.name)
+                                stmt.setInt(COL_POSITION, step.position)
+                                stmt.setString(COL_REQUIRED_ABILITY, step.requiredAbility.name)
                                 stmt.executeUpdate()
                             }
                         conn.commit()
                     }
-                    column
+                    step
                 }.mapLeft(::toPersistenceError)
         }
 
@@ -70,13 +70,13 @@ class JdbcStepRepository : ColumnRepository {
                         conn.prepareStatement(sql).use { stmt ->
                             stmt.setString(COL_ID, id)
                             stmt.executeQuery().use { rs ->
-                                if (rs.next()) rs.toColumn() else null
+                                if (rs.next()) rs.toStep() else null
                             }
                         }
                     }
                 }.fold(
                     ifLeft = { toPersistenceError(it).left() },
-                    ifRight = { column -> column?.right() ?: DomainError.ColumnNotFound(id).left() },
+                    ifRight = { step -> step?.right() ?: DomainError.StepNotFound(id).left() },
                 )
         }
 
@@ -90,14 +90,14 @@ class JdbcStepRepository : ColumnRepository {
                         conn.prepareStatement(sql).use { stmt ->
                             stmt.setString(1, boardId)
                             stmt.executeQuery().use { rs ->
-                                buildList { while (rs.next()) add(rs.toColumn()) }
+                                buildList { while (rs.next()) add(rs.toStep()) }
                             }
                         }
                     }
                 }.mapLeft(::toPersistenceError)
         }
 
-    private fun java.sql.ResultSet.toColumn() =
+    private fun java.sql.ResultSet.toStep() =
         Step(
             id = getString("id"),
             boardId = getString("board_id"),

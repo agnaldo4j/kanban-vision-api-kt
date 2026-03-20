@@ -22,7 +22,7 @@ import kotlinx.serialization.json.Json
 @Serializable
 internal data class WorkItemSurrogate(
     val id: String,
-    val columnId: String = "",
+    val stepId: String = "",
     val title: String,
     val description: String = "",
     val position: Int = 0,
@@ -114,7 +114,7 @@ private fun SimulationState.toSurrogate() =
 private fun Card.toSurrogate() =
     WorkItemSurrogate(
         id = id,
-        columnId = columnId,
+        stepId = stepId,
         title = title,
         description = description,
         position = position,
@@ -142,7 +142,7 @@ private fun SimulationStateSurrogate.toDomain() =
 private fun WorkItemSurrogate.toDomain() =
     Card(
         id = id,
-        columnId = columnId,
+        stepId = stepId,
         title = title,
         description = description,
         position = position,

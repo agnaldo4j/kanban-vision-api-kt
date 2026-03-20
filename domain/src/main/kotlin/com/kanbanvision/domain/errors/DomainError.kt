@@ -21,10 +21,6 @@ sealed class DomainError {
         val id: String,
     ) : DomainError()
 
-    data class ColumnNotFound(
-        val id: String,
-    ) : DomainError()
-
     data class StepNotFound(
         val id: String,
     ) : DomainError()

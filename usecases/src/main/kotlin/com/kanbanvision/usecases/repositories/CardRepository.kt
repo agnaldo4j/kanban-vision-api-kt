@@ -14,5 +14,5 @@ interface CardRepository {
         transform: (Card) -> Card,
     ): Either<DomainError, Card>
 
-    suspend fun findByColumnId(columnId: String): Either<DomainError, List<Card>>
+    suspend fun findByStepId(stepId: String): Either<DomainError, List<Card>>
 }

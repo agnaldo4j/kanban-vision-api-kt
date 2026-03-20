@@ -11,12 +11,8 @@ import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
-import com.kanbanvision.usecases.column.CreateColumnUseCase
-import com.kanbanvision.usecases.column.GetColumnUseCase
-import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
-import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -50,7 +46,6 @@ class OpenApiSpecTest {
         module {
             single<BoardRepository> { mockk(relaxed = true) }
             single<CardRepository> { mockk(relaxed = true) }
-            single<ColumnRepository> { mockk(relaxed = true) }
             single<StepRepository> { mockk(relaxed = true) }
             single<OrganizationRepository> { mockk(relaxed = true) }
             single<ScenarioRepository> { mockk(relaxed = true) }
@@ -60,9 +55,6 @@ class OpenApiSpecTest {
             single { CreateCardUseCase(get(), get(), get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
-            single { CreateColumnUseCase(get(), get()) }
-            single { GetColumnUseCase(get()) }
-            single { ListColumnsByBoardUseCase(get()) }
             single { CreateStepUseCase(get(), get()) }
             single { GetStepUseCase(get()) }
             single { ListStepsByBoardUseCase(get(), get()) }
@@ -102,28 +94,6 @@ class OpenApiSpecTest {
             assertTrue(paths["/api/v1/boards/{id}"]?.jsonObject?.containsKey("get") == true)
             assertTrue(paths["/api/v1/cards"]?.jsonObject?.containsKey("post") == true)
             assertTrue(paths["/api/v1/cards/{id}/move"]?.jsonObject?.containsKey("patch") == true)
-        }
-
-    @Test
-    fun `openapi spec contains column routes`() =
-        testApplication {
-            install(Koin) { modules(testModule) }
-            application {
-                configureOpenApi()
-                configureSerialization()
-                configureStatusPages()
-                configureTestAuthentication()
-                configureRateLimit()
-                configureRouting()
-            }
-
-            val paths =
-                Json.parseToJsonElement(client.get("/api.json").bodyAsText()).jsonObject["paths"]?.jsonObject
-            assertNotNull(paths)
-
-            assertTrue(paths["/api/v1/columns"]?.jsonObject?.containsKey("post") == true)
-            assertTrue(paths["/api/v1/columns/{id}"]?.jsonObject?.containsKey("get") == true)
-            assertTrue(paths["/api/v1/boards/{boardId}/columns"]?.jsonObject?.containsKey("get") == true)
         }
 
     @Test

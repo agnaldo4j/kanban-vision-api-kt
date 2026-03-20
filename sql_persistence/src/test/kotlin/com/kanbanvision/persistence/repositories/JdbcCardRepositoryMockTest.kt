@@ -36,7 +36,7 @@ class JdbcCardRepositoryMockTest {
     private fun minimalCard() =
         Card(
             id = "card1",
-            columnId = "col1",
+            stepId = "col1",
             title = "Task",
             description = "",
             position = 0,
@@ -93,11 +93,11 @@ class JdbcCardRepositoryMockTest {
         }
 
     @Test
-    fun `findByColumnId conn close suppresses exception`() =
+    fun `findByStepId conn close suppresses exception`() =
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findByColumnId("col1")
+                val result = repo.findByStepId("col1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

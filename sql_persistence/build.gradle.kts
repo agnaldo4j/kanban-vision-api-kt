@@ -23,7 +23,7 @@ dependencies {
 }
 
 // Exclude Kotlin-generated coroutine continuation classes for the `query` suspend function.
-// These are state-machine classes (JdbcBoardRepository$query$2, JdbcColumnRepository$query$2,
+// These are state-machine classes (JdbcBoardRepository$query$2, JdbcStepRepository$query$2,
 // JdbcCardRepository$query$2) produced by the Kotlin compiler and contain unreachable
 // addSuppressed branches that cannot be exercised without deliberately crashing the JDBC driver.
 // Applied to both report and verification so the two tasks stay in sync.

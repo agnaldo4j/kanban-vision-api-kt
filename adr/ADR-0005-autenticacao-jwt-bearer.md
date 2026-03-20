@@ -26,7 +26,7 @@ ser compatível com a evolução para isolamento de dados por tenant no futuro.
 
 As rotas atuais estão organizadas em dois grupos em `Routing.kt`:
 - `/health/*` — health checks (devem permanecer públicas para liveness/readiness probes K8s)
-- `/api/v1/**` — todas as rotas de negócio (`boards`, `cards`, `columns`, `scenarios`,
+- `/api/v1/**` — todas as rotas de negócio (`boards`, `cards`, `steps`, `scenarios`,
   `scenarioAnalytics`) — devem ser protegidas
 
 ---
@@ -213,7 +213,7 @@ As rotas atuais estão organizadas em dois grupos em `Routing.kt`:
           route("/api/v1") {
               boardRoutes()
               cardRoutes()
-              columnRoutes()
+              stepRoutes()
               scenarioRoutes()
               scenarioAnalyticsRoutes()
           }

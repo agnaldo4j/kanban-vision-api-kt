@@ -10,7 +10,7 @@ class DomainIdValidationCoverageTest {
             Board(id = "", name = "Board")
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(id = "", columnId = "column-1", title = "Card", position = 0)
+            Card(id = "", stepId = "column-1", title = "Card", position = 0)
         }
         assertFailsWith<IllegalArgumentException> {
             Step(id = "", boardId = "board-1", name = "Step", requiredAbility = AbilityName.DEVELOPER)

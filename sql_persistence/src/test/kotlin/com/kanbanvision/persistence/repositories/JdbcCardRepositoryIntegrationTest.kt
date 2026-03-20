@@ -25,7 +25,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
             val found = result.getOrNull()
             assertNotNull(found)
             assertEquals(card.id, found.id)
-            assertEquals(card.columnId, found.columnId)
+            assertEquals(card.stepId, found.stepId)
             assertEquals(card.title, found.title)
             assertEquals(card.description, found.description)
             assertEquals(card.position, found.position)
@@ -55,7 +55,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
         }
 
     @Test
-    fun `findByColumnId returns cards ordered by position`() =
+    fun `findByStepId returns cards ordered by position`() =
         runBlocking {
             val card0 = newCard("First", position = 0)
             val card1 = newCard("Second", position = 1)
@@ -64,7 +64,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
             repository.save(card0)
             repository.save(card1)
 
-            val result = repository.findByColumnId(existingColumnId!!)
+            val result = repository.findByStepId(existingColumnId!!)
 
             assertTrue(result.isRight())
             val found = result.getOrNull()!!
@@ -75,21 +75,21 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
         }
 
     @Test
-    fun `findByColumnId returns empty list when column has no cards`() =
+    fun `findByStepId returns empty list when step has no cards`() =
         runBlocking {
-            val result = repository.findByColumnId(existingColumnId!!)
+            val result = repository.findByStepId(existingColumnId!!)
 
             assertTrue(result.isRight())
             assertTrue(result.getOrNull()!!.isEmpty())
         }
 
     @Test
-    fun `save with non-existent columnId returns PersistenceError and no card is persisted`() =
+    fun `save with non-existent stepId returns PersistenceError and no card is persisted`() =
         runBlocking<Unit> {
             val orphanCard =
                 Card(
                     id = UUID.randomUUID().toString(),
-                    columnId = UUID.randomUUID().toString(),
+                    stepId = UUID.randomUUID().toString(),
                     title = "Orphan",
                     position = 0,
                     audit = Audit(createdAt = Instant.ofEpochMilli(System.currentTimeMillis())),
@@ -116,7 +116,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
             val updated = result.getOrNull()
             assertNotNull(updated)
             assertEquals(card.id, updated.id)
-            assertEquals(existingColumnId, updated.columnId)
+            assertEquals(existingColumnId, updated.stepId)
             assertEquals(5, updated.position)
             val found = repository.findById(card.id)
             assertEquals(5, found.getOrNull()?.position)
@@ -138,12 +138,12 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
             repository.save(card)
             val nonExistentColumnId = UUID.randomUUID().toString()
 
-            val result = repository.updateCard(card.id) { it.copy(columnId = nonExistentColumnId) }
+            val result = repository.updateCard(card.id) { it.copy(stepId = nonExistentColumnId) }
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
             val found = repository.findById(card.id)
             assertTrue(found.isRight())
-            assertEquals(existingColumnId, found.getOrNull()?.columnId)
+            assertEquals(existingColumnId, found.getOrNull()?.stepId)
         }
 }

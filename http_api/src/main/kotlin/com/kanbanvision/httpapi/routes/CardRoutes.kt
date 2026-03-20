@@ -70,9 +70,9 @@ private fun getCardByIdSpec(): RouteConfig.() -> Unit =
 private fun createCardSpec(): RouteConfig.() -> Unit =
     {
         operationId = "createCard"
-        summary = "Cria um novo cartão em uma coluna"
+        summary = "Cria um novo cartão em uma etapa"
         tags("cards")
-        description = "Cria um novo cartão em uma coluna do quadro."
+        description = "Cria um novo cartão em uma etapa do quadro."
         applyBearerAuthSecurity()
         request {
             body<CreateCardRequest> {
@@ -94,7 +94,7 @@ private fun RouteConfig.applyCreateCardResponses() {
             body<ValidationErrorResponse>()
         }
         code(HttpStatusCode.NotFound) {
-            description = "Coluna (`columnId`) não encontrada."
+            description = "Etapa (`stepId`) não encontrada."
             body<DomainErrorResponse>()
         }
         code(HttpStatusCode.InternalServerError) {
@@ -107,9 +107,9 @@ private fun RouteConfig.applyCreateCardResponses() {
 private fun moveCardSpec(): RouteConfig.() -> Unit =
     {
         operationId = "moveCard"
-        summary = "Move um cartão para outra coluna ou posição"
+        summary = "Move um cartão para outra etapa ou posição"
         tags("cards")
-        description = "Move um cartão para outra coluna ou posição dentro do quadro."
+        description = "Move um cartão para outra etapa ou posição dentro do quadro."
         applyBearerAuthSecurity()
         request {
             pathParameter<String>("id") {
@@ -117,7 +117,7 @@ private fun moveCardSpec(): RouteConfig.() -> Unit =
                 required = true
             }
             body<MoveCardRequest> {
-                description = "Coluna destino e nova posição do cartão."
+                description = "Etapa destino e nova posição do cartão."
                 required = true
             }
         }
@@ -131,7 +131,7 @@ private fun RouteConfig.applyMoveCardResponses() {
             body<CardResponse>()
         }
         code(HttpStatusCode.NotFound) {
-            description = "Cartão ou coluna destino não encontrado."
+            description = "Cartão ou etapa destino não encontrado."
             body<DomainErrorResponse>()
         }
         code(HttpStatusCode.BadRequest) {
@@ -152,7 +152,7 @@ private suspend fun ApplicationCall.handleGetCard(getCard: GetCardUseCase) {
     getCard.execute(GetCardQuery(id = id)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { card ->
-            respond(CardResponse(card.id, card.columnId, card.title, card.description, card.position))
+            respond(CardResponse(card.id, card.stepId, card.title, card.description, card.position))
         },
     )
 }
@@ -167,13 +167,13 @@ private suspend fun ApplicationCall.handleCreateCard(
             createCard
                 .execute(
                     CreateCardCommand(
-                        columnId = request.columnId,
+                        stepId = request.stepId,
                         title = request.title,
                         description = request.description,
                     ),
                 ).bind()
         val card = getCard.execute(GetCardQuery(id = cardId)).bind()
-        CardResponse(card.id, card.columnId, card.title, card.description, card.position)
+        CardResponse(card.id, card.stepId, card.title, card.description, card.position)
     }.fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { response -> respond(HttpStatusCode.Created, response) },
@@ -193,12 +193,12 @@ private suspend fun ApplicationCall.handleMoveCard(
             .execute(
                 MoveCardCommand(
                     cardId = id,
-                    targetColumnId = request.columnId,
+                    targetStepId = request.stepId,
                     newPosition = request.position,
                 ),
             ).bind()
         val card = getCard.execute(GetCardQuery(id = id)).bind()
-        CardResponse(card.id, card.columnId, card.title, card.description, card.position)
+        CardResponse(card.id, card.stepId, card.title, card.description, card.position)
     }.fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { response -> respond(response) },
@@ -207,21 +207,21 @@ private suspend fun ApplicationCall.handleMoveCard(
 
 @Serializable
 data class CreateCardRequest(
-    val columnId: String,
+    val stepId: String,
     val title: String,
     val description: String = "",
 )
 
 @Serializable
 data class MoveCardRequest(
-    val columnId: String,
+    val stepId: String,
     val position: Int,
 )
 
 @Serializable
 data class CardResponse(
     val id: String,
-    val columnId: String,
+    val stepId: String,
     val title: String,
     val description: String,
     val position: Int,

@@ -58,7 +58,7 @@ class JdbcCardRepository : CardRepository {
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, card.id)
-                                stmt.setString(COL_STEP_ID, card.columnId)
+                                stmt.setString(COL_STEP_ID, card.stepId)
                                 stmt.setString(COL_TITLE, card.title)
                                 stmt.setString(COL_DESCRIPTION, card.description)
                                 stmt.setInt(COL_POSITION, card.position)
@@ -137,7 +137,7 @@ class JdbcCardRepository : CardRepository {
                     WHERE id = ?
                     """.trimIndent(),
                 ).use { stmt ->
-                    stmt.setString(PARAM_STEP_ID, updated.columnId)
+                    stmt.setString(PARAM_STEP_ID, updated.stepId)
                     stmt.setString(PARAM_TITLE, updated.title)
                     stmt.setString(PARAM_DESCRIPTION, updated.description)
                     stmt.setInt(PARAM_POSITION, updated.position)
@@ -149,9 +149,9 @@ class JdbcCardRepository : CardRepository {
         return updated
     }
 
-    override suspend fun findByColumnId(columnId: String): Either<DomainError, List<Card>> =
+    override suspend fun findByStepId(stepId: String): Either<DomainError, List<Card>> =
         query {
-            val stepId = columnId
+            val stepId = stepId
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
@@ -172,7 +172,7 @@ class JdbcCardRepository : CardRepository {
     private fun java.sql.ResultSet.toCard() =
         Card(
             id = getString("id"),
-            columnId = getString("step_id"),
+            stepId = getString("step_id"),
             title = getString("title"),
             description = getString("description"),
             position = getInt("position"),

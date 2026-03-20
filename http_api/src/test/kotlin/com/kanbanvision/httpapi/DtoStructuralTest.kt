@@ -3,8 +3,6 @@ package com.kanbanvision.httpapi
 import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
-import com.kanbanvision.httpapi.routes.ColumnResponse
-import com.kanbanvision.httpapi.routes.CreateColumnRequest
 import com.kanbanvision.httpapi.routes.CreateStepRequest
 import com.kanbanvision.httpapi.routes.HealthResponse
 import com.kanbanvision.httpapi.routes.IssueTokenRequest
@@ -16,42 +14,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class DtoStructuralTest {
-    @Test
-    fun `CreateColumnRequest equality and copy`() {
-        val req = CreateColumnRequest(boardId = "b1", name = "To Do", requiredAbility = AbilityName.PRODUCT_MANAGER)
-        assertEquals(req, req.copy())
-        assertEquals("b1", req.boardId)
-        assertEquals("To Do", req.name)
-        assertEquals(AbilityName.PRODUCT_MANAGER, req.requiredAbility)
-        assertNotEquals(req, req.copy(boardId = "b2"))
-    }
-
-    @Test
-    fun `CreateColumnRequest default required ability is developer`() {
-        val req = CreateColumnRequest(boardId = "b1", name = "To Do")
-        assertEquals(AbilityName.DEVELOPER, req.requiredAbility)
-    }
-
-    @Test
-    fun `ColumnResponse equality and copy`() {
-        val resp =
-            ColumnResponse(
-                id = "col-1",
-                boardId = "b-1",
-                name = "In Progress",
-                position = 1,
-                requiredAbility = AbilityName.DEVELOPER,
-            )
-        assertEquals(resp, resp.copy())
-        assertEquals("col-1", resp.id)
-        assertEquals("b-1", resp.boardId)
-        assertEquals("In Progress", resp.name)
-        assertEquals(1, resp.position)
-        assertEquals(AbilityName.DEVELOPER, resp.requiredAbility)
-        assertNotEquals(resp, resp.copy(id = "col-2"))
-    }
-
-    @Test
     fun `CreateStepRequest equality and copy`() {
         val req = CreateStepRequest(boardId = "b-1", name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
         assertEquals(req, req.copy())

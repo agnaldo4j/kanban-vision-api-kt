@@ -170,7 +170,7 @@ class SimulationEngineWorkerExecutionTest {
 
     private fun deployCard(step: Step) =
         Card(
-            columnId = step.id,
+            stepId = step.id,
             title = "Task Effort",
             state = CardState.IN_PROGRESS,
             analysisEffort = 0,

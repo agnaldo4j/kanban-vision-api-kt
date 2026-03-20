@@ -17,21 +17,21 @@ class MoveCardUseCase(
         either {
             command.validate().bind()
             log.debug(
-                "Moving card: cardId={} targetColumnId={} position={}",
+                "Moving card: cardId={} targetStepId={} position={}",
                 command.cardId,
-                command.targetColumnId,
+                command.targetStepId,
                 command.newPosition,
             )
             val (_, duration) =
                 timed {
                     cardRepository.updateCard(command.cardId) { card ->
-                        card.moveTo(command.targetColumnId, command.newPosition)
+                        card.moveTo(command.targetStepId, command.newPosition)
                     }
                 }
             log.info(
-                "Card moved: cardId={} targetColumnId={} position={} duration={}ms",
+                "Card moved: cardId={} targetStepId={} position={} duration={}ms",
                 command.cardId,
-                command.targetColumnId,
+                command.targetStepId,
                 command.newPosition,
                 duration.inWholeMilliseconds,
             )

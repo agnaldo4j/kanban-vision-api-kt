@@ -59,8 +59,8 @@ class JdbcBoardStepOrganizationRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val column = Step("c1", "b1", "Todo", 0, AbilityName.PRODUCT_MANAGER)
-                val result = columnRepo.save(column)
+                val step = Step("c1", "b1", "Todo", 0, AbilityName.PRODUCT_MANAGER)
+                val result = columnRepo.save(step)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

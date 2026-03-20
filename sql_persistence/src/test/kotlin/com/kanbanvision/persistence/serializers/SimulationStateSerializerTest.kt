@@ -20,7 +20,7 @@ class SimulationStateSerializerTest {
         val card = state.cards.single()
         val context = assertNotNull(state.context)
 
-        assertEquals("", card.columnId)
+        assertEquals("", card.stepId)
         assertEquals(0, card.position)
         assertEquals(0, card.analysisEffort)
         assertEquals(0, card.remainingDeployEffort)
@@ -78,7 +78,7 @@ class SimulationStateSerializerTest {
         assertEquals(1, state.cards.size)
         assertEquals("legacy-card", state.cards.first().id)
         assertEquals("Legacy", state.cards.first().title)
-        assertEquals("", state.cards.first().columnId)
+        assertEquals("", state.cards.first().stepId)
         assertEquals(0, state.cards.first().remainingDeployEffort)
     }
 
@@ -193,7 +193,7 @@ class SimulationStateSerializerTest {
     private fun richCard() =
         Card(
             id = "card-1",
-            columnId = "step-1",
+            stepId = "step-1",
             title = "Execution card",
             description = "desc",
             position = 2,
@@ -211,7 +211,7 @@ class SimulationStateSerializerTest {
         )
 
     private fun assertCardExecutionFields(decodedCard: Card) {
-        assertEquals("step-1", decodedCard.columnId)
+        assertEquals("step-1", decodedCard.stepId)
         assertEquals("desc", decodedCard.description)
         assertEquals(2, decodedCard.position)
         assertEquals(ServiceClass.FIXED_DATE, decodedCard.serviceClass)

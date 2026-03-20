@@ -57,9 +57,9 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
         }
 
     @Test
-    fun `column save returns PersistenceError when datasource is closed`() =
+    fun `step save returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
-            val column =
+            val step =
                 Step(
                     id = UUID.randomUUID().toString(),
                     boardId = UUID.randomUUID().toString(),
@@ -67,13 +67,13 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
                     position = 0,
                     requiredAbility = AbilityName.DEVELOPER,
                 )
-            val result = columnRepository.save(column)
+            val result = columnRepository.save(step)
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }
 
     @Test
-    fun `column findById returns PersistenceError when datasource is closed`() =
+    fun `step findById returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
             val result = columnRepository.findById(UUID.randomUUID().toString())
             assertTrue(result.isLeft())
@@ -81,7 +81,7 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
         }
 
     @Test
-    fun `column findByBoardId returns PersistenceError when datasource is closed`() =
+    fun `step findByBoardId returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
             val result = columnRepository.findByBoardId(UUID.randomUUID().toString())
             assertTrue(result.isLeft())
@@ -94,7 +94,7 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
             val card =
                 Card(
                     id = UUID.randomUUID().toString(),
-                    columnId = UUID.randomUUID().toString(),
+                    stepId = UUID.randomUUID().toString(),
                     title = "Card",
                     description = "",
                     position = 0,
@@ -114,9 +114,9 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
         }
 
     @Test
-    fun `card findByColumnId returns PersistenceError when datasource is closed`() =
+    fun `card findByStepId returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
-            val result = cardRepository.findByColumnId(UUID.randomUUID().toString())
+            val result = cardRepository.findByStepId(UUID.randomUUID().toString())
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }

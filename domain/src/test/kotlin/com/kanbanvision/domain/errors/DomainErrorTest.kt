@@ -35,13 +35,6 @@ class DomainErrorTest {
     }
 
     @Test
-    fun `ColumnNotFound holds id`() {
-        val error = DomainError.ColumnNotFound("col-1")
-        assertIs<DomainError>(error)
-        assertEquals("col-1", error.id)
-    }
-
-    @Test
     fun `StepNotFound holds id`() {
         val error = DomainError.StepNotFound("step-1")
         assertIs<DomainError>(error)

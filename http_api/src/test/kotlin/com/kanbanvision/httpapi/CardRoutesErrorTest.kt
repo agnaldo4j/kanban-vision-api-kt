@@ -15,12 +15,12 @@ import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.card.CreateCardUseCase
 import com.kanbanvision.usecases.card.GetCardUseCase
 import com.kanbanvision.usecases.card.MoveCardUseCase
-import com.kanbanvision.usecases.column.CreateColumnUseCase
-import com.kanbanvision.usecases.column.GetColumnUseCase
-import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
-import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.StepRepository
+import com.kanbanvision.usecases.step.CreateStepUseCase
+import com.kanbanvision.usecases.step.GetStepUseCase
+import com.kanbanvision.usecases.step.ListStepsByBoardUseCase
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -45,29 +45,29 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class CardRoutesErrorTest {
-    private val columnId = UUID.randomUUID().toString()
+    private val stepId = UUID.randomUUID().toString()
     private val cardId = UUID.randomUUID().toString()
 
     @Suppress("UnusedPrivateProperty")
-    private val card = Card(id = cardId, columnId = columnId, title = "Task", description = "Do it", position = 0)
+    private val card = Card(id = cardId, stepId = stepId, title = "Task", description = "Do it", position = 0)
 
     private val boardRepository = mockk<BoardRepository>()
     private val cardRepository = mockk<CardRepository>()
-    private val columnRepository = mockk<ColumnRepository>()
+    private val stepRepository = mockk<StepRepository>()
 
     private val testModule =
         module {
             single<BoardRepository> { boardRepository }
             single<CardRepository> { cardRepository }
-            single<ColumnRepository> { columnRepository }
+            single<StepRepository> { stepRepository }
             single { CreateBoardUseCase(get()) }
             single { GetBoardUseCase(get()) }
             single { CreateCardUseCase(get(), get(), get()) }
             single { GetCardUseCase(get()) }
             single { MoveCardUseCase(get()) }
-            single { CreateColumnUseCase(get(), get()) }
-            single { GetColumnUseCase(get()) }
-            single { ListColumnsByBoardUseCase(get()) }
+            single { CreateStepUseCase(get(), get()) }
+            single { GetStepUseCase(get()) }
+            single { ListStepsByBoardUseCase(get(), get()) }
             single { mockk<DomainMetrics>(relaxed = true) }
         }
 
@@ -90,7 +90,7 @@ class CardRoutesErrorTest {
             val response =
                 client.patch("/api/v1/cards/nonexistent/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"$columnId","position":0}""")
+                    setBody("""{"stepId":"$stepId","position":0}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -101,7 +101,7 @@ class CardRoutesErrorTest {
         }
 
     @Test
-    fun `PATCH cards move with blank columnId returns 400`() =
+    fun `PATCH cards move with blank stepId returns 400`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -117,7 +117,7 @@ class CardRoutesErrorTest {
             val response =
                 client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"","position":0}""")
+                    setBody("""{"stepId":"","position":0}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -168,12 +168,12 @@ class CardRoutesErrorTest {
                 configureRouting()
             }
 
-            coEvery { cardRepository.findByColumnId(any()) } returns DomainError.PersistenceError("DB failure").left()
+            coEvery { cardRepository.findByStepId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response =
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"$columnId","title":"Task"}""")
+                    setBody("""{"stepId":"$stepId","title":"Task"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -229,7 +229,7 @@ class CardRoutesErrorTest {
             val response =
                 client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"$columnId","position":0}""")
+                    setBody("""{"stepId":"$stepId","position":0}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

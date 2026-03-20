@@ -2,7 +2,6 @@ package com.kanbanvision.httpapi.plugins
 
 import com.kanbanvision.httpapi.routes.boardRoutes
 import com.kanbanvision.httpapi.routes.cardRoutes
-import com.kanbanvision.httpapi.routes.columnRoutes
 import com.kanbanvision.httpapi.routes.healthRoutes
 import com.kanbanvision.httpapi.routes.scenarioAnalyticsRoutes
 import com.kanbanvision.httpapi.routes.scenarioRoutes
@@ -21,7 +20,6 @@ fun Application.configureRouting() {
                 boardRoutes()
                 cardRoutes()
                 stepRoutes()
-                columnRoutes()
                 scenarioRoutes()
                 scenarioAnalyticsRoutes()
             }

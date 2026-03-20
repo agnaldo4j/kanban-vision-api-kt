@@ -31,18 +31,18 @@ class DtoTest {
 
     @Test
     fun `CreateCardRequest equality and copy`() {
-        val req = CreateCardRequest(columnId = "col-1", title = "Task", description = "Desc")
+        val req = CreateCardRequest(stepId = "col-1", title = "Task", description = "Desc")
         assertEquals(req, req.copy())
-        assertEquals("col-1", req.columnId)
+        assertEquals("col-1", req.stepId)
         assertEquals("Task", req.title)
         assertNotEquals(req, CreateCardRequest("col-2", "Task"))
     }
 
     @Test
     fun `MoveCardRequest equality and copy`() {
-        val req = MoveCardRequest(columnId = "col-1", position = 2)
+        val req = MoveCardRequest(stepId = "col-1", position = 2)
         assertEquals(req, req.copy())
-        assertEquals("col-1", req.columnId)
+        assertEquals("col-1", req.stepId)
         assertEquals(2, req.position)
         assertNotEquals(req, MoveCardRequest("col-2", 2))
     }
@@ -58,10 +58,10 @@ class DtoTest {
 
     @Test
     fun `CardResponse equality and copy`() {
-        val resp = CardResponse(id = "c1", columnId = "col1", title = "Task", description = "Desc", position = 0)
+        val resp = CardResponse(id = "c1", stepId = "col1", title = "Task", description = "Desc", position = 0)
         assertEquals(resp, resp.copy())
         assertEquals("c1", resp.id)
-        assertEquals("col1", resp.columnId)
+        assertEquals("col1", resp.stepId)
         assertEquals("Task", resp.title)
         assertEquals("Desc", resp.description)
         assertEquals(0, resp.position)
