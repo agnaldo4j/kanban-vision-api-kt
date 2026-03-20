@@ -1,6 +1,6 @@
 -- V1__initial_schema.sql
--- Schema inicial: boards, steps, cards (Flow Design) +
--- organizations, scenarios, scenario_states, daily_snapshots (Simulation).
+-- Schema inicial unificado:
+-- boards, steps, cards, organizations, scenarios, scenario_states, daily_snapshots.
 
 CREATE TABLE boards (
     id         VARCHAR(36)  PRIMARY KEY,
