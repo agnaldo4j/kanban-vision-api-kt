@@ -3,6 +3,7 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.SimulationState
@@ -57,18 +58,16 @@ class RunDayUseCase(
     private fun ensureAssignmentsConsistency(context: com.kanbanvision.domain.model.SimulationContext): Either<DomainError, Unit> =
         either {
             context.workerAssignments.forEach { (workerId, stepId) ->
-                val worker = context.findWorker(workerId)
-                ensure(worker != null) {
-                    DomainError.ValidationError("Simulation context contains assignment for unknown workerId: $workerId")
-                }
-                val step = context.findStep(stepId)
-                ensure(step != null) {
-                    DomainError.ValidationError("Simulation context contains assignment for unknown stepId: $stepId")
-                }
-                val resolvedWorker = worker ?: return@forEach
-                val resolvedStep = step ?: return@forEach
-                ensureStepBoardConsistency(context, resolvedStep, stepId).bind()
-                ensureWorkerAbilityConsistency(resolvedWorker, resolvedStep, workerId, stepId).bind()
+                val worker =
+                    ensureNotNull(context.findWorker(workerId)) {
+                        DomainError.ValidationError("Simulation context contains assignment for unknown workerId: $workerId")
+                    }
+                val step =
+                    ensureNotNull(context.findStep(stepId)) {
+                        DomainError.ValidationError("Simulation context contains assignment for unknown stepId: $stepId")
+                    }
+                ensureStepBoardConsistency(context, step, stepId).bind()
+                ensureWorkerAbilityConsistency(worker, step, workerId, stepId).bind()
             }
         }
 

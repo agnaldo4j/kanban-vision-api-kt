@@ -20,7 +20,9 @@ import kotlin.random.Random
 object SimulationEngine {
     /**
      * Runs a single simulation day. Pure function: same inputs always produce the same output.
-     * [seed] controls ordering of non-EXPEDITE TODO items during auto-advance;
+     * [seed] controls deterministic randomness for:
+     * 1) ordering of non-EXPEDITE TODO items during auto-advance
+     * 2) per-worker assigned execution capacities
      * EXPEDITE items are always prioritized first in their original list order.
      */
     fun runDay(
@@ -33,7 +35,7 @@ object SimulationEngine {
 
         val afterDecisions = applyDecisions(state.cards, decisions, ctx)
         val afterAutoAdvance = autoAdvance(afterDecisions, state.policySet, ctx)
-        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, state.context, ctx)
+        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, state.context, seed, ctx)
         val afterAging =
             afterExecution.map { item ->
                 if (item.state != CardState.DONE) item.incrementAge() else item
@@ -182,6 +184,7 @@ private data class EngineContext(
 private fun applyAssignedWorkerExecution(
     items: List<Card>,
     context: SimulationContext?,
+    simulationSeed: Long,
     ctx: EngineContext,
 ): List<Card> {
     if (context == null || context.workerAssignments.isEmpty() || context.steps.isEmpty()) return items
@@ -191,7 +194,12 @@ private fun applyAssignedWorkerExecution(
         .entries
         .sortedWith(compareBy({ it.key }, { it.value }))
         .forEach { (workerId, stepId) ->
-            applySingleWorkerExecution(current, context, WorkerStepAssignment(workerId = workerId, stepId = stepId), ctx)
+            applySingleWorkerExecution(
+                current = current,
+                context = context,
+                assignment = WorkerStepAssignment(workerId = workerId, stepId = stepId),
+                executionSeedContext = ExecutionSeedContext(simulationSeed = simulationSeed, day = ctx.day),
+            )
         }
     return current
 }
@@ -205,7 +213,7 @@ private fun applySingleWorkerExecution(
     current: MutableList<Card>,
     context: SimulationContext,
     assignment: WorkerStepAssignment,
-    ctx: EngineContext,
+    executionSeedContext: ExecutionSeedContext,
 ) {
     val worker = context.findWorker(assignment.workerId)
     val step = context.findStep(assignment.stepId)
@@ -213,11 +221,38 @@ private fun applySingleWorkerExecution(
     val targetIndex = findExecutableCardIndex(current, step.id, step.requiredAbility)
     if (targetIndex < 0) return
 
-    val seedMix = ctx.rng.nextLong() xor worker.id.hashCode().toLong() xor step.id.hashCode().toLong()
+    val seedMix =
+        stableExecutionSeed(
+            simulationSeed = executionSeedContext.simulationSeed,
+            day = executionSeedContext.day,
+            workerId = worker.id,
+            stepId = step.id,
+        )
     val capacities = worker.generateDailyCapacities(random = Random(seedMix))
     val result = step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities)
     current[targetIndex] = result.updatedCard
 }
+
+private fun stableExecutionSeed(
+    simulationSeed: Long,
+    day: Int,
+    workerId: String,
+    stepId: String,
+): Long =
+    listOf(
+        simulationSeed,
+        day.toLong(),
+        workerId.hashCode().toLong(),
+        stepId.hashCode().toLong(),
+    ).fold(SEED_FOLD_INITIAL) { acc, value -> acc * SEED_FOLD_FACTOR + value }
+
+private data class ExecutionSeedContext(
+    val simulationSeed: Long,
+    val day: Int,
+)
+
+private const val SEED_FOLD_INITIAL = 17L
+private const val SEED_FOLD_FACTOR = 31L
 
 private fun findExecutableCardIndex(
     cards: List<Card>,
