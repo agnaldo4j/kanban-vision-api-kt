@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi
 
-import com.kanbanvision.domain.model.team.AbilityName
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.httpapi.routes.ColumnResponse

@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.usecases.card.queries.GetCardQuery
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.timed
@@ -19,7 +18,7 @@ class GetCardUseCase(
         either {
             query.validate().bind()
             log.debug("Fetching card: id={}", query.id)
-            val (card, duration) = timed { cardRepository.findById(CardId(query.id)) }
+            val (card, duration) = timed { cardRepository.findById(query.id) }
             log.info("Card fetched: id={} duration={}ms", query.id, duration.inWholeMilliseconds)
             card
         }

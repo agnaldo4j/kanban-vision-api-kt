@@ -4,14 +4,13 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.MoveCardCommand
 import com.kanbanvision.usecases.repositories.CardRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -24,31 +23,31 @@ class MoveCardUseCaseTest {
     @Test
     fun `execute moves card to target column at given position`() =
         runTest {
-            val card = Card.create(columnId = ColumnId.generate(), title = "Task", position = 0)
-            val targetColumnId = ColumnId.generate().value
+            val card = Card.create(columnId = UUID.randomUUID().toString(), title = "Task", position = 0)
+            val targetColumnId = UUID.randomUUID().toString()
             var transformedCard: Card? = null
-            coEvery { cardRepository.updateCard(CardId(card.id.value), any()) } answers {
+            coEvery { cardRepository.updateCard(card.id, any()) } answers {
                 secondArg<(Card) -> Card>()(card).also { transformedCard = it }.right()
             }
 
-            val result = useCase.execute(MoveCardCommand(cardId = card.id.value, targetColumnId = targetColumnId, newPosition = 2))
+            val result = useCase.execute(MoveCardCommand(cardId = card.id, targetColumnId = targetColumnId, newPosition = 2))
 
             assertTrue(result.isRight())
-            assertEquals(targetColumnId, transformedCard?.columnId?.value)
+            assertEquals(targetColumnId, transformedCard?.columnId)
             assertEquals(2, transformedCard?.position)
         }
 
     @Test
     fun `execute returns CardNotFound when card not found`() =
         runTest {
-            val id = CardId.generate().value
+            val id = UUID.randomUUID().toString()
             coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.CardNotFound(id).left()
 
             val result =
                 useCase.execute(
                     MoveCardCommand(
                         cardId = id,
-                        targetColumnId = ColumnId.generate().value,
+                        targetColumnId = UUID.randomUUID().toString(),
                         newPosition = 0,
                     ),
                 )
@@ -62,7 +61,7 @@ class MoveCardUseCaseTest {
         runTest {
             val result =
                 useCase.execute(
-                    MoveCardCommand(cardId = "", targetColumnId = ColumnId.generate().value, newPosition = 0),
+                    MoveCardCommand(cardId = "", targetColumnId = UUID.randomUUID().toString(), newPosition = 0),
                 )
 
             assertTrue(result.isLeft())
@@ -75,7 +74,7 @@ class MoveCardUseCaseTest {
         runTest {
             val result =
                 useCase.execute(
-                    MoveCardCommand(cardId = CardId.generate().value, targetColumnId = "", newPosition = 0),
+                    MoveCardCommand(cardId = UUID.randomUUID().toString(), targetColumnId = "", newPosition = 0),
                 )
 
             assertTrue(result.isLeft())
@@ -89,8 +88,8 @@ class MoveCardUseCaseTest {
             val result =
                 useCase.execute(
                     MoveCardCommand(
-                        cardId = CardId.generate().value,
-                        targetColumnId = ColumnId.generate().value,
+                        cardId = UUID.randomUUID().toString(),
+                        targetColumnId = UUID.randomUUID().toString(),
                         newPosition = -1,
                     ),
                 )
@@ -108,8 +107,8 @@ class MoveCardUseCaseTest {
             val result =
                 useCase.execute(
                     MoveCardCommand(
-                        cardId = CardId.generate().value,
-                        targetColumnId = ColumnId.generate().value,
+                        cardId = UUID.randomUUID().toString(),
+                        targetColumnId = UUID.randomUUID().toString(),
                         newPosition = 0,
                     ),
                 )

@@ -1,11 +1,10 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
+import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.persistence.IntegrationTestSetup
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll
@@ -24,7 +23,7 @@ class JdbcColumnRepositoryIntegrationTest {
     private val boardRepository = JdbcBoardRepository()
     private val repository = JdbcColumnRepository()
 
-    private var existingBoardId: BoardId? = null
+    private var existingBoardId: String? = null
 
     @BeforeAll
     fun initDatabase() {
@@ -37,20 +36,20 @@ class JdbcColumnRepositoryIntegrationTest {
             IntegrationTestSetup.cleanTables()
             val board =
                 Board(
-                    id = BoardId(UUID.randomUUID().toString()),
+                    id = UUID.randomUUID().toString(),
                     name = "Test Board",
-                    createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
+                    audit = Audit(createdAt = Instant.ofEpochMilli(System.currentTimeMillis())),
                 )
             boardRepository.save(board)
             existingBoardId = board.id
         }
 
     private fun newColumn(
-        name: String = "Test Column",
+        name: String = "Test Step",
         position: Int = 0,
         requiredAbility: AbilityName = AbilityName.DEVELOPER,
-    ) = Column(
-        id = ColumnId(UUID.randomUUID().toString()),
+    ) = Step(
+        id = UUID.randomUUID().toString(),
         boardId = existingBoardId!!,
         name = name,
         position = position,
@@ -90,7 +89,7 @@ class JdbcColumnRepositoryIntegrationTest {
     @Test
     fun `findById returns ColumnNotFound when column does not exist`() =
         runBlocking<Unit> {
-            val result = repository.findById(ColumnId(UUID.randomUUID().toString()))
+            val result = repository.findById(UUID.randomUUID().toString())
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
@@ -142,9 +141,9 @@ class JdbcColumnRepositoryIntegrationTest {
     fun `save with non-existent boardId returns PersistenceError and no column is persisted`() =
         runBlocking<Unit> {
             val orphanColumn =
-                Column(
-                    id = ColumnId(UUID.randomUUID().toString()),
-                    boardId = BoardId(UUID.randomUUID().toString()),
+                Step(
+                    id = UUID.randomUUID().toString(),
+                    boardId = UUID.randomUUID().toString(),
                     name = "Orphan",
                     position = 0,
                     requiredAbility = AbilityName.DEVELOPER,
@@ -174,7 +173,7 @@ class JdbcColumnRepositoryIntegrationTest {
     @Test
     fun `findById with non-UUID string returns ColumnNotFound`() =
         runBlocking<Unit> {
-            val result = repository.findById(ColumnId("not-a-valid-uuid"))
+            val result = repository.findById("not-a-valid-uuid")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ColumnNotFound>(result.leftOrNull())

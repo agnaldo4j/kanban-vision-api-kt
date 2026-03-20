@@ -1,9 +1,7 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.persistence.IntegrationTestSetup
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
@@ -38,7 +36,7 @@ class JdbcSimulationRepositoriesErrorIntegrationTest {
     @Test
     fun `JdbcTenantRepository findById returns PersistenceError when pool is closed`() =
         runBlocking<Unit> {
-            val result = tenantRepository.findById(TenantId("any-id"))
+            val result = tenantRepository.findById("any-id")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
@@ -47,7 +45,7 @@ class JdbcSimulationRepositoriesErrorIntegrationTest {
     @Test
     fun `JdbcScenarioRepository findById returns PersistenceError when pool is closed`() =
         runBlocking<Unit> {
-            val result = scenarioRepository.findById(ScenarioId("any-id"))
+            val result = scenarioRepository.findById("any-id")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
@@ -56,7 +54,7 @@ class JdbcSimulationRepositoriesErrorIntegrationTest {
     @Test
     fun `JdbcSnapshotRepository findByDay returns PersistenceError when pool is closed`() =
         runBlocking<Unit> {
-            val result = snapshotRepository.findByDay(ScenarioId("any-id"), SimulationDay(1))
+            val result = snapshotRepository.findByDay("any-id", SimulationDay(1))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

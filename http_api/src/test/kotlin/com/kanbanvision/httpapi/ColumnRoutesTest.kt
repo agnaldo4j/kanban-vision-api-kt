@@ -3,11 +3,9 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -44,17 +42,18 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 @Suppress("LargeClass")
 class ColumnRoutesTest {
-    private val boardId = BoardId.generate()
-    private val columnId = ColumnId.generate()
+    private val boardId = UUID.randomUUID().toString()
+    private val columnId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "Test Board")
     private val column =
-        Column(
+        Step(
             id = columnId,
             boardId = boardId,
             name = "To Do",
@@ -97,14 +96,14 @@ class ColumnRoutesTest {
             }
 
             coEvery { boardRepository.findById(any()) } returns board.right()
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
-            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Step>().right()
+            coEvery { columnRepository.save(any()) } answers { firstArg<Step>().right() }
             coEvery { columnRepository.findById(any()) } returns column.right()
 
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do","requiredAbility":"PRODUCT_MANAGER"}""")
+                    setBody("""{"boardId":"$boardId","name":"To Do","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -132,7 +131,7 @@ class ColumnRoutesTest {
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"","requiredAbility":"PRODUCT_MANAGER"}""")
+                    setBody("""{"boardId":"$boardId","name":"","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -144,7 +143,7 @@ class ColumnRoutesTest {
                     ?.get(0)
                     ?.jsonPrimitive
                     ?.content
-            assertEquals("Column name must not be blank", firstError)
+            assertEquals("Step name must not be blank", firstError)
             assertNotNull(body["requestId"])
         }
 
@@ -163,14 +162,14 @@ class ColumnRoutesTest {
             }
 
             coEvery { boardRepository.findById(any()) } returns board.right()
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
-            coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Step>().right()
+            coEvery { columnRepository.save(any()) } answers { firstArg<Step>().right() }
             coEvery { columnRepository.findById(any()) } returns column.copy(requiredAbility = AbilityName.DEVELOPER).right()
 
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do"}""")
+                    setBody("""{"boardId":"$boardId","name":"To Do"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -196,13 +195,13 @@ class ColumnRoutesTest {
             coEvery { columnRepository.findById(columnId) } returns column.right()
 
             val response =
-                client.get("/api/v1/columns/${columnId.value}") {
+                client.get("/api/v1/columns/$columnId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(columnId.value, body["id"]?.jsonPrimitive?.content)
+            assertEquals(columnId, body["id"]?.jsonPrimitive?.content)
             assertEquals("To Do", body["name"]?.jsonPrimitive?.content)
             assertEquals("PRODUCT_MANAGER", body["requiredAbility"]?.jsonPrimitive?.content)
         }
@@ -253,7 +252,7 @@ class ColumnRoutesTest {
             val response =
                 client.post("/api/v1/columns") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"To Do","requiredAbility":"PRODUCT_MANAGER"}""")
+                    setBody("""{"boardId":"$boardId","name":"To Do","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -280,7 +279,7 @@ class ColumnRoutesTest {
             coEvery { columnRepository.findByBoardId(boardId) } returns listOf(column).right()
 
             val response =
-                client.get("/api/v1/boards/${boardId.value}/columns") {
+                client.get("/api/v1/boards/$boardId/columns") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -333,7 +332,7 @@ class ColumnRoutesTest {
                 DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.get("/api/v1/boards/${boardId.value}/columns") {
+                client.get("/api/v1/boards/$boardId/columns") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

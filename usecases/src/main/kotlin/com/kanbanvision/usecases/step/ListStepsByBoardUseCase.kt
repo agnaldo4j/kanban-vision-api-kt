@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.board.queries.GetBoardQuery
 import com.kanbanvision.usecases.repositories.StepRepository
@@ -26,7 +25,7 @@ class ListStepsByBoardUseCase(
             val (steps, duration) =
                 timed {
                     stepRepository
-                        .findByBoardId(BoardId(query.boardId))
+                        .findByBoardId(query.boardId)
                 }
             log.info(
                 "Steps listed: boardId={} count={} duration={}ms",

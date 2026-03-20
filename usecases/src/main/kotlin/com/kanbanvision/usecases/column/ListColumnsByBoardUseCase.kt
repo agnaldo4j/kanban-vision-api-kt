@@ -3,8 +3,7 @@ package com.kanbanvision.usecases.column
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.valueobjects.BoardId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.usecases.column.queries.ListColumnsByBoardQuery
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.timed
@@ -15,11 +14,11 @@ class ListColumnsByBoardUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(query: ListColumnsByBoardQuery): Either<DomainError, List<Column>> =
+    suspend fun execute(query: ListColumnsByBoardQuery): Either<DomainError, List<Step>> =
         either {
             query.validate().bind()
             log.debug("Listing columns: boardId={}", query.boardId)
-            val (columns, duration) = timed { columnRepository.findByBoardId(BoardId(query.boardId)) }
+            val (columns, duration) = timed { columnRepository.findByBoardId(query.boardId) }
             log.info(
                 "Columns listed: boardId={} count={} duration={}ms",
                 query.boardId,

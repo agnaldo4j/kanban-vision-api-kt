@@ -3,10 +3,9 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.tenant.Tenant
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.Tenant
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.commands.CreateScenarioCommand
@@ -24,9 +23,9 @@ class CreateScenarioUseCaseTest {
     private val scenarioRepository = mockk<ScenarioRepository>()
     private val useCase = CreateScenarioUseCase(tenantRepository, scenarioRepository)
 
-    private val tenantId = TenantId("tenant-abc")
+    private val tenantId = "tenant-abc"
     private val tenant = Tenant(id = tenantId, name = "Test Org")
-    private val command = CreateScenarioCommand(tenantId = tenantId.value, wipLimit = 3, teamSize = 2, seedValue = 42L)
+    private val command = CreateScenarioCommand(tenantId = tenantId, wipLimit = 3, teamSize = 2, seedValue = 42L)
 
     @Test
     fun `execute creates scenario and returns its id`() =
@@ -46,7 +45,7 @@ class CreateScenarioUseCaseTest {
     @Test
     fun `execute returns TenantNotFound when tenant does not exist`() =
         runTest {
-            coEvery { tenantRepository.findById(tenantId) } returns DomainError.TenantNotFound(tenantId.value).left()
+            coEvery { tenantRepository.findById(tenantId) } returns DomainError.TenantNotFound(tenantId).left()
 
             val result = useCase.execute(command)
 

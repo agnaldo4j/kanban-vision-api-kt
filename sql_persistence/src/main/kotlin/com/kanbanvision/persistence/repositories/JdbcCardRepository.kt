@@ -4,9 +4,8 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.CardRepository
 import kotlinx.coroutines.CancellationException
@@ -58,8 +57,8 @@ class JdbcCardRepository : CardRepository {
                                     position    = EXCLUDED.position
                                 """.trimIndent(),
                             ).use { stmt ->
-                                stmt.setString(COL_ID, card.id.value)
-                                stmt.setString(COL_COLUMN_ID, card.columnId.value)
+                                stmt.setString(COL_ID, card.id)
+                                stmt.setString(COL_COLUMN_ID, card.columnId)
                                 stmt.setString(COL_TITLE, card.title)
                                 stmt.setString(COL_DESCRIPTION, card.description)
                                 stmt.setInt(COL_POSITION, card.position)
@@ -72,7 +71,7 @@ class JdbcCardRepository : CardRepository {
                 }.mapLeft(::toPersistenceError)
         }
 
-    override suspend fun findById(id: CardId): Either<DomainError, Card> =
+    override suspend fun findById(id: String): Either<DomainError, Card> =
         query {
             Either
                 .catch {
@@ -81,7 +80,7 @@ class JdbcCardRepository : CardRepository {
                             .prepareStatement(
                                 "SELECT id, column_id, title, description, position, created_at FROM cards WHERE id = ?",
                             ).use { stmt ->
-                                stmt.setString(COL_ID, id.value)
+                                stmt.setString(COL_ID, id)
                                 stmt.executeQuery().use { rs ->
                                     if (rs.next()) rs.toCard() else null
                                 }
@@ -89,12 +88,12 @@ class JdbcCardRepository : CardRepository {
                     }
                 }.fold(
                     ifLeft = { toPersistenceError(it).left() },
-                    ifRight = { card -> card?.right() ?: DomainError.CardNotFound(id.value).left() },
+                    ifRight = { card -> card?.right() ?: DomainError.CardNotFound(id).left() },
                 )
         }
 
     override suspend fun updateCard(
-        id: CardId,
+        id: String,
         transform: (Card) -> Card,
     ): Either<DomainError, Card> =
         query {
@@ -106,20 +105,20 @@ class JdbcCardRepository : CardRepository {
                     }
                 }.fold(
                     ifLeft = { toPersistenceError(it).left() },
-                    ifRight = { updated -> updated?.right() ?: DomainError.CardNotFound(id.value).left() },
+                    ifRight = { updated -> updated?.right() ?: DomainError.CardNotFound(id).left() },
                 )
         }
 
     private fun fetchForUpdate(
         conn: java.sql.Connection,
-        id: CardId,
+        id: String,
     ): Card? =
         conn
             .prepareStatement(
                 "SELECT id, column_id, title, description, position, created_at" +
                     " FROM cards WHERE id = ? FOR UPDATE",
             ).use { stmt ->
-                stmt.setString(COL_ID, id.value)
+                stmt.setString(COL_ID, id)
                 stmt.executeQuery().use { rs -> if (rs.next()) rs.toCard() else null }
             }
 
@@ -138,19 +137,19 @@ class JdbcCardRepository : CardRepository {
                     WHERE id = ?
                     """.trimIndent(),
                 ).use { stmt ->
-                    stmt.setString(PARAM_COLUMN_ID, updated.columnId.value)
+                    stmt.setString(PARAM_COLUMN_ID, updated.columnId)
                     stmt.setString(PARAM_TITLE, updated.title)
                     stmt.setString(PARAM_DESCRIPTION, updated.description)
                     stmt.setInt(PARAM_POSITION, updated.position)
-                    stmt.setString(PARAM_WHERE_ID, card.id.value)
+                    stmt.setString(PARAM_WHERE_ID, card.id)
                     stmt.executeUpdate()
                 }
-        check(rowsUpdated > 0) { "Card ${card.id.value} was not updated" }
+        check(rowsUpdated > 0) { "Card ${card.id} was not updated" }
         conn.commit()
         return updated
     }
 
-    override suspend fun findByColumnId(columnId: ColumnId): Either<DomainError, List<Card>> =
+    override suspend fun findByColumnId(columnId: String): Either<DomainError, List<Card>> =
         query {
             Either
                 .catch {
@@ -160,7 +159,7 @@ class JdbcCardRepository : CardRepository {
                                 "SELECT id, column_id, title, description, position, created_at" +
                                     " FROM cards WHERE column_id = ? ORDER BY position",
                             ).use { stmt ->
-                                stmt.setString(COL_ID, columnId.value)
+                                stmt.setString(COL_ID, columnId)
                                 stmt.executeQuery().use { rs ->
                                     buildList { while (rs.next()) add(rs.toCard()) }
                                 }
@@ -171,11 +170,11 @@ class JdbcCardRepository : CardRepository {
 
     private fun java.sql.ResultSet.toCard() =
         Card(
-            id = CardId(getString("id")),
-            columnId = ColumnId(getString("column_id")),
+            id = getString("id"),
+            columnId = getString("column_id"),
             title = getString("title"),
             description = getString("description"),
             position = getInt("position"),
-            createdAt = Instant.ofEpochMilli(getLong("created_at")),
+            audit = Audit(createdAt = Instant.ofEpochMilli(getLong("created_at"))),
         )
 }

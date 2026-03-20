@@ -38,7 +38,7 @@ class CreateCardCommandTest {
         assertTrue(result.isLeft())
         val error = result.leftOrNull()
         assertIs<DomainError.ValidationError>(error)
-        assertTrue(error.message.contains("Column id must not be blank"))
+        assertTrue(error.message.contains("Step id must not be blank"))
         assertTrue(error.message.contains("Card title must not be blank"))
     }
 }

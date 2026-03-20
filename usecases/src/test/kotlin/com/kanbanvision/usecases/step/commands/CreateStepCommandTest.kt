@@ -1,7 +1,7 @@
 package com.kanbanvision.usecases.step.commands
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.team.AbilityName
+import com.kanbanvision.domain.model.AbilityName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

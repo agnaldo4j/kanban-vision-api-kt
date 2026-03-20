@@ -3,8 +3,6 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -41,13 +39,14 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class CardRoutesErrorTest {
-    private val columnId = ColumnId.generate()
-    private val cardId = CardId.generate()
+    private val columnId = UUID.randomUUID().toString()
+    private val cardId = UUID.randomUUID().toString()
 
     @Suppress("UnusedPrivateProperty")
     private val card = Card(id = cardId, columnId = columnId, title = "Task", description = "Do it", position = 0)
@@ -91,7 +90,7 @@ class CardRoutesErrorTest {
             val response =
                 client.patch("/api/v1/cards/nonexistent/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${columnId.value}","position":0}""")
+                    setBody("""{"columnId":"$columnId","position":0}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -116,7 +115,7 @@ class CardRoutesErrorTest {
             }
 
             val response =
-                client.patch("/api/v1/cards/${cardId.value}/move") {
+                client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"columnId":"","position":0}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
@@ -174,7 +173,7 @@ class CardRoutesErrorTest {
             val response =
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${columnId.value}","title":"Task"}""")
+                    setBody("""{"columnId":"$columnId","title":"Task"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -201,7 +200,7 @@ class CardRoutesErrorTest {
             coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.get("/api/v1/cards/${cardId.value}") {
+                client.get("/api/v1/cards/$cardId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -228,9 +227,9 @@ class CardRoutesErrorTest {
             coEvery { cardRepository.updateCard(any(), any()) } returns DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.patch("/api/v1/cards/${cardId.value}/move") {
+                client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${columnId.value}","position":0}""")
+                    setBody("""{"columnId":"$columnId","position":0}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

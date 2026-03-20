@@ -3,13 +3,11 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.scenario.queries.GetMovementsByDayQuery
 import io.mockk.coEvery
@@ -24,11 +22,11 @@ class GetMovementsByDayUseCaseTest {
     private val snapshotRepository = mockk<SnapshotRepository>()
     private val useCase = GetMovementsByDayUseCase(snapshotRepository)
 
-    private val scenarioId = ScenarioId("scenario-1")
+    private val scenarioId = "scenario-1"
     private val movement =
         Movement(
             type = MovementType.MOVED,
-            workItemId = WorkItemId("item-1"),
+            cardId = "item-1",
             day = SimulationDay(1),
             reason = "WIP available",
         )
@@ -45,7 +43,7 @@ class GetMovementsByDayUseCaseTest {
         runTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
 
-            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId.value, day = 1))
+            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId, day = 1))
 
             assertTrue(result.isRight())
             val movements = result.getOrNull()!!
@@ -59,7 +57,7 @@ class GetMovementsByDayUseCaseTest {
             val emptySnapshot = snapshot.copy(movements = emptyList())
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns emptySnapshot.right()
 
-            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId.value, day = 1))
+            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId, day = 1))
 
             assertTrue(result.isRight())
             assertEquals(emptyList(), result.getOrNull())
@@ -70,7 +68,7 @@ class GetMovementsByDayUseCaseTest {
         runTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns null.right()
 
-            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId.value, day = 1))
+            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId, day = 1))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ScenarioNotFound>(result.leftOrNull())
@@ -82,7 +80,7 @@ class GetMovementsByDayUseCaseTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns
                 DomainError.PersistenceError("DB down").left()
 
-            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId.value, day = 1))
+            val result = useCase.execute(GetMovementsByDayQuery(scenarioId = scenarioId, day = 1))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.movement.Movement
+import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -162,7 +162,7 @@ private fun ApplicationCall.parseIntQueryParam(name: String): Either<DomainError
     return raw.toIntOrNull()?.right() ?: DomainError.ValidationError("$name must be an integer").left()
 }
 
-private fun Movement.toResponse() = MovementResponse(type = type.name, workItemId = workItemId.value, day = day.value, reason = reason)
+private fun Movement.toResponse() = MovementResponse(type = type.name, cardId = cardId, day = day.value, reason = reason)
 
 private fun DailyMetrics.toResponse() =
     DailyMetricsResponse(

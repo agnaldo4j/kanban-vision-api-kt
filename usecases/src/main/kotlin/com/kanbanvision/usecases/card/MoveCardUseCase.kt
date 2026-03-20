@@ -3,8 +3,6 @@ package com.kanbanvision.usecases.card
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.MoveCardCommand
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.timed
@@ -26,8 +24,8 @@ class MoveCardUseCase(
             )
             val (_, duration) =
                 timed {
-                    cardRepository.updateCard(CardId(command.cardId)) { card ->
-                        card.moveTo(ColumnId(command.targetColumnId), command.newPosition)
+                    cardRepository.updateCard(command.cardId) { card ->
+                        card.moveTo(command.targetColumnId, command.newPosition)
                     }
                 }
             log.info(

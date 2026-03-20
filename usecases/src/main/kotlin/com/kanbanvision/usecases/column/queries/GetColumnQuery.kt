@@ -11,6 +11,6 @@ data class GetColumnQuery(
 ) : Query {
     override fun validate(): Either<DomainError.ValidationError, Unit> =
         either {
-            ensure(id.isNotBlank()) { DomainError.ValidationError("Column id must not be blank") }
+            ensure(id.isNotBlank()) { DomainError.ValidationError("Step id must not be blank") }
         }
 }

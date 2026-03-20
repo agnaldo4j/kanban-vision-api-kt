@@ -1,13 +1,11 @@
 package com.kanbanvision.httpapi
 
 import arrow.core.right
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -54,11 +52,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioAnalyticsRoutesTest {
-    private val scenarioId = ScenarioId("scenario-test-id")
+    private val scenarioId = "scenario-test-id"
     private val movement =
         Movement(
             type = MovementType.MOVED,
-            workItemId = WorkItemId("item-1"),
+            cardId = "item-1",
             day = SimulationDay(1),
             reason = "WIP available",
         )
@@ -119,7 +117,7 @@ class ScenarioAnalyticsRoutesTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements") {
+                client.get("/api/v1/scenarios/$scenarioId/days/1/movements") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -127,7 +125,7 @@ class ScenarioAnalyticsRoutesTest {
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonArray
             assertEquals(1, body.size)
             assertEquals("MOVED", body[0].jsonObject["type"]?.jsonPrimitive?.content)
-            assertEquals("item-1", body[0].jsonObject["workItemId"]?.jsonPrimitive?.content)
+            assertEquals("item-1", body[0].jsonObject["cardId"]?.jsonPrimitive?.content)
         }
 
     @Test
@@ -147,7 +145,7 @@ class ScenarioAnalyticsRoutesTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(99)) } returns null.right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/99/movements") {
+                client.get("/api/v1/scenarios/$scenarioId/days/99/movements") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -172,7 +170,7 @@ class ScenarioAnalyticsRoutesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/0/movements") {
+                client.get("/api/v1/scenarios/$scenarioId/days/0/movements") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

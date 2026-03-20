@@ -1,23 +1,19 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.model.team.Ability
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.team.Seniority
-import com.kanbanvision.domain.model.team.Worker
-import com.kanbanvision.domain.model.valueobjects.BoardId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ColumnTest {
-    private val boardId = BoardId.generate()
+    private val boardId = UUID.randomUUID().toString()
 
     @Test
     fun `create column with valid data`() {
         val column =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "Todo",
                 position = 0,
@@ -27,14 +23,14 @@ class ColumnTest {
         assertEquals(boardId, column.boardId)
         assertEquals(0, column.position)
         assertEquals(AbilityName.PRODUCT_MANAGER, column.requiredAbility)
-        assertTrue(column.id.value.isNotBlank())
+        assertTrue(column.id.isNotBlank())
         assertTrue(column.cards.isEmpty())
     }
 
     @Test
     fun `create column at non-zero position`() {
         val column =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "Done",
                 position = 2,
@@ -46,7 +42,7 @@ class ColumnTest {
     @Test
     fun `create column with required ability`() {
         val column =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "Development",
                 position = 1,
@@ -58,7 +54,7 @@ class ColumnTest {
 
     @Test
     fun `column accepts worker with matching ability`() {
-        val column = Column.create(boardId = boardId, name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
+        val column = Step.create(boardId = boardId, name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
         val worker =
             Worker(
                 name = "Ana",
@@ -71,7 +67,7 @@ class ColumnTest {
 
     @Test
     fun `column rejects worker without required ability`() {
-        val column = Column.create(boardId = boardId, name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
+        val column = Step.create(boardId = boardId, name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
         val worker =
             Worker(
                 name = "Bruno",
@@ -89,35 +85,35 @@ class ColumnTest {
     @Test
     fun `create column with blank name throws`() {
         assertThrows<IllegalArgumentException> {
-            Column.create(boardId = boardId, name = "", position = 0, requiredAbility = AbilityName.PRODUCT_MANAGER)
+            Step.create(boardId = boardId, name = "", position = 0, requiredAbility = AbilityName.PRODUCT_MANAGER)
         }
     }
 
     @Test
     fun `create column with whitespace-only name throws`() {
         assertThrows<IllegalArgumentException> {
-            Column.create(boardId = boardId, name = "  ", position = 0, requiredAbility = AbilityName.PRODUCT_MANAGER)
+            Step.create(boardId = boardId, name = "  ", position = 0, requiredAbility = AbilityName.PRODUCT_MANAGER)
         }
     }
 
     @Test
     fun `create column with negative position throws`() {
         assertThrows<IllegalArgumentException> {
-            Column.create(boardId = boardId, name = "Todo", position = -1, requiredAbility = AbilityName.PRODUCT_MANAGER)
+            Step.create(boardId = boardId, name = "Todo", position = -1, requiredAbility = AbilityName.PRODUCT_MANAGER)
         }
     }
 
     @Test
     fun `column rejects assigning same worker to two different columns`() {
         val productColumn =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "Product Discovery",
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             )
         val devColumn =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "Development",
                 position = 1,

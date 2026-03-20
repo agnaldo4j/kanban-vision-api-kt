@@ -14,6 +14,13 @@ class DomainErrorTest {
     }
 
     @Test
+    fun `ValidationError from messages exposes messages list`() {
+        val error = DomainError.ValidationError(listOf("invalid input", "missing field"))
+        assertEquals(listOf("invalid input", "missing field"), error.messages)
+        assertEquals("invalid input; missing field", error.message)
+    }
+
+    @Test
     fun `BoardNotFound holds id`() {
         val error = DomainError.BoardNotFound("board-1")
         assertIs<DomainError>(error)

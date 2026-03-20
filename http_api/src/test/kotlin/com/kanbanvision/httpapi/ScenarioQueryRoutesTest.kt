@@ -3,15 +3,13 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.policy.PolicySet
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.PolicySet
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationState
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -57,15 +55,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioQueryRoutesTest {
-    private val scenarioId = ScenarioId("scenario-test-id")
-    private val tenantId = TenantId("tenant-test-id")
+    private val scenarioId = "scenario-test-id"
+    private val tenantId = "tenant-test-id"
     private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 42L)
     private val scenario = Scenario(id = scenarioId, tenantId = tenantId, config = config)
     private val state =
         SimulationState(
             currentDay = SimulationDay(1),
             policySet = PolicySet(wipLimit = 3),
-            items = emptyList(),
+            cards = emptyList(),
         )
     private val snapshot =
         DailySnapshot(
@@ -125,14 +123,14 @@ class ScenarioQueryRoutesTest {
             coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}") {
+                client.get("/api/v1/scenarios/$scenarioId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(scenarioId.value, body["scenarioId"]?.jsonPrimitive?.content)
-            assertEquals(tenantId.value, body["tenantId"]?.jsonPrimitive?.content)
+            assertEquals(scenarioId, body["scenarioId"]?.jsonPrimitive?.content)
+            assertEquals(tenantId, body["tenantId"]?.jsonPrimitive?.content)
         }
 
     @Test
@@ -150,10 +148,10 @@ class ScenarioQueryRoutesTest {
             }
 
             coEvery { scenarioRepository.findById(scenarioId) } returns
-                DomainError.ScenarioNotFound(scenarioId.value).left()
+                DomainError.ScenarioNotFound(scenarioId).left()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}") {
+                client.get("/api/v1/scenarios/$scenarioId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -180,13 +178,13 @@ class ScenarioQueryRoutesTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot") {
+                client.get("/api/v1/scenarios/$scenarioId/days/1/snapshot") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(scenarioId.value, body["scenarioId"]?.jsonPrimitive?.content)
+            assertEquals(scenarioId, body["scenarioId"]?.jsonPrimitive?.content)
             assertNotNull(body["metrics"])
         }
 
@@ -207,7 +205,7 @@ class ScenarioQueryRoutesTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(99)) } returns null.right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/99/snapshot") {
+                client.get("/api/v1/scenarios/$scenarioId/days/99/snapshot") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -232,7 +230,7 @@ class ScenarioQueryRoutesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/0/snapshot") {
+                client.get("/api/v1/scenarios/$scenarioId/days/0/snapshot") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

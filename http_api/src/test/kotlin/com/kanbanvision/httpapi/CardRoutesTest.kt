@@ -1,13 +1,10 @@
 package com.kanbanvision.httpapi
 
 import arrow.core.right
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -45,17 +42,18 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class CardRoutesTest {
-    private val boardId = BoardId.generate()
-    private val columnId = ColumnId.generate()
-    private val cardId = CardId.generate()
+    private val boardId = UUID.randomUUID().toString()
+    private val columnId = UUID.randomUUID().toString()
+    private val cardId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "Test Board")
     private val column =
-        Column(
+        Step(
             id = columnId,
             boardId = boardId,
             name = "To Do",
@@ -107,14 +105,14 @@ class CardRoutesTest {
             val response =
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${columnId.value}","title":"Task","description":"Do it"}""")
+                    setBody("""{"columnId":"$columnId","title":"Task","description":"Do it"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals("Task", body["title"]?.jsonPrimitive?.content)
-            assertEquals(columnId.value, body["columnId"]?.jsonPrimitive?.content)
+            assertEquals(columnId, body["columnId"]?.jsonPrimitive?.content)
         }
 
     @Test
@@ -134,7 +132,7 @@ class CardRoutesTest {
             val response =
                 client.post("/api/v1/cards") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${columnId.value}","title":""}""")
+                    setBody("""{"columnId":"$columnId","title":""}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -164,7 +162,7 @@ class CardRoutesTest {
                 configureRouting()
             }
 
-            val targetColumnId = ColumnId.generate()
+            val targetColumnId = UUID.randomUUID().toString()
             val movedCard = card.moveTo(targetColumnId, 1)
 
             coEvery { cardRepository.updateCard(cardId, any()) } answers {
@@ -173,9 +171,9 @@ class CardRoutesTest {
             coEvery { cardRepository.findById(cardId) } returns movedCard.right()
 
             val response =
-                client.patch("/api/v1/cards/${cardId.value}/move") {
+                client.patch("/api/v1/cards/$cardId/move") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"columnId":"${targetColumnId.value}","position":1}""")
+                    setBody("""{"columnId":"$targetColumnId.value","position":1}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -199,13 +197,13 @@ class CardRoutesTest {
             coEvery { cardRepository.findById(cardId) } returns card.right()
 
             val response =
-                client.get("/api/v1/cards/${cardId.value}") {
+                client.get("/api/v1/cards/$cardId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(cardId.value, body["id"]?.jsonPrimitive?.content)
+            assertEquals(cardId, body["id"]?.jsonPrimitive?.content)
             assertEquals("Task", body["title"]?.jsonPrimitive?.content)
         }
 }

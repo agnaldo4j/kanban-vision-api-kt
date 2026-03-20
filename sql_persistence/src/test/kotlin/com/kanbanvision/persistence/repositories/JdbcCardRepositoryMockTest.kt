@@ -1,9 +1,8 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
@@ -34,7 +33,15 @@ class JdbcCardRepositoryMockTest {
         return mockDs
     }
 
-    private fun minimalCard() = Card(CardId("card1"), ColumnId("col1"), "Task", "", 0, Instant.now())
+    private fun minimalCard() =
+        Card(
+            id = "card1",
+            columnId = "col1",
+            title = "Task",
+            description = "",
+            position = 0,
+            audit = Audit(createdAt = Instant.now()),
+        )
 
     private fun brokenStmtDataSource(): HikariDataSource {
         val mockDs = mockk<HikariDataSource>()
@@ -79,7 +86,7 @@ class JdbcCardRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findById(CardId("card1"))
+                val result = repo.findById("card1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -90,7 +97,7 @@ class JdbcCardRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findByColumnId(ColumnId("col1"))
+                val result = repo.findByColumnId("col1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -101,7 +108,7 @@ class JdbcCardRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.updateCard(CardId("card1")) { it }
+                val result = repo.updateCard("card1") { it }
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -142,7 +149,7 @@ class JdbcCardRepositoryMockTest {
             every { mockConn.close() } just runs
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns mockDs
-                val result = repo.updateCard(CardId("card1")) { it }
+                val result = repo.updateCard("card1") { it }
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

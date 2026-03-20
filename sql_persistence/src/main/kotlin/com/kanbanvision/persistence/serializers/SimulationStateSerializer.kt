@@ -1,12 +1,11 @@
 package com.kanbanvision.persistence.serializers
 
-import com.kanbanvision.domain.model.policy.PolicySet
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
-import com.kanbanvision.domain.model.workitem.ServiceClass
-import com.kanbanvision.domain.model.workitem.WorkItem
-import com.kanbanvision.domain.model.workitem.WorkItemState
+import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.PolicySet
+import com.kanbanvision.domain.model.ServiceClass
+import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.WorkItemState
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -25,7 +24,8 @@ private data class WorkItemSurrogate(
 private data class SimulationStateSurrogate(
     val currentDay: Int,
     val wipLimit: Int,
-    val items: List<WorkItemSurrogate>,
+    val cards: List<WorkItemSurrogate> = emptyList(),
+    val items: List<WorkItemSurrogate> = emptyList(),
 )
 
 internal object SimulationStateSerializer {
@@ -39,12 +39,12 @@ internal object SimulationStateSerializer {
         SimulationStateSurrogate(
             currentDay = currentDay.value,
             wipLimit = policySet.wipLimit,
-            items = items.map { it.toSurrogate() },
+            cards = cards.map { it.toSurrogate() },
         )
 
-    private fun WorkItem.toSurrogate() =
+    private fun Card.toSurrogate() =
         WorkItemSurrogate(
-            id = id.value,
+            id = id,
             title = title,
             serviceClass = serviceClass.name,
             state = state.name,
@@ -55,12 +55,12 @@ internal object SimulationStateSerializer {
         SimulationState(
             currentDay = SimulationDay(currentDay),
             policySet = PolicySet(wipLimit = wipLimit),
-            items = items.map { it.toDomain() },
+            cards = (cards.ifEmpty { items }).map { it.toDomain() },
         )
 
     private fun WorkItemSurrogate.toDomain() =
-        WorkItem(
-            id = WorkItemId(id),
+        Card(
+            id = id,
             title = title,
             serviceClass = ServiceClass.valueOf(serviceClass),
             state = WorkItemState.valueOf(state),

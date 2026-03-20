@@ -2,8 +2,7 @@ package com.kanbanvision.httpapi
 
 import arrow.core.left
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -48,7 +47,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioAnalyticsEdgeCasesTest {
-    private val scenarioId = ScenarioId("scenario-test-id")
+    private val scenarioId = "scenario-test-id"
     private val snapshotRepository = mockk<SnapshotRepository>()
 
     private val testModule =
@@ -95,7 +94,7 @@ class ScenarioAnalyticsEdgeCasesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/movements") {
+                client.get("/api/v1/scenarios/$scenarioId/days/abc/movements") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -123,7 +122,7 @@ class ScenarioAnalyticsEdgeCasesTest {
                 DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/movements") {
+                client.get("/api/v1/scenarios/$scenarioId/days/1/movements") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -148,7 +147,7 @@ class ScenarioAnalyticsEdgeCasesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?fromDay=1") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -173,7 +172,7 @@ class ScenarioAnalyticsEdgeCasesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=abc&toDay=5") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?fromDay=abc&toDay=5") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -201,7 +200,7 @@ class ScenarioAnalyticsEdgeCasesTest {
                 DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?fromDay=1&toDay=5") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

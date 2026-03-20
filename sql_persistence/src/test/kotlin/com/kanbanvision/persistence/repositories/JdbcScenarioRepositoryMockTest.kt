@@ -1,11 +1,9 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.SimulationState
 import com.kanbanvision.persistence.DatabaseFactory
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
@@ -57,7 +55,7 @@ class JdbcScenarioRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenStmtDataSource()
-                val scenario = Scenario(ScenarioId("s1"), TenantId("t1"), config)
+                val scenario = Scenario("s1", "t1", config)
                 val result = repo.save(scenario)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
@@ -69,7 +67,7 @@ class JdbcScenarioRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenStmtDataSource()
-                val result = repo.findById(ScenarioId("s1"))
+                val result = repo.findById("s1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -80,7 +78,7 @@ class JdbcScenarioRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val scenario = Scenario(ScenarioId("s1"), TenantId("t1"), config)
+                val scenario = Scenario("s1", "t1", config)
                 val result = repo.save(scenario)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
@@ -92,7 +90,7 @@ class JdbcScenarioRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findById(ScenarioId("s1"))
+                val result = repo.findById("s1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -104,7 +102,7 @@ class JdbcScenarioRepositoryMockTest {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
                 val state = SimulationState.initial(config)
-                val result = repo.saveState(ScenarioId("s1"), state)
+                val result = repo.saveState("s1", state)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -115,7 +113,7 @@ class JdbcScenarioRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findState(ScenarioId("s1"))
+                val result = repo.findState("s1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

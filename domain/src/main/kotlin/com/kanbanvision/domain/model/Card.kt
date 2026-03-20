@@ -1,31 +1,79 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
-import java.time.Instant
+import java.util.UUID
 
 data class Card(
-    val id: CardId,
-    val columnId: ColumnId,
+    val id: String,
+    val columnId: String = "",
     val title: String,
     val description: String = "",
-    val position: Int,
-    val createdAt: Instant = Instant.now(),
+    val position: Int = 0,
+    val serviceClass: ServiceClass = ServiceClass.STANDARD,
+    val state: WorkItemState = WorkItemState.TODO,
+    val agingDays: Int = 0,
+    val audit: Audit = Audit(),
 ) {
+    init {
+        require(id.isNotBlank()) { "Card id must not be blank" }
+        require(title.isNotBlank()) { "Card title must not be blank" }
+        require(position >= 0) { "Card position must be non-negative" }
+        require(agingDays >= 0) { "Card agingDays must be non-negative" }
+    }
+
+    val createdAt get() = audit.createdAt
+
     companion object {
         fun create(
-            columnId: ColumnId,
+            columnId: String,
             title: String,
             description: String = "",
             position: Int,
         ): Card {
+            require(columnId.isNotBlank()) { "Card columnId must not be blank" }
             require(title.isNotBlank()) { "Card title must not be blank" }
-            return Card(id = CardId.generate(), columnId = columnId, title = title, description = description, position = position)
+            return Card(
+                id = UUID.randomUUID().toString(),
+                columnId = columnId,
+                title = title,
+                description = description,
+                position = position,
+            )
         }
+
+        fun createSimulation(
+            title: String,
+            serviceClass: ServiceClass = ServiceClass.STANDARD,
+        ): Card =
+            Card(
+                id = UUID.randomUUID().toString(),
+                title = title,
+                serviceClass = serviceClass,
+                state = WorkItemState.TODO,
+                agingDays = 0,
+            )
     }
 
     fun moveTo(
-        targetColumnId: ColumnId,
+        targetColumnId: String,
         newPosition: Int,
-    ): Card = copy(columnId = targetColumnId, position = newPosition)
+    ): Card {
+        require(targetColumnId.isNotBlank()) { "Card target columnId must not be blank" }
+        require(newPosition >= 0) { "Card target position must be non-negative" }
+        return copy(columnId = targetColumnId, position = newPosition)
+    }
+
+    fun advance(): Card =
+        when (state) {
+            WorkItemState.TODO -> copy(state = WorkItemState.IN_PROGRESS)
+            WorkItemState.IN_PROGRESS -> copy(state = WorkItemState.DONE)
+            WorkItemState.BLOCKED -> copy(state = WorkItemState.IN_PROGRESS)
+            WorkItemState.DONE -> this
+        }
+
+    fun block(): Card {
+        require(state == WorkItemState.IN_PROGRESS) { "Only IN_PROGRESS cards can be blocked" }
+        return copy(state = WorkItemState.BLOCKED)
+    }
+
+    fun incrementAge(): Card = copy(agingDays = agingDays + 1)
 }

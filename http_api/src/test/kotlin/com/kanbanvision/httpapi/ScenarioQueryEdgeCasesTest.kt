@@ -3,13 +3,11 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -54,7 +52,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioQueryEdgeCasesTest {
-    private val scenarioId = ScenarioId("scenario-test-id")
+    private val scenarioId = "scenario-test-id"
     private val snapshot =
         DailySnapshot(
             scenarioId = scenarioId,
@@ -113,7 +111,7 @@ class ScenarioQueryEdgeCasesTest {
                 DomainError.PersistenceError("DB down").left()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}") {
+                client.get("/api/v1/scenarios/$scenarioId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -138,7 +136,7 @@ class ScenarioQueryEdgeCasesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/abc/snapshot") {
+                client.get("/api/v1/scenarios/$scenarioId/days/abc/snapshot") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -169,7 +167,7 @@ class ScenarioQueryEdgeCasesTest {
                         listOf(
                             Movement(
                                 type = MovementType.MOVED,
-                                workItemId = WorkItemId("item-1"),
+                                cardId = "item-1",
                                 day = SimulationDay(1),
                                 reason = "WIP available",
                             ),
@@ -178,7 +176,7 @@ class ScenarioQueryEdgeCasesTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshotWithMovements.right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot") {
+                client.get("/api/v1/scenarios/$scenarioId/days/1/snapshot") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -205,7 +203,7 @@ class ScenarioQueryEdgeCasesTest {
                 DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/days/1/snapshot") {
+                client.get("/api/v1/scenarios/$scenarioId/days/1/snapshot") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

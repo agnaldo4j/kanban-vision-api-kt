@@ -3,10 +3,9 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.scenario.queries.GetFlowMetricsRangeQuery
 import io.mockk.coEvery
@@ -21,7 +20,7 @@ class GetFlowMetricsRangeUseCaseTest {
     private val snapshotRepository = mockk<SnapshotRepository>()
     private val useCase = GetFlowMetricsRangeUseCase(snapshotRepository)
 
-    private val scenarioId = ScenarioId("scenario-1")
+    private val scenarioId = "scenario-1"
 
     private fun snapshot(
         day: Int,
@@ -39,7 +38,7 @@ class GetFlowMetricsRangeUseCaseTest {
             val snapshots = listOf(snapshot(1, 1), snapshot(2, 2), snapshot(3, 3))
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns snapshots.right()
 
-            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId.value, fromDay = 1, toDay = 3))
+            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId, fromDay = 1, toDay = 3))
 
             assertTrue(result.isRight())
             val metrics = result.getOrNull()!!
@@ -55,7 +54,7 @@ class GetFlowMetricsRangeUseCaseTest {
             val snapshots = listOf(snapshot(1, 1), snapshot(2, 2), snapshot(3, 3), snapshot(4, 4), snapshot(5, 5))
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns snapshots.right()
 
-            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId.value, fromDay = 2, toDay = 4))
+            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId, fromDay = 2, toDay = 4))
 
             assertTrue(result.isRight())
             val metrics = result.getOrNull()!!
@@ -70,7 +69,7 @@ class GetFlowMetricsRangeUseCaseTest {
             val snapshots = listOf(snapshot(3, 3), snapshot(1, 1), snapshot(2, 2))
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns snapshots.right()
 
-            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId.value, fromDay = 1, toDay = 3))
+            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId, fromDay = 1, toDay = 3))
 
             assertTrue(result.isRight())
             val metrics = result.getOrNull()!!
@@ -82,7 +81,7 @@ class GetFlowMetricsRangeUseCaseTest {
         runTest {
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns emptyList<DailySnapshot>().right()
 
-            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId.value, fromDay = 1, toDay = 5))
+            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId, fromDay = 1, toDay = 5))
 
             assertTrue(result.isRight())
             assertEquals(emptyList(), result.getOrNull())
@@ -94,7 +93,7 @@ class GetFlowMetricsRangeUseCaseTest {
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns
                 DomainError.PersistenceError("DB down").left()
 
-            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId.value, fromDay = 1, toDay = 3))
+            val result = useCase.execute(GetFlowMetricsRangeQuery(scenarioId = scenarioId, fromDay = 1, toDay = 3))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

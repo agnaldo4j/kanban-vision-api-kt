@@ -1,12 +1,7 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.model.team.Ability
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.team.Seniority
-import com.kanbanvision.domain.model.team.Worker
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -15,8 +10,8 @@ import kotlin.test.assertTrue
 class StepTest {
     @Test
     fun `step stores all fields`() {
-        val boardId = BoardId.generate()
-        val stepId = ColumnId.generate()
+        val boardId = UUID.randomUUID().toString()
+        val stepId = UUID.randomUUID().toString()
         val step =
             Step(
                 id = stepId,
@@ -38,8 +33,8 @@ class StepTest {
     fun `step copy keeps immutability semantics`() {
         val step =
             Step(
-                id = ColumnId.generate(),
-                boardId = BoardId.generate(),
+                id = UUID.randomUUID().toString(),
+                boardId = UUID.randomUUID().toString(),
                 name = "Analysis",
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
@@ -56,7 +51,7 @@ class StepTest {
 
     @Test
     fun `create step validates name and position`() {
-        val boardId = BoardId.generate()
+        val boardId = UUID.randomUUID().toString()
 
         assertThrows<IllegalArgumentException> {
             Step.create(
@@ -78,7 +73,7 @@ class StepTest {
 
     @Test
     fun `step assignment enforces required ability and single-step per worker`() {
-        val boardId = BoardId.generate()
+        val boardId = UUID.randomUUID().toString()
         val analysis = step(boardId, "Analysis", 0, AbilityName.PRODUCT_MANAGER)
         val development = step(boardId, "Development", 1, AbilityName.DEVELOPER)
         val pm = worker("Paula", AbilityName.PRODUCT_MANAGER, Seniority.SR)
@@ -93,7 +88,7 @@ class StepTest {
     }
 
     private fun step(
-        boardId: BoardId,
+        boardId: String,
         name: String,
         position: Int,
         ability: AbilityName,

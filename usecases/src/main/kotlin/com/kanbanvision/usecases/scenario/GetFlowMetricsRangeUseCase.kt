@@ -3,8 +3,7 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.scenario.queries.GetFlowMetricsRangeQuery
 import com.kanbanvision.usecases.timed
@@ -23,7 +22,7 @@ class GetFlowMetricsRangeUseCase(
     suspend fun execute(query: GetFlowMetricsRangeQuery): Either<DomainError, List<DailyMetrics>> =
         either {
             query.validate().bind()
-            val id = ScenarioId(query.scenarioId)
+            val id = query.scenarioId
             val (snapshots, duration) = timed { snapshotRepository.findAllByScenario(id) }
             val result =
                 snapshots
@@ -32,7 +31,7 @@ class GetFlowMetricsRangeUseCase(
                     .map { DailyMetrics(day = it.day.value, metrics = it.metrics) }
             log.info(
                 "FlowMetrics range fetched: scenario={} from={} to={} days={} duration={}ms",
-                id.value,
+                id,
                 query.fromDay,
                 query.toDay,
                 result.size,

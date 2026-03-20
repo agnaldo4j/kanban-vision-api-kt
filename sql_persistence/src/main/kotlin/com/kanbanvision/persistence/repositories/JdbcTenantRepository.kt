@@ -4,8 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.tenant.Tenant
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.Tenant
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.TenantRepository
 import kotlinx.coroutines.CancellationException
@@ -24,13 +23,13 @@ class JdbcTenantRepository : TenantRepository {
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
-    override suspend fun findById(id: TenantId): Either<DomainError, Tenant> =
+    override suspend fun findById(id: String): Either<DomainError, Tenant> =
         query {
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn.prepareStatement("SELECT id, name FROM tenants WHERE id = ?").use { stmt ->
-                            stmt.setString(1, id.value)
+                            stmt.setString(1, id)
                             stmt.executeQuery().use { rs ->
                                 if (rs.next()) rs.toTenant() else null
                             }
@@ -38,13 +37,13 @@ class JdbcTenantRepository : TenantRepository {
                     }
                 }.fold(
                     ifLeft = { toPersistenceError(it).left() },
-                    ifRight = { tenant -> tenant?.right() ?: DomainError.TenantNotFound(id.value).left() },
+                    ifRight = { tenant -> tenant?.right() ?: DomainError.TenantNotFound(id).left() },
                 )
         }
 
     private fun java.sql.ResultSet.toTenant() =
         Tenant(
-            id = TenantId(getString("id")),
+            id = getString("id"),
             name = getString("name"),
         )
 }

@@ -2,7 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.team.AbilityName
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -149,10 +149,10 @@ private suspend fun ApplicationCall.handleCreateColumn(
                         requiredAbility = request.requiredAbility,
                     ),
                 ).bind()
-        val column = getColumn.execute(GetColumnQuery(id = columnId.value)).bind()
+        val column = getColumn.execute(GetColumnQuery(id = columnId)).bind()
         ColumnResponse(
-            id = column.id.value,
-            boardId = column.boardId.value,
+            id = column.id,
+            boardId = column.boardId,
             name = column.name,
             position = column.position,
             requiredAbility = column.requiredAbility,
@@ -172,8 +172,8 @@ private suspend fun ApplicationCall.handleGetColumn(getColumn: GetColumnUseCase)
         ifRight = { column ->
             respond(
                 ColumnResponse(
-                    id = column.id.value,
-                    boardId = column.boardId.value,
+                    id = column.id,
+                    boardId = column.boardId,
                     name = column.name,
                     position = column.position,
                     requiredAbility = column.requiredAbility,
@@ -193,8 +193,8 @@ private suspend fun ApplicationCall.handleListColumns(listColumnsByBoard: ListCo
             respond(
                 columns.map {
                     ColumnResponse(
-                        id = it.id.value,
-                        boardId = it.boardId.value,
+                        id = it.id,
+                        boardId = it.boardId,
                         name = it.name,
                         position = it.position,
                         requiredAbility = it.requiredAbility,

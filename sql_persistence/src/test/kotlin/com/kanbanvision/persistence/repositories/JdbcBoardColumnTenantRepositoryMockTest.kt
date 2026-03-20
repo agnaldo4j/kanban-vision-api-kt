@@ -1,12 +1,9 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.persistence.DatabaseFactory
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
@@ -19,7 +16,7 @@ import java.sql.SQLException
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-// Covers the conn.use { } addSuppressed path in Board, Column, and Tenant repositories.
+// Covers the conn.use { } addSuppressed path in Board, Step, and Tenant repositories.
 class JdbcBoardColumnTenantRepositoryMockTest {
     private val boardRepo = JdbcBoardRepository()
     private val columnRepo = JdbcColumnRepository()
@@ -39,7 +36,7 @@ class JdbcBoardColumnTenantRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val board = Board(id = BoardId("b1"), name = "Test Board")
+                val board = Board(id = "b1", name = "Test Board")
                 val result = boardRepo.save(board)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
@@ -51,18 +48,18 @@ class JdbcBoardColumnTenantRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = boardRepo.findById(BoardId("b1"))
+                val result = boardRepo.findById("b1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
         }
 
     @Test
-    fun `Column save conn close suppresses exception`() =
+    fun `Step save conn close suppresses exception`() =
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val column = Column(ColumnId("c1"), BoardId("b1"), "Todo", 0, AbilityName.PRODUCT_MANAGER)
+                val column = Step("c1", "b1", "Todo", 0, AbilityName.PRODUCT_MANAGER)
                 val result = columnRepo.save(column)
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
@@ -70,22 +67,22 @@ class JdbcBoardColumnTenantRepositoryMockTest {
         }
 
     @Test
-    fun `Column findById conn close suppresses exception`() =
+    fun `Step findById conn close suppresses exception`() =
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = columnRepo.findById(ColumnId("c1"))
+                val result = columnRepo.findById("c1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
         }
 
     @Test
-    fun `Column findByBoardId conn close suppresses exception`() =
+    fun `Step findByBoardId conn close suppresses exception`() =
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = columnRepo.findByBoardId(BoardId("b1"))
+                val result = columnRepo.findByBoardId("b1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -96,7 +93,7 @@ class JdbcBoardColumnTenantRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = tenantRepo.findById(TenantId("t1"))
+                val result = tenantRepo.findById("t1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

@@ -3,11 +3,9 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -48,14 +46,15 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 @Suppress("LargeClass")
 class StepRoutesTest {
-    private val boardId = BoardId.generate()
-    private val stepId = ColumnId.generate()
+    private val boardId = UUID.randomUUID().toString()
+    private val stepId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "Delivery Board")
     private val step =
         Step(
@@ -113,7 +112,7 @@ class StepRoutesTest {
             val response =
                 client.post("/api/v1/steps") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"Analysis","requiredAbility":"PRODUCT_MANAGER"}""")
+                    setBody("""{"boardId":"$boardId","name":"Analysis","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -141,13 +140,13 @@ class StepRoutesTest {
             coEvery { stepRepository.findById(stepId) } returns step.right()
 
             val response =
-                client.get("/api/v1/steps/${stepId.value}") {
+                client.get("/api/v1/steps/$stepId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(stepId.value, body["id"]?.jsonPrimitive?.content)
+            assertEquals(stepId, body["id"]?.jsonPrimitive?.content)
             assertEquals("Analysis", body["name"]?.jsonPrimitive?.content)
             assertEquals("PRODUCT_MANAGER", body["requiredAbility"]?.jsonPrimitive?.content)
         }
@@ -170,7 +169,7 @@ class StepRoutesTest {
             coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
-                client.get("/api/v1/boards/${boardId.value}/steps") {
+                client.get("/api/v1/boards/$boardId/steps") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -222,7 +221,7 @@ class StepRoutesTest {
             coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
-                client.get("/api/v1/boards/${boardId.value}/steps") {
+                client.get("/api/v1/boards/$boardId/steps") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -249,7 +248,7 @@ class StepRoutesTest {
             val response =
                 client.post("/api/v1/steps") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"","requiredAbility":"PRODUCT_MANAGER"}""")
+                    setBody("""{"boardId":"$boardId","name":"","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -285,7 +284,7 @@ class StepRoutesTest {
             val response =
                 client.post("/api/v1/steps") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"boardId":"${boardId.value}","name":"Analysis","requiredAbility":"PRODUCT_MANAGER"}""")
+                    setBody("""{"boardId":"$boardId","name":"Analysis","requiredAbility":"PRODUCT_MANAGER"}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

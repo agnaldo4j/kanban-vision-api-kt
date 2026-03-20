@@ -1,31 +1,32 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.decision.Decision
-import com.kanbanvision.domain.model.policy.PolicySet
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.workitem.ServiceClass
-import com.kanbanvision.domain.model.workitem.WorkItem
-import com.kanbanvision.domain.model.workitem.WorkItemState
+import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.PolicySet
+import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.ServiceClass
+import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.WorkItem
+import com.kanbanvision.domain.model.WorkItemState
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SimulationEngineBehaviorTest {
-    private val scenarioId = ScenarioId.generate()
+    private val scenarioId = UUID.randomUUID().toString()
     private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
     private val emptyState = SimulationState.initial(config)
 
     private fun inProgress(title: String): WorkItem =
-        WorkItem
-            .create(title)
+        Card
+            .createSimulation(title)
             .advance()
 
     private fun done(title: String): WorkItem =
-        WorkItem
-            .create(title)
+        Card
+            .createSimulation(title)
             .advance()
             .advance()
 
@@ -35,29 +36,29 @@ class SimulationEngineBehaviorTest {
 
     @Test
     fun `same input always produces same output (determinism)`() {
-        val item = WorkItem.create("Task A")
-        val state = emptyState.copy(items = listOf(item))
+        val item = Card.createSimulation("Task A")
+        val state = emptyState.copy(cards = listOf(item))
 
         val result1 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 42L)
         val result2 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 42L)
 
         assertEquals(result1.snapshot.metrics, result2.snapshot.metrics)
-        assertEquals(result1.newState.items.map { it.state }, result2.newState.items.map { it.state })
+        assertEquals(result1.newState.cards.map { it.state }, result2.newState.cards.map { it.state })
         assertEquals(result1.snapshot.movements.size, result2.snapshot.movements.size)
     }
 
     @Test
     fun `different seeds produce same WIP limit enforcement`() {
-        val items = (1..5).map { WorkItem.create("Task $it") }
-        val state = emptyState.copy(items = items, policySet = PolicySet(wipLimit = 1))
+        val items = (1..5).map { Card.createSimulation("Task $it") }
+        val state = emptyState.copy(cards = items, policySet = PolicySet(wipLimit = 1))
 
         val result1 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 1L)
         val result2 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 99L)
 
-        assertEquals(1, result1.newState.items.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result2.newState.items.count { it.state == WorkItemState.IN_PROGRESS })
-        assertNotNull(result1.newState.items.firstOrNull { it.state == WorkItemState.IN_PROGRESS })
-        assertNotNull(result2.newState.items.firstOrNull { it.state == WorkItemState.IN_PROGRESS })
+        assertEquals(1, result1.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
+        assertEquals(1, result2.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
+        assertNotNull(result1.newState.cards.firstOrNull { it.state == WorkItemState.IN_PROGRESS })
+        assertNotNull(result2.newState.cards.firstOrNull { it.state == WorkItemState.IN_PROGRESS })
     }
 
     // ─────────────────────────────────────────────
@@ -66,37 +67,37 @@ class SimulationEngineBehaviorTest {
 
     @Test
     fun `auto-advance starts TODO items up to WIP limit`() {
-        val items = listOf(WorkItem.create("A"), WorkItem.create("B"), WorkItem.create("C"))
-        val state = emptyState.copy(items = items) // wipLimit = 2
+        val items = listOf(Card.createSimulation("A"), Card.createSimulation("B"), Card.createSimulation("C"))
+        val state = emptyState.copy(cards = items) // wipLimit = 2
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        assertEquals(2, result.newState.items.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result.newState.items.count { it.state == WorkItemState.TODO })
+        assertEquals(2, result.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
+        assertEquals(1, result.newState.cards.count { it.state == WorkItemState.TODO })
     }
 
     @Test
     fun `auto-advance does not exceed WIP limit when items already in progress`() {
         val existing = inProgress("Existing")
-        val state = emptyState.copy(items = listOf(existing, WorkItem.create("New A"), WorkItem.create("New B")))
+        val state = emptyState.copy(cards = listOf(existing, Card.createSimulation("New A"), Card.createSimulation("New B")))
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        assertEquals(2, result.newState.items.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result.newState.items.count { it.state == WorkItemState.TODO })
+        assertEquals(2, result.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
+        assertEquals(1, result.newState.cards.count { it.state == WorkItemState.TODO })
     }
 
     @Test
     fun `auto-advance does not start items when WIP limit already reached`() {
         val state =
             emptyState.copy(
-                items = listOf(inProgress("P1"), inProgress("P2"), WorkItem.create("Waiting")),
+                cards = listOf(inProgress("P1"), inProgress("P2"), Card.createSimulation("Waiting")),
             )
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        assertEquals(2, result.newState.items.count { it.state == WorkItemState.IN_PROGRESS })
-        assertEquals(1, result.newState.items.count { it.state == WorkItemState.TODO })
+        assertEquals(2, result.newState.cards.count { it.state == WorkItemState.IN_PROGRESS })
+        assertEquals(1, result.newState.cards.count { it.state == WorkItemState.TODO })
     }
 
     // ─────────────────────────────────────────────
@@ -105,19 +106,19 @@ class SimulationEngineBehaviorTest {
 
     @Test
     fun `EXPEDITE items are auto-advanced before STANDARD within WIP limit`() {
-        val standard = WorkItem.create("Standard task", ServiceClass.STANDARD)
-        val expedite = WorkItem.create("Urgent fix", ServiceClass.EXPEDITE)
+        val standard = Card.createSimulation("Standard task", ServiceClass.STANDARD)
+        val expedite = Card.createSimulation("Urgent fix", ServiceClass.EXPEDITE)
         val state =
             emptyState.copy(
-                items = listOf(standard, expedite),
+                cards = listOf(standard, expedite),
                 policySet = PolicySet(wipLimit = 1),
             )
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        val startedItem = result.newState.items.first { it.state == WorkItemState.IN_PROGRESS }
+        val startedItem = result.newState.cards.first { it.state == WorkItemState.IN_PROGRESS }
         assertEquals(ServiceClass.EXPEDITE, startedItem.serviceClass)
-        val standardItem = result.newState.items.first { it.serviceClass == ServiceClass.STANDARD }
+        val standardItem = result.newState.cards.first { it.serviceClass == ServiceClass.STANDARD }
         assertEquals(WorkItemState.TODO, standardItem.state)
     }
 
@@ -128,13 +129,13 @@ class SimulationEngineBehaviorTest {
     @Test
     fun `MOVE_ITEM on DONE item is silently ignored`() {
         val item = done("Already done")
-        val state = emptyState.copy(items = listOf(item))
+        val state = emptyState.copy(cards = listOf(item))
 
-        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id.value)), seed = 0L)
+        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
 
         assertEquals(
             WorkItemState.DONE,
-            result.newState.items
+            result.newState.cards
                 .first()
                 .state,
         )

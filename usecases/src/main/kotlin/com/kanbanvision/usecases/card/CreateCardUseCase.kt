@@ -3,8 +3,6 @@ package com.kanbanvision.usecases.card
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.commands.CreateCardCommand
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
@@ -19,14 +17,14 @@ class CreateCardUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(command: CreateCardCommand): Either<DomainError, CardId> =
+    suspend fun execute(command: CreateCardCommand): Either<DomainError, String> =
         either {
             command.validate().bind()
             log.debug("Creating card: columnId={} title={}", command.columnId, command.title)
             val (cardId, duration) =
                 timed {
                     either {
-                        val columnId = ColumnId(command.columnId)
+                        val columnId = command.columnId
                         val column = columnRepository.findById(columnId).bind()
                         val board = boardRepository.findById(column.boardId).bind()
                         val existingCards = cardRepository.findByColumnId(columnId).bind()
@@ -41,7 +39,7 @@ class CreateCardUseCase(
                         card.id
                     }
                 }
-            log.info("Card created: id={} duration={}ms", cardId.value, duration.inWholeMilliseconds)
+            log.info("Card created: id={} duration={}ms", cardId, duration.inWholeMilliseconds)
             cardId
         }
 }
