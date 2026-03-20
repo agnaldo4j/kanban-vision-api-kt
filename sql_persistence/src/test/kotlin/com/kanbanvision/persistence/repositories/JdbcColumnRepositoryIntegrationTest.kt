@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.repositories
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.IntegrationTestSetup
@@ -47,11 +48,13 @@ class JdbcColumnRepositoryIntegrationTest {
     private fun newColumn(
         name: String = "Test Column",
         position: Int = 0,
+        requiredAbility: AbilityName = AbilityName.DEVELOPER,
     ) = Column(
         id = ColumnId(UUID.randomUUID().toString()),
         boardId = existingBoardId!!,
         name = name,
         position = position,
+        requiredAbility = requiredAbility,
     )
 
     @Test
@@ -69,6 +72,19 @@ class JdbcColumnRepositoryIntegrationTest {
             assertEquals(column.boardId, found.boardId)
             assertEquals(column.name, found.name)
             assertEquals(column.position, found.position)
+            assertEquals(column.requiredAbility, found.requiredAbility)
+        }
+
+    @Test
+    fun `save persists deployer required ability`() =
+        runBlocking {
+            val column = newColumn(name = "Deploy", requiredAbility = AbilityName.DEPLOYER)
+
+            repository.save(column)
+
+            val result = repository.findById(column.id)
+            assertTrue(result.isRight())
+            assertEquals(AbilityName.DEPLOYER, result.getOrNull()?.requiredAbility)
         }
 
     @Test
@@ -131,6 +147,7 @@ class JdbcColumnRepositoryIntegrationTest {
                     boardId = BoardId(UUID.randomUUID().toString()),
                     name = "Orphan",
                     position = 0,
+                    requiredAbility = AbilityName.DEVELOPER,
                 )
 
             val result = repository.save(orphanColumn)

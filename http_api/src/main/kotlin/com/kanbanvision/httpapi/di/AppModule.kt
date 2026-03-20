@@ -29,6 +29,9 @@ import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
 import com.kanbanvision.usecases.scenario.GetMovementsByDayUseCase
 import com.kanbanvision.usecases.scenario.GetScenarioUseCase
 import com.kanbanvision.usecases.scenario.RunDayUseCase
+import com.kanbanvision.usecases.step.CreateStepUseCase
+import com.kanbanvision.usecases.step.GetStepUseCase
+import com.kanbanvision.usecases.step.ListStepsByBoardUseCase
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.koin.dsl.module
@@ -55,6 +58,9 @@ object AppModule {
             single { CreateColumnUseCase(get(), get()) }
             single { GetColumnUseCase(get()) }
             single { ListColumnsByBoardUseCase(get()) }
+            single { CreateStepUseCase(get()) }
+            single { GetStepUseCase(get()) }
+            single { ListStepsByBoardUseCase(get(), get()) }
             single { CreateScenarioUseCase(get(), get()) }
             single { GetScenarioUseCase(get()) }
             single { RunDayUseCase(get(), get(), get()) }

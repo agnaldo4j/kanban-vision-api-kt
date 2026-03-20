@@ -4,6 +4,7 @@ import arrow.core.right
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -53,7 +54,14 @@ class CardRoutesTest {
     private val columnId = ColumnId.generate()
     private val cardId = CardId.generate()
     private val board = Board(id = boardId, name = "Test Board")
-    private val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
+    private val column =
+        Column(
+            id = columnId,
+            boardId = boardId,
+            name = "To Do",
+            position = 0,
+            requiredAbility = AbilityName.PRODUCT_MANAGER,
+        )
     private val card = Card(id = cardId, columnId = columnId, title = "Task", description = "Do it", position = 0)
 
     private val boardRepository = mockk<BoardRepository>()

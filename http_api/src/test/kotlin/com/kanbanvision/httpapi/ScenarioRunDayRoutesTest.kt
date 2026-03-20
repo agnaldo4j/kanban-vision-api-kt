@@ -144,6 +144,39 @@ class ScenarioRunDayRoutesTest {
         }
 
     @Test
+    fun `POST scenarios run day parses valid decision types and executes`() =
+        testApplication {
+            install(Koin) { modules(testModule) }
+            application {
+                configureObservability()
+                configureOpenApi()
+                configureSerialization()
+                configureStatusPages()
+                configureTestAuthentication()
+                configureRateLimit()
+                configureRouting()
+            }
+
+            coEvery { scenarioRepository.findById(scenarioId) } returns scenario.right()
+            coEvery { scenarioRepository.findState(scenarioId) } returns state.right()
+            coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns null.right()
+            coEvery { scenarioRepository.saveState(scenarioId, any()) } answers { secondArg<SimulationState>().right() }
+            coEvery { snapshotRepository.save(any()) } answers { firstArg<DailySnapshot>().right() }
+
+            val response =
+                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"decisions":[{"type":"move_item","payload":{"workItemId":"w1"}}]}""")
+                    header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
+                }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            assertNotNull(body["day"])
+            assertNotNull(body["metrics"])
+        }
+
+    @Test
     fun `POST scenarios run day returns 409 when day already executed`() =
         testApplication {
             install(Koin) { modules(testModule) }

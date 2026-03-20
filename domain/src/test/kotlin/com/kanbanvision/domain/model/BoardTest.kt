@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import org.junit.jupiter.api.Test
@@ -39,40 +40,60 @@ class BoardTest {
     @Test
     fun `addColumn returns column with correct boardId and auto position`() {
         val board = Board.create("My Board")
-        val column = board.addColumn("To Do")
+        val column = board.addColumn("To Do", AbilityName.PRODUCT_MANAGER)
         assertEquals(board.id, column.boardId)
         assertEquals("To Do", column.name)
         assertEquals(0, column.position)
+        assertEquals(AbilityName.PRODUCT_MANAGER, column.requiredAbility)
     }
 
     @Test
     fun `addColumn position equals existing columns count`() {
         val boardId = BoardId.generate()
-        val existing = Column.create(boardId = boardId, name = "To Do", position = 0)
+        val existing =
+            Column.create(
+                boardId = boardId,
+                name = "To Do",
+                position = 0,
+                requiredAbility = AbilityName.PRODUCT_MANAGER,
+            )
         val board = Board(id = boardId, name = "My Board", columns = listOf(existing))
-        val column = board.addColumn("In Progress")
+        val column = board.addColumn("In Progress", AbilityName.DEVELOPER)
         assertEquals(1, column.position)
     }
 
     @Test
     fun `addColumn with blank name throws`() {
         val board = Board.create("My Board")
-        assertThrows<IllegalArgumentException> { board.addColumn("") }
+        assertThrows<IllegalArgumentException> { board.addColumn("", AbilityName.PRODUCT_MANAGER) }
     }
 
     @Test
     fun `addColumn with duplicate name throws`() {
         val boardId = BoardId.generate()
-        val existing = Column.create(boardId = boardId, name = "To Do", position = 0)
+        val existing =
+            Column.create(
+                boardId = boardId,
+                name = "To Do",
+                position = 0,
+                requiredAbility = AbilityName.PRODUCT_MANAGER,
+            )
         val board = Board(id = boardId, name = "My Board", columns = listOf(existing))
-        assertThrows<IllegalArgumentException> { board.addColumn("To Do") }
+        assertThrows<IllegalArgumentException> { board.addColumn("To Do", AbilityName.PRODUCT_MANAGER) }
     }
 
     @Test
     fun `addCard returns card with correct columnId and auto position`() {
         val boardId = BoardId.generate()
         val columnId = ColumnId.generate()
-        val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0)
+        val column =
+            Column(
+                id = columnId,
+                boardId = boardId,
+                name = "To Do",
+                position = 0,
+                requiredAbility = AbilityName.PRODUCT_MANAGER,
+            )
         val board = Board(id = boardId, name = "My Board", columns = listOf(column))
         val card = board.addCard(column, "Fix bug")
         assertEquals(columnId, card.columnId)
@@ -85,7 +106,15 @@ class BoardTest {
         val boardId = BoardId.generate()
         val columnId = ColumnId.generate()
         val existingCard = Card.create(columnId = columnId, title = "Existing", position = 0)
-        val column = Column(id = columnId, boardId = boardId, name = "To Do", position = 0, cards = listOf(existingCard))
+        val column =
+            Column(
+                id = columnId,
+                boardId = boardId,
+                name = "To Do",
+                position = 0,
+                requiredAbility = AbilityName.PRODUCT_MANAGER,
+                cards = listOf(existingCard),
+            )
         val board = Board(id = boardId, name = "My Board", columns = listOf(column))
         val card = board.addCard(column, "New Card")
         assertEquals(1, card.position)
@@ -95,7 +124,14 @@ class BoardTest {
     fun `addCard throws when column does not belong to board`() {
         val boardId = BoardId.generate()
         val otherBoardId = BoardId.generate()
-        val column = Column(id = ColumnId.generate(), boardId = otherBoardId, name = "To Do", position = 0)
+        val column =
+            Column(
+                id = ColumnId.generate(),
+                boardId = otherBoardId,
+                name = "To Do",
+                position = 0,
+                requiredAbility = AbilityName.PRODUCT_MANAGER,
+            )
         val board = Board(id = boardId, name = "My Board")
         assertThrows<IllegalArgumentException> { board.addCard(column, "Task") }
     }

@@ -6,6 +6,7 @@ import com.kanbanvision.httpapi.routes.columnRoutes
 import com.kanbanvision.httpapi.routes.healthRoutes
 import com.kanbanvision.httpapi.routes.scenarioAnalyticsRoutes
 import com.kanbanvision.httpapi.routes.scenarioRoutes
+import com.kanbanvision.httpapi.routes.stepRoutes
 import com.kanbanvision.persistence.DatabaseFactory
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
@@ -19,6 +20,7 @@ fun Application.configureRouting() {
             route("/api/v1") {
                 boardRoutes()
                 cardRoutes()
+                stepRoutes()
                 columnRoutes()
                 scenarioRoutes()
                 scenarioAnalyticsRoutes()

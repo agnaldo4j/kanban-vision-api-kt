@@ -4,6 +4,7 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.CardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
@@ -66,6 +67,7 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
                     boardId = BoardId(UUID.randomUUID().toString()),
                     name = "Column",
                     position = 0,
+                    requiredAbility = AbilityName.DEVELOPER,
                 )
             val result = columnRepository.save(column)
             assertTrue(result.isLeft())

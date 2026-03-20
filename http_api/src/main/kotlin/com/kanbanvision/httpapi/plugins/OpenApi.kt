@@ -10,6 +10,7 @@ import io.ktor.server.application.install
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 
+@Suppress("LongMethod")
 fun Application.configureOpenApi() {
     install(OpenApi) {
         info {
@@ -23,6 +24,7 @@ fun Application.configureOpenApi() {
         }
         tags {
             tag("boards") { description = "Gerenciamento de quadros Kanban" }
+            tag("steps") { description = "Etapas dentro de um quadro" }
             tag("columns") { description = "Colunas dentro de um quadro" }
             tag("cards") { description = "Cartões e movimentações" }
             tag("scenarios") { description = "Motor de simulação — criação e execução de cenários" }

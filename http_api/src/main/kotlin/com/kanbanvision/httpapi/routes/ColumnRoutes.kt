@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -139,9 +140,23 @@ private suspend fun ApplicationCall.handleCreateColumn(
 ) {
     val request = receive<CreateColumnRequest>()
     either<DomainError, ColumnResponse> {
-        val columnId = createColumn.execute(CreateColumnCommand(boardId = request.boardId, name = request.name)).bind()
+        val columnId =
+            createColumn
+                .execute(
+                    CreateColumnCommand(
+                        boardId = request.boardId,
+                        name = request.name,
+                        requiredAbility = request.requiredAbility,
+                    ),
+                ).bind()
         val column = getColumn.execute(GetColumnQuery(id = columnId.value)).bind()
-        ColumnResponse(column.id.value, column.boardId.value, column.name, column.position)
+        ColumnResponse(
+            id = column.id.value,
+            boardId = column.boardId.value,
+            name = column.name,
+            position = column.position,
+            requiredAbility = column.requiredAbility,
+        )
     }.fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { response -> respond(HttpStatusCode.Created, response) },
@@ -154,7 +169,17 @@ private suspend fun ApplicationCall.handleGetColumn(getColumn: GetColumnUseCase)
             ?: return respondWithDomainError(DomainError.ValidationError("Missing column id"))
     getColumn.execute(GetColumnQuery(id = id)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
-        ifRight = { column -> respond(ColumnResponse(column.id.value, column.boardId.value, column.name, column.position)) },
+        ifRight = { column ->
+            respond(
+                ColumnResponse(
+                    id = column.id.value,
+                    boardId = column.boardId.value,
+                    name = column.name,
+                    position = column.position,
+                    requiredAbility = column.requiredAbility,
+                ),
+            )
+        },
     )
 }
 
@@ -165,7 +190,17 @@ private suspend fun ApplicationCall.handleListColumns(listColumnsByBoard: ListCo
     listColumnsByBoard.execute(ListColumnsByBoardQuery(boardId = boardId)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { columns ->
-            respond(columns.map { ColumnResponse(it.id.value, it.boardId.value, it.name, it.position) })
+            respond(
+                columns.map {
+                    ColumnResponse(
+                        id = it.id.value,
+                        boardId = it.boardId.value,
+                        name = it.name,
+                        position = it.position,
+                        requiredAbility = it.requiredAbility,
+                    )
+                },
+            )
         },
     )
 }
@@ -174,6 +209,7 @@ private suspend fun ApplicationCall.handleListColumns(listColumnsByBoard: ListCo
 data class CreateColumnRequest(
     val boardId: String,
     val name: String,
+    val requiredAbility: AbilityName = AbilityName.DEVELOPER,
 )
 
 @Serializable
@@ -182,4 +218,5 @@ data class ColumnResponse(
     val boardId: String,
     val name: String,
     val position: Int,
+    val requiredAbility: AbilityName,
 )

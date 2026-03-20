@@ -5,6 +5,7 @@ import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.column.commands.CreateColumnCommand
 import com.kanbanvision.usecases.repositories.BoardRepository
@@ -33,7 +34,12 @@ class CreateColumnUseCaseTest {
             coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
             coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
 
-            val command = CreateColumnCommand(boardId = boardId.value, name = "To Do")
+            val command =
+                CreateColumnCommand(
+                    boardId = boardId.value,
+                    name = "To Do",
+                    requiredAbility = AbilityName.PRODUCT_MANAGER,
+                )
             val result = useCase.execute(command)
 
             assertTrue(result.isRight())
@@ -44,7 +50,12 @@ class CreateColumnUseCaseTest {
     @Test
     fun `execute with blank board id returns ValidationError before saving`() =
         runTest {
-            val command = CreateColumnCommand(boardId = "", name = "To Do")
+            val command =
+                CreateColumnCommand(
+                    boardId = "",
+                    name = "To Do",
+                    requiredAbility = AbilityName.PRODUCT_MANAGER,
+                )
 
             val result = useCase.execute(command)
 
@@ -56,7 +67,12 @@ class CreateColumnUseCaseTest {
     @Test
     fun `execute with blank name returns ValidationError before saving`() =
         runTest {
-            val command = CreateColumnCommand(boardId = boardId.value, name = "")
+            val command =
+                CreateColumnCommand(
+                    boardId = boardId.value,
+                    name = "",
+                    requiredAbility = AbilityName.PRODUCT_MANAGER,
+                )
 
             val result = useCase.execute(command)
 
@@ -72,18 +88,38 @@ class CreateColumnUseCaseTest {
             coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
             coEvery { columnRepository.save(any()) } answers { firstArg<Column>().right() }
 
-            val result = useCase.execute(CreateColumnCommand(boardId = boardId.value, name = "First"))
+            val result =
+                useCase.execute(
+                    CreateColumnCommand(
+                        boardId = boardId.value,
+                        name = "First",
+                        requiredAbility = AbilityName.PRODUCT_MANAGER,
+                    ),
+                )
             assertTrue(result.isRight())
         }
 
     @Test
     fun `execute returns ValidationError when column name already exists on board`() =
         runTest {
-            val existingColumn = Column.create(boardId = boardId, name = "To Do", position = 0)
+            val existingColumn =
+                Column.create(
+                    boardId = boardId,
+                    name = "To Do",
+                    position = 0,
+                    requiredAbility = AbilityName.PRODUCT_MANAGER,
+                )
             coEvery { boardRepository.findById(any()) } returns board.right()
             coEvery { columnRepository.findByBoardId(any()) } returns listOf(existingColumn).right()
 
-            val result = useCase.execute(CreateColumnCommand(boardId = boardId.value, name = "To Do"))
+            val result =
+                useCase.execute(
+                    CreateColumnCommand(
+                        boardId = boardId.value,
+                        name = "To Do",
+                        requiredAbility = AbilityName.PRODUCT_MANAGER,
+                    ),
+                )
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -95,7 +131,14 @@ class CreateColumnUseCaseTest {
         runTest {
             coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound(boardId.value).left()
 
-            val result = useCase.execute(CreateColumnCommand(boardId = boardId.value, name = "To Do"))
+            val result =
+                useCase.execute(
+                    CreateColumnCommand(
+                        boardId = boardId.value,
+                        name = "To Do",
+                        requiredAbility = AbilityName.PRODUCT_MANAGER,
+                    ),
+                )
 
             assertTrue(result.isLeft())
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())
@@ -107,7 +150,14 @@ class CreateColumnUseCaseTest {
             coEvery { boardRepository.findById(any()) } returns board.right()
             coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val result = useCase.execute(CreateColumnCommand(boardId = boardId.value, name = "To Do"))
+            val result =
+                useCase.execute(
+                    CreateColumnCommand(
+                        boardId = boardId.value,
+                        name = "To Do",
+                        requiredAbility = AbilityName.PRODUCT_MANAGER,
+                    ),
+                )
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

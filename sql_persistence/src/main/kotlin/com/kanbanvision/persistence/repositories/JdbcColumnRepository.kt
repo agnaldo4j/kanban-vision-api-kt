@@ -5,6 +5,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.persistence.DatabaseFactory
@@ -22,6 +23,7 @@ class JdbcColumnRepository : ColumnRepository {
         const val COL_BOARD_ID = 2
         const val COL_NAME = 3
         const val COL_POSITION = 4
+        const val COL_REQUIRED_ABILITY = 5
     }
 
     private fun toPersistenceError(e: Throwable): DomainError {
@@ -40,17 +42,19 @@ class JdbcColumnRepository : ColumnRepository {
                         conn
                             .prepareStatement(
                                 """
-                                INSERT INTO columns (id, board_id, name, position)
-                                VALUES (?, ?, ?, ?)
+                                INSERT INTO columns (id, board_id, name, position, required_ability)
+                                VALUES (?, ?, ?, ?, ?)
                                 ON CONFLICT (id) DO UPDATE SET
                                     name     = EXCLUDED.name,
-                                    position = EXCLUDED.position
+                                    position = EXCLUDED.position,
+                                    required_ability = EXCLUDED.required_ability
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, column.id.value)
                                 stmt.setString(COL_BOARD_ID, column.boardId.value)
                                 stmt.setString(COL_NAME, column.name)
                                 stmt.setInt(COL_POSITION, column.position)
+                                stmt.setString(COL_REQUIRED_ABILITY, column.requiredAbility.name)
                                 stmt.executeUpdate()
                             }
                         conn.commit()
@@ -64,7 +68,8 @@ class JdbcColumnRepository : ColumnRepository {
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
-                        conn.prepareStatement("SELECT id, board_id, name, position FROM columns WHERE id = ?").use { stmt ->
+                        val sql = "SELECT id, board_id, name, position, required_ability FROM columns WHERE id = ?"
+                        conn.prepareStatement(sql).use { stmt ->
                             stmt.setString(COL_ID, id.value)
                             stmt.executeQuery().use { rs ->
                                 if (rs.next()) rs.toColumn() else null
@@ -82,15 +87,14 @@ class JdbcColumnRepository : ColumnRepository {
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
-                        conn
-                            .prepareStatement(
-                                "SELECT id, board_id, name, position FROM columns WHERE board_id = ? ORDER BY position",
-                            ).use { stmt ->
-                                stmt.setString(COL_ID, boardId.value)
-                                stmt.executeQuery().use { rs ->
-                                    buildList { while (rs.next()) add(rs.toColumn()) }
-                                }
+                        val sql =
+                            "SELECT id, board_id, name, position, required_ability FROM columns WHERE board_id = ? ORDER BY position"
+                        conn.prepareStatement(sql).use { stmt ->
+                            stmt.setString(COL_ID, boardId.value)
+                            stmt.executeQuery().use { rs ->
+                                buildList { while (rs.next()) add(rs.toColumn()) }
                             }
+                        }
                     }
                 }.mapLeft(::toPersistenceError)
         }
@@ -101,5 +105,6 @@ class JdbcColumnRepository : ColumnRepository {
             boardId = BoardId(getString("board_id")),
             name = getString("name"),
             position = getInt("position"),
+            requiredAbility = AbilityName.valueOf(getString("required_ability")),
         )
 }
