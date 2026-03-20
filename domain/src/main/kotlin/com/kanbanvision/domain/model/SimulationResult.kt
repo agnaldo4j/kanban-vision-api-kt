@@ -1,7 +1,7 @@
 package com.kanbanvision.domain.model
 
 data class SimulationResult(
-    val newState: SimulationState,
+    val simulation: Simulation,
     val snapshot: DailySnapshot,
     val audit: Audit = Audit(),
 )

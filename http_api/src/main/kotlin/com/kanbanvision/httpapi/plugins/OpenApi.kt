@@ -26,7 +26,7 @@ fun Application.configureOpenApi() {
             tag("boards") { description = "Gerenciamento de quadros Kanban" }
             tag("steps") { description = "Etapas dentro de um quadro" }
             tag("cards") { description = "Cartões e movimentações" }
-            tag("scenarios") { description = "Motor de simulação — criação e execução de cenários" }
+            tag("simulations") { description = "Motor de simulação — criação e execução de simulações" }
             tag("health") { description = "Liveness e readiness da aplicação" }
             tag("auth") { description = "Emissão de tokens (somente ambiente de desenvolvimento)" }
         }

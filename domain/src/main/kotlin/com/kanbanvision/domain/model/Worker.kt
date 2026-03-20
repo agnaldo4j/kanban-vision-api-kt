@@ -4,15 +4,11 @@ import java.util.UUID
 import kotlin.random.Random
 
 data class Worker(
-    val id: String = UUID.randomUUID().toString(),
+    override val id: String = UUID.randomUUID().toString(),
     val name: String,
     val abilities: Set<Ability>,
-    val audit: Audit = Audit(),
-) {
-    val createdDate get() = audit.createdAt
-    val updatedDate get() = audit.updatedAt
-    val deletedDate get() = audit.deletedAt
-
+    override val audit: Audit = Audit(),
+) : Domain {
     init {
         require(id.isNotBlank()) { "Worker id must not be blank" }
         require(name.isNotBlank()) { "Worker name must not be blank" }
@@ -27,11 +23,6 @@ data class Worker(
 
     fun canExecute(step: Step): Boolean = hasAbility(step.requiredAbility)
 
-    /**
-     * Generates daily execution capacities for all abilities.
-     * Non-deployer capacities are random and uniformly distributed in [minPoints, maxPoints].
-     * Deployer gets max capacity because deploy execution is gate-based, not capacity-based.
-     */
     fun generateDailyCapacities(
         random: Random,
         minPoints: Int = 0,

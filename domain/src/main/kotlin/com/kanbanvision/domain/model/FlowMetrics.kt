@@ -1,13 +1,17 @@
 package com.kanbanvision.domain.model
 
+import java.util.UUID
+
 data class FlowMetrics(
+    override val id: String = UUID.randomUUID().toString(),
     val throughput: Int,
     val wipCount: Int,
     val blockedCount: Int,
     val avgAgingDays: Double,
-    val audit: Audit = Audit(),
-) {
+    override val audit: Audit = Audit(),
+) : Domain {
     init {
+        require(id.isNotBlank()) { "FlowMetrics id must not be blank" }
         require(throughput >= 0) { "Throughput must be non-negative" }
         require(wipCount >= 0) { "WIP count must be non-negative" }
         require(blockedCount >= 0) { "Blocked count must be non-negative" }

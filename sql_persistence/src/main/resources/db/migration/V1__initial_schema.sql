@@ -1,6 +1,6 @@
 -- V1__initial_schema.sql
 -- Schema inicial unificado:
--- boards, steps, cards, organizations, scenarios, scenario_states, daily_snapshots.
+-- boards, steps, cards, organizations, simulations, simulation_states, daily_snapshots.
 
 CREATE TABLE boards (
     id         VARCHAR(36)  PRIMARY KEY,
@@ -33,7 +33,7 @@ CREATE TABLE organizations (
     name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE scenarios (
+CREATE TABLE simulations (
     id              VARCHAR(36) PRIMARY KEY,
     organization_id VARCHAR(36) NOT NULL REFERENCES organizations(id),
     wip_limit       INT         NOT NULL,
@@ -41,16 +41,16 @@ CREATE TABLE scenarios (
     seed_value      BIGINT      NOT NULL
 );
 
-CREATE TABLE scenario_states (
-    scenario_id VARCHAR(36) PRIMARY KEY REFERENCES scenarios(id),
-    state_json  TEXT        NOT NULL
+CREATE TABLE simulation_states (
+    simulation_id VARCHAR(36) PRIMARY KEY REFERENCES simulations(id),
+    state_json    TEXT        NOT NULL
 );
 
 CREATE TABLE daily_snapshots (
-    scenario_id   VARCHAR(36) NOT NULL REFERENCES scenarios(id),
+    simulation_id VARCHAR(36) NOT NULL REFERENCES simulations(id),
     day           INT         NOT NULL,
     snapshot_json TEXT        NOT NULL,
-    PRIMARY KEY (scenario_id, day)
+    PRIMARY KEY (simulation_id, day)
 );
 
 CREATE INDEX idx_steps_board_id
@@ -59,14 +59,14 @@ CREATE INDEX idx_steps_board_id
 CREATE INDEX idx_cards_step_id
     ON cards(step_id);
 
-CREATE INDEX idx_scenarios_organization_id
-    ON scenarios(organization_id);
+CREATE INDEX idx_simulations_organization_id
+    ON simulations(organization_id);
 
-CREATE INDEX idx_daily_snapshots_scenario_id
-    ON daily_snapshots(scenario_id);
+CREATE INDEX idx_daily_snapshots_simulation_id
+    ON daily_snapshots(simulation_id);
 
-ALTER TABLE scenarios
+ALTER TABLE simulations
     ADD CONSTRAINT check_wip_limit_positive CHECK (wip_limit > 0);
 
-ALTER TABLE scenarios
+ALTER TABLE simulations
     ADD CONSTRAINT check_team_size_positive CHECK (team_size > 0);

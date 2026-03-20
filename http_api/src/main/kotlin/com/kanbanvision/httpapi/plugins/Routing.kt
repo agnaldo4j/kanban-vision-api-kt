@@ -1,11 +1,7 @@
 package com.kanbanvision.httpapi.plugins
 
-import com.kanbanvision.httpapi.routes.boardRoutes
-import com.kanbanvision.httpapi.routes.cardRoutes
 import com.kanbanvision.httpapi.routes.healthRoutes
-import com.kanbanvision.httpapi.routes.scenarioAnalyticsRoutes
-import com.kanbanvision.httpapi.routes.scenarioRoutes
-import com.kanbanvision.httpapi.routes.stepRoutes
+import com.kanbanvision.httpapi.routes.simulationRoutes
 import com.kanbanvision.persistence.DatabaseFactory
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
@@ -17,11 +13,7 @@ fun Application.configureRouting() {
         healthRoutes(::isDatabaseReady)
         authenticate("jwt-auth") {
             route("/api/v1") {
-                boardRoutes()
-                cardRoutes()
-                stepRoutes()
-                scenarioRoutes()
-                scenarioAnalyticsRoutes()
+                simulationRoutes()
             }
         }
     }

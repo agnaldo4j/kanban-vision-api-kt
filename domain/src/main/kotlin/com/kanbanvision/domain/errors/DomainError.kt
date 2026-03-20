@@ -33,7 +33,7 @@ sealed class DomainError {
         val id: String,
     ) : DomainError()
 
-    data class ScenarioNotFound(
+    data class SimulationNotFound(
         val id: String,
     ) : DomainError()
 

@@ -3,11 +3,11 @@ package com.kanbanvision.domain.model
 import java.util.UUID
 
 data class Organization(
-    val id: String,
+    override val id: String,
     val name: String,
     val tribes: List<Tribe> = emptyList(),
-    val audit: Audit = Audit(),
-) {
+    override val audit: Audit = Audit(),
+) : Domain {
     init {
         require(id.isNotBlank()) { "Organization id must not be blank" }
         require(name.isNotBlank()) { "Organization name must not be blank" }

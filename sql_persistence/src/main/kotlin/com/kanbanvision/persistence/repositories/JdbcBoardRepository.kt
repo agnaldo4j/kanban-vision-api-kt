@@ -46,7 +46,7 @@ class JdbcBoardRepository : BoardRepository {
                             ).use { stmt ->
                                 stmt.setString(COL_ID, board.id)
                                 stmt.setString(COL_NAME, board.name)
-                                stmt.setLong(COL_CREATED_AT, board.createdAt.toEpochMilli())
+                                stmt.setLong(COL_CREATED_AT, board.audit.createdAt.toEpochMilli())
                                 stmt.executeUpdate()
                             }
                         conn.commit()

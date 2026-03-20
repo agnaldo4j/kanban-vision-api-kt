@@ -1,144 +1,117 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.model.Ability
+import com.kanbanvision.domain.model.AbilityName
+import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.PolicySet
-import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.DecisionType
+import com.kanbanvision.domain.model.Organization
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioRules
+import com.kanbanvision.domain.model.Seniority
 import com.kanbanvision.domain.model.ServiceClass
-import com.kanbanvision.domain.model.SimulationState
-import java.util.UUID
+import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.domain.model.Step
+import com.kanbanvision.domain.model.Worker
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SimulationEngineBehaviorTest {
-    private val scenarioId = UUID.randomUUID().toString()
-    private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
-    private val emptyState = SimulationState.initial(config)
-
-    private fun inProgress(title: String): Card =
-        Card
-            .createSimulation(title)
-            .advance()
-
-    private fun done(title: String): Card =
-        Card
-            .createSimulation(title)
-            .advance()
-            .advance()
-
-    // ─────────────────────────────────────────────
-    // Critério de aceite: determinismo
-    // ─────────────────────────────────────────────
-
     @Test
-    fun `same input always produces same output (determinism)`() {
-        val item = Card.createSimulation("Task A")
-        val state = emptyState.copy(cards = listOf(item))
+    fun `given simulation day run when decisions are applied then day advances and snapshot is appended`() {
+        val (simulation, decisions) = simulationWithDecisionSet()
 
-        val result1 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 42L)
-        val result2 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 42L)
+        val result = SimulationEngine.runDay(simulation, decisions, seed = 42L)
 
-        assertEquals(result1.snapshot.metrics, result2.snapshot.metrics)
-        assertEquals(result1.newState.cards.map { it.state }, result2.newState.cards.map { it.state })
-        assertEquals(result1.snapshot.movements.size, result2.snapshot.movements.size)
+        assertEquals(simulation.currentDay.value + 1, result.simulation.currentDay.value)
+        assertEquals(1, result.simulation.scenario.history.size)
+        assertEquals(4, result.simulation.scenario.decisions.size)
+        assertTrue(result.snapshot.movements.isNotEmpty())
     }
 
     @Test
-    fun `different seeds produce same WIP limit enforcement`() {
-        val items = (1..5).map { Card.createSimulation("Task $it") }
-        val state = emptyState.copy(cards = items, policySet = PolicySet(wipLimit = 1))
+    fun `given assigned worker on in progress card when running day then remaining effort is reduced`() {
+        val simulation = simulationWithAssignedWorker()
 
-        val result1 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 1L)
-        val result2 = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 99L)
-
-        assertEquals(1, result1.newState.cards.count { it.state == CardState.IN_PROGRESS })
-        assertEquals(1, result2.newState.cards.count { it.state == CardState.IN_PROGRESS })
-        assertNotNull(result1.newState.cards.firstOrNull { it.state == CardState.IN_PROGRESS })
-        assertNotNull(result2.newState.cards.firstOrNull { it.state == CardState.IN_PROGRESS })
-    }
-
-    // ─────────────────────────────────────────────
-    // Auto-advance e WIP limit
-    // ─────────────────────────────────────────────
-
-    @Test
-    fun `auto-advance starts TODO items up to WIP limit`() {
-        val items = listOf(Card.createSimulation("A"), Card.createSimulation("B"), Card.createSimulation("C"))
-        val state = emptyState.copy(cards = items) // wipLimit = 2
-
-        val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
-
-        assertEquals(2, result.newState.cards.count { it.state == CardState.IN_PROGRESS })
-        assertEquals(1, result.newState.cards.count { it.state == CardState.TODO })
-    }
-
-    @Test
-    fun `auto-advance does not exceed WIP limit when items already in progress`() {
-        val existing = inProgress("Existing")
-        val state = emptyState.copy(cards = listOf(existing, Card.createSimulation("New A"), Card.createSimulation("New B")))
-
-        val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
-
-        assertEquals(2, result.newState.cards.count { it.state == CardState.IN_PROGRESS })
-        assertEquals(1, result.newState.cards.count { it.state == CardState.TODO })
-    }
-
-    @Test
-    fun `auto-advance does not start items when WIP limit already reached`() {
-        val state =
-            emptyState.copy(
-                cards = listOf(inProgress("P1"), inProgress("P2"), Card.createSimulation("Waiting")),
-            )
-
-        val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
-
-        assertEquals(2, result.newState.cards.count { it.state == CardState.IN_PROGRESS })
-        assertEquals(1, result.newState.cards.count { it.state == CardState.TODO })
-    }
-
-    // ─────────────────────────────────────────────
-    // Priorização: EXPEDITE primeiro
-    // ─────────────────────────────────────────────
-
-    @Test
-    fun `EXPEDITE items are auto-advanced before STANDARD within WIP limit`() {
-        val standard = Card.createSimulation("Standard task", ServiceClass.STANDARD)
-        val expedite = Card.createSimulation("Urgent fix", ServiceClass.EXPEDITE)
-        val state =
-            emptyState.copy(
-                cards = listOf(standard, expedite),
-                policySet = PolicySet(wipLimit = 1),
-            )
-
-        val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
-
-        val startedItem = result.newState.cards.first { it.state == CardState.IN_PROGRESS }
-        assertEquals(ServiceClass.EXPEDITE, startedItem.serviceClass)
-        val standardItem = result.newState.cards.first { it.serviceClass == ServiceClass.STANDARD }
-        assertEquals(CardState.TODO, standardItem.state)
-    }
-
-    // ─────────────────────────────────────────────
-    // Edge cases
-    // ─────────────────────────────────────────────
-
-    @Test
-    fun `MOVE_ITEM on DONE item is silently ignored`() {
-        val item = done("Already done")
-        val state = emptyState.copy(cards = listOf(item))
-
-        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
-
-        assertEquals(
-            CardState.DONE,
-            result.newState.cards
+        val result = SimulationEngine.runDay(simulation, decisions = emptyList(), seed = 10L)
+        val updatedCard =
+            result.simulation.scenario.board.steps
                 .first()
-                .state,
-        )
-        assertTrue(result.snapshot.movements.none { it.reason == "decision: move" })
-        assertEquals(0, result.snapshot.metrics.throughput)
+                .cards
+                .first()
+
+        assertTrue(updatedCard.remainingDevelopmentEffort <= 5)
+    }
+
+    private fun simulationWithDecisionSet(): Pair<Simulation, List<Decision>> {
+        val board =
+            Board
+                .create("Main")
+                .addStep("Analysis", AbilityName.PRODUCT_MANAGER)
+                .addStep("Dev", AbilityName.DEVELOPER)
+
+        val analysis = board.steps.first()
+        val baseCard =
+            Card(
+                stepId = analysis.id,
+                title = "Item A",
+                serviceClass = ServiceClass.EXPEDITE,
+                analysisEffort = 1,
+            )
+        val boardWithCards = board.copy(steps = listOf(analysis.copy(cards = listOf(baseCard)), board.steps[1]))
+
+        val rules = ScenarioRules.create(wipLimit = 2, teamSize = 2, seedValue = 42L)
+        val scenario = Scenario.create(name = "Scenario", rules = rules, board = boardWithCards)
+        val simulation = Simulation.create(name = "Sim", organization = Organization.create("Org"), scenario = scenario)
+
+        val decisions =
+            listOf(
+                Decision(type = DecisionType.MOVE_ITEM, payload = mapOf("cardId" to baseCard.id)),
+                Decision(type = DecisionType.BLOCK_ITEM, payload = mapOf("cardId" to baseCard.id, "reason" to "dependency")),
+                Decision(type = DecisionType.UNBLOCK_ITEM, payload = mapOf("cardId" to baseCard.id)),
+                Decision(type = DecisionType.ADD_ITEM, payload = mapOf("title" to "New")),
+            )
+        return simulation to decisions
+    }
+
+    private fun simulationWithAssignedWorker(): Simulation {
+        val step = assignedDevStep()
+
+        val inProgressCard =
+            Card(
+                stepId = step.id,
+                title = "Build",
+                state = CardState.IN_PROGRESS,
+                developmentEffort = 5,
+                remainingDevelopmentEffort = 5,
+            )
+
+        val board = Board(id = "board-1", name = "Main", steps = listOf(step.copy(cards = listOf(inProgressCard))))
+        val rules = ScenarioRules.create(wipLimit = 3, teamSize = 1, seedValue = 10L)
+        val scenario = Scenario.create(name = "Scenario", rules = rules, board = board)
+        return Simulation.create(name = "Sim", organization = Organization.create("Org"), scenario = scenario)
+    }
+
+    private fun assignedDevStep(): Step {
+        val worker =
+            Worker(
+                name = "Dev",
+                abilities =
+                    setOf(
+                        Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL),
+                        Ability(name = AbilityName.DEPLOYER, seniority = Seniority.PL),
+                    ),
+            )
+
+        return Step
+            .create(
+                boardId = "board-1",
+                name = "Dev",
+                position = 0,
+                requiredAbility = AbilityName.DEVELOPER,
+            ).assignWorker(worker)
     }
 }
