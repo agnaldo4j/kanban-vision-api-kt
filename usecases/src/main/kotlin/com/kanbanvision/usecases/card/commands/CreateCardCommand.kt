@@ -16,7 +16,7 @@ data class CreateCardCommand(
     override fun validate(): Either<DomainError.ValidationError, Unit> =
         either<NonEmptyList<DomainError.ValidationError>, Unit> {
             zipOrAccumulate(
-                { ensure(columnId.isNotBlank()) { DomainError.ValidationError("Step id must not be blank") } },
+                { ensure(columnId.isNotBlank()) { DomainError.ValidationError("Column id must not be blank") } },
                 { ensure(title.isNotBlank()) { DomainError.ValidationError("Card title must not be blank") } },
             ) { _, _ -> }
         }.mapLeft { errors -> DomainError.ValidationError(errors.map { it.message }) }

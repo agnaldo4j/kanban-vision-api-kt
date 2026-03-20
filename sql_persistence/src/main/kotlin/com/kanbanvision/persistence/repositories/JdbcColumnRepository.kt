@@ -88,7 +88,7 @@ class JdbcColumnRepository : ColumnRepository {
                         val sql =
                             "SELECT id, board_id, name, position, required_ability FROM columns WHERE board_id = ? ORDER BY position"
                         conn.prepareStatement(sql).use { stmt ->
-                            stmt.setString(COL_ID, boardId)
+                            stmt.setString(1, boardId)
                             stmt.executeQuery().use { rs ->
                                 buildList { while (rs.next()) add(rs.toColumn()) }
                             }

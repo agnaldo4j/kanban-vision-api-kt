@@ -31,7 +31,7 @@ private fun notFoundMessage(error: DomainError): String =
     when (error) {
         is DomainError.BoardNotFound -> "Board not found"
         is DomainError.CardNotFound -> "Card not found"
-        is DomainError.ColumnNotFound -> "Step not found"
+        is DomainError.ColumnNotFound -> "Column not found"
         is DomainError.StepNotFound -> "Step not found"
         is DomainError.TenantNotFound -> "Tenant not found"
         is DomainError.ScenarioNotFound -> "Scenario not found"
