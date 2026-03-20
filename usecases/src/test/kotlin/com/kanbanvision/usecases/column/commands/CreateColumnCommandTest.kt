@@ -1,7 +1,7 @@
 package com.kanbanvision.usecases.column.commands
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.team.AbilityName
+import com.kanbanvision.domain.model.AbilityName
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -68,6 +68,6 @@ class CreateColumnCommandTest {
         assertIs<DomainError.ValidationError>(error)
         assertNotNull(error)
         assertTrue(error.message.contains("Board id must not be blank"))
-        assertTrue(error.message.contains("Column name must not be blank"))
+        assertTrue(error.message.contains("Step name must not be blank"))
     }
 }

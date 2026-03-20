@@ -4,9 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.Raise
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.usecases.column.commands.CreateColumnCommand
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
@@ -19,7 +17,7 @@ class CreateColumnUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    suspend fun execute(command: CreateColumnCommand): Either<DomainError, ColumnId> =
+    suspend fun execute(command: CreateColumnCommand): Either<DomainError, String> =
         either {
             command.validate().bind()
             logCreateStart(command)
@@ -28,9 +26,9 @@ class CreateColumnUseCase(
             columnId
         }
 
-    private suspend fun createColumn(command: CreateColumnCommand): Either<DomainError, ColumnId> =
+    private suspend fun createColumn(command: CreateColumnCommand): Either<DomainError, String> =
         either {
-            val boardId = BoardId(command.boardId)
+            val boardId = command.boardId
             val board = boardRepository.findById(boardId).bind()
             val existingColumns = columnRepository.findByBoardId(boardId).bind()
             val hydratedBoard = board.copy(columns = existingColumns)
@@ -42,7 +40,7 @@ class CreateColumnUseCase(
     private fun Raise<DomainError>.createDomainColumn(
         command: CreateColumnCommand,
         hydratedBoard: com.kanbanvision.domain.model.Board,
-    ): Column =
+    ): Step =
         try {
             hydratedBoard.addColumn(command.name, command.requiredAbility)
         } catch (e: IllegalArgumentException) {
@@ -60,12 +58,12 @@ class CreateColumnUseCase(
 
     private fun logCreateSuccess(
         command: CreateColumnCommand,
-        columnId: ColumnId,
+        columnId: String,
         durationMs: Long,
     ) {
         log.info(
-            "Column created: id={} boardId={} name={} duration={}ms",
-            columnId.value,
+            "Step created: id={} boardId={} name={} duration={}ms",
+            columnId,
             command.boardId,
             command.name,
             durationMs,

@@ -2,14 +2,12 @@ package com.kanbanvision.usecases.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.Step
 
 interface ColumnRepository {
-    suspend fun save(column: Column): Either<DomainError, Column>
+    suspend fun save(column: Step): Either<DomainError, Step>
 
-    suspend fun findById(id: ColumnId): Either<DomainError, Column>
+    suspend fun findById(id: String): Either<DomainError, Step>
 
-    suspend fun findByBoardId(boardId: BoardId): Either<DomainError, List<Column>>
+    suspend fun findByBoardId(boardId: String): Either<DomainError, List<Step>>
 }

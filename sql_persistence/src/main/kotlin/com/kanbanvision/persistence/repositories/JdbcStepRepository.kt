@@ -2,10 +2,7 @@ package com.kanbanvision.persistence.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.repositories.StepRepository
 
@@ -14,13 +11,13 @@ class JdbcStepRepository(
 ) : StepRepository {
     override suspend fun save(step: Step): Either<DomainError, Step> = delegate.save(step.toColumn()).map { it.toStep() }
 
-    override suspend fun findById(id: ColumnId): Either<DomainError, Step> =
+    override suspend fun findById(id: String): Either<DomainError, Step> =
         delegate
             .findById(id)
             .map { it.toStep() }
             .mapLeft(::mapStepError)
 
-    override suspend fun findByBoardId(boardId: BoardId): Either<DomainError, List<Step>> =
+    override suspend fun findByBoardId(boardId: String): Either<DomainError, List<Step>> =
         delegate.findByBoardId(boardId).map { columns -> columns.map { it.toStep() } }
 
     private fun mapStepError(error: DomainError): DomainError =
@@ -29,8 +26,8 @@ class JdbcStepRepository(
             else -> error
         }
 
-    private fun Step.toColumn(): Column =
-        Column(
+    private fun Step.toColumn(): Step =
+        Step(
             id = id,
             boardId = boardId,
             name = name,
@@ -39,7 +36,7 @@ class JdbcStepRepository(
             cards = cards,
         )
 
-    private fun Column.toStep(): Step =
+    private fun Step.toStep(): Step =
         Step(
             id = id,
             boardId = boardId,

@@ -152,7 +152,7 @@ private suspend fun ApplicationCall.handleGetCard(getCard: GetCardUseCase) {
     getCard.execute(GetCardQuery(id = id)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { card ->
-            respond(CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position))
+            respond(CardResponse(card.id, card.columnId, card.title, card.description, card.position))
         },
     )
 }
@@ -172,8 +172,8 @@ private suspend fun ApplicationCall.handleCreateCard(
                         description = request.description,
                     ),
                 ).bind()
-        val card = getCard.execute(GetCardQuery(id = cardId.value)).bind()
-        CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position)
+        val card = getCard.execute(GetCardQuery(id = cardId)).bind()
+        CardResponse(card.id, card.columnId, card.title, card.description, card.position)
     }.fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { response -> respond(HttpStatusCode.Created, response) },
@@ -198,7 +198,7 @@ private suspend fun ApplicationCall.handleMoveCard(
                 ),
             ).bind()
         val card = getCard.execute(GetCardQuery(id = id)).bind()
-        CardResponse(card.id.value, card.columnId.value, card.title, card.description, card.position)
+        CardResponse(card.id, card.columnId, card.title, card.description, card.position)
     }.fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { response -> respond(response) },

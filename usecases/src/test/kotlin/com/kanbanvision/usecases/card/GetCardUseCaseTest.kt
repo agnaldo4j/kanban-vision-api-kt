@@ -4,13 +4,12 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.card.queries.GetCardQuery
 import com.kanbanvision.usecases.repositories.CardRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -24,10 +23,10 @@ class GetCardUseCaseTest {
     @Test
     fun `execute returns card when found`() =
         runTest {
-            val card = Card.create(columnId = ColumnId.generate(), title = "My Task", position = 0)
+            val card = Card.create(columnId = UUID.randomUUID().toString(), title = "My Task", position = 0)
             coEvery { cardRepository.findById(any()) } returns card.right()
 
-            val result = useCase.execute(GetCardQuery(id = card.id.value))
+            val result = useCase.execute(GetCardQuery(id = card.id))
 
             assertTrue(result.isRight())
             val returnedCard = result.getOrNull()
@@ -39,7 +38,7 @@ class GetCardUseCaseTest {
     @Test
     fun `execute returns CardNotFound when card not found`() =
         runTest {
-            val id = CardId.generate().value
+            val id = UUID.randomUUID().toString()
             coEvery { cardRepository.findById(any()) } returns DomainError.CardNotFound(id).left()
 
             val result = useCase.execute(GetCardQuery(id = id))
@@ -62,7 +61,7 @@ class GetCardUseCaseTest {
         runTest {
             coEvery { cardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val result = useCase.execute(GetCardQuery(id = CardId.generate().value))
+            val result = useCase.execute(GetCardQuery(id = UUID.randomUUID().toString()))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

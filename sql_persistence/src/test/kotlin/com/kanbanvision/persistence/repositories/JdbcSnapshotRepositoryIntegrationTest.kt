@@ -1,13 +1,10 @@
 package com.kanbanvision.persistence.repositories
 
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.IntegrationTestSetup
 import kotlinx.coroutines.runBlocking
@@ -24,8 +21,8 @@ import kotlin.test.assertTrue
 class JdbcSnapshotRepositoryIntegrationTest {
     private val repository = JdbcSnapshotRepository()
 
-    private val tenantId = TenantId(UUID.randomUUID().toString())
-    private val scenarioId = ScenarioId(UUID.randomUUID().toString())
+    private val tenantId = UUID.randomUUID().toString()
+    private val scenarioId = UUID.randomUUID().toString()
 
     @BeforeAll
     fun initDatabase() {
@@ -41,7 +38,7 @@ class JdbcSnapshotRepositoryIntegrationTest {
     private fun seedTenantAndScenario() {
         DatabaseFactory.dataSource.connection.use { conn ->
             conn.prepareStatement("INSERT INTO tenants (id, name) VALUES (?, ?)").use { stmt ->
-                stmt.setString(1, tenantId.value)
+                stmt.setString(1, tenantId)
                 stmt.setString(2, "Test Org")
                 stmt.executeUpdate()
             }
@@ -49,8 +46,8 @@ class JdbcSnapshotRepositoryIntegrationTest {
                 .prepareStatement(
                     "INSERT INTO scenarios (id, tenant_id, wip_limit, team_size, seed_value) VALUES (?, ?, ?, ?, ?)",
                 ).use { stmt ->
-                    stmt.setString(1, scenarioId.value)
-                    stmt.setString(2, tenantId.value)
+                    stmt.setString(1, scenarioId)
+                    stmt.setString(2, tenantId)
                     stmt.setInt(3, 2)
                     stmt.setInt(4, 3)
                     stmt.setLong(5, 42L)
@@ -139,7 +136,7 @@ class JdbcSnapshotRepositoryIntegrationTest {
             val movement =
                 Movement(
                     type = MovementType.MOVED,
-                    workItemId = WorkItemId("item-1"),
+                    cardId = "item-1",
                     day = SimulationDay(1),
                     reason = "WIP available",
                 )
@@ -162,7 +159,7 @@ class JdbcSnapshotRepositoryIntegrationTest {
                 "item-1",
                 found.movements
                     .first()
-                    .workItemId.value,
+                    .cardId,
             )
             assertEquals("WIP available", found.movements.first().reason)
         }

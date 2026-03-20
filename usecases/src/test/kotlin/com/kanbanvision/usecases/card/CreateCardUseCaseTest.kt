@@ -3,12 +3,10 @@ package com.kanbanvision.usecases.card
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.usecases.card.commands.CreateCardCommand
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
@@ -17,6 +15,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -28,11 +27,11 @@ class CreateCardUseCaseTest {
     private val boardRepository = mockk<BoardRepository>()
     private val useCase = CreateCardUseCase(cardRepository, columnRepository, boardRepository)
 
-    private val boardId = BoardId.generate()
-    private val columnId = ColumnId.generate()
+    private val boardId = UUID.randomUUID().toString()
+    private val columnId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "My Board")
     private val column =
-        Column(
+        Step(
             id = columnId,
             boardId = boardId,
             name = "To Do",
@@ -48,7 +47,7 @@ class CreateCardUseCaseTest {
             coEvery { cardRepository.findByColumnId(any()) } returns emptyList<Card>().right()
             coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
 
-            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = "Fix bug"))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Fix bug"))
 
             assertTrue(result.isRight())
             assertNotNull(result.getOrNull())
@@ -64,7 +63,7 @@ class CreateCardUseCaseTest {
             coEvery { cardRepository.findByColumnId(any()) } returns listOf(existingCard).right()
             coEvery { cardRepository.save(any()) } answers { firstArg<Card>().right() }
 
-            useCase.execute(CreateCardCommand(columnId = columnId.value, title = "New Card"))
+            useCase.execute(CreateCardCommand(columnId = columnId, title = "New Card"))
 
             coVerify { cardRepository.save(match { it.position == 1 }) }
         }
@@ -82,7 +81,7 @@ class CreateCardUseCaseTest {
     @Test
     fun `execute with blank title returns ValidationError before saving`() =
         runTest {
-            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = ""))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = ""))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -92,13 +91,13 @@ class CreateCardUseCaseTest {
     @Test
     fun `execute returns ValidationError when retrieved board id does not match column boardId`() =
         runTest {
-            val otherBoardId = BoardId.generate()
+            val otherBoardId = UUID.randomUUID().toString()
             val otherBoard = Board(id = otherBoardId, name = "Other Board")
             coEvery { columnRepository.findById(columnId) } returns column.right()
             coEvery { boardRepository.findById(boardId) } returns otherBoard.right()
             coEvery { cardRepository.findByColumnId(any()) } returns emptyList<Card>().right()
 
-            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = "Task"))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Task"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -108,9 +107,9 @@ class CreateCardUseCaseTest {
     @Test
     fun `execute returns ColumnNotFound when column repository returns error`() =
         runTest {
-            coEvery { columnRepository.findById(columnId) } returns DomainError.ColumnNotFound(columnId.value).left()
+            coEvery { columnRepository.findById(columnId) } returns DomainError.ColumnNotFound(columnId).left()
 
-            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = "Task"))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Task"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ColumnNotFound>(result.leftOrNull())
@@ -120,9 +119,9 @@ class CreateCardUseCaseTest {
     fun `execute returns BoardNotFound when board repository returns error`() =
         runTest {
             coEvery { columnRepository.findById(columnId) } returns column.right()
-            coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId.value).left()
+            coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId).left()
 
-            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = "Task"))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Task"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())
@@ -135,7 +134,7 @@ class CreateCardUseCaseTest {
             coEvery { boardRepository.findById(boardId) } returns board.right()
             coEvery { cardRepository.findByColumnId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val result = useCase.execute(CreateCardCommand(columnId = columnId.value, title = "Task"))
+            val result = useCase.execute(CreateCardCommand(columnId = columnId, title = "Task"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

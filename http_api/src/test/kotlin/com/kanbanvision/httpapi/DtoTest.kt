@@ -89,10 +89,10 @@ class DtoTest {
 
     @Test
     fun `DecisionRequest equality and copy`() {
-        val req = DecisionRequest(type = "MOVE_ITEM", payload = mapOf("workItemId" to "w1"))
+        val req = DecisionRequest(type = "MOVE_ITEM", payload = mapOf("cardId" to "w1"))
         assertEquals(req, req.copy())
         assertEquals("MOVE_ITEM", req.type)
-        assertEquals(mapOf("workItemId" to "w1"), req.payload)
+        assertEquals(mapOf("cardId" to "w1"), req.payload)
         assertNotEquals(req, req.copy(type = "BLOCK_ITEM"))
     }
 
@@ -158,10 +158,10 @@ class DtoTest {
 
     @Test
     fun `MovementResponse equality and copy`() {
-        val resp = MovementResponse(type = "MOVED", workItemId = "w1", day = 1, reason = "WIP available")
+        val resp = MovementResponse(type = "MOVED", cardId = "w1", day = 1, reason = "WIP available")
         assertEquals(resp, resp.copy())
         assertEquals("MOVED", resp.type)
-        assertEquals("w1", resp.workItemId)
+        assertEquals("w1", resp.cardId)
         assertEquals(1, resp.day)
         assertEquals("WIP available", resp.reason)
         assertNotEquals(resp, resp.copy(type = "BLOCKED"))

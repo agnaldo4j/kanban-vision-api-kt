@@ -1,8 +1,8 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.persistence.IntegrationTestSetup
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll
@@ -32,9 +32,9 @@ class JdbcBoardRepositoryIntegrationTest {
 
     private fun newBoard(name: String = "Test Board") =
         Board(
-            id = BoardId(UUID.randomUUID().toString()),
+            id = UUID.randomUUID().toString(),
             name = name,
-            createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
+            audit = Audit(createdAt = Instant.ofEpochMilli(System.currentTimeMillis())),
         )
 
     @Test
@@ -56,7 +56,7 @@ class JdbcBoardRepositoryIntegrationTest {
     @Test
     fun `findById returns BoardNotFound when board does not exist`() =
         runBlocking<Unit> {
-            val result = repository.findById(BoardId(UUID.randomUUID().toString()))
+            val result = repository.findById(UUID.randomUUID().toString())
 
             assertTrue(result.isLeft())
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())
@@ -79,9 +79,9 @@ class JdbcBoardRepositoryIntegrationTest {
         runBlocking<Unit> {
             val board =
                 Board(
-                    id = BoardId(UUID.randomUUID().toString()),
+                    id = UUID.randomUUID().toString(),
                     name = "x".repeat(256),
-                    createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
+                    audit = Audit(createdAt = Instant.ofEpochMilli(System.currentTimeMillis())),
                 )
 
             val result = repository.save(board)
@@ -108,7 +108,7 @@ class JdbcBoardRepositoryIntegrationTest {
     @Test
     fun `findById with non-UUID string returns BoardNotFound`() =
         runBlocking<Unit> {
-            val result = repository.findById(BoardId("not-a-valid-uuid"))
+            val result = repository.findById("not-a-valid-uuid")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())

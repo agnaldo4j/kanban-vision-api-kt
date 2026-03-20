@@ -1,38 +1,39 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.decision.Decision
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.policy.PolicySet
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.workitem.ServiceClass
-import com.kanbanvision.domain.model.workitem.WorkItem
-import com.kanbanvision.domain.model.workitem.WorkItemState
+import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.PolicySet
+import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.ServiceClass
+import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.WorkItem
+import com.kanbanvision.domain.model.WorkItemState
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SimulationEngineDecisionsTest {
-    private val scenarioId = ScenarioId.generate()
+    private val scenarioId = UUID.randomUUID().toString()
     private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
     private val emptyState = SimulationState.initial(config)
 
     private fun inProgress(title: String): WorkItem =
-        WorkItem
-            .create(title)
+        Card
+            .createSimulation(title)
             .advance()
 
     private fun blocked(title: String): WorkItem =
-        WorkItem
-            .create(title)
+        Card
+            .createSimulation(title)
             .advance()
             .block()
 
     private fun done(title: String): WorkItem =
-        WorkItem
-            .create(title)
+        Card
+            .createSimulation(title)
             .advance()
             .advance()
 
@@ -43,13 +44,13 @@ class SimulationEngineDecisionsTest {
     @Test
     fun `MOVE_ITEM decision advances item from IN_PROGRESS to DONE and records COMPLETED movement`() {
         val item = inProgress("Task")
-        val state = emptyState.copy(items = listOf(item))
+        val state = emptyState.copy(cards = listOf(item))
 
-        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id.value)), seed = 0L)
+        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
 
         assertEquals(
             WorkItemState.DONE,
-            result.newState.items
+            result.newState.cards
                 .first()
                 .state,
         )
@@ -59,14 +60,14 @@ class SimulationEngineDecisionsTest {
 
     @Test
     fun `MOVE_ITEM decision on TODO item advances to IN_PROGRESS and records MOVED movement`() {
-        val item = WorkItem.create("Task")
-        val state = emptyState.copy(items = listOf(item))
+        val item = Card.createSimulation("Task")
+        val state = emptyState.copy(cards = listOf(item))
 
-        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id.value)), seed = 0L)
+        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.move(item.id)), seed = 0L)
 
         assertEquals(
             WorkItemState.IN_PROGRESS,
-            result.newState.items
+            result.newState.cards
                 .first()
                 .state,
         )
@@ -76,14 +77,14 @@ class SimulationEngineDecisionsTest {
     @Test
     fun `BLOCK_ITEM decision blocks IN_PROGRESS item and records BLOCKED movement`() {
         val item = inProgress("Task")
-        val state = emptyState.copy(items = listOf(item))
-        val decisions = listOf(Decision.block(item.id.value, "external dependency"))
+        val state = emptyState.copy(cards = listOf(item))
+        val decisions = listOf(Decision.block(item.id, "external dependency"))
 
         val result = SimulationEngine.runDay(scenarioId, state, decisions, seed = 0L)
 
         assertEquals(
             WorkItemState.BLOCKED,
-            result.newState.items
+            result.newState.cards
                 .first()
                 .state,
         )
@@ -95,13 +96,13 @@ class SimulationEngineDecisionsTest {
     @Test
     fun `UNBLOCK_ITEM decision unblocks BLOCKED item and records UNBLOCKED movement`() {
         val item = blocked("Task")
-        val state = emptyState.copy(items = listOf(item))
+        val state = emptyState.copy(cards = listOf(item))
 
-        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.unblock(item.id.value)), seed = 0L)
+        val result = SimulationEngine.runDay(scenarioId, state, listOf(Decision.unblock(item.id)), seed = 0L)
 
         assertEquals(
             WorkItemState.IN_PROGRESS,
-            result.newState.items
+            result.newState.cards
                 .first()
                 .state,
         )
@@ -114,18 +115,52 @@ class SimulationEngineDecisionsTest {
 
         val result = SimulationEngine.runDay(scenarioId, emptyState, decisions, seed = 0L)
 
-        assertEquals(1, result.newState.items.size)
-        val added = result.newState.items.first()
+        assertEquals(1, result.newState.cards.size)
+        val added = result.newState.cards.first()
         assertEquals("New story", added.title)
         assertEquals(ServiceClass.EXPEDITE, added.serviceClass)
         assertEquals(WorkItemState.IN_PROGRESS, added.state)
     }
 
     @Test
-    fun `unknown workItemId in decision is silently ignored`() {
+    fun `ADD_ITEM with invalid serviceClass defaults to STANDARD`() {
+        val decision =
+            Decision(
+                id = UUID.randomUUID().toString(),
+                type = com.kanbanvision.domain.model.DecisionType.ADD_ITEM,
+                payload = mapOf("title" to "Legacy item", "serviceClass" to "NOT_A_CLASS"),
+            )
+
+        val result = SimulationEngine.runDay(scenarioId, emptyState, listOf(decision), seed = 0L)
+        val added = result.newState.cards.first()
+
+        assertEquals(1, result.newState.cards.size)
+        assertEquals(ServiceClass.STANDARD, added.serviceClass)
+    }
+
+    @Test
+    fun `legacy payload workItemId is still accepted`() {
+        val item = inProgress("Legacy")
+        val state = emptyState.copy(cards = listOf(item))
+        val legacyMove =
+            Decision(
+                id = UUID.randomUUID().toString(),
+                type = com.kanbanvision.domain.model.DecisionType.MOVE_ITEM,
+                payload = mapOf("workItemId" to item.id),
+            )
+
+        val result = SimulationEngine.runDay(scenarioId, state, listOf(legacyMove), seed = 0L)
+        val updated = result.newState.cards.first()
+
+        assertEquals(WorkItemState.DONE, updated.state)
+        assertTrue(result.snapshot.movements.any { it.type == MovementType.COMPLETED && it.cardId == item.id })
+    }
+
+    @Test
+    fun `unknown cardId in decision is silently ignored`() {
         val result = SimulationEngine.runDay(scenarioId, emptyState, listOf(Decision.move("nonexistent-id")), seed = 0L)
 
-        assertTrue(result.newState.items.isEmpty())
+        assertTrue(result.newState.cards.isEmpty())
         assertTrue(result.snapshot.movements.isEmpty())
     }
 
@@ -137,9 +172,9 @@ class SimulationEngineDecisionsTest {
     fun `aging increments for all non-DONE items each day`() {
         val state =
             emptyState.copy(
-                items =
+                cards =
                     listOf(
-                        WorkItem.create("A"),
+                        Card.createSimulation("A"),
                         inProgress("B"),
                         blocked("C"),
                         done("D"),
@@ -149,7 +184,7 @@ class SimulationEngineDecisionsTest {
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
-        val byTitle = result.newState.items.associateBy { it.title }
+        val byTitle = result.newState.cards.associateBy { it.title }
         assertTrue(byTitle["A"]!!.agingDays >= 1)
         assertTrue(byTitle["B"]!!.agingDays >= 1)
         assertTrue(byTitle["C"]!!.agingDays >= 1)
@@ -176,8 +211,8 @@ class SimulationEngineDecisionsTest {
 
     @Test
     fun `metrics wipCount reflects items in progress at end of day`() {
-        val items = listOf(WorkItem.create("A"), WorkItem.create("B"))
-        val state = emptyState.copy(items = items) // wipLimit = 2 → both auto-start
+        val items = listOf(Card.createSimulation("A"), Card.createSimulation("B"))
+        val state = emptyState.copy(cards = items) // wipLimit = 2 → both auto-start
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 
@@ -188,7 +223,7 @@ class SimulationEngineDecisionsTest {
 
     @Test
     fun `avgAgingDays is zero when all items are DONE`() {
-        val state = emptyState.copy(items = listOf(done("Task")))
+        val state = emptyState.copy(cards = listOf(done("Task")))
 
         val result = SimulationEngine.runDay(scenarioId, state, emptyList(), seed = 0L)
 

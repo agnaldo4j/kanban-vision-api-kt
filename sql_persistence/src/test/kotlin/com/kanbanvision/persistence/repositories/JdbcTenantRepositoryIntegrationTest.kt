@@ -1,7 +1,6 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.valueobjects.TenantId
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.IntegrationTestSetup
 import kotlinx.coroutines.runBlocking
@@ -48,18 +47,18 @@ class JdbcTenantRepositoryIntegrationTest {
             val id = UUID.randomUUID().toString()
             insertTenant(id, "Test Corp")
 
-            val result = repository.findById(TenantId(id))
+            val result = repository.findById(id)
 
             assertTrue(result.isRight())
             val tenant = result.getOrNull()!!
-            assertEquals(TenantId(id), tenant.id)
+            assertEquals(id, tenant.id)
             assertEquals("Test Corp", tenant.name)
         }
 
     @Test
     fun `findById returns TenantNotFound when tenant does not exist`() =
         runBlocking<Unit> {
-            val result = repository.findById(TenantId(UUID.randomUUID().toString()))
+            val result = repository.findById(UUID.randomUUID().toString())
 
             assertTrue(result.isLeft())
             assertIs<DomainError.TenantNotFound>(result.leftOrNull())
@@ -68,7 +67,7 @@ class JdbcTenantRepositoryIntegrationTest {
     @Test
     fun `findById with non-UUID string returns TenantNotFound`() =
         runBlocking<Unit> {
-            val result = repository.findById(TenantId("not-a-valid-uuid"))
+            val result = repository.findById("not-a-valid-uuid")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.TenantNotFound>(result.leftOrNull())
@@ -80,7 +79,7 @@ class JdbcTenantRepositoryIntegrationTest {
             val id = UUID.randomUUID().toString()
             insertTenant(id, "Empresa 'Ação' & Co.")
 
-            val result = repository.findById(TenantId(id))
+            val result = repository.findById(id)
 
             assertTrue(result.isRight())
             assertEquals("Empresa 'Ação' & Co.", result.getOrNull()?.name)

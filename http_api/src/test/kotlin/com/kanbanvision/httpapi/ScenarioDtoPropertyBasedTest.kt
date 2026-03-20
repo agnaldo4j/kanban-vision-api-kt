@@ -1,12 +1,10 @@
 package com.kanbanvision.httpapi
 
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.httpapi.routes.toResponse
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.double
@@ -77,7 +75,7 @@ class ScenarioDtoPropertyBasedTest {
         metrics: FlowMetrics,
     ): DailySnapshot =
         DailySnapshot(
-            scenarioId = ScenarioId("scenario-$scenarioSeed"),
+            scenarioId = "scenario-$scenarioSeed",
             day = SimulationDay(dayValue),
             metrics = metrics,
             movements = emptyList(),
@@ -94,13 +92,13 @@ class ScenarioDtoPropertyBasedTest {
             (0 until movementCount).map { idx ->
                 Movement(
                     type = movementTypes[(movementType.ordinal + idx) % movementTypes.size],
-                    workItemId = WorkItemId("work-item-$scenarioSeed-$idx"),
+                    cardId = "work-item-$scenarioSeed-$idx",
                     day = SimulationDay(dayValue + idx),
                     reason = "reason-$idx",
                 )
             }
         return DailySnapshot(
-            scenarioId = ScenarioId("scenario-$scenarioSeed"),
+            scenarioId = "scenario-$scenarioSeed",
             day = SimulationDay(dayValue),
             metrics =
                 FlowMetrics(
@@ -115,7 +113,7 @@ class ScenarioDtoPropertyBasedTest {
 
     private fun assertScalarMapping(snapshot: DailySnapshot) {
         val response = snapshot.toResponse()
-        assertEquals(snapshot.scenarioId.value, response.scenarioId)
+        assertEquals(snapshot.scenarioId, response.scenarioId)
         assertEquals(snapshot.day.value, response.day)
         assertEquals(snapshot.metrics.throughput, response.metrics.throughput)
         assertEquals(snapshot.metrics.wipCount, response.metrics.wipCount)
@@ -129,10 +127,10 @@ class ScenarioDtoPropertyBasedTest {
         response.movements.forEachIndexed { idx, movementResponse ->
             val source = snapshot.movements[idx]
             assertEquals(source.type.name, movementResponse.type)
-            assertEquals(source.workItemId.value, movementResponse.workItemId)
+            assertEquals(source.cardId, movementResponse.cardId)
             assertEquals(source.day.value, movementResponse.day)
             assertEquals(source.reason, movementResponse.reason)
         }
-        assertTrue(response.movements.all { it.workItemId.isNotBlank() })
+        assertTrue(response.movements.all { it.cardId.isNotBlank() })
     }
 }

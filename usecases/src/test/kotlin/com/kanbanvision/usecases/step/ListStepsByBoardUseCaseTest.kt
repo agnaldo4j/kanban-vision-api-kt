@@ -3,11 +3,9 @@ package com.kanbanvision.usecases.step
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.board.GetBoardUseCase
 import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.queries.ListStepsByBoardQuery
@@ -15,6 +13,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -24,17 +23,17 @@ class ListStepsByBoardUseCaseTest {
     private val getBoardUseCase = mockk<GetBoardUseCase>()
     private val stepRepository = mockk<StepRepository>()
     private val useCase = ListStepsByBoardUseCase(getBoardUseCase, stepRepository)
-    private val board = Board(id = BoardId.generate(), name = "Board")
+    private val board = Board(id = UUID.randomUUID().toString(), name = "Board")
 
     @Test
     fun `execute lists steps by board`() =
         runTest {
-            val boardId = BoardId.generate()
+            val boardId = UUID.randomUUID().toString()
             val steps = sampleSteps(boardId)
             coEvery { getBoardUseCase.execute(any()) } returns board.right()
             coEvery { stepRepository.findByBoardId(boardId) } returns steps.right()
 
-            val result = useCase.execute(ListStepsByBoardQuery(boardId = boardId.value))
+            val result = useCase.execute(ListStepsByBoardQuery(boardId = boardId))
 
             assertTrue(result.isRight())
             assertEquals(steps, result.getOrNull())
@@ -74,17 +73,17 @@ class ListStepsByBoardUseCaseTest {
             coVerify(exactly = 0) { stepRepository.findByBoardId(any()) }
         }
 
-    private fun sampleSteps(boardId: BoardId): List<Step> =
+    private fun sampleSteps(boardId: String): List<Step> =
         listOf(
             Step(
-                id = ColumnId.generate(),
+                id = UUID.randomUUID().toString(),
                 boardId = boardId,
                 name = "Analysis",
                 position = 0,
                 requiredAbility = AbilityName.PRODUCT_MANAGER,
             ),
             Step(
-                id = ColumnId.generate(),
+                id = UUID.randomUUID().toString(),
                 boardId = boardId,
                 name = "Development",
                 position = 1,

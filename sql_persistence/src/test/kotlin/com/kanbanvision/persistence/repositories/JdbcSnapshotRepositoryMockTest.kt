@@ -1,10 +1,9 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.persistence.DatabaseFactory
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.every
@@ -35,7 +34,7 @@ class JdbcSnapshotRepositoryMockTest {
 
     private fun minimalSnapshot() =
         DailySnapshot(
-            scenarioId = ScenarioId("s1"),
+            scenarioId = "s1",
             day = SimulationDay(1),
             metrics = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0),
             movements = emptyList(),
@@ -72,7 +71,7 @@ class JdbcSnapshotRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenStmtDataSource()
-                val result = repo.findByDay(ScenarioId("s1"), SimulationDay(1))
+                val result = repo.findByDay("s1", SimulationDay(1))
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -94,7 +93,7 @@ class JdbcSnapshotRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findByDay(ScenarioId("s1"), SimulationDay(1))
+                val result = repo.findByDay("s1", SimulationDay(1))
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }
@@ -105,7 +104,7 @@ class JdbcSnapshotRepositoryMockTest {
         runBlocking {
             mockkObject(DatabaseFactory) {
                 every { DatabaseFactory.dataSource } returns brokenDataSource()
-                val result = repo.findAllByScenario(ScenarioId("s1"))
+                val result = repo.findAllByScenario("s1")
                 assertTrue(result.isLeft())
                 assertIs<DomainError.PersistenceError>(result.leftOrNull())
             }

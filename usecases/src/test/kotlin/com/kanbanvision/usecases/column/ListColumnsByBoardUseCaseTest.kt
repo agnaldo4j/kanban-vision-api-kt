@@ -3,15 +3,14 @@ package com.kanbanvision.usecases.column
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.AbilityName
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.usecases.column.queries.ListColumnsByBoardQuery
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -21,22 +20,22 @@ class ListColumnsByBoardUseCaseTest {
     private val columnRepository = mockk<ColumnRepository>()
     private val useCase = ListColumnsByBoardUseCase(columnRepository)
 
-    private val boardId = BoardId.generate()
+    private val boardId = UUID.randomUUID().toString()
 
     @Test
     fun `execute returns list of columns`() =
         runTest {
             val columns =
                 listOf(
-                    Column(
-                        id = ColumnId.generate(),
+                    Step(
+                        id = UUID.randomUUID().toString(),
                         boardId = boardId,
                         name = "To Do",
                         position = 0,
                         requiredAbility = AbilityName.PRODUCT_MANAGER,
                     ),
-                    Column(
-                        id = ColumnId.generate(),
+                    Step(
+                        id = UUID.randomUUID().toString(),
                         boardId = boardId,
                         name = "In Progress",
                         position = 1,
@@ -45,7 +44,7 @@ class ListColumnsByBoardUseCaseTest {
                 )
             coEvery { columnRepository.findByBoardId(boardId) } returns columns.right()
 
-            val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId.value))
+            val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId))
 
             assertTrue(result.isRight())
             assertEquals(2, result.getOrNull()?.size)
@@ -54,9 +53,9 @@ class ListColumnsByBoardUseCaseTest {
     @Test
     fun `execute returns empty list when no columns exist`() =
         runTest {
-            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Column>().right()
+            coEvery { columnRepository.findByBoardId(any()) } returns emptyList<Step>().right()
 
-            val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId.value))
+            val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId))
 
             assertTrue(result.isRight())
             assertEquals(0, result.getOrNull()?.size)
@@ -76,7 +75,7 @@ class ListColumnsByBoardUseCaseTest {
         runTest {
             coEvery { columnRepository.findByBoardId(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId.value))
+            val result = useCase.execute(ListColumnsByBoardQuery(boardId = boardId))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

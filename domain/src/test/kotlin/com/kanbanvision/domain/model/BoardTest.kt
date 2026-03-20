@@ -1,10 +1,8 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -15,7 +13,7 @@ class BoardTest {
     fun `create board with valid name`() {
         val board = Board.create("My Board")
         assertEquals("My Board", board.name)
-        assertTrue(board.id.value.isNotBlank())
+        assertTrue(board.id.isNotBlank())
         assertTrue(board.columns.isEmpty())
         assertNotNull(board.createdAt)
     }
@@ -49,9 +47,9 @@ class BoardTest {
 
     @Test
     fun `addColumn position equals existing columns count`() {
-        val boardId = BoardId.generate()
+        val boardId = UUID.randomUUID().toString()
         val existing =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "To Do",
                 position = 0,
@@ -70,9 +68,9 @@ class BoardTest {
 
     @Test
     fun `addColumn with duplicate name throws`() {
-        val boardId = BoardId.generate()
+        val boardId = UUID.randomUUID().toString()
         val existing =
-            Column.create(
+            Step.create(
                 boardId = boardId,
                 name = "To Do",
                 position = 0,
@@ -84,10 +82,10 @@ class BoardTest {
 
     @Test
     fun `addCard returns card with correct columnId and auto position`() {
-        val boardId = BoardId.generate()
-        val columnId = ColumnId.generate()
+        val boardId = UUID.randomUUID().toString()
+        val columnId = UUID.randomUUID().toString()
         val column =
-            Column(
+            Step(
                 id = columnId,
                 boardId = boardId,
                 name = "To Do",
@@ -103,11 +101,11 @@ class BoardTest {
 
     @Test
     fun `addCard position equals existing cards count`() {
-        val boardId = BoardId.generate()
-        val columnId = ColumnId.generate()
+        val boardId = UUID.randomUUID().toString()
+        val columnId = UUID.randomUUID().toString()
         val existingCard = Card.create(columnId = columnId, title = "Existing", position = 0)
         val column =
-            Column(
+            Step(
                 id = columnId,
                 boardId = boardId,
                 name = "To Do",
@@ -122,11 +120,11 @@ class BoardTest {
 
     @Test
     fun `addCard throws when column does not belong to board`() {
-        val boardId = BoardId.generate()
-        val otherBoardId = BoardId.generate()
+        val boardId = UUID.randomUUID().toString()
+        val otherBoardId = UUID.randomUUID().toString()
         val column =
-            Column(
-                id = ColumnId.generate(),
+            Step(
+                id = UUID.randomUUID().toString(),
                 boardId = otherBoardId,
                 name = "To Do",
                 position = 0,

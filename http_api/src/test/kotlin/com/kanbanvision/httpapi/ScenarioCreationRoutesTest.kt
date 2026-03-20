@@ -3,9 +3,9 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.Tenant
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -54,7 +54,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioCreationRoutesTest {
-    private val tenantId = TenantId("tenant-test-id")
+    private val tenantId = "tenant-test-id"
 
     private val tenantRepository = mockk<TenantRepository>()
     private val scenarioRepository = mockk<ScenarioRepository>()
@@ -103,8 +103,7 @@ class ScenarioCreationRoutesTest {
             }
 
             coEvery { tenantRepository.findById(tenantId) } returns
-                com.kanbanvision.domain.model.tenant
-                    .Tenant(id = tenantId, name = "Test")
+                Tenant(id = tenantId, name = "Test")
                     .right()
             coEvery { scenarioRepository.save(any()) } answers { firstArg<Scenario>().right() }
             coEvery { scenarioRepository.saveState(any(), any()) } answers { secondArg<SimulationState>().right() }
@@ -112,7 +111,7 @@ class ScenarioCreationRoutesTest {
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"${tenantId.value}","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"tenantId":"$tenantId","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -162,12 +161,12 @@ class ScenarioCreationRoutesTest {
                 configureRouting()
             }
 
-            coEvery { tenantRepository.findById(tenantId) } returns DomainError.TenantNotFound(tenantId.value).left()
+            coEvery { tenantRepository.findById(tenantId) } returns DomainError.TenantNotFound(tenantId).left()
 
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"${tenantId.value}","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"tenantId":"$tenantId","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -196,7 +195,7 @@ class ScenarioCreationRoutesTest {
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"${tenantId.value}","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"tenantId":"$tenantId","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

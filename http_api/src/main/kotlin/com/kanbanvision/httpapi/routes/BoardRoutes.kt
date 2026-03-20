@@ -29,8 +29,8 @@ fun Route.boardRoutes() {
             val request = call.receive<CreateBoardRequest>()
             either<DomainError, BoardResponse> {
                 val boardId = createBoard.execute(CreateBoardCommand(name = request.name)).bind()
-                val board = getBoard.execute(GetBoardQuery(id = boardId.value)).bind()
-                BoardResponse(board.id.value, board.name)
+                val board = getBoard.execute(GetBoardQuery(id = boardId)).bind()
+                BoardResponse(board.id, board.name)
             }.fold(
                 ifLeft = { error -> call.respondWithDomainError(error) },
                 ifRight = { response -> call.respond(HttpStatusCode.Created, response) },
@@ -43,7 +43,7 @@ fun Route.boardRoutes() {
                     ?: return@get call.respondWithDomainError(DomainError.ValidationError("Missing board id"))
             getBoard.execute(GetBoardQuery(id = id)).fold(
                 ifLeft = { error -> call.respondWithDomainError(error) },
-                ifRight = { board -> call.respond(BoardResponse(board.id.value, board.name)) },
+                ifRight = { board -> call.respond(BoardResponse(board.id, board.name)) },
             )
         }
     }

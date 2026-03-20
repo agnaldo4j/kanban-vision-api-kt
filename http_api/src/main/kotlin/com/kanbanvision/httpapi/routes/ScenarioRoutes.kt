@@ -1,9 +1,8 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.decision.Decision
-import com.kanbanvision.domain.model.decision.DecisionId
-import com.kanbanvision.domain.model.decision.DecisionType
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -29,6 +28,7 @@ import io.ktor.server.routing.route
 import org.koin.ktor.ext.inject
 import org.slf4j.MDC
 import java.util.Locale
+import java.util.UUID
 
 fun Route.scenarioRoutes() {
     val createScenario: CreateScenarioUseCase by inject()
@@ -215,8 +215,8 @@ private suspend fun ApplicationCall.handleCreateScenario(createScenario: CreateS
         ).fold(
             ifLeft = { error -> respondWithDomainError(error) },
             ifRight = { id ->
-                MDC.putCloseable("scenarioId", id.value).use {
-                    respond(HttpStatusCode.Created, ScenarioCreatedResponse(scenarioId = id.value))
+                MDC.putCloseable("scenarioId", id).use {
+                    respond(HttpStatusCode.Created, ScenarioCreatedResponse(scenarioId = id))
                 }
             },
         )
@@ -232,8 +232,8 @@ private suspend fun ApplicationCall.handleGetScenario(getScenario: GetScenarioUs
             ifRight = { result ->
                 respond(
                     ScenarioResponse(
-                        scenarioId = result.scenario.id.value,
-                        tenantId = result.scenario.tenantId.value,
+                        scenarioId = result.scenario.id,
+                        tenantId = result.scenario.tenantId,
                         wipLimit = result.scenario.config.wipLimit,
                         teamSize = result.scenario.config.teamSize,
                         seedValue = result.scenario.config.seedValue,
@@ -242,7 +242,7 @@ private suspend fun ApplicationCall.handleGetScenario(getScenario: GetScenarioUs
                                 currentDay = result.state.currentDay.value,
                                 wipLimit = result.state.policySet.wipLimit,
                                 teamSize = result.scenario.config.teamSize,
-                                itemCount = result.state.items.size,
+                                itemCount = result.state.cards.size,
                             ),
                     ),
                 )
@@ -266,7 +266,7 @@ private suspend fun ApplicationCall.handleRunDay(
                     runCatching { DecisionType.valueOf(d.type.uppercase(Locale.ROOT)) }.getOrElse {
                         return@use respondWithDomainError(DomainError.ValidationError("Unknown decision type: ${d.type}"))
                     }
-                Decision(id = DecisionId.generate(), type = type, payload = d.payload)
+                Decision(id = UUID.randomUUID().toString(), type = type, payload = d.payload)
             }
         withSpan("simulation.run_day") {
             runDay.execute(RunDayCommand(scenarioId = scenarioId, decisions = decisions)).fold(

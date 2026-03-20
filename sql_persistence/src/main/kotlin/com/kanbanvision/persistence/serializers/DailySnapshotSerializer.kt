@@ -1,12 +1,10 @@
 package com.kanbanvision.persistence.serializers
 
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -23,7 +21,8 @@ private data class FlowMetricsSurrogate(
 @Serializable
 private data class MovementSurrogate(
     val type: String,
-    val workItemId: String,
+    val cardId: String = "",
+    val workItemId: String = "",
     val day: Int,
     val reason: String,
 )
@@ -45,7 +44,7 @@ internal object DailySnapshotSerializer {
 
     private fun DailySnapshot.toSurrogate() =
         DailySnapshotSurrogate(
-            scenarioId = scenarioId.value,
+            scenarioId = scenarioId,
             day = day.value,
             metrics = metrics.toSurrogate(),
             movements = movements.map { it.toSurrogate() },
@@ -53,12 +52,11 @@ internal object DailySnapshotSerializer {
 
     private fun FlowMetrics.toSurrogate() = FlowMetricsSurrogate(throughput, wipCount, blockedCount, avgAgingDays)
 
-    private fun Movement.toSurrogate() =
-        MovementSurrogate(type = type.name, workItemId = workItemId.value, day = day.value, reason = reason)
+    private fun Movement.toSurrogate() = MovementSurrogate(type = type.name, cardId = cardId, day = day.value, reason = reason)
 
     private fun DailySnapshotSurrogate.toDomain() =
         DailySnapshot(
-            scenarioId = ScenarioId(scenarioId),
+            scenarioId = scenarioId,
             day = SimulationDay(day),
             metrics = metrics.toDomain(),
             movements = movements.map { it.toDomain() },
@@ -69,7 +67,7 @@ internal object DailySnapshotSerializer {
     private fun MovementSurrogate.toDomain() =
         Movement(
             type = MovementType.valueOf(type),
-            workItemId = WorkItemId(workItemId),
+            cardId = if (cardId.isNotBlank()) cardId else workItemId,
             day = SimulationDay(day),
             reason = reason,
         )

@@ -2,7 +2,8 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.team.AbilityName
+import com.kanbanvision.domain.model.AbilityName
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -149,14 +150,8 @@ private suspend fun ApplicationCall.handleCreateStep(
                         requiredAbility = request.requiredAbility,
                     ),
                 ).bind()
-        val step = getStep.execute(GetStepQuery(id = stepId.value)).bind()
-        StepResponse(
-            id = step.id.value,
-            boardId = step.boardId.value,
-            name = step.name,
-            position = step.position,
-            requiredAbility = step.requiredAbility,
-        )
+        val step = getStep.execute(GetStepQuery(id = stepId)).bind()
+        step.toResponse()
     }.fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { response -> respond(HttpStatusCode.Created, response) },
@@ -167,17 +162,7 @@ private suspend fun ApplicationCall.handleGetStep(getStep: GetStepUseCase) {
     val id = parameters["id"] ?: return respondWithDomainError(DomainError.ValidationError("Missing step id"))
     getStep.execute(GetStepQuery(id = id)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
-        ifRight = { step ->
-            respond(
-                StepResponse(
-                    id = step.id.value,
-                    boardId = step.boardId.value,
-                    name = step.name,
-                    position = step.position,
-                    requiredAbility = step.requiredAbility,
-                ),
-            )
-        },
+        ifRight = { step -> respond(step.toResponse()) },
     )
 }
 
@@ -185,21 +170,18 @@ private suspend fun ApplicationCall.handleListSteps(listStepsByBoard: ListStepsB
     val boardId = parameters["boardId"] ?: return respondWithDomainError(DomainError.ValidationError("Missing board id"))
     listStepsByBoard.execute(ListStepsByBoardQuery(boardId = boardId)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
-        ifRight = { steps ->
-            respond(
-                steps.map {
-                    StepResponse(
-                        id = it.id.value,
-                        boardId = it.boardId.value,
-                        name = it.name,
-                        position = it.position,
-                        requiredAbility = it.requiredAbility,
-                    )
-                },
-            )
-        },
+        ifRight = { steps -> respond(steps.map { it.toResponse() }) },
     )
 }
+
+private fun Step.toResponse(): StepResponse =
+    StepResponse(
+        id = id,
+        boardId = boardId,
+        name = name,
+        position = position,
+        requiredAbility = requiredAbility,
+    )
 
 @Serializable
 data class CreateStepRequest(

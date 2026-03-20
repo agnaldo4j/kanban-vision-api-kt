@@ -1,14 +1,14 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class CardTest {
-    private val columnId = ColumnId.generate()
+    private val columnId = UUID.randomUUID().toString()
 
     @Test
     fun `create card with valid data`() {
@@ -17,7 +17,7 @@ class CardTest {
         assertEquals("", card.description)
         assertEquals(columnId, card.columnId)
         assertEquals(0, card.position)
-        assertTrue(card.id.value.isNotBlank())
+        assertTrue(card.id.isNotBlank())
     }
 
     @Test
@@ -45,9 +45,26 @@ class CardTest {
     }
 
     @Test
+    fun `create card with blank column id throws`() {
+        assertThrows<IllegalArgumentException> { Card.create(columnId = "", title = "Task", position = 0) }
+    }
+
+    @Test
+    fun `card constructor with negative position throws`() {
+        assertThrows<IllegalArgumentException> {
+            Card(
+                id = UUID.randomUUID().toString(),
+                columnId = columnId,
+                title = "Task",
+                position = -1,
+            )
+        }
+    }
+
+    @Test
     fun `moveTo updates column and position`() {
         val card = Card.create(columnId = columnId, title = "Task", position = 0)
-        val targetColumnId = ColumnId.generate()
+        val targetColumnId = UUID.randomUUID().toString()
 
         val moved = card.moveTo(targetColumnId, 3)
 
@@ -60,11 +77,24 @@ class CardTest {
     @Test
     fun `moveTo does not mutate original card`() {
         val card = Card.create(columnId = columnId, title = "Task", position = 0)
-        val targetColumnId = ColumnId.generate()
+        val targetColumnId = UUID.randomUUID().toString()
 
         card.moveTo(targetColumnId, 3)
 
         assertEquals(columnId, card.columnId)
         assertEquals(0, card.position)
+    }
+
+    @Test
+    fun `moveTo with blank target column throws`() {
+        val card = Card.create(columnId = columnId, title = "Task", position = 0)
+        assertThrows<IllegalArgumentException> { card.moveTo("", 1) }
+    }
+
+    @Test
+    fun `moveTo with negative target position throws`() {
+        val card = Card.create(columnId = columnId, title = "Task", position = 0)
+        val targetColumnId = UUID.randomUUID().toString()
+        assertThrows<IllegalArgumentException> { card.moveTo(targetColumnId, -1) }
     }
 }

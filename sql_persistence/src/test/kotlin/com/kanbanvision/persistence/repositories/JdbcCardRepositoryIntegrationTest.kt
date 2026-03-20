@@ -1,9 +1,8 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.valueobjects.CardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -36,7 +35,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
     @Test
     fun `findById returns CardNotFound when card does not exist`() =
         runBlocking<Unit> {
-            val result = repository.findById(CardId(UUID.randomUUID().toString()))
+            val result = repository.findById(UUID.randomUUID().toString())
 
             assertTrue(result.isLeft())
             assertIs<DomainError.CardNotFound>(result.leftOrNull())
@@ -89,11 +88,11 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
         runBlocking<Unit> {
             val orphanCard =
                 Card(
-                    id = CardId(UUID.randomUUID().toString()),
-                    columnId = ColumnId(UUID.randomUUID().toString()),
+                    id = UUID.randomUUID().toString(),
+                    columnId = UUID.randomUUID().toString(),
                     title = "Orphan",
                     position = 0,
-                    createdAt = Instant.ofEpochMilli(System.currentTimeMillis()),
+                    audit = Audit(createdAt = Instant.ofEpochMilli(System.currentTimeMillis())),
                 )
 
             val result = repository.save(orphanCard)
@@ -126,7 +125,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
     @Test
     fun `updateCard returns CardNotFound when card does not exist`() =
         runBlocking<Unit> {
-            val result = repository.updateCard(CardId(UUID.randomUUID().toString())) { it }
+            val result = repository.updateCard(UUID.randomUUID().toString()) { it }
 
             assertTrue(result.isLeft())
             assertIs<DomainError.CardNotFound>(result.leftOrNull())
@@ -137,7 +136,7 @@ class JdbcCardRepositoryIntegrationTest : JdbcCardRepositoryTestBase() {
         runBlocking<Unit> {
             val card = newCard("Atomic Test", position = 0)
             repository.save(card)
-            val nonExistentColumnId = ColumnId(UUID.randomUUID().toString())
+            val nonExistentColumnId = UUID.randomUUID().toString()
 
             val result = repository.updateCard(card.id) { it.copy(columnId = nonExistentColumnId) }
 

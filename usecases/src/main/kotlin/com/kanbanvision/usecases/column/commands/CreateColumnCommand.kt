@@ -6,7 +6,7 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.team.AbilityName
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.usecases.cqs.Command
 
 data class CreateColumnCommand(
@@ -18,7 +18,7 @@ data class CreateColumnCommand(
         either<NonEmptyList<DomainError.ValidationError>, Unit> {
             zipOrAccumulate(
                 { ensure(boardId.isNotBlank()) { DomainError.ValidationError("Board id must not be blank") } },
-                { ensure(name.isNotBlank()) { DomainError.ValidationError("Column name must not be blank") } },
+                { ensure(name.isNotBlank()) { DomainError.ValidationError("Step name must not be blank") } },
             ) { _, _ -> }
         }.mapLeft { errors -> DomainError.ValidationError(errors.map { it.message }) }
 }

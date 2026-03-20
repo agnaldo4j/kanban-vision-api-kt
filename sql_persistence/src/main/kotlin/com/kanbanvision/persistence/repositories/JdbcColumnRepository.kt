@@ -4,10 +4,8 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
+import com.kanbanvision.domain.model.AbilityName
+import com.kanbanvision.domain.model.Step
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import kotlinx.coroutines.CancellationException
@@ -34,7 +32,7 @@ class JdbcColumnRepository : ColumnRepository {
 
     private suspend fun <T> query(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
-    override suspend fun save(column: Column): Either<DomainError, Column> =
+    override suspend fun save(column: Step): Either<DomainError, Step> =
         query {
             Either
                 .catch {
@@ -50,8 +48,8 @@ class JdbcColumnRepository : ColumnRepository {
                                     required_ability = EXCLUDED.required_ability
                                 """.trimIndent(),
                             ).use { stmt ->
-                                stmt.setString(COL_ID, column.id.value)
-                                stmt.setString(COL_BOARD_ID, column.boardId.value)
+                                stmt.setString(COL_ID, column.id)
+                                stmt.setString(COL_BOARD_ID, column.boardId)
                                 stmt.setString(COL_NAME, column.name)
                                 stmt.setInt(COL_POSITION, column.position)
                                 stmt.setString(COL_REQUIRED_ABILITY, column.requiredAbility.name)
@@ -63,14 +61,14 @@ class JdbcColumnRepository : ColumnRepository {
                 }.mapLeft(::toPersistenceError)
         }
 
-    override suspend fun findById(id: ColumnId): Either<DomainError, Column> =
+    override suspend fun findById(id: String): Either<DomainError, Step> =
         query {
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         val sql = "SELECT id, board_id, name, position, required_ability FROM columns WHERE id = ?"
                         conn.prepareStatement(sql).use { stmt ->
-                            stmt.setString(COL_ID, id.value)
+                            stmt.setString(COL_ID, id)
                             stmt.executeQuery().use { rs ->
                                 if (rs.next()) rs.toColumn() else null
                             }
@@ -78,11 +76,11 @@ class JdbcColumnRepository : ColumnRepository {
                     }
                 }.fold(
                     ifLeft = { toPersistenceError(it).left() },
-                    ifRight = { column -> column?.right() ?: DomainError.ColumnNotFound(id.value).left() },
+                    ifRight = { column -> column?.right() ?: DomainError.ColumnNotFound(id).left() },
                 )
         }
 
-    override suspend fun findByBoardId(boardId: BoardId): Either<DomainError, List<Column>> =
+    override suspend fun findByBoardId(boardId: String): Either<DomainError, List<Step>> =
         query {
             Either
                 .catch {
@@ -90,7 +88,7 @@ class JdbcColumnRepository : ColumnRepository {
                         val sql =
                             "SELECT id, board_id, name, position, required_ability FROM columns WHERE board_id = ? ORDER BY position"
                         conn.prepareStatement(sql).use { stmt ->
-                            stmt.setString(COL_ID, boardId.value)
+                            stmt.setString(1, boardId)
                             stmt.executeQuery().use { rs ->
                                 buildList { while (rs.next()) add(rs.toColumn()) }
                             }
@@ -100,9 +98,9 @@ class JdbcColumnRepository : ColumnRepository {
         }
 
     private fun java.sql.ResultSet.toColumn() =
-        Column(
-            id = ColumnId(getString("id")),
-            boardId = BoardId(getString("board_id")),
+        Step(
+            id = getString("id"),
+            boardId = getString("board_id"),
             name = getString("name"),
             position = getInt("position"),
             requiredAbility = AbilityName.valueOf(getString("required_ability")),

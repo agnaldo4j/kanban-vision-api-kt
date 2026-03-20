@@ -3,16 +3,15 @@ package com.kanbanvision.usecases.step
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.queries.GetStepQuery
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -25,18 +24,18 @@ class GetStepUseCaseTest {
     @Test
     fun `execute returns step by id`() =
         runTest {
-            val columnId = ColumnId.generate()
+            val columnId = UUID.randomUUID().toString()
             val expectedStep =
                 Step(
                     id = columnId,
-                    boardId = BoardId.generate(),
+                    boardId = UUID.randomUUID().toString(),
                     name = "Analysis",
                     position = 0,
                     requiredAbility = AbilityName.PRODUCT_MANAGER,
                 )
             coEvery { stepRepository.findById(columnId) } returns expectedStep.right()
 
-            val result = useCase.execute(GetStepQuery(id = expectedStep.id.value))
+            val result = useCase.execute(GetStepQuery(id = expectedStep.id))
 
             assertTrue(result.isRight())
             assertEquals(expectedStep, result.getOrNull())

@@ -1,13 +1,11 @@
 package com.kanbanvision.httpapi
 
 import arrow.core.right
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.WorkItemId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -54,7 +52,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioAnalyticsMetricsRoutesTest {
-    private val scenarioId = ScenarioId("scenario-test-id")
+    private val scenarioId = "scenario-test-id"
     private val snapshot =
         DailySnapshot(
             scenarioId = scenarioId,
@@ -64,7 +62,7 @@ class ScenarioAnalyticsMetricsRoutesTest {
                 listOf(
                     Movement(
                         type = MovementType.MOVED,
-                        workItemId = WorkItemId("item-1"),
+                        cardId = "item-1",
                         day = SimulationDay(1),
                         reason = "WIP available",
                     ),
@@ -119,7 +117,7 @@ class ScenarioAnalyticsMetricsRoutesTest {
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns listOf(snapshot).right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=1") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?fromDay=1&toDay=1") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -148,7 +146,7 @@ class ScenarioAnalyticsMetricsRoutesTest {
             coEvery { snapshotRepository.findAllByScenario(scenarioId) } returns emptyList<DailySnapshot>().right()
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=1&toDay=5") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?fromDay=1&toDay=5") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -172,7 +170,7 @@ class ScenarioAnalyticsMetricsRoutesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?fromDay=5&toDay=1") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?fromDay=5&toDay=1") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -197,7 +195,7 @@ class ScenarioAnalyticsMetricsRoutesTest {
             }
 
             val response =
-                client.get("/api/v1/scenarios/${scenarioId.value}/metrics?toDay=5") {
+                client.get("/api/v1/scenarios/$scenarioId/metrics?toDay=5") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

@@ -4,12 +4,12 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.usecases.board.queries.GetBoardQuery
 import com.kanbanvision.usecases.repositories.BoardRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -26,7 +26,7 @@ class GetBoardUseCaseTest {
             val board = Board.create("My Board")
             coEvery { boardRepository.findById(any()) } returns board.right()
 
-            val result = useCase.execute(GetBoardQuery(id = board.id.value))
+            val result = useCase.execute(GetBoardQuery(id = board.id))
 
             assertTrue(result.isRight())
             val returnedBoard = result.getOrNull()
@@ -38,7 +38,7 @@ class GetBoardUseCaseTest {
     @Test
     fun `execute returns BoardNotFound when board not found`() =
         runTest {
-            val id = BoardId.generate().value
+            val id = UUID.randomUUID().toString()
             coEvery { boardRepository.findById(any()) } returns DomainError.BoardNotFound(id).left()
 
             val result = useCase.execute(GetBoardQuery(id = id))
@@ -61,7 +61,7 @@ class GetBoardUseCaseTest {
         runTest {
             coEvery { boardRepository.findById(any()) } returns DomainError.PersistenceError("DB failure").left()
 
-            val result = useCase.execute(GetBoardQuery(id = BoardId.generate().value))
+            val result = useCase.execute(GetBoardQuery(id = UUID.randomUUID().toString()))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

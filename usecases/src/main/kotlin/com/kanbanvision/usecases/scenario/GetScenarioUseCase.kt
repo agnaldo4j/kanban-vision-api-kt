@@ -3,9 +3,8 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.SimulationState
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.scenario.queries.GetScenarioQuery
 import com.kanbanvision.usecases.timed
@@ -24,13 +23,13 @@ class GetScenarioUseCase(
     suspend fun execute(query: GetScenarioQuery): Either<DomainError, ScenarioWithState> =
         either {
             query.validate().bind()
-            val id = ScenarioId(query.scenarioId)
+            val id = query.scenarioId
             val (result, duration) = timed { load(id) }
-            log.info("Scenario fetched: id={} duration={}ms", id.value, duration.inWholeMilliseconds)
+            log.info("Scenario fetched: id={} duration={}ms", id, duration.inWholeMilliseconds)
             result
         }
 
-    private suspend fun load(id: ScenarioId): Either<DomainError, ScenarioWithState> =
+    private suspend fun load(id: String): Either<DomainError, ScenarioWithState> =
         either {
             val scenario = scenarioRepository.findById(id).bind()
             val state = scenarioRepository.findState(id).bind()

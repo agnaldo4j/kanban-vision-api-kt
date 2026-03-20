@@ -3,11 +3,9 @@ package com.kanbanvision.usecases.step
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.commands.CreateStepCommand
@@ -15,6 +13,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -24,7 +23,7 @@ class CreateStepUseCaseTest {
     private val boardRepository = mockk<BoardRepository>()
     private val stepRepository = mockk<StepRepository>()
     private val useCase = CreateStepUseCase(stepRepository, boardRepository)
-    private val boardId = BoardId.generate()
+    private val boardId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "Delivery")
 
     @Test
@@ -37,7 +36,7 @@ class CreateStepUseCaseTest {
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = boardId.value,
+                        boardId = boardId,
                         name = "Development",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
@@ -46,7 +45,7 @@ class CreateStepUseCaseTest {
             assertTrue(result.isRight())
             val createdId = result.getOrNull()
             assertTrue(createdId != null)
-            assertTrue(createdId.value.isNotBlank())
+            assertTrue(createdId.isNotBlank())
             coVerify(exactly = 1) { stepRepository.save(any()) }
         }
 
@@ -59,7 +58,7 @@ class CreateStepUseCaseTest {
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = boardId.value,
+                        boardId = boardId,
                         name = "Development",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
@@ -72,12 +71,12 @@ class CreateStepUseCaseTest {
     @Test
     fun `execute returns BoardNotFound when board does not exist`() =
         runTest {
-            coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId.value).left()
+            coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId).left()
 
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = boardId.value,
+                        boardId = boardId,
                         name = "Development",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
@@ -95,7 +94,7 @@ class CreateStepUseCaseTest {
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = boardId.value,
+                        boardId = boardId,
                         name = "",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),
@@ -114,7 +113,7 @@ class CreateStepUseCaseTest {
         runTest {
             val existingStep =
                 Step(
-                    id = ColumnId.generate(),
+                    id = UUID.randomUUID().toString(),
                     boardId = boardId,
                     name = "Development",
                     position = 0,
@@ -126,7 +125,7 @@ class CreateStepUseCaseTest {
             val result =
                 useCase.execute(
                     CreateStepCommand(
-                        boardId = boardId.value,
+                        boardId = boardId,
                         name = "Development",
                         requiredAbility = AbilityName.DEVELOPER,
                     ),

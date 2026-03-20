@@ -2,9 +2,8 @@ package com.kanbanvision.persistence.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.serializers.DailySnapshotSerializer
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -44,7 +43,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                                 ON CONFLICT (scenario_id, day) DO UPDATE SET snapshot_json = EXCLUDED.snapshot_json
                                 """.trimIndent(),
                             ).use { stmt ->
-                                stmt.setString(COL_SCENARIO_ID, snapshot.scenarioId.value)
+                                stmt.setString(COL_SCENARIO_ID, snapshot.scenarioId)
                                 stmt.setInt(COL_DAY, snapshot.day.value)
                                 stmt.setString(COL_JSON, json)
                                 stmt.executeUpdate()
@@ -56,7 +55,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
         }
 
     override suspend fun findByDay(
-        scenarioId: ScenarioId,
+        scenarioId: String,
         day: SimulationDay,
     ): Either<DomainError, DailySnapshot?> =
         query {
@@ -67,7 +66,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                             .prepareStatement(
                                 "SELECT snapshot_json FROM daily_snapshots WHERE scenario_id = ? AND day = ?",
                             ).use { stmt ->
-                                stmt.setString(1, scenarioId.value)
+                                stmt.setString(1, scenarioId)
                                 stmt.setInt(2, day.value)
                                 stmt.executeQuery().use { rs ->
                                     if (rs.next()) DailySnapshotSerializer.decode(rs.getString("snapshot_json")) else null
@@ -77,7 +76,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                 }.mapLeft(::toPersistenceError)
         }
 
-    override suspend fun findAllByScenario(scenarioId: ScenarioId): Either<DomainError, List<DailySnapshot>> =
+    override suspend fun findAllByScenario(scenarioId: String): Either<DomainError, List<DailySnapshot>> =
         query {
             Either
                 .catch {
@@ -86,7 +85,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                             .prepareStatement(
                                 "SELECT snapshot_json FROM daily_snapshots WHERE scenario_id = ? ORDER BY day",
                             ).use { stmt ->
-                                stmt.setString(1, scenarioId.value)
+                                stmt.setString(1, scenarioId)
                                 stmt.executeQuery().use { rs ->
                                     buildList {
                                         while (rs.next()) add(DailySnapshotSerializer.decode(rs.getString("snapshot_json")))

@@ -3,15 +3,13 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.policy.PolicySet
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.PolicySet
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationState
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -60,15 +58,15 @@ import kotlin.test.assertNotNull
 
 @Suppress("LargeClass")
 class ScenarioRunDayRoutesTest {
-    private val scenarioId = ScenarioId("scenario-test-id")
-    private val tenantId = TenantId("tenant-test-id")
+    private val scenarioId = "scenario-test-id"
+    private val tenantId = "tenant-test-id"
     private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 42L)
     private val scenario = Scenario(id = scenarioId, tenantId = tenantId, config = config)
     private val state =
         SimulationState(
             currentDay = SimulationDay(1),
             policySet = PolicySet(wipLimit = 3),
-            items = emptyList(),
+            cards = emptyList(),
         )
     private val snapshot =
         DailySnapshot(
@@ -131,7 +129,7 @@ class ScenarioRunDayRoutesTest {
             coEvery { snapshotRepository.save(any()) } answers { firstArg<DailySnapshot>().right() }
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"decisions":[]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
@@ -164,9 +162,9 @@ class ScenarioRunDayRoutesTest {
             coEvery { snapshotRepository.save(any()) } answers { firstArg<DailySnapshot>().right() }
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"decisions":[{"type":"move_item","payload":{"workItemId":"w1"}}]}""")
+                    setBody("""{"decisions":[{"type":"move_item","payload":{"cardId":"w1"}}]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -195,7 +193,7 @@ class ScenarioRunDayRoutesTest {
             coEvery { snapshotRepository.findByDay(scenarioId, SimulationDay(1)) } returns snapshot.right()
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"decisions":[]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
@@ -222,7 +220,7 @@ class ScenarioRunDayRoutesTest {
             }
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"decisions":[{"type":"INVALID_TYPE","payload":{}}]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
@@ -249,10 +247,10 @@ class ScenarioRunDayRoutesTest {
             }
 
             coEvery { scenarioRepository.findById(scenarioId) } returns
-                DomainError.ScenarioNotFound(scenarioId.value).left()
+                DomainError.ScenarioNotFound(scenarioId).left()
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"decisions":[]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
@@ -287,7 +285,7 @@ class ScenarioRunDayRoutesTest {
             coEvery { snapshotRepository.save(any()) } returns DomainError.InvalidDecision("Cannot apply decision in current state").left()
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"decisions":[]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
@@ -317,7 +315,7 @@ class ScenarioRunDayRoutesTest {
                 DomainError.PersistenceError("DB failure").left()
 
             val response =
-                client.post("/api/v1/scenarios/${scenarioId.value}/run") {
+                client.post("/api/v1/scenarios/$scenarioId/run") {
                     contentType(ContentType.Application.Json)
                     setBody("""{"decisions":[]}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")

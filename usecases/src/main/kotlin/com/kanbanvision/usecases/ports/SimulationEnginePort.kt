@@ -1,9 +1,8 @@
 package com.kanbanvision.usecases.ports
 
-import com.kanbanvision.domain.model.decision.Decision
-import com.kanbanvision.domain.model.scenario.SimulationResult
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.SimulationResult
+import com.kanbanvision.domain.model.SimulationState
 
 /**
  * Port for the simulation engine. Defined in `usecases/` so that [RunDayUseCase] depends on an
@@ -12,7 +11,7 @@ import com.kanbanvision.domain.model.valueobjects.ScenarioId
  */
 interface SimulationEnginePort {
     fun runDay(
-        scenarioId: ScenarioId,
+        scenarioId: String,
         state: SimulationState,
         decisions: List<Decision>,
         seed: Long,

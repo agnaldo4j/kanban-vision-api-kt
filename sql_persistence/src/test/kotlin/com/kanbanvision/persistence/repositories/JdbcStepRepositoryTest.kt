@@ -3,15 +3,13 @@ package com.kanbanvision.persistence.repositories
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Column
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.team.AbilityName
-import com.kanbanvision.domain.model.valueobjects.BoardId
-import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.repositories.ColumnRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -25,7 +23,7 @@ class JdbcStepRepositoryTest {
     fun `save maps step to column and back`() =
         runBlocking {
             val step = sampleStep()
-            coEvery { delegate.save(any()) } answers { firstArg<Column>().right() }
+            coEvery { delegate.save(any()) } answers { firstArg<Step>().right() }
 
             val result = repository.save(step)
 
@@ -36,23 +34,23 @@ class JdbcStepRepositoryTest {
     @Test
     fun `findById maps column not found to step not found`() =
         runBlocking {
-            val stepId = ColumnId.generate()
-            coEvery { delegate.findById(stepId) } returns DomainError.ColumnNotFound(stepId.value).left()
+            val stepId = UUID.randomUUID().toString()
+            coEvery { delegate.findById(stepId) } returns DomainError.ColumnNotFound(stepId).left()
 
             val result = repository.findById(stepId)
 
             assertTrue(result.isLeft())
             val error = assertIs<DomainError.StepNotFound>(result.leftOrNull())
-            assertEquals(stepId.value, error.id)
+            assertEquals(stepId, error.id)
         }
 
     @Test
     fun `findByBoardId maps columns to steps`() =
         runBlocking {
-            val boardId = BoardId.generate()
+            val boardId = UUID.randomUUID().toString()
             val step = sampleStep(boardId = boardId)
             val column =
-                Column(
+                Step(
                     id = step.id,
                     boardId = boardId,
                     name = step.name,
@@ -68,9 +66,9 @@ class JdbcStepRepositoryTest {
             assertEquals(listOf(step), result.getOrNull())
         }
 
-    private fun sampleStep(boardId: BoardId = BoardId.generate()): Step =
+    private fun sampleStep(boardId: String = UUID.randomUUID().toString()): Step =
         Step(
-            id = ColumnId.generate(),
+            id = UUID.randomUUID().toString(),
             boardId = boardId,
             name = "Development",
             position = 1,

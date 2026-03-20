@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.model.scenario.DailySnapshot
+import com.kanbanvision.domain.model.DailySnapshot
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -56,7 +56,7 @@ data class FlowMetricsResponse(
 @Serializable
 data class MovementResponse(
     val type: String,
-    val workItemId: String,
+    val cardId: String,
     val day: Int,
     val reason: String,
 )
@@ -71,7 +71,7 @@ data class DailySnapshotResponse(
 
 internal fun DailySnapshot.toResponse() =
     DailySnapshotResponse(
-        scenarioId = scenarioId.value,
+        scenarioId = scenarioId,
         day = day.value,
         metrics =
             FlowMetricsResponse(
@@ -84,7 +84,7 @@ internal fun DailySnapshot.toResponse() =
             movements.map { m ->
                 MovementResponse(
                     type = m.type.name,
-                    workItemId = m.workItemId.value,
+                    cardId = m.cardId,
                     day = m.day.value,
                     reason = m.reason,
                 )

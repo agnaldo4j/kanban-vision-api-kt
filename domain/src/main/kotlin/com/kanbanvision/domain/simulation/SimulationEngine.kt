@@ -1,19 +1,18 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.decision.Decision
-import com.kanbanvision.domain.model.decision.DecisionType
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.movement.Movement
-import com.kanbanvision.domain.model.movement.MovementType
-import com.kanbanvision.domain.model.policy.PolicySet
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationResult
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.workitem.ServiceClass
-import com.kanbanvision.domain.model.workitem.WorkItem
-import com.kanbanvision.domain.model.workitem.WorkItemState
+import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.DecisionType
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.PolicySet
+import com.kanbanvision.domain.model.ServiceClass
+import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationResult
+import com.kanbanvision.domain.model.SimulationState
+import com.kanbanvision.domain.model.WorkItemState
 import kotlin.random.Random
 
 object SimulationEngine {
@@ -23,14 +22,14 @@ object SimulationEngine {
      * EXPEDITE items are always prioritized first in their original list order.
      */
     fun runDay(
-        scenarioId: ScenarioId,
+        scenarioId: String,
         state: SimulationState,
         decisions: List<Decision>,
         seed: Long,
     ): SimulationResult {
         val ctx = EngineContext(day = state.currentDay.value, movements = mutableListOf(), rng = Random(seed))
 
-        val afterDecisions = applyDecisions(state.items, decisions, ctx)
+        val afterDecisions = applyDecisions(state.cards, decisions, ctx)
         val afterAutoAdvance = autoAdvance(afterDecisions, state.policySet, ctx)
         val afterAging =
             afterAutoAdvance.map { item ->
@@ -44,7 +43,7 @@ object SimulationEngine {
                 metrics = calculateMetrics(afterAging, ctx.movements),
                 movements = ctx.movements.toList(),
             )
-        val newState = state.copy(currentDay = SimulationDay(ctx.day + 1), items = afterAging)
+        val newState = state.copy(currentDay = SimulationDay(ctx.day + 1), cards = afterAging)
 
         return SimulationResult(newState = newState, snapshot = snapshot)
     }
@@ -60,17 +59,17 @@ object SimulationEngine {
     // ─── decisions ──────────────────────────────────────────────────────────
 
     private fun applyDecisions(
-        items: List<WorkItem>,
+        items: List<Card>,
         decisions: List<Decision>,
         ctx: EngineContext,
-    ): List<WorkItem> {
+    ): List<Card> {
         val current = items.toMutableList()
         decisions.forEach { applyDecision(current, it, ctx) }
         return current
     }
 
     private fun applyDecision(
-        current: MutableList<WorkItem>,
+        current: MutableList<Card>,
         decision: Decision,
         ctx: EngineContext,
     ) {
@@ -83,48 +82,51 @@ object SimulationEngine {
     }
 
     private fun applyMove(
-        current: MutableList<WorkItem>,
+        current: MutableList<Card>,
         payload: Map<String, String>,
         ctx: EngineContext,
     ) {
-        val idx = current.indexOfFirst { it.id.value == payload["workItemId"] }
+        val cardId = payload["cardId"] ?: payload["workItemId"]
+        val idx = current.indexOfFirst { it.id == cardId }
         if (idx < 0 || current[idx].state == WorkItemState.DONE) return
         val item = current[idx]
         val advanced = item.advance()
         val movType = if (advanced.state == WorkItemState.DONE) MovementType.COMPLETED else MovementType.MOVED
         current[idx] = advanced
-        ctx.movements.add(Movement(type = movType, workItemId = item.id, day = SimulationDay(ctx.day), reason = "decision: move"))
+        ctx.movements.add(Movement(type = movType, cardId = item.id, day = SimulationDay(ctx.day), reason = "decision: move"))
     }
 
     private fun applyBlock(
-        current: MutableList<WorkItem>,
+        current: MutableList<Card>,
         payload: Map<String, String>,
         ctx: EngineContext,
     ) {
-        val idx = current.indexOfFirst { it.id.value == payload["workItemId"] }
+        val cardId = payload["cardId"] ?: payload["workItemId"]
+        val idx = current.indexOfFirst { it.id == cardId }
         if (idx < 0 || current[idx].state != WorkItemState.IN_PROGRESS) return
         val item = current[idx]
         current[idx] = item.block()
         val reason = payload["reason"] ?: "decision: block"
-        ctx.movements.add(Movement(type = MovementType.BLOCKED, workItemId = item.id, day = SimulationDay(ctx.day), reason = reason))
+        ctx.movements.add(Movement(type = MovementType.BLOCKED, cardId = item.id, day = SimulationDay(ctx.day), reason = reason))
     }
 
     private fun applyUnblock(
-        current: MutableList<WorkItem>,
+        current: MutableList<Card>,
         payload: Map<String, String>,
         ctx: EngineContext,
     ) {
-        val idx = current.indexOfFirst { it.id.value == payload["workItemId"] }
+        val cardId = payload["cardId"] ?: payload["workItemId"]
+        val idx = current.indexOfFirst { it.id == cardId }
         if (idx < 0 || current[idx].state != WorkItemState.BLOCKED) return
         val item = current[idx]
         current[idx] = item.advance()
         ctx.movements.add(
-            Movement(type = MovementType.UNBLOCKED, workItemId = item.id, day = SimulationDay(ctx.day), reason = "decision: unblock"),
+            Movement(type = MovementType.UNBLOCKED, cardId = item.id, day = SimulationDay(ctx.day), reason = "decision: unblock"),
         )
     }
 
     private fun applyAdd(
-        current: MutableList<WorkItem>,
+        current: MutableList<Card>,
         payload: Map<String, String>,
     ) {
         val title = payload["title"] ?: return
@@ -132,16 +134,16 @@ object SimulationEngine {
             payload["serviceClass"]
                 ?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() }
                 ?: ServiceClass.STANDARD
-        current.add(WorkItem.create(title, serviceClass))
+        current.add(Card.createSimulation(title, serviceClass))
     }
 
     // ─── auto-advance ────────────────────────────────────────────────────────
 
     private fun autoAdvance(
-        items: List<WorkItem>,
+        items: List<Card>,
         policySet: PolicySet,
         ctx: EngineContext,
-    ): List<WorkItem> {
+    ): List<Card> {
         var wipCount = items.count { it.state == WorkItemState.IN_PROGRESS }
         val current = items.toMutableList()
         val orderedTodo = orderTodoByPriority(current, ctx.rng)
@@ -151,7 +153,7 @@ object SimulationEngine {
             val item = current[idx]
             current[idx] = item.advance()
             ctx.movements.add(
-                Movement(type = MovementType.MOVED, workItemId = item.id, day = SimulationDay(ctx.day), reason = "auto: started"),
+                Movement(type = MovementType.MOVED, cardId = item.id, day = SimulationDay(ctx.day), reason = "auto: started"),
             )
             wipCount++
         }
@@ -160,7 +162,7 @@ object SimulationEngine {
     }
 
     private fun orderTodoByPriority(
-        items: List<WorkItem>,
+        items: List<Card>,
         rng: Random,
     ): List<Int> {
         val todoIndices = items.indices.filter { items[it].state == WorkItemState.TODO }
@@ -172,7 +174,7 @@ object SimulationEngine {
     // ─── metrics ─────────────────────────────────────────────────────────────
 
     private fun calculateMetrics(
-        items: List<WorkItem>,
+        items: List<Card>,
         movements: List<Movement>,
     ): FlowMetrics {
         val nonDoneItems = items.filter { it.state != WorkItemState.DONE }

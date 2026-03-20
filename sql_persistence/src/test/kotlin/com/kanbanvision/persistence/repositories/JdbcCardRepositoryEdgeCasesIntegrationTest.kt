@@ -1,7 +1,6 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.valueobjects.CardId
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -35,7 +34,7 @@ class JdbcCardRepositoryEdgeCasesIntegrationTest : JdbcCardRepositoryTestBase() 
     @Test
     fun `findById with non-UUID string returns CardNotFound`() =
         runBlocking<Unit> {
-            val result = repository.findById(CardId("not-a-valid-uuid"))
+            val result = repository.findById("not-a-valid-uuid")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.CardNotFound>(result.leftOrNull())

@@ -4,7 +4,6 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.valueobjects.BoardId
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -41,6 +40,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -48,7 +48,7 @@ import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
 class BoardRoutesTest {
-    private val boardId = BoardId.generate()
+    private val boardId = UUID.randomUUID().toString()
     private val board = Board(id = boardId, name = "My Board")
 
     private val boardRepository = mockk<BoardRepository>()
@@ -151,13 +151,13 @@ class BoardRoutesTest {
             coEvery { boardRepository.findById(boardId) } returns board.right()
 
             val response =
-                client.get("/api/v1/boards/${boardId.value}") {
+                client.get("/api/v1/boards/$boardId") {
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-            assertEquals(boardId.value, body["id"]?.jsonPrimitive?.content)
+            assertEquals(boardId, body["id"]?.jsonPrimitive?.content)
             assertEquals("My Board", body["name"]?.jsonPrimitive?.content)
         }
 

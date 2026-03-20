@@ -3,15 +3,13 @@ package com.kanbanvision.usecases.scenario
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.metrics.FlowMetrics
-import com.kanbanvision.domain.model.scenario.DailySnapshot
-import com.kanbanvision.domain.model.scenario.Scenario
-import com.kanbanvision.domain.model.scenario.ScenarioConfig
-import com.kanbanvision.domain.model.scenario.SimulationDay
-import com.kanbanvision.domain.model.scenario.SimulationResult
-import com.kanbanvision.domain.model.scenario.SimulationState
-import com.kanbanvision.domain.model.valueobjects.ScenarioId
-import com.kanbanvision.domain.model.valueobjects.TenantId
+import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioConfig
+import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationResult
+import com.kanbanvision.domain.model.SimulationState
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -31,11 +29,11 @@ class RunDayUseCaseTest {
     private val simulationEngine = mockk<SimulationEnginePort>()
     private val useCase = RunDayUseCase(scenarioRepository, snapshotRepository, simulationEngine)
 
-    private val scenarioId = ScenarioId("scenario-1")
+    private val scenarioId = "scenario-1"
     private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
-    private val scenario = Scenario(id = scenarioId, tenantId = TenantId("t-1"), config = config)
+    private val scenario = Scenario(id = scenarioId, tenantId = "t-1", config = config)
     private val state = SimulationState.initial(config)
-    private val command = RunDayCommand(scenarioId = scenarioId.value, decisions = emptyList())
+    private val command = RunDayCommand(scenarioId = scenarioId, decisions = emptyList())
 
     private val nextState = state.copy(currentDay = SimulationDay(2))
     private val snapshot =
@@ -81,7 +79,7 @@ class RunDayUseCaseTest {
     @Test
     fun `execute returns ScenarioNotFound when scenario does not exist`() =
         runTest {
-            coEvery { scenarioRepository.findById(scenarioId) } returns DomainError.ScenarioNotFound(scenarioId.value).left()
+            coEvery { scenarioRepository.findById(scenarioId) } returns DomainError.ScenarioNotFound(scenarioId).left()
 
             val result = useCase.execute(command)
 
