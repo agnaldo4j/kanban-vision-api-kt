@@ -3,10 +3,10 @@ package com.kanbanvision.httpapi.di
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.persistence.repositories.JdbcBoardRepository
 import com.kanbanvision.persistence.repositories.JdbcCardRepository
-import com.kanbanvision.persistence.repositories.JdbcColumnRepository
 import com.kanbanvision.persistence.repositories.JdbcOrganizationRepository
 import com.kanbanvision.persistence.repositories.JdbcScenarioRepository
 import com.kanbanvision.persistence.repositories.JdbcSnapshotRepository
+import com.kanbanvision.persistence.repositories.JdbcStepDomainRepository
 import com.kanbanvision.persistence.repositories.JdbcStepRepository
 import com.kanbanvision.usecases.board.CreateBoardUseCase
 import com.kanbanvision.usecases.board.GetBoardUseCase
@@ -46,8 +46,8 @@ object AppModule {
 
             single<BoardRepository> { JdbcBoardRepository() }
             single<CardRepository> { JdbcCardRepository() }
-            single<ColumnRepository> { JdbcColumnRepository() }
-            single<StepRepository> { JdbcStepRepository(get()) }
+            single<ColumnRepository> { JdbcStepRepository() }
+            single<StepRepository> { JdbcStepDomainRepository(get()) }
             single<OrganizationRepository> { JdbcOrganizationRepository() }
             single<ScenarioRepository> { JdbcScenarioRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }

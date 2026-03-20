@@ -17,9 +17,9 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 // Covers the conn.use { } addSuppressed path in Board, Step, and Organization repositories.
-class JdbcBoardColumnOrganizationRepositoryMockTest {
+class JdbcBoardStepOrganizationRepositoryMockTest {
     private val boardRepo = JdbcBoardRepository()
-    private val columnRepo = JdbcColumnRepository()
+    private val columnRepo = JdbcStepRepository()
     private val organizationRepo = JdbcOrganizationRepository()
 
     private fun brokenDataSource(): HikariDataSource {

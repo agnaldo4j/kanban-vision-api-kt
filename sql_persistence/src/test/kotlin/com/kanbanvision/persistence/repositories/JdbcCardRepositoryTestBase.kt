@@ -16,7 +16,7 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class JdbcCardRepositoryTestBase {
     protected val boardRepository = JdbcBoardRepository()
-    protected val columnRepository = JdbcColumnRepository()
+    protected val columnRepository = JdbcStepRepository()
     protected val repository = JdbcCardRepository()
 
     protected var existingColumnId: String? = null

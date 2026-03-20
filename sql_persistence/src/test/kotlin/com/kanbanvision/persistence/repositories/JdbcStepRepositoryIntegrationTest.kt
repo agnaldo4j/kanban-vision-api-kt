@@ -19,9 +19,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcColumnRepositoryIntegrationTest {
+class JdbcStepRepositoryIntegrationTest {
     private val boardRepository = JdbcBoardRepository()
-    private val repository = JdbcColumnRepository()
+    private val repository = JdbcStepRepository()
 
     private var existingBoardId: String? = null
 
