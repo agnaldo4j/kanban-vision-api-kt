@@ -19,6 +19,6 @@ data class Worker(
 
     fun canExecute(step: Step): Boolean = hasAbility(step.requiredAbility)
 
-    @Deprecated("Use canExecute(step) instead", ReplaceWith("canExecute(step)"))
+    @Deprecated("Use canExecute(step) instead")
     fun canExecute(column: Column): Boolean = hasAbility(column.requiredAbility)
 }

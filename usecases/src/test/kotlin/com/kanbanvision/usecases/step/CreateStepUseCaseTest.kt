@@ -70,6 +70,26 @@ class CreateStepUseCaseTest {
         }
 
     @Test
+    fun `execute returns BoardNotFound when board does not exist`() =
+        runTest {
+            coEvery { boardRepository.findById(boardId) } returns DomainError.BoardNotFound(boardId.value).left()
+
+            val result =
+                useCase.execute(
+                    CreateStepCommand(
+                        boardId = boardId.value,
+                        name = "Development",
+                        requiredAbility = AbilityName.DEVELOPER,
+                    ),
+                )
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.BoardNotFound>(result.leftOrNull())
+            coVerify(exactly = 0) { stepRepository.findByBoardId(any()) }
+            coVerify(exactly = 0) { stepRepository.save(any()) }
+        }
+
+    @Test
     fun `execute validates step command before delegating`() =
         runTest {
             val result =
