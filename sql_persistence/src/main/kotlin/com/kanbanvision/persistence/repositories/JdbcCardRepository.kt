@@ -151,7 +151,6 @@ class JdbcCardRepository : CardRepository {
 
     override suspend fun findByStepId(stepId: String): Either<DomainError, List<Card>> =
         query {
-            val stepId = stepId
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
@@ -160,7 +159,7 @@ class JdbcCardRepository : CardRepository {
                                 "SELECT id, step_id, title, description, position, created_at" +
                                     " FROM cards WHERE step_id = ? ORDER BY position",
                             ).use { stmt ->
-                                stmt.setString(COL_ID, stepId)
+                                stmt.setString(PARAM_STEP_ID, stepId)
                                 stmt.executeQuery().use { rs ->
                                     buildList { while (rs.next()) add(rs.toCard()) }
                                 }

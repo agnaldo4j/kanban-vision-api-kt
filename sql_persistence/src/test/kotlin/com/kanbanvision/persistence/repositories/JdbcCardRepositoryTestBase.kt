@@ -16,10 +16,10 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class JdbcCardRepositoryTestBase {
     protected val boardRepository = JdbcBoardRepository()
-    protected val columnRepository = JdbcStepRepository()
+    protected val stepRepository = JdbcStepRepository()
     protected val repository = JdbcCardRepository()
 
-    protected var existingColumnId: String? = null
+    protected var existingStepId: String? = null
 
     @BeforeAll
     fun initDatabase() {
@@ -45,8 +45,8 @@ abstract class JdbcCardRepositoryTestBase {
                     position = 0,
                     requiredAbility = AbilityName.DEVELOPER,
                 )
-            columnRepository.save(step)
-            existingColumnId = step.id
+            stepRepository.save(step)
+            existingStepId = step.id
         }
 
     protected fun newCard(
@@ -54,7 +54,7 @@ abstract class JdbcCardRepositoryTestBase {
         position: Int = 0,
     ) = Card(
         id = UUID.randomUUID().toString(),
-        stepId = existingColumnId!!,
+        stepId = existingStepId!!,
         title = title,
         description = "Description",
         position = position,

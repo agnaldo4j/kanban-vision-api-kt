@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JdbcRepositoriesConnectionErrorIntegrationTest {
     private val boardRepository = JdbcBoardRepository()
-    private val columnRepository = JdbcStepRepository()
+    private val stepRepository = JdbcStepRepository()
     private val cardRepository = JdbcCardRepository()
 
     @BeforeAll
@@ -67,7 +67,7 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
                     position = 0,
                     requiredAbility = AbilityName.DEVELOPER,
                 )
-            val result = columnRepository.save(step)
+            val result = stepRepository.save(step)
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }
@@ -75,7 +75,7 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
     @Test
     fun `step findById returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
-            val result = columnRepository.findById(UUID.randomUUID().toString())
+            val result = stepRepository.findById(UUID.randomUUID().toString())
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }
@@ -83,7 +83,7 @@ class JdbcRepositoriesConnectionErrorIntegrationTest {
     @Test
     fun `step findByBoardId returns PersistenceError when datasource is closed`() =
         runBlocking<Unit> {
-            val result = columnRepository.findByBoardId(UUID.randomUUID().toString())
+            val result = stepRepository.findByBoardId(UUID.randomUUID().toString())
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
         }
