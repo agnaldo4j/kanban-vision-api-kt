@@ -10,7 +10,7 @@ import com.kanbanvision.usecases.repositories.ColumnRepository
 import com.kanbanvision.usecases.repositories.StepRepository
 
 class JdbcStepRepository(
-    private val delegate: ColumnRepository = JdbcColumnRepository(),
+    private val delegate: ColumnRepository,
 ) : StepRepository {
     override suspend fun save(step: Step): Either<DomainError, Step> = delegate.save(step.toColumn()).map { it.toStep() }
 

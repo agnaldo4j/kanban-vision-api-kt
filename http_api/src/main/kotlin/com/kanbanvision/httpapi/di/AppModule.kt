@@ -47,7 +47,7 @@ object AppModule {
             single<BoardRepository> { JdbcBoardRepository() }
             single<CardRepository> { JdbcCardRepository() }
             single<ColumnRepository> { JdbcColumnRepository() }
-            single<StepRepository> { JdbcStepRepository() }
+            single<StepRepository> { JdbcStepRepository(get()) }
             single<TenantRepository> { JdbcTenantRepository() }
             single<ScenarioRepository> { JdbcScenarioRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }

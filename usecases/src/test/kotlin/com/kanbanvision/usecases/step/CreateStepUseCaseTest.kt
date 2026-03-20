@@ -7,6 +7,7 @@ import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.team.AbilityName
 import com.kanbanvision.domain.model.valueobjects.BoardId
+import com.kanbanvision.domain.model.valueobjects.ColumnId
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.StepRepository
 import com.kanbanvision.usecases.step.commands.CreateStepCommand
@@ -85,6 +86,35 @@ class CreateStepUseCaseTest {
             assertEquals("Step name must not be blank", error.message)
             coVerify(exactly = 0) { boardRepository.findById(any()) }
             coVerify(exactly = 0) { stepRepository.findByBoardId(any()) }
+            coVerify(exactly = 0) { stepRepository.save(any()) }
+        }
+
+    @Test
+    fun `execute returns validation error when step name already exists on board`() =
+        runTest {
+            val existingStep =
+                Step(
+                    id = ColumnId.generate(),
+                    boardId = boardId,
+                    name = "Development",
+                    position = 0,
+                    requiredAbility = AbilityName.DEVELOPER,
+                )
+            coEvery { boardRepository.findById(boardId) } returns board.right()
+            coEvery { stepRepository.findByBoardId(boardId) } returns listOf(existingStep).right()
+
+            val result =
+                useCase.execute(
+                    CreateStepCommand(
+                        boardId = boardId.value,
+                        name = "Development",
+                        requiredAbility = AbilityName.DEVELOPER,
+                    ),
+                )
+
+            assertTrue(result.isLeft())
+            val error = assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertEquals("Step name 'Development' already exists on this board", error.message)
             coVerify(exactly = 0) { stepRepository.save(any()) }
         }
 }
