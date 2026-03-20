@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.DailySnapshot
@@ -10,6 +11,7 @@ import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.PolicySet
 import com.kanbanvision.domain.model.ServiceClass
+import com.kanbanvision.domain.model.SimulationContext
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationResult
 import com.kanbanvision.domain.model.SimulationState
@@ -31,8 +33,9 @@ object SimulationEngine {
 
         val afterDecisions = applyDecisions(state.cards, decisions, ctx)
         val afterAutoAdvance = autoAdvance(afterDecisions, state.policySet, ctx)
+        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, state.context, ctx)
         val afterAging =
-            afterAutoAdvance.map { item ->
+            afterExecution.map { item ->
                 if (item.state != CardState.DONE) item.incrementAge() else item
             }
 
@@ -47,14 +50,6 @@ object SimulationEngine {
 
         return SimulationResult(newState = newState, snapshot = snapshot)
     }
-
-    // ─── context ────────────────────────────────────────────────────────────
-
-    private data class EngineContext(
-        val day: Int,
-        val movements: MutableList<Movement>,
-        val rng: Random,
-    )
 
     // ─── decisions ──────────────────────────────────────────────────────────
 
@@ -161,16 +156,6 @@ object SimulationEngine {
         return current
     }
 
-    private fun orderTodoByPriority(
-        items: List<Card>,
-        rng: Random,
-    ): List<Int> {
-        val todoIndices = items.indices.filter { items[it].state == CardState.TODO }
-        val expedite = todoIndices.filter { items[it].serviceClass == ServiceClass.EXPEDITE }
-        val others = todoIndices.filter { items[it].serviceClass != ServiceClass.EXPEDITE }.shuffled(rng)
-        return expedite + others
-    }
-
     // ─── metrics ─────────────────────────────────────────────────────────────
 
     private fun calculateMetrics(
@@ -186,4 +171,67 @@ object SimulationEngine {
             avgAgingDays = avgAging,
         )
     }
+}
+
+private data class EngineContext(
+    val day: Int,
+    val movements: MutableList<Movement>,
+    val rng: Random,
+)
+
+private fun applyAssignedWorkerExecution(
+    items: List<Card>,
+    context: SimulationContext?,
+    ctx: EngineContext,
+): List<Card> {
+    if (context == null || context.workerAssignments.isEmpty() || context.steps.isEmpty()) return items
+
+    val current = items.toMutableList()
+    context.workerAssignments.forEach { (workerId, stepId) ->
+        applySingleWorkerExecution(current, context, WorkerStepAssignment(workerId = workerId, stepId = stepId), ctx)
+    }
+    return current
+}
+
+private data class WorkerStepAssignment(
+    val workerId: String,
+    val stepId: String,
+)
+
+private fun applySingleWorkerExecution(
+    current: MutableList<Card>,
+    context: SimulationContext,
+    assignment: WorkerStepAssignment,
+    ctx: EngineContext,
+) {
+    val worker = context.findWorker(assignment.workerId) ?: return
+    val step = context.findStep(assignment.stepId) ?: return
+    val targetIndex = findExecutableCardIndex(current, step.id, step.requiredAbility)
+    if (targetIndex < 0) return
+
+    val seedMix = ctx.rng.nextLong() xor worker.id.hashCode().toLong() xor step.id.hashCode().toLong()
+    val capacities = worker.generateDailyCapacities(random = Random(seedMix))
+    val result = step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities)
+    current[targetIndex] = result.updatedCard
+}
+
+private fun findExecutableCardIndex(
+    cards: List<Card>,
+    stepId: String,
+    ability: AbilityName,
+): Int =
+    cards.indexOfFirst { card ->
+        card.columnId == stepId &&
+            card.state == CardState.IN_PROGRESS &&
+            card.remainingEffortFor(ability) > 0
+    }
+
+private fun orderTodoByPriority(
+    items: List<Card>,
+    rng: Random,
+): List<Int> {
+    val todoIndices = items.indices.filter { items[it].state == CardState.TODO }
+    val expedite = todoIndices.filter { items[it].serviceClass == ServiceClass.EXPEDITE }
+    val others = todoIndices.filter { items[it].serviceClass != ServiceClass.EXPEDITE }.shuffled(rng)
+    return expedite + others
 }

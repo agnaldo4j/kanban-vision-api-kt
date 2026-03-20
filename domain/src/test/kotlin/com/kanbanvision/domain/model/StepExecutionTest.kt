@@ -16,7 +16,7 @@ class StepExecutionTest {
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
         val card =
-            SimulatorCard(
+            Card(
                 title = "Card A",
                 analysisEffort = 0,
                 developmentEffort = 8,
@@ -40,7 +40,7 @@ class StepExecutionTest {
                 abilities = setOf(Ability(name = AbilityName.PRODUCT_MANAGER, seniority = Seniority.SR)),
             )
         val card =
-            SimulatorCard(
+            Card(
                 title = "Card B",
                 analysisEffort = 2,
                 developmentEffort = 0,
@@ -68,7 +68,7 @@ class StepExecutionTest {
                     ),
             )
         val card =
-            SimulatorCard(
+            Card(
                 title = "Card C",
                 analysisEffort = 0,
                 developmentEffort = 0,
@@ -96,7 +96,7 @@ class StepExecutionTest {
                     ),
             )
         val card =
-            SimulatorCard(
+            Card(
                 title = "Card D",
                 analysisEffort = 0,
                 developmentEffort = 0,
@@ -119,7 +119,7 @@ class StepExecutionTest {
                 abilities = setOf(Ability(name = AbilityName.PRODUCT_MANAGER, seniority = Seniority.PL)),
             )
         val card =
-            SimulatorCard(
+            Card(
                 title = "Card E",
                 analysisEffort = 0,
                 developmentEffort = 5,

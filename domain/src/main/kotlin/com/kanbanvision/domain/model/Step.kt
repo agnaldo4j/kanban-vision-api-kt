@@ -12,7 +12,7 @@ data class Step(
     val audit: Audit = Audit(),
 ) {
     data class ExecutionResult(
-        val updatedCard: SimulatorCard,
+        val updatedCard: Card,
         val consumedEffort: Int,
         val isStepCompleted: Boolean,
     )
@@ -81,7 +81,7 @@ data class Step(
 
     fun executeCard(
         worker: Worker,
-        card: SimulatorCard,
+        card: Card,
         dailyCapacities: Map<AbilityName, Int>,
     ): ExecutionResult {
         ensureCanAssign(worker)

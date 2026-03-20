@@ -106,7 +106,7 @@ class WorkerAndStepLifecycleSimulatorTest {
 
         val step = Step(name = "Development", requiredAbility = AbilityName.DEVELOPER)
         val card =
-            SimulatorCard(
+            Card(
                 title = "Card missing key",
                 analysisEffort = 0,
                 developmentEffort = 2,

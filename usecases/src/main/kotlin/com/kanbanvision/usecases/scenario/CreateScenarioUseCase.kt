@@ -22,9 +22,9 @@ class CreateScenarioUseCase(
         either {
             command.validate().bind()
             val organizationId = command.organizationId
-            organizationRepository.findById(organizationId).bind()
+            val organization = organizationRepository.findById(organizationId).bind()
             val scenario = buildScenario(organizationId, command)
-            val initialState = SimulationState.initial(scenario.config)
+            val initialState = SimulationState.initial(scenario = scenario, config = scenario.config, tribes = organization.tribes)
             val (id, duration) = timed { persist(scenario, initialState) }
             log.info("Scenario created: id={} duration={}ms", id, duration.inWholeMilliseconds)
             id

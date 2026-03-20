@@ -26,11 +26,39 @@ class RunDayUseCase(
             val id = command.scenarioId
             val scenario = scenarioRepository.findById(id).bind()
             val state = scenarioRepository.findState(id).bind()
+            ensureContextConsistency(scenario, state).bind()
             guardDuplicate(id, state).bind()
             val result = simulationEngine.runDay(id, state, command.decisions, scenario.config.seedValue)
             val (snapshot, duration) = timed { persistResult(id, result.newState, result.snapshot) }
             log.info("Day run: scenario={} day={} duration={}ms", id, state.currentDay.value, duration.inWholeMilliseconds)
             snapshot
+        }
+
+    private fun ensureContextConsistency(
+        scenario: com.kanbanvision.domain.model.Scenario,
+        state: SimulationState,
+    ): Either<DomainError, Unit> =
+        either {
+            val context = state.context ?: return@either Unit
+            ensure(context.organizationId == scenario.organizationId) {
+                DomainError.ValidationError(
+                    "Simulation state organizationId (${context.organizationId}) " +
+                        "does not match scenario organizationId (${scenario.organizationId})",
+                )
+            }
+            ensure(context.boardId == scenario.boardId) {
+                DomainError.ValidationError(
+                    "Simulation state boardId (${context.boardId}) does not match scenario boardId (${scenario.boardId})",
+                )
+            }
+            context.workerAssignments.forEach { (workerId, stepId) ->
+                ensure(context.findWorker(workerId) != null) {
+                    DomainError.ValidationError("Simulation context contains assignment for unknown workerId: $workerId")
+                }
+                ensure(context.findStep(stepId) != null) {
+                    DomainError.ValidationError("Simulation context contains assignment for unknown stepId: $stepId")
+                }
+            }
         }
 
     private suspend fun guardDuplicate(

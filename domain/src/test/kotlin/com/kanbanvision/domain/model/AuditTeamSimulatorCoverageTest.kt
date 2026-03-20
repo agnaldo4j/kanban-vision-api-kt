@@ -79,7 +79,7 @@ class AuditTeamSimulatorCoverageTest {
     fun `simulator card exposes audit and compatibility date`() {
         val audit = Audit(createdAt = Instant.parse("2026-03-01T00:00:00Z"))
         val card =
-            SimulatorCard(
+            Card(
                 title = "sim-card",
                 analysisEffort = 1,
                 developmentEffort = 1,
