@@ -19,7 +19,7 @@
 ## Features
 
 - **Kanban simulation** — model boards, steps and cards; run day-by-day flow simulations
-- **Organization-scoped** — organization-scoped boards and scenarios
+- **Organization-scoped** — boards and scenarios are isolated per organization
 - **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
 - **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces
@@ -57,7 +57,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 
 | Page | Description |
 |---|---|
-| [Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) | Hexagonal arch, C4, class diagrams (modules/domain) and sequence diagrams |
+| [Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) | Hexagonal arch, C4 diagrams, class diagrams (modules/domain) and sequence diagrams |
 | [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) | Local setup, testing, quality gates, troubleshooting |
 | [API Reference](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/API-Reference) | Endpoints, JWT auth, OpenAPI |
 | [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel Agent, structured logs |
