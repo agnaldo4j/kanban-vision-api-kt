@@ -28,9 +28,9 @@ import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
-import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
@@ -56,9 +56,9 @@ import kotlin.test.assertNotNull
 
 class ScenarioQueryRoutesTest {
     private val scenarioId = "scenario-test-id"
-    private val tenantId = "tenant-test-id"
+    private val organizationId = "organization-test-id"
     private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 42L)
-    private val scenario = Scenario(id = scenarioId, tenantId = tenantId, config = config)
+    private val scenario = Scenario(id = scenarioId, organizationId = organizationId, config = config)
     private val state =
         SimulationState(
             currentDay = SimulationDay(1),
@@ -81,7 +81,7 @@ class ScenarioQueryRoutesTest {
             single<BoardRepository> { mockk(relaxed = true) }
             single<CardRepository> { mockk(relaxed = true) }
             single<ColumnRepository> { mockk(relaxed = true) }
-            single<TenantRepository> { mockk(relaxed = true) }
+            single<OrganizationRepository> { mockk(relaxed = true) }
             single<ScenarioRepository> { scenarioRepository }
             single<SnapshotRepository> { snapshotRepository }
             single { CreateBoardUseCase(get()) }
@@ -130,7 +130,7 @@ class ScenarioQueryRoutesTest {
             assertEquals(HttpStatusCode.OK, response.status)
             val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
             assertEquals(scenarioId, body["scenarioId"]?.jsonPrimitive?.content)
-            assertEquals(tenantId, body["tenantId"]?.jsonPrimitive?.content)
+            assertEquals(organizationId, body["organizationId"]?.jsonPrimitive?.content)
         }
 
     @Test

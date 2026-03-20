@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
 class JdbcScenarioRepositoryIntegrationTest {
     private val repository = JdbcScenarioRepository()
 
-    private val tenantId = UUID.randomUUID().toString()
+    private val organizationId = UUID.randomUUID().toString()
     private val config = ScenarioConfig(wipLimit = 3, teamSize = 2, seedValue = 99L)
 
     @BeforeAll
@@ -33,12 +33,12 @@ class JdbcScenarioRepositoryIntegrationTest {
     @BeforeEach
     fun cleanDatabase() {
         IntegrationTestSetup.cleanTables()
-        insertTenant(tenantId)
+        insertOrganization(organizationId)
     }
 
-    private fun insertTenant(id: String) {
+    private fun insertOrganization(id: String) {
         DatabaseFactory.dataSource.connection.use { conn ->
-            conn.prepareStatement("INSERT INTO tenants (id, name) VALUES (?, ?)").use { stmt ->
+            conn.prepareStatement("INSERT INTO organizations (id, name) VALUES (?, ?)").use { stmt ->
                 stmt.setString(1, id)
                 stmt.setString(2, "Test Org")
                 stmt.executeUpdate()
@@ -47,7 +47,7 @@ class JdbcScenarioRepositoryIntegrationTest {
         }
     }
 
-    private fun newScenario() = Scenario(id = UUID.randomUUID().toString(), tenantId = tenantId, config = config)
+    private fun newScenario() = Scenario(id = UUID.randomUUID().toString(), organizationId = organizationId, config = config)
 
     @Test
     fun `save and findById round-trip returns same scenario`() =
@@ -60,7 +60,7 @@ class JdbcScenarioRepositoryIntegrationTest {
             assertTrue(result.isRight())
             val found = result.getOrNull()!!
             assertEquals(scenario.id, found.id)
-            assertEquals(scenario.tenantId, found.tenantId)
+            assertEquals(scenario.organizationId, found.organizationId)
             assertEquals(scenario.config.wipLimit, found.config.wipLimit)
             assertEquals(scenario.config.seedValue, found.config.seedValue)
         }

@@ -73,9 +73,9 @@ class UseCaseValidationPropertyBasedTest {
                 Arb.int(1..10_000),
                 Arb.int(1..10_000),
                 Arb.long(),
-            ) { tenantSeed, wipLimit, teamSize, seedValue ->
-                val tenantId = "tenant-$tenantSeed"
-                val result = CreateScenarioCommand(tenantId, wipLimit, teamSize, seedValue).validate()
+            ) { organizationSeed, wipLimit, teamSize, seedValue ->
+                val organizationId = "organization-$organizationSeed"
+                val result = CreateScenarioCommand(organizationId, wipLimit, teamSize, seedValue).validate()
                 assertTrue(result.isRight())
             }
         }
@@ -87,7 +87,7 @@ class UseCaseValidationPropertyBasedTest {
             checkAll(Arb.int(Int.MIN_VALUE..0)) { wipLimit ->
                 val result =
                     CreateScenarioCommand(
-                        tenantId = "tenant-1",
+                        organizationId = "organization-1",
                         wipLimit = wipLimit,
                         teamSize = 1,
                         seedValue = 0L,
@@ -103,7 +103,7 @@ class UseCaseValidationPropertyBasedTest {
             checkAll(Arb.int(Int.MIN_VALUE..0)) { teamSize ->
                 val result =
                     CreateScenarioCommand(
-                        tenantId = "tenant-1",
+                        organizationId = "organization-1",
                         wipLimit = 1,
                         teamSize = teamSize,
                         seedValue = 0L,

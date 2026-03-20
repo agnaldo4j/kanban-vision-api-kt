@@ -31,7 +31,7 @@ class RunDayUseCaseTest {
 
     private val scenarioId = "scenario-1"
     private val config = ScenarioConfig(wipLimit = 2, teamSize = 3, seedValue = 42L)
-    private val scenario = Scenario(id = scenarioId, tenantId = "t-1", config = config)
+    private val scenario = Scenario(id = scenarioId, organizationId = "t-1", config = config)
     private val state = SimulationState.initial(config)
     private val command = RunDayCommand(scenarioId = scenarioId, decisions = emptyList())
 

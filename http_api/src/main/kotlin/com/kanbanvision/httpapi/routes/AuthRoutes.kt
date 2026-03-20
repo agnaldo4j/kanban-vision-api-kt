@@ -30,10 +30,10 @@ fun Route.authRoutes(
                     .withAudience(audience)
                     .withIssuer(issuer)
                     .withSubject(request.subject)
-                    .withClaim("tenantId", request.tenantId)
+                    .withClaim("organizationId", request.organizationId)
                     .withExpiresAt(Date(System.currentTimeMillis() + ttlMs))
                     .sign(Algorithm.HMAC256(secret))
-            log.warn("DEV MODE: issued JWT for subject='{}' tenantId='{}'", request.subject, request.tenantId)
+            log.warn("DEV MODE: issued JWT for subject='{}' organizationId='{}'", request.subject, request.organizationId)
             call.respond(HttpStatusCode.OK, TokenResponse(token = token))
         }
     }
@@ -47,7 +47,7 @@ private fun issueTokenSpec(): RouteConfig.() -> Unit =
         description = "Endpoint disponível apenas com JWT_DEV_MODE=true. Gera um token JWT de desenvolvimento."
         request {
             body<IssueTokenRequest> {
-                description = "Sujeito e tenantId para o token."
+                description = "Sujeito e organizationId para o token."
                 required = true
             }
         }
@@ -62,7 +62,7 @@ private fun issueTokenSpec(): RouteConfig.() -> Unit =
 @Serializable
 data class IssueTokenRequest(
     val subject: String,
-    val tenantId: String,
+    val organizationId: String,
 )
 
 @Serializable

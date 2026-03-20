@@ -3,9 +3,9 @@ package com.kanbanvision.httpapi
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.SimulationState
-import com.kanbanvision.domain.model.Tenant
 import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -24,9 +24,9 @@ import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
-import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
@@ -54,9 +54,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ScenarioCreationRoutesTest {
-    private val tenantId = "tenant-test-id"
+    private val organizationId = "organization-test-id"
 
-    private val tenantRepository = mockk<TenantRepository>()
+    private val organizationRepository = mockk<OrganizationRepository>()
     private val scenarioRepository = mockk<ScenarioRepository>()
 
     private val testModule =
@@ -64,7 +64,7 @@ class ScenarioCreationRoutesTest {
             single<BoardRepository> { mockk(relaxed = true) }
             single<CardRepository> { mockk(relaxed = true) }
             single<ColumnRepository> { mockk(relaxed = true) }
-            single<TenantRepository> { tenantRepository }
+            single<OrganizationRepository> { organizationRepository }
             single<ScenarioRepository> { scenarioRepository }
             single<SnapshotRepository> { mockk(relaxed = true) }
             single { CreateBoardUseCase(get()) }
@@ -102,8 +102,8 @@ class ScenarioCreationRoutesTest {
                 configureRouting()
             }
 
-            coEvery { tenantRepository.findById(tenantId) } returns
-                Tenant(id = tenantId, name = "Test")
+            coEvery { organizationRepository.findById(organizationId) } returns
+                Organization(id = organizationId, name = "Test")
                     .right()
             coEvery { scenarioRepository.save(any()) } answers { firstArg<Scenario>().right() }
             coEvery { scenarioRepository.saveState(any(), any()) } answers { secondArg<SimulationState>().right() }
@@ -111,7 +111,7 @@ class ScenarioCreationRoutesTest {
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"$tenantId","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"organizationId":"$organizationId","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -121,7 +121,7 @@ class ScenarioCreationRoutesTest {
         }
 
     @Test
-    fun `POST scenarios with blank tenantId returns 400`() =
+    fun `POST scenarios with blank organizationId returns 400`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -137,7 +137,7 @@ class ScenarioCreationRoutesTest {
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"organizationId":"","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -148,7 +148,7 @@ class ScenarioCreationRoutesTest {
         }
 
     @Test
-    fun `POST scenarios when tenant not found returns 404`() =
+    fun `POST scenarios when organization not found returns 404`() =
         testApplication {
             install(Koin) { modules(testModule) }
             application {
@@ -161,12 +161,12 @@ class ScenarioCreationRoutesTest {
                 configureRouting()
             }
 
-            coEvery { tenantRepository.findById(tenantId) } returns DomainError.TenantNotFound(tenantId).left()
+            coEvery { organizationRepository.findById(organizationId) } returns DomainError.OrganizationNotFound(organizationId).left()
 
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"$tenantId","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"organizationId":"$organizationId","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 
@@ -190,12 +190,12 @@ class ScenarioCreationRoutesTest {
                 configureRouting()
             }
 
-            coEvery { tenantRepository.findById(tenantId) } returns DomainError.PersistenceError("DB down").left()
+            coEvery { organizationRepository.findById(organizationId) } returns DomainError.PersistenceError("DB down").left()
 
             val response =
                 client.post("/api/v1/scenarios") {
                     contentType(ContentType.Application.Json)
-                    setBody("""{"tenantId":"$tenantId","wipLimit":3,"teamSize":2,"seedValue":42}""")
+                    setBody("""{"organizationId":"$organizationId","wipLimit":3,"teamSize":2,"seedValue":42}""")
                     header(HttpHeaders.Authorization, "Bearer ${JwtTestHelper.generateToken()}")
                 }
 

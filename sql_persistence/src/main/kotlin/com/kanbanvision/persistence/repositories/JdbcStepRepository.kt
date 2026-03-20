@@ -18,7 +18,7 @@ class JdbcStepRepository(
             .mapLeft(::mapStepError)
 
     override suspend fun findByBoardId(boardId: String): Either<DomainError, List<Step>> =
-        delegate.findByBoardId(boardId).map { columns -> columns.map { it.toStep() } }
+        delegate.findByBoardId(boardId).map { steps -> steps.map { it.toStep() } }
 
     private fun mapStepError(error: DomainError): DomainError =
         when (error) {

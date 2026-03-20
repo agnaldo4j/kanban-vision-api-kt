@@ -21,8 +21,7 @@ private data class FlowMetricsSurrogate(
 @Serializable
 private data class MovementSurrogate(
     val type: String,
-    val cardId: String = "",
-    val workItemId: String = "",
+    val cardId: String,
     val day: Int,
     val reason: String,
 )
@@ -67,7 +66,7 @@ internal object DailySnapshotSerializer {
     private fun MovementSurrogate.toDomain() =
         Movement(
             type = MovementType.valueOf(type),
-            cardId = if (cardId.isNotBlank()) cardId else workItemId,
+            cardId = cardId,
             day = SimulationDay(day),
             reason = reason,
         )

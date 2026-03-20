@@ -17,10 +17,10 @@ import com.kanbanvision.usecases.column.ListColumnsByBoardUseCase
 import com.kanbanvision.usecases.repositories.BoardRepository
 import com.kanbanvision.usecases.repositories.CardRepository
 import com.kanbanvision.usecases.repositories.ColumnRepository
+import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.ScenarioRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.repositories.StepRepository
-import com.kanbanvision.usecases.repositories.TenantRepository
 import com.kanbanvision.usecases.scenario.CreateScenarioUseCase
 import com.kanbanvision.usecases.scenario.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.scenario.GetFlowMetricsRangeUseCase
@@ -52,7 +52,7 @@ class OpenApiSpecTest {
             single<CardRepository> { mockk(relaxed = true) }
             single<ColumnRepository> { mockk(relaxed = true) }
             single<StepRepository> { mockk(relaxed = true) }
-            single<TenantRepository> { mockk(relaxed = true) }
+            single<OrganizationRepository> { mockk(relaxed = true) }
             single<ScenarioRepository> { mockk(relaxed = true) }
             single<SnapshotRepository> { mockk(relaxed = true) }
             single { CreateBoardUseCase(get()) }

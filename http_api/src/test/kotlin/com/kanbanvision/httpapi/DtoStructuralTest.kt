@@ -109,10 +109,10 @@ class DtoStructuralTest {
 
     @Test
     fun `IssueTokenRequest equality and copy`() {
-        val req = IssueTokenRequest(subject = "user-1", tenantId = "tenant-1")
+        val req = IssueTokenRequest(subject = "user-1", organizationId = "organization-1")
         assertEquals(req, req.copy())
         assertEquals("user-1", req.subject)
-        assertEquals("tenant-1", req.tenantId)
+        assertEquals("organization-1", req.organizationId)
         assertNotEquals(req, req.copy(subject = "user-2"))
     }
 

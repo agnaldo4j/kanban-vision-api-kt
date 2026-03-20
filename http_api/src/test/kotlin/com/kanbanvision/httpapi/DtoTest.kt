@@ -70,18 +70,18 @@ class DtoTest {
 
     @Test
     fun `CreateScenarioRequest equality and copy`() {
-        val req = CreateScenarioRequest(tenantId = "t1", wipLimit = 3, teamSize = 2, seedValue = 42L)
+        val req = CreateScenarioRequest(organizationId = "t1", wipLimit = 3, teamSize = 2, seedValue = 42L)
         assertEquals(req, req.copy())
-        assertEquals("t1", req.tenantId)
+        assertEquals("t1", req.organizationId)
         assertEquals(3, req.wipLimit)
         assertEquals(2, req.teamSize)
         assertEquals(42L, req.seedValue)
-        assertNotEquals(req, req.copy(tenantId = "t2"))
+        assertNotEquals(req, req.copy(organizationId = "t2"))
     }
 
     @Test
     fun `CreateScenarioRequest default seedValue is zero`() {
-        val req = CreateScenarioRequest(tenantId = "tenant-default", wipLimit = 4, teamSize = 3)
+        val req = CreateScenarioRequest(organizationId = "organization-default", wipLimit = 4, teamSize = 3)
         assertEquals(0L, req.seedValue)
         assertEquals(4, req.wipLimit)
         assertEquals(3, req.teamSize)
@@ -129,7 +129,7 @@ class DtoTest {
         val resp =
             ScenarioResponse(
                 scenarioId = "s1",
-                tenantId = "t1",
+                organizationId = "t1",
                 wipLimit = 3,
                 teamSize = 2,
                 seedValue = 42L,
@@ -137,7 +137,7 @@ class DtoTest {
             )
         assertEquals(resp, resp.copy())
         assertEquals("s1", resp.scenarioId)
-        assertEquals("t1", resp.tenantId)
+        assertEquals("t1", resp.organizationId)
         assertEquals(3, resp.wipLimit)
         assertEquals(2, resp.teamSize)
         assertEquals(42L, resp.seedValue)

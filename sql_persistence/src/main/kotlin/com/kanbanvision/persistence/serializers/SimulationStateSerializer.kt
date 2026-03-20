@@ -1,11 +1,11 @@
 package com.kanbanvision.persistence.serializers
 
 import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.PolicySet
 import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationState
-import com.kanbanvision.domain.model.WorkItemState
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -24,8 +24,7 @@ private data class WorkItemSurrogate(
 private data class SimulationStateSurrogate(
     val currentDay: Int,
     val wipLimit: Int,
-    val cards: List<WorkItemSurrogate> = emptyList(),
-    val items: List<WorkItemSurrogate> = emptyList(),
+    val cards: List<WorkItemSurrogate>,
 )
 
 internal object SimulationStateSerializer {
@@ -55,7 +54,7 @@ internal object SimulationStateSerializer {
         SimulationState(
             currentDay = SimulationDay(currentDay),
             policySet = PolicySet(wipLimit = wipLimit),
-            cards = (cards.ifEmpty { items }).map { it.toDomain() },
+            cards = cards.map { it.toDomain() },
         )
 
     private fun WorkItemSurrogate.toDomain() =
@@ -63,7 +62,7 @@ internal object SimulationStateSerializer {
             id = id,
             title = title,
             serviceClass = ServiceClass.valueOf(serviceClass),
-            state = WorkItemState.valueOf(state),
+            state = CardState.valueOf(state),
             agingDays = agingDays,
         )
 }

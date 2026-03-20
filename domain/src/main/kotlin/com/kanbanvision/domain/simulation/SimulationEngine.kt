@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.simulation
 
 import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.Decision
 import com.kanbanvision.domain.model.DecisionType
@@ -12,7 +13,6 @@ import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationResult
 import com.kanbanvision.domain.model.SimulationState
-import com.kanbanvision.domain.model.WorkItemState
 import kotlin.random.Random
 
 object SimulationEngine {
@@ -33,7 +33,7 @@ object SimulationEngine {
         val afterAutoAdvance = autoAdvance(afterDecisions, state.policySet, ctx)
         val afterAging =
             afterAutoAdvance.map { item ->
-                if (item.state != WorkItemState.DONE) item.incrementAge() else item
+                if (item.state != CardState.DONE) item.incrementAge() else item
             }
 
         val snapshot =
@@ -86,12 +86,12 @@ object SimulationEngine {
         payload: Map<String, String>,
         ctx: EngineContext,
     ) {
-        val cardId = payload["cardId"] ?: payload["workItemId"]
+        val cardId = payload["cardId"]
         val idx = current.indexOfFirst { it.id == cardId }
-        if (idx < 0 || current[idx].state == WorkItemState.DONE) return
+        if (idx < 0 || current[idx].state == CardState.DONE) return
         val item = current[idx]
         val advanced = item.advance()
-        val movType = if (advanced.state == WorkItemState.DONE) MovementType.COMPLETED else MovementType.MOVED
+        val movType = if (advanced.state == CardState.DONE) MovementType.COMPLETED else MovementType.MOVED
         current[idx] = advanced
         ctx.movements.add(Movement(type = movType, cardId = item.id, day = SimulationDay(ctx.day), reason = "decision: move"))
     }
@@ -101,9 +101,9 @@ object SimulationEngine {
         payload: Map<String, String>,
         ctx: EngineContext,
     ) {
-        val cardId = payload["cardId"] ?: payload["workItemId"]
+        val cardId = payload["cardId"]
         val idx = current.indexOfFirst { it.id == cardId }
-        if (idx < 0 || current[idx].state != WorkItemState.IN_PROGRESS) return
+        if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return
         val item = current[idx]
         current[idx] = item.block()
         val reason = payload["reason"] ?: "decision: block"
@@ -115,9 +115,9 @@ object SimulationEngine {
         payload: Map<String, String>,
         ctx: EngineContext,
     ) {
-        val cardId = payload["cardId"] ?: payload["workItemId"]
+        val cardId = payload["cardId"]
         val idx = current.indexOfFirst { it.id == cardId }
-        if (idx < 0 || current[idx].state != WorkItemState.BLOCKED) return
+        if (idx < 0 || current[idx].state != CardState.BLOCKED) return
         val item = current[idx]
         current[idx] = item.advance()
         ctx.movements.add(
@@ -144,7 +144,7 @@ object SimulationEngine {
         policySet: PolicySet,
         ctx: EngineContext,
     ): List<Card> {
-        var wipCount = items.count { it.state == WorkItemState.IN_PROGRESS }
+        var wipCount = items.count { it.state == CardState.IN_PROGRESS }
         val current = items.toMutableList()
         val orderedTodo = orderTodoByPriority(current, ctx.rng)
 
@@ -165,7 +165,7 @@ object SimulationEngine {
         items: List<Card>,
         rng: Random,
     ): List<Int> {
-        val todoIndices = items.indices.filter { items[it].state == WorkItemState.TODO }
+        val todoIndices = items.indices.filter { items[it].state == CardState.TODO }
         val expedite = todoIndices.filter { items[it].serviceClass == ServiceClass.EXPEDITE }
         val others = todoIndices.filter { items[it].serviceClass != ServiceClass.EXPEDITE }.shuffled(rng)
         return expedite + others
@@ -177,12 +177,12 @@ object SimulationEngine {
         items: List<Card>,
         movements: List<Movement>,
     ): FlowMetrics {
-        val nonDoneItems = items.filter { it.state != WorkItemState.DONE }
+        val nonDoneItems = items.filter { it.state != CardState.DONE }
         val avgAging = if (nonDoneItems.isEmpty()) 0.0 else nonDoneItems.map { it.agingDays.toDouble() }.average()
         return FlowMetrics(
             throughput = movements.count { it.type == MovementType.COMPLETED },
-            wipCount = items.count { it.state == WorkItemState.IN_PROGRESS },
-            blockedCount = items.count { it.state == WorkItemState.BLOCKED },
+            wipCount = items.count { it.state == CardState.IN_PROGRESS },
+            blockedCount = items.count { it.state == CardState.BLOCKED },
             avgAgingDays = avgAging,
         )
     }

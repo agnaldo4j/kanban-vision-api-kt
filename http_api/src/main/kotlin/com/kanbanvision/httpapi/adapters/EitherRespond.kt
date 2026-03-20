@@ -15,7 +15,7 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
             respond(HttpStatusCode.BadRequest, ValidationErrorResponse(errors = error.messages, requestId = requestId))
         is DomainError.BoardNotFound, is DomainError.CardNotFound, is DomainError.ColumnNotFound,
         is DomainError.StepNotFound,
-        is DomainError.TenantNotFound, is DomainError.ScenarioNotFound,
+        is DomainError.OrganizationNotFound, is DomainError.ScenarioNotFound,
         ->
             respond(HttpStatusCode.NotFound, DomainErrorResponse(error = notFoundMessage(error), requestId = requestId))
         is DomainError.PersistenceError ->
@@ -33,7 +33,7 @@ private fun notFoundMessage(error: DomainError): String =
         is DomainError.CardNotFound -> "Card not found"
         is DomainError.ColumnNotFound -> "Column not found"
         is DomainError.StepNotFound -> "Step not found"
-        is DomainError.TenantNotFound -> "Tenant not found"
+        is DomainError.OrganizationNotFound -> "Organization not found"
         is DomainError.ScenarioNotFound -> "Scenario not found"
         else -> "Resource not found"
     }

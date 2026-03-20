@@ -40,7 +40,7 @@ class JdbcColumnRepository : ColumnRepository {
                         conn
                             .prepareStatement(
                                 """
-                                INSERT INTO columns (id, board_id, name, position, required_ability)
+                                INSERT INTO steps (id, board_id, name, position, required_ability)
                                 VALUES (?, ?, ?, ?, ?)
                                 ON CONFLICT (id) DO UPDATE SET
                                     name     = EXCLUDED.name,
@@ -66,7 +66,7 @@ class JdbcColumnRepository : ColumnRepository {
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
-                        val sql = "SELECT id, board_id, name, position, required_ability FROM columns WHERE id = ?"
+                        val sql = "SELECT id, board_id, name, position, required_ability FROM steps WHERE id = ?"
                         conn.prepareStatement(sql).use { stmt ->
                             stmt.setString(COL_ID, id)
                             stmt.executeQuery().use { rs ->
@@ -86,7 +86,7 @@ class JdbcColumnRepository : ColumnRepository {
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         val sql =
-                            "SELECT id, board_id, name, position, required_ability FROM columns WHERE board_id = ? ORDER BY position"
+                            "SELECT id, board_id, name, position, required_ability FROM steps WHERE board_id = ? ORDER BY position"
                         conn.prepareStatement(sql).use { stmt ->
                             stmt.setString(1, boardId)
                             stmt.executeQuery().use { rs ->

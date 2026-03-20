@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 class JdbcSnapshotRepositoryIntegrationTest {
     private val repository = JdbcSnapshotRepository()
 
-    private val tenantId = UUID.randomUUID().toString()
+    private val organizationId = UUID.randomUUID().toString()
     private val scenarioId = UUID.randomUUID().toString()
 
     @BeforeAll
@@ -32,22 +32,22 @@ class JdbcSnapshotRepositoryIntegrationTest {
     @BeforeEach
     fun cleanDatabase() {
         IntegrationTestSetup.cleanTables()
-        seedTenantAndScenario()
+        seedOrganizationAndScenario()
     }
 
-    private fun seedTenantAndScenario() {
+    private fun seedOrganizationAndScenario() {
         DatabaseFactory.dataSource.connection.use { conn ->
-            conn.prepareStatement("INSERT INTO tenants (id, name) VALUES (?, ?)").use { stmt ->
-                stmt.setString(1, tenantId)
+            conn.prepareStatement("INSERT INTO organizations (id, name) VALUES (?, ?)").use { stmt ->
+                stmt.setString(1, organizationId)
                 stmt.setString(2, "Test Org")
                 stmt.executeUpdate()
             }
             conn
                 .prepareStatement(
-                    "INSERT INTO scenarios (id, tenant_id, wip_limit, team_size, seed_value) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO scenarios (id, organization_id, wip_limit, team_size, seed_value) VALUES (?, ?, ?, ?, ?)",
                 ).use { stmt ->
                     stmt.setString(1, scenarioId)
-                    stmt.setString(2, tenantId)
+                    stmt.setString(2, organizationId)
                     stmt.setInt(3, 2)
                     stmt.setInt(4, 3)
                     stmt.setLong(5, 42L)

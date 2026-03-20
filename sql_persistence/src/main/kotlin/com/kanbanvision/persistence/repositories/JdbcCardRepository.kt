@@ -48,10 +48,10 @@ class JdbcCardRepository : CardRepository {
                         conn
                             .prepareStatement(
                                 """
-                                INSERT INTO cards (id, column_id, title, description, position, created_at)
+                                INSERT INTO cards (id, step_id, title, description, position, created_at)
                                 VALUES (?, ?, ?, ?, ?, ?)
                                 ON CONFLICT (id) DO UPDATE SET
-                                    column_id   = EXCLUDED.column_id,
+                                    step_id   = EXCLUDED.step_id,
                                     title       = EXCLUDED.title,
                                     description = EXCLUDED.description,
                                     position    = EXCLUDED.position
@@ -78,7 +78,7 @@ class JdbcCardRepository : CardRepository {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT id, column_id, title, description, position, created_at FROM cards WHERE id = ?",
+                                "SELECT id, step_id, title, description, position, created_at FROM cards WHERE id = ?",
                             ).use { stmt ->
                                 stmt.setString(COL_ID, id)
                                 stmt.executeQuery().use { rs ->
@@ -115,7 +115,7 @@ class JdbcCardRepository : CardRepository {
     ): Card? =
         conn
             .prepareStatement(
-                "SELECT id, column_id, title, description, position, created_at" +
+                "SELECT id, step_id, title, description, position, created_at" +
                     " FROM cards WHERE id = ? FOR UPDATE",
             ).use { stmt ->
                 stmt.setString(COL_ID, id)
@@ -133,7 +133,7 @@ class JdbcCardRepository : CardRepository {
                 .prepareStatement(
                     """
                     UPDATE cards
-                    SET column_id = ?, title = ?, description = ?, position = ?
+                    SET step_id = ?, title = ?, description = ?, position = ?
                     WHERE id = ?
                     """.trimIndent(),
                 ).use { stmt ->
@@ -156,8 +156,8 @@ class JdbcCardRepository : CardRepository {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT id, column_id, title, description, position, created_at" +
-                                    " FROM cards WHERE column_id = ? ORDER BY position",
+                                "SELECT id, step_id, title, description, position, created_at" +
+                                    " FROM cards WHERE step_id = ? ORDER BY position",
                             ).use { stmt ->
                                 stmt.setString(COL_ID, columnId)
                                 stmt.executeQuery().use { rs ->
@@ -171,7 +171,7 @@ class JdbcCardRepository : CardRepository {
     private fun java.sql.ResultSet.toCard() =
         Card(
             id = getString("id"),
-            columnId = getString("column_id"),
+            columnId = getString("step_id"),
             title = getString("title"),
             description = getString("description"),
             position = getInt("position"),

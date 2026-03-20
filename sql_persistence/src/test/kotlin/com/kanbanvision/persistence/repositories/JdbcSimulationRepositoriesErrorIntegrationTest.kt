@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JdbcSimulationRepositoriesErrorIntegrationTest {
-    private val tenantRepository = JdbcTenantRepository()
+    private val organizationRepository = JdbcOrganizationRepository()
     private val scenarioRepository = JdbcScenarioRepository()
     private val snapshotRepository = JdbcSnapshotRepository()
 
@@ -34,9 +34,9 @@ class JdbcSimulationRepositoriesErrorIntegrationTest {
     }
 
     @Test
-    fun `JdbcTenantRepository findById returns PersistenceError when pool is closed`() =
+    fun `JdbcOrganizationRepository findById returns PersistenceError when pool is closed`() =
         runBlocking<Unit> {
-            val result = tenantRepository.findById("any-id")
+            val result = organizationRepository.findById("any-id")
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

@@ -18,7 +18,7 @@ object JwtTestHelper {
             .withAudience(TEST_AUDIENCE)
             .withIssuer(TEST_ISSUER)
             .withSubject(subject)
-            .withClaim("tenantId", "00000000-0000-0000-0000-000000000001")
+            .withClaim("organizationId", "00000000-0000-0000-0000-000000000001")
             .withExpiresAt(Date(System.currentTimeMillis() + 3_600_000L))
             .sign(Algorithm.HMAC256(TEST_SECRET))
 

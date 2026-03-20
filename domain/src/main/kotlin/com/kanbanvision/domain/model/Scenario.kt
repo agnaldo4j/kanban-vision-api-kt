@@ -4,7 +4,7 @@ import java.util.UUID
 
 data class Scenario(
     val id: String,
-    val tenantId: String,
+    val organizationId: String,
     val config: ScenarioConfig,
     val audit: Audit = Audit(),
 ) {
@@ -16,13 +16,13 @@ data class Scenario(
 
     init {
         require(id.isNotBlank()) { "Scenario id must not be blank" }
-        require(tenantId.isNotBlank()) { "Scenario tenantId must not be blank" }
+        require(organizationId.isNotBlank()) { "Scenario organizationId must not be blank" }
     }
 
     companion object {
         fun create(
-            tenantId: String,
+            organizationId: String,
             config: ScenarioConfig,
-        ): Scenario = Scenario(id = UUID.randomUUID().toString(), tenantId = tenantId, config = config)
+        ): Scenario = Scenario(id = UUID.randomUUID().toString(), organizationId = organizationId, config = config)
     }
 }

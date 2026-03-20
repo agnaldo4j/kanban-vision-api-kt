@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateScenarioRequest(
-    val tenantId: String,
+    val organizationId: String,
     val wipLimit: Int,
     val teamSize: Int,
     val seedValue: Long = 0L,
@@ -38,7 +38,7 @@ data class SimulationStateResponse(
 @Serializable
 data class ScenarioResponse(
     val scenarioId: String,
-    val tenantId: String,
+    val organizationId: String,
     val wipLimit: Int,
     val teamSize: Int,
     val seedValue: Long,

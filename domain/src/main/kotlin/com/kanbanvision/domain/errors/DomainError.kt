@@ -33,7 +33,7 @@ sealed class DomainError {
         val message: String,
     ) : DomainError()
 
-    data class TenantNotFound(
+    data class OrganizationNotFound(
         val id: String,
     ) : DomainError()
 
