@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 data class DatabaseConfig(
     val url: String,
@@ -29,6 +30,8 @@ object DatabaseFactory {
 
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
     fun isReady(): Boolean {
+        if (Thread.currentThread().isInterrupted) return false
+
         val check =
             CompletableFuture.supplyAsync {
                 try {
@@ -39,7 +42,14 @@ object DatabaseFactory {
             }
         return try {
             check.get(READINESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } catch (e: Exception) {
+        } catch (_: InterruptedException) {
+            check.cancel(true)
+            Thread.currentThread().interrupt()
+            false
+        } catch (_: TimeoutException) {
+            check.cancel(true)
+            false
+        } catch (_: Exception) {
             check.cancel(true)
             false
         }
