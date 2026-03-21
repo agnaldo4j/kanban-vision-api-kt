@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.errors.DomainError
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -74,10 +75,13 @@ class DataClassContractsAndFactoryGuardsTest {
 
     @Test
     fun `given audit companion no arg now when creating then timestamps are valid and monotonic`() {
-        val audit = Audit.now()
-        val touched = audit.touch()
+        val createdAt = Instant.parse("2026-03-21T00:00:00Z")
+        val touchedAt = Instant.parse("2026-03-21T00:00:01Z")
+        val audit = Audit.now(createdAt)
+        val touched = audit.touch(touchedAt)
 
         assertEquals(audit.createdAt, audit.updatedAt)
+        assertEquals(touchedAt, touched.updatedAt)
         assertTrue(touched.updatedAt >= touched.createdAt)
     }
 

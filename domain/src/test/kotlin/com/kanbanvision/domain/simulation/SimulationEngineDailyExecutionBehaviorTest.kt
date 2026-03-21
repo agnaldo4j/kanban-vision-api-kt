@@ -33,7 +33,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
     }
 
     @Test
-    fun `given in progress development card and assigned worker when running day then effort is consumed`() {
+    fun `given in progress development card and assigned worker when running day then execution never increases remaining effort`() {
         val simulation = simulationWithCards(wipLimit = 2, devCardState = CardState.IN_PROGRESS, devRemainingEffort = 3)
 
         val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 1L)
