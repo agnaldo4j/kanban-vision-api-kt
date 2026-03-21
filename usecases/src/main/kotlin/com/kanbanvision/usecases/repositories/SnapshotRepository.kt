@@ -9,9 +9,9 @@ interface SnapshotRepository {
     suspend fun save(snapshot: DailySnapshot): Either<DomainError, DailySnapshot>
 
     suspend fun findByDay(
-        scenarioId: String,
+        simulationId: String,
         day: SimulationDay,
     ): Either<DomainError, DailySnapshot?>
 
-    suspend fun findAllByScenario(scenarioId: String): Either<DomainError, List<DailySnapshot>>
+    suspend fun findAllBySimulation(simulationId: String): Either<DomainError, List<DailySnapshot>>
 }

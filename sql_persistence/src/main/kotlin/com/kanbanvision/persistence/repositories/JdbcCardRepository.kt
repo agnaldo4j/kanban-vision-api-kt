@@ -62,7 +62,7 @@ class JdbcCardRepository : CardRepository {
                                 stmt.setString(COL_TITLE, card.title)
                                 stmt.setString(COL_DESCRIPTION, card.description)
                                 stmt.setInt(COL_POSITION, card.position)
-                                stmt.setLong(COL_CREATED_AT, card.createdAt.toEpochMilli())
+                                stmt.setLong(COL_CREATED_AT, card.audit.createdAt.toEpochMilli())
                                 stmt.executeUpdate()
                             }
                         conn.commit()

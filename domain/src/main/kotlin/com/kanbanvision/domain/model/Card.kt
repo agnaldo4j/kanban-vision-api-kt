@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 
 data class Card(
-    val id: String = UUID.randomUUID().toString(),
-    val stepId: String = "",
+    override val id: String = UUID.randomUUID().toString(),
+    val stepId: String,
     val title: String,
     val description: String = "",
     val position: Int = 0,
@@ -20,10 +20,11 @@ data class Card(
     val remainingDevelopmentEffort: Int = developmentEffort,
     val remainingTestEffort: Int = testEffort,
     val remainingDeployEffort: Int = deployEffort,
-    val audit: Audit = Audit(),
-) {
+    override val audit: Audit = Audit(),
+) : Domain {
     init {
         require(id.isNotBlank()) { "Card id must not be blank" }
+        require(stepId.isNotBlank()) { "Card stepId must not be blank" }
         require(title.isNotBlank()) { "Card title must not be blank" }
         require(position >= 0) { "Card position must be non-negative" }
         require(agingDays >= 0) { "Card agingDays must be non-negative" }
@@ -38,11 +39,6 @@ data class Card(
         require(remainingTestEffort in 0..testEffort) { "remainingTestEffort must be between 0 and testEffort" }
         require(remainingDeployEffort in 0..deployEffort) { "remainingDeployEffort must be between 0 and deployEffort" }
     }
-
-    val createdDate get() = audit.createdAt
-    val updatedDate get() = audit.updatedAt
-    val deletedDate get() = audit.deletedAt
-    val createdAt get() = audit.createdAt
 
     companion object {
         fun create(
@@ -61,18 +57,6 @@ data class Card(
                 position = position,
             )
         }
-
-        fun createSimulation(
-            title: String,
-            serviceClass: ServiceClass = ServiceClass.STANDARD,
-        ): Card =
-            Card(
-                id = UUID.randomUUID().toString(),
-                title = title,
-                serviceClass = serviceClass,
-                state = CardState.TODO,
-                agingDays = 0,
-            )
     }
 
     fun moveTo(
@@ -120,16 +104,19 @@ data class Card(
                     remainingAnalysisEffort = (remainingAnalysisEffort - points).coerceAtLeast(0),
                     audit = audit.touch(now),
                 )
+
             AbilityName.DEVELOPER ->
                 copy(
                     remainingDevelopmentEffort = (remainingDevelopmentEffort - points).coerceAtLeast(0),
                     audit = audit.touch(now),
                 )
+
             AbilityName.TESTER ->
                 copy(
                     remainingTestEffort = (remainingTestEffort - points).coerceAtLeast(0),
                     audit = audit.touch(now),
                 )
+
             AbilityName.DEPLOYER ->
                 copy(
                     remainingDeployEffort = (remainingDeployEffort - points).coerceAtLeast(0),

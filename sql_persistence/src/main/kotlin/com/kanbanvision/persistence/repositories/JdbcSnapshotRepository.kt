@@ -16,9 +16,11 @@ class JdbcSnapshotRepository : SnapshotRepository {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private companion object {
-        const val COL_SCENARIO_ID = 1
+        const val COL_SIMULATION_ID = 1
         const val COL_DAY = 2
         const val COL_JSON = 3
+        const val PARAM_SIMULATION_ID = 1
+        const val PARAM_DAY = 2
     }
 
     private fun toPersistenceError(e: Throwable): DomainError {
@@ -38,12 +40,12 @@ class JdbcSnapshotRepository : SnapshotRepository {
                         conn
                             .prepareStatement(
                                 """
-                                INSERT INTO daily_snapshots (scenario_id, day, snapshot_json)
+                                INSERT INTO daily_snapshots (simulation_id, day, snapshot_json)
                                 VALUES (?, ?, ?)
-                                ON CONFLICT (scenario_id, day) DO UPDATE SET snapshot_json = EXCLUDED.snapshot_json
+                                ON CONFLICT (simulation_id, day) DO UPDATE SET snapshot_json = EXCLUDED.snapshot_json
                                 """.trimIndent(),
                             ).use { stmt ->
-                                stmt.setString(COL_SCENARIO_ID, snapshot.scenarioId)
+                                stmt.setString(COL_SIMULATION_ID, snapshot.simulationId)
                                 stmt.setInt(COL_DAY, snapshot.day.value)
                                 stmt.setString(COL_JSON, json)
                                 stmt.executeUpdate()
@@ -55,7 +57,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
         }
 
     override suspend fun findByDay(
-        scenarioId: String,
+        simulationId: String,
         day: SimulationDay,
     ): Either<DomainError, DailySnapshot?> =
         query {
@@ -64,10 +66,10 @@ class JdbcSnapshotRepository : SnapshotRepository {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT snapshot_json FROM daily_snapshots WHERE scenario_id = ? AND day = ?",
+                                "SELECT snapshot_json FROM daily_snapshots WHERE simulation_id = ? AND day = ?",
                             ).use { stmt ->
-                                stmt.setString(1, scenarioId)
-                                stmt.setInt(2, day.value)
+                                stmt.setString(PARAM_SIMULATION_ID, simulationId)
+                                stmt.setInt(PARAM_DAY, day.value)
                                 stmt.executeQuery().use { rs ->
                                     if (rs.next()) DailySnapshotSerializer.decode(rs.getString("snapshot_json")) else null
                                 }
@@ -76,16 +78,16 @@ class JdbcSnapshotRepository : SnapshotRepository {
                 }.mapLeft(::toPersistenceError)
         }
 
-    override suspend fun findAllByScenario(scenarioId: String): Either<DomainError, List<DailySnapshot>> =
+    override suspend fun findAllBySimulation(simulationId: String): Either<DomainError, List<DailySnapshot>> =
         query {
             Either
                 .catch {
                     DatabaseFactory.dataSource.connection.use { conn ->
                         conn
                             .prepareStatement(
-                                "SELECT snapshot_json FROM daily_snapshots WHERE scenario_id = ? ORDER BY day",
+                                "SELECT snapshot_json FROM daily_snapshots WHERE simulation_id = ? ORDER BY day",
                             ).use { stmt ->
-                                stmt.setString(1, scenarioId)
+                                stmt.setString(PARAM_SIMULATION_ID, simulationId)
                                 stmt.executeQuery().use { rs ->
                                     buildList {
                                         while (rs.next()) add(DailySnapshotSerializer.decode(rs.getString("snapshot_json")))

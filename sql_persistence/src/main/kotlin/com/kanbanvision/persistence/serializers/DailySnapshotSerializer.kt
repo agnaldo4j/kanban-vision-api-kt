@@ -11,7 +11,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Serializable
-private data class FlowMetricsSurrogate(
+private data class SnapshotFlowMetricsSurrogate(
+    val id: String,
     val throughput: Int,
     val wipCount: Int,
     val blockedCount: Int,
@@ -19,21 +20,21 @@ private data class FlowMetricsSurrogate(
 )
 
 @Serializable
-private data class MovementSurrogate(
+private data class SnapshotMovementSurrogate(
+    val id: String,
     val type: String,
-    val cardId: String? = null,
-    // Backward compatibility for persisted JSON from previous versions.
-    val workItemId: String? = null,
+    val cardId: String,
     val day: Int,
     val reason: String,
 )
 
 @Serializable
-private data class DailySnapshotSurrogate(
-    val scenarioId: String,
+private data class SnapshotDailySnapshotSurrogate(
+    val id: String,
+    val simulationId: String,
     val day: Int,
-    val metrics: FlowMetricsSurrogate,
-    val movements: List<MovementSurrogate>,
+    val metrics: SnapshotFlowMetricsSurrogate,
+    val movements: List<SnapshotMovementSurrogate>,
 )
 
 internal object DailySnapshotSerializer {
@@ -41,34 +42,58 @@ internal object DailySnapshotSerializer {
 
     fun encode(snapshot: DailySnapshot): String = json.encodeToString(snapshot.toSurrogate())
 
-    fun decode(raw: String): DailySnapshot = json.decodeFromString<DailySnapshotSurrogate>(raw).toDomain()
+    fun decode(raw: String): DailySnapshot = json.decodeFromString<SnapshotDailySnapshotSurrogate>(raw).toDomain()
 
     private fun DailySnapshot.toSurrogate() =
-        DailySnapshotSurrogate(
-            scenarioId = scenarioId,
+        SnapshotDailySnapshotSurrogate(
+            id = id,
+            simulationId = simulationId,
             day = day.value,
             metrics = metrics.toSurrogate(),
             movements = movements.map { it.toSurrogate() },
         )
 
-    private fun FlowMetrics.toSurrogate() = FlowMetricsSurrogate(throughput, wipCount, blockedCount, avgAgingDays)
+    private fun FlowMetrics.toSurrogate() =
+        SnapshotFlowMetricsSurrogate(
+            id = id,
+            throughput = throughput,
+            wipCount = wipCount,
+            blockedCount = blockedCount,
+            avgAgingDays = avgAgingDays,
+        )
 
-    private fun Movement.toSurrogate() = MovementSurrogate(type = type.name, cardId = cardId, day = day.value, reason = reason)
+    private fun Movement.toSurrogate() =
+        SnapshotMovementSurrogate(
+            id = id,
+            type = type.name,
+            cardId = cardId,
+            day = day.value,
+            reason = reason,
+        )
 
-    private fun DailySnapshotSurrogate.toDomain() =
+    private fun SnapshotDailySnapshotSurrogate.toDomain() =
         DailySnapshot(
-            scenarioId = scenarioId,
+            id = id,
+            simulationId = simulationId,
             day = SimulationDay(day),
             metrics = metrics.toDomain(),
             movements = movements.map { it.toDomain() },
         )
 
-    private fun FlowMetricsSurrogate.toDomain() = FlowMetrics(throughput, wipCount, blockedCount, avgAgingDays)
+    private fun SnapshotFlowMetricsSurrogate.toDomain() =
+        FlowMetrics(
+            id = id,
+            throughput = throughput,
+            wipCount = wipCount,
+            blockedCount = blockedCount,
+            avgAgingDays = avgAgingDays,
+        )
 
-    private fun MovementSurrogate.toDomain() =
+    private fun SnapshotMovementSurrogate.toDomain() =
         Movement(
+            id = id,
             type = MovementType.valueOf(type),
-            cardId = cardId ?: workItemId ?: error("Movement cardId/workItemId is missing"),
+            cardId = cardId,
             day = SimulationDay(day),
             reason = reason,
         )

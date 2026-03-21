@@ -3,26 +3,36 @@ package com.kanbanvision.domain.model
 import java.util.UUID
 
 data class Scenario(
-    val id: String,
-    val organizationId: String,
-    val config: ScenarioConfig,
-    val audit: Audit = Audit(),
-) {
-    /**
-     * A simulation scenario represents a specific Kanban board context.
-     * We currently bind it 1:1 to the scenario identifier.
-     */
-    val boardId: String get() = id
-
+    override val id: String,
+    val name: String,
+    val rules: ScenarioRules,
+    val board: Board,
+    val decisions: List<Decision> = emptyList(),
+    val history: List<DailySnapshot> = emptyList(),
+    override val audit: Audit = Audit(),
+) : Domain {
     init {
         require(id.isNotBlank()) { "Scenario id must not be blank" }
-        require(organizationId.isNotBlank()) { "Scenario organizationId must not be blank" }
+        require(name.isNotBlank()) { "Scenario name must not be blank" }
     }
 
     companion object {
         fun create(
-            organizationId: String,
-            config: ScenarioConfig,
-        ): Scenario = Scenario(id = UUID.randomUUID().toString(), organizationId = organizationId, config = config)
+            name: String,
+            rules: ScenarioRules,
+            board: Board = Board.create(name = "Main Board"),
+        ): Scenario {
+            require(name.isNotBlank()) { "Scenario name must not be blank" }
+            return Scenario(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                rules = rules,
+                board = board,
+            )
+        }
     }
+
+    fun appendDecision(decision: Decision): Scenario = copy(decisions = decisions + decision)
+
+    fun appendSnapshot(snapshot: DailySnapshot): Scenario = copy(history = history + snapshot)
 }

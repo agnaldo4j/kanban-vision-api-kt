@@ -1,14 +1,14 @@
 package com.kanbanvision.domain.model
 
-data class PolicySet(
-    val wipLimit: Int,
-    val audit: Audit = Audit(),
-) {
-    init {
-        require(wipLimit > 0) { "WIP limit must be greater than zero" }
-    }
+import java.util.UUID
 
-    companion object {
-        fun from(config: ScenarioConfig): PolicySet = PolicySet(wipLimit = config.wipLimit)
+data class PolicySet(
+    override val id: String = UUID.randomUUID().toString(),
+    val wipLimit: Int,
+    override val audit: Audit = Audit(),
+) : Domain {
+    init {
+        require(id.isNotBlank()) { "PolicySet id must not be blank" }
+        require(wipLimit > 0) { "WIP limit must be greater than zero" }
     }
 }

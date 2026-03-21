@@ -1,13 +1,17 @@
 package com.kanbanvision.domain.model
 
+import java.util.UUID
+
 data class DailySnapshot(
-    val scenarioId: String,
+    override val id: String = UUID.randomUUID().toString(),
+    val simulationId: String,
     val day: SimulationDay,
     val metrics: FlowMetrics,
     val movements: List<Movement>,
-    val audit: Audit = Audit(),
-) {
+    override val audit: Audit = Audit(),
+) : Domain {
     init {
-        require(scenarioId.isNotBlank()) { "DailySnapshot scenarioId must not be blank" }
+        require(id.isNotBlank()) { "DailySnapshot id must not be blank" }
+        require(simulationId.isNotBlank()) { "DailySnapshot simulationId must not be blank" }
     }
 }

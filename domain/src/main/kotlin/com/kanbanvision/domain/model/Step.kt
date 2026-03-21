@@ -3,29 +3,29 @@ package com.kanbanvision.domain.model
 import java.util.UUID
 
 data class Step(
-    val id: String = UUID.randomUUID().toString(),
-    val boardId: String = UUID.randomUUID().toString(),
+    override val id: String = UUID.randomUUID().toString(),
+    val boardId: String,
     val name: String,
     val position: Int = 0,
     val requiredAbility: AbilityName,
     val cards: List<Card> = emptyList(),
-    val audit: Audit = Audit(),
-) {
+    val workers: List<Worker> = emptyList(),
+    override val audit: Audit = Audit(),
+) : Domain {
     data class ExecutionResult(
         val updatedCard: Card,
         val consumedEffort: Int,
         val isStepCompleted: Boolean,
     )
 
-    val createdDate get() = audit.createdAt
-    val updatedDate get() = audit.updatedAt
-    val deletedDate get() = audit.deletedAt
-
     init {
         require(id.isNotBlank()) { "Step id must not be blank" }
         require(boardId.isNotBlank()) { "Step boardId must not be blank" }
         require(name.isNotBlank()) { "Step name must not be blank" }
         require(position >= 0) { "Step position must be non-negative" }
+        require(workers.all { it.hasAbility(requiredAbility) }) {
+            "All workers assigned to step '$name' must have required ability $requiredAbility"
+        }
     }
 
     companion object {
@@ -35,6 +35,7 @@ data class Step(
             position: Int,
             requiredAbility: AbilityName,
         ): Step {
+            require(boardId.isNotBlank()) { "Step boardId must not be blank" }
             require(name.isNotBlank()) { "Step name must not be blank" }
             require(position >= 0) { "Step position must be non-negative" }
             return Step(
@@ -49,42 +50,25 @@ data class Step(
 
     fun canAssign(worker: Worker): Boolean = worker.hasAbility(requiredAbility)
 
-    fun ensureCanAssign(worker: Worker) {
-        require(worker.hasAbility(requiredAbility)) {
+    fun assignWorker(worker: Worker): Step {
+        require(canAssign(worker)) {
             "Worker '${worker.name}' cannot be assigned to step '$name' (required ability: $requiredAbility)"
         }
+        require(workers.none { it.id == worker.id }) { "Worker '${worker.name}' is already assigned to step '$name'" }
+        return copy(workers = workers + worker)
     }
 
-    fun assignWorker(
-        worker: Worker,
-        currentAssignments: Map<Worker, String>,
-    ): Map<Worker, String> {
-        ensureCanAssign(worker)
-        val assignedStepId = currentAssignments[worker]
-        require(assignedStepId == null || assignedStepId == id) {
-            "Worker '${worker.name}' is already assigned to another step ($assignedStepId)"
-        }
-        return currentAssignments + (worker to id)
-    }
-
-    fun assignWorkerByWorkerId(
-        worker: Worker,
-        currentAssignments: Map<String, String>,
-    ): Map<String, String> {
-        ensureCanAssign(worker)
-        val assignedStepId = currentAssignments[worker.id]
-        require(assignedStepId == null || assignedStepId == id) {
-            "Worker '${worker.name}' is already assigned to another step ($assignedStepId)"
-        }
-        return currentAssignments + (worker.id to id)
-    }
+    fun unassignWorker(workerId: String): Step = copy(workers = workers.filterNot { it.id == workerId })
 
     fun executeCard(
         worker: Worker,
         card: Card,
         dailyCapacities: Map<AbilityName, Int>,
     ): ExecutionResult {
-        ensureCanAssign(worker)
+        require(canAssign(worker)) {
+            "Worker '${worker.name}' cannot execute step '$name' (required ability: $requiredAbility)"
+        }
+
         val remaining = card.remainingEffortFor(requiredAbility)
         if (remaining == 0) {
             return ExecutionResult(updatedCard = card, consumedEffort = 0, isStepCompleted = true)

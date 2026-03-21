@@ -1,18 +1,18 @@
 package com.kanbanvision.usecases.ports
 
 import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationResult
-import com.kanbanvision.domain.model.SimulationState
 
 /**
- * Port for the simulation engine. Defined in `usecases/` so that [RunDayUseCase] depends on an
- * abstraction rather than the concrete [com.kanbanvision.domain.simulation.SimulationEngine] object,
- * enabling MockK-based unit tests and future span injection without touching domain code.
+ * Boundary that executes one simulation day from the use case layer.
+ *
+ * The domain model stays independent from execution infrastructure,
+ * while adapters can provide different engine implementations.
  */
 interface SimulationEnginePort {
     fun runDay(
-        scenarioId: String,
-        state: SimulationState,
+        simulation: Simulation,
         decisions: List<Decision>,
         seed: Long,
     ): SimulationResult
