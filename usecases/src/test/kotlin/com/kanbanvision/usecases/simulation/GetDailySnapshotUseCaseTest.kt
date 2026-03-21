@@ -8,7 +8,7 @@ import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.confirmVerified
+import io.mockk.Called
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -52,8 +52,7 @@ class GetDailySnapshotUseCaseTest {
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
-            coVerify(exactly = 0) { snapshotRepository.findByDay(any(), SimulationDay(1)) }
-            confirmVerified(snapshotRepository)
+            coVerify { snapshotRepository wasNot Called }
         }
 
     @Test
