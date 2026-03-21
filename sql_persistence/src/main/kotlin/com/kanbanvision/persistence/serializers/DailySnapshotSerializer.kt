@@ -4,7 +4,9 @@ import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.ScenarioRef
 import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationRef
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -32,6 +34,7 @@ private data class SnapshotMovementSurrogate(
 private data class SnapshotDailySnapshotSurrogate(
     val id: String,
     val simulationId: String,
+    val scenarioId: String,
     val day: Int,
     val metrics: SnapshotFlowMetricsSurrogate,
     val movements: List<SnapshotMovementSurrogate>,
@@ -47,7 +50,8 @@ internal object DailySnapshotSerializer {
     private fun DailySnapshot.toSurrogate() =
         SnapshotDailySnapshotSurrogate(
             id = id,
-            simulationId = simulationId,
+            simulationId = simulation.id,
+            scenarioId = scenario.id,
             day = day.value,
             metrics = metrics.toSurrogate(),
             movements = movements.map { it.toSurrogate() },
@@ -74,7 +78,8 @@ internal object DailySnapshotSerializer {
     private fun SnapshotDailySnapshotSurrogate.toDomain() =
         DailySnapshot(
             id = id,
-            simulationId = simulationId,
+            simulation = SimulationRef(simulationId),
+            scenario = ScenarioRef(scenarioId),
             day = SimulationDay(day),
             metrics = metrics.toDomain(),
             movements = movements.map { it.toDomain() },

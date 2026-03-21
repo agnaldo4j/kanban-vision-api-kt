@@ -4,7 +4,7 @@ import java.util.UUID
 
 data class Step(
     override val id: String = UUID.randomUUID().toString(),
-    val boardId: String,
+    val board: BoardRef,
     val name: String,
     val position: Int = 0,
     val requiredAbility: AbilityName,
@@ -20,7 +20,6 @@ data class Step(
 
     init {
         require(id.isNotBlank()) { "Step id must not be blank" }
-        require(boardId.isNotBlank()) { "Step boardId must not be blank" }
         require(name.isNotBlank()) { "Step name must not be blank" }
         require(position >= 0) { "Step position must be non-negative" }
         require(workers.all { it.hasAbility(requiredAbility) }) {
@@ -28,24 +27,53 @@ data class Step(
         }
     }
 
+    val boardId: String
+        get() = board.id
+
+    constructor(
+        id: String = UUID.randomUUID().toString(),
+        boardId: String,
+        name: String,
+        position: Int = 0,
+        requiredAbility: AbilityName,
+        cards: List<Card> = emptyList(),
+        workers: List<Worker> = emptyList(),
+        audit: Audit = Audit(),
+    ) : this(
+        id = id,
+        board = BoardRef(boardId),
+        name = name,
+        position = position,
+        requiredAbility = requiredAbility,
+        cards = cards,
+        workers = workers,
+        audit = audit,
+    )
+
     companion object {
         fun create(
-            boardId: String,
+            board: BoardRef,
             name: String,
             position: Int,
             requiredAbility: AbilityName,
         ): Step {
-            require(boardId.isNotBlank()) { "Step boardId must not be blank" }
             require(name.isNotBlank()) { "Step name must not be blank" }
             require(position >= 0) { "Step position must be non-negative" }
             return Step(
                 id = UUID.randomUUID().toString(),
-                boardId = boardId,
+                board = board,
                 name = name,
                 position = position,
                 requiredAbility = requiredAbility,
             )
         }
+
+        fun create(
+            boardId: String,
+            name: String,
+            position: Int,
+            requiredAbility: AbilityName,
+        ): Step = create(board = BoardRef(boardId), name = name, position = position, requiredAbility = requiredAbility)
     }
 
     fun canAssign(worker: Worker): Boolean = worker.hasAbility(requiredAbility)

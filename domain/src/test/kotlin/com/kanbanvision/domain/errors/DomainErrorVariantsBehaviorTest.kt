@@ -2,6 +2,7 @@ package com.kanbanvision.domain.errors
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class DomainErrorVariantsBehaviorTest {
@@ -23,5 +24,20 @@ class DomainErrorVariantsBehaviorTest {
         assertEquals("sim-1", simulation.id)
         assertEquals("db", persistence.message)
         assertEquals("invalid", invalidDecision.reason)
+    }
+
+    @Test
+    fun `given validation error variants when building then message list contracts are preserved`() {
+        val fromMessages = DomainError.ValidationError(messages = listOf("a", "b"))
+        val fromSingleMessage = DomainError.ValidationError(message = "single")
+
+        assertEquals(listOf("a", "b"), fromMessages.messages)
+        assertEquals("a; b", fromMessages.message)
+        assertEquals(listOf("single"), fromSingleMessage.messages)
+        assertEquals("single", fromSingleMessage.message)
+
+        assertFailsWith<IllegalArgumentException> {
+            DomainError.ValidationError(messages = emptyList())
+        }
     }
 }

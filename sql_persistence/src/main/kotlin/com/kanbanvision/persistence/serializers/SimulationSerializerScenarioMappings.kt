@@ -2,6 +2,7 @@ package com.kanbanvision.persistence.serializers
 
 import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.BoardRef
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.PolicySet
@@ -9,6 +10,7 @@ import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.ScenarioRules
 import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.Step
+import com.kanbanvision.domain.model.StepRef
 
 internal fun Scenario.toSurrogate() =
     ScenarioSurrogate(
@@ -59,7 +61,7 @@ private fun BoardSurrogate.toDomain() = Board(id = id, name = name, steps = step
 private fun Step.toSurrogate() =
     StepSurrogate(
         id = id,
-        boardId = boardId,
+        boardId = board.id,
         name = name,
         position = position,
         requiredAbility = requiredAbility.name,
@@ -70,7 +72,7 @@ private fun Step.toSurrogate() =
 private fun StepSurrogate.toDomain() =
     Step(
         id = id,
-        boardId = boardId,
+        board = BoardRef(boardId),
         name = name,
         position = position,
         requiredAbility = AbilityName.valueOf(requiredAbility),
@@ -81,7 +83,7 @@ private fun StepSurrogate.toDomain() =
 private fun Card.toSurrogate() =
     CardSurrogate(
         id = id,
-        stepId = stepId,
+        stepId = step.id,
         title = title,
         description = description,
         position = position,
@@ -101,7 +103,7 @@ private fun Card.toSurrogate() =
 private fun CardSurrogate.toDomain() =
     Card(
         id = id,
-        stepId = stepId,
+        step = StepRef(stepId),
         title = title,
         description = description,
         position = position,

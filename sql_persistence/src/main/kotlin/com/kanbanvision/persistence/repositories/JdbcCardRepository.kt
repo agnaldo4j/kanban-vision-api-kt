@@ -6,6 +6,7 @@ import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Card
+import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.CardRepository
 import kotlinx.coroutines.CancellationException
@@ -58,7 +59,7 @@ class JdbcCardRepository : CardRepository {
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, card.id)
-                                stmt.setString(COL_STEP_ID, card.stepId)
+                                stmt.setString(COL_STEP_ID, card.step.id)
                                 stmt.setString(COL_TITLE, card.title)
                                 stmt.setString(COL_DESCRIPTION, card.description)
                                 stmt.setInt(COL_POSITION, card.position)
@@ -171,7 +172,7 @@ class JdbcCardRepository : CardRepository {
     private fun java.sql.ResultSet.toCard() =
         Card(
             id = getString("id"),
-            stepId = getString("step_id"),
+            step = StepRef(getString("step_id")),
             title = getString("title"),
             description = getString("description"),
             position = getInt("position"),
