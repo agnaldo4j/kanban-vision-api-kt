@@ -6,7 +6,9 @@ import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.domain.model.MovementType
+import com.kanbanvision.domain.model.ScenarioRef
 import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationRef
 
 internal fun Decision.toSurrogate() = DecisionSurrogate(id = id, type = type.name, payload = payload)
 
@@ -15,7 +17,8 @@ internal fun DecisionSurrogate.toDomain() = Decision(id = id, type = DecisionTyp
 internal fun DailySnapshot.toSurrogate() =
     DailySnapshotSurrogate(
         id = id,
-        simulationId = simulationId,
+        simulationId = simulation.id,
+        scenarioId = scenario.id,
         day = day.value,
         metrics = metrics.toSurrogate(),
         movements = movements.map { it.toSurrogate() },
@@ -24,7 +27,8 @@ internal fun DailySnapshot.toSurrogate() =
 internal fun DailySnapshotSurrogate.toDomain() =
     DailySnapshot(
         id = id,
-        simulationId = simulationId,
+        simulation = SimulationRef(simulationId),
+        scenario = ScenarioRef(scenarioId),
         day = SimulationDay(day),
         metrics = metrics.toDomain(),
         movements = movements.map { it.toDomain() },

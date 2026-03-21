@@ -5,7 +5,7 @@ import java.util.UUID
 
 data class Card(
     override val id: String = UUID.randomUUID().toString(),
-    val stepId: String,
+    val step: StepRef,
     val title: String,
     val description: String = "",
     val position: Int = 0,
@@ -24,7 +24,6 @@ data class Card(
 ) : Domain {
     init {
         require(id.isNotBlank()) { "Card id must not be blank" }
-        require(stepId.isNotBlank()) { "Card stepId must not be blank" }
         require(title.isNotBlank()) { "Card title must not be blank" }
         require(position >= 0) { "Card position must be non-negative" }
         require(agingDays >= 0) { "Card agingDays must be non-negative" }
@@ -40,33 +39,84 @@ data class Card(
         require(remainingDeployEffort in 0..deployEffort) { "remainingDeployEffort must be between 0 and deployEffort" }
     }
 
+    val stepId: String
+        get() = step.id
+
+    constructor(
+        id: String = UUID.randomUUID().toString(),
+        stepId: String,
+        title: String,
+        description: String = "",
+        position: Int = 0,
+        serviceClass: ServiceClass = ServiceClass.STANDARD,
+        state: CardState = CardState.TODO,
+        agingDays: Int = 0,
+        analysisEffort: Int = 0,
+        developmentEffort: Int = 0,
+        testEffort: Int = 0,
+        deployEffort: Int = 0,
+        remainingAnalysisEffort: Int = analysisEffort,
+        remainingDevelopmentEffort: Int = developmentEffort,
+        remainingTestEffort: Int = testEffort,
+        remainingDeployEffort: Int = deployEffort,
+        audit: Audit = Audit(),
+    ) : this(
+        id = id,
+        step = StepRef(stepId),
+        title = title,
+        description = description,
+        position = position,
+        serviceClass = serviceClass,
+        state = state,
+        agingDays = agingDays,
+        analysisEffort = analysisEffort,
+        developmentEffort = developmentEffort,
+        testEffort = testEffort,
+        deployEffort = deployEffort,
+        remainingAnalysisEffort = remainingAnalysisEffort,
+        remainingDevelopmentEffort = remainingDevelopmentEffort,
+        remainingTestEffort = remainingTestEffort,
+        remainingDeployEffort = remainingDeployEffort,
+        audit = audit,
+    )
+
     companion object {
         fun create(
-            stepId: String,
+            step: StepRef,
             title: String,
             description: String = "",
             position: Int,
         ): Card {
-            require(stepId.isNotBlank()) { "Card stepId must not be blank" }
             require(title.isNotBlank()) { "Card title must not be blank" }
             return Card(
                 id = UUID.randomUUID().toString(),
-                stepId = stepId,
+                step = step,
                 title = title,
                 description = description,
                 position = position,
             )
         }
+
+        fun create(
+            stepId: String,
+            title: String,
+            description: String = "",
+            position: Int,
+        ): Card = create(step = StepRef(stepId), title = title, description = description, position = position)
+    }
+
+    fun moveTo(
+        targetStep: StepRef,
+        newPosition: Int,
+    ): Card {
+        require(newPosition >= 0) { "Card target position must be non-negative" }
+        return copy(step = targetStep, position = newPosition)
     }
 
     fun moveTo(
         targetStepId: String,
         newPosition: Int,
-    ): Card {
-        require(targetStepId.isNotBlank()) { "Card target stepId must not be blank" }
-        require(newPosition >= 0) { "Card target position must be non-negative" }
-        return copy(stepId = targetStepId, position = newPosition)
-    }
+    ): Card = moveTo(targetStep = StepRef(targetStepId), newPosition = newPosition)
 
     fun advance(): Card =
         when (state) {

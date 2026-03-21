@@ -5,6 +5,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.AbilityName
+import com.kanbanvision.domain.model.BoardRef
 import com.kanbanvision.domain.model.Step
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.repositories.StepRepository
@@ -49,7 +50,7 @@ class JdbcStepRepository : StepRepository {
                                 """.trimIndent(),
                             ).use { stmt ->
                                 stmt.setString(COL_ID, step.id)
-                                stmt.setString(COL_BOARD_ID, step.boardId)
+                                stmt.setString(COL_BOARD_ID, step.board.id)
                                 stmt.setString(COL_NAME, step.name)
                                 stmt.setInt(COL_POSITION, step.position)
                                 stmt.setString(COL_REQUIRED_ABILITY, step.requiredAbility.name)
@@ -100,7 +101,7 @@ class JdbcStepRepository : StepRepository {
     private fun java.sql.ResultSet.toStep() =
         Step(
             id = getString("id"),
-            boardId = getString("board_id"),
+            board = BoardRef(getString("board_id")),
             name = getString("name"),
             position = getInt("position"),
             requiredAbility = AbilityName.valueOf(getString("required_ability")),

@@ -123,6 +123,7 @@ internal data class MovementSurrogate(
 internal data class DailySnapshotSurrogate(
     val id: String,
     val simulationId: String,
+    val scenarioId: String,
     val day: Int,
     val metrics: FlowMetricsSurrogate,
     val movements: List<MovementSurrogate>,

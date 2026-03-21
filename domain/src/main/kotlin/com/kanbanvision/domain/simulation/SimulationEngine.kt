@@ -15,6 +15,7 @@ import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationResult
 import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.Worker
+import com.kanbanvision.domain.model.toRef
 import kotlin.random.Random
 
 object SimulationEngine {
@@ -35,7 +36,8 @@ object SimulationEngine {
 
         val snapshot =
             DailySnapshot(
-                simulationId = simulation.id,
+                simulation = simulation.toRef(),
+                scenario = scenario.toRef(),
                 day = simulation.currentDay,
                 metrics = calculateMetrics(afterAging, ctx.movements),
                 movements = ctx.movements.toList(),
@@ -131,8 +133,8 @@ object SimulationEngine {
             payload["serviceClass"]
                 ?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() }
                 ?: ServiceClass.STANDARD
-        val position = current.count { it.stepId == firstStep.id }
-        current.add(Card.create(stepId = firstStep.id, title = title, position = position).copy(serviceClass = serviceClass))
+        val position = current.count { it.step.id == firstStep.id }
+        current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
     }
 
     private fun autoAdvance(
@@ -182,7 +184,7 @@ object SimulationEngine {
 
         val targetIndex =
             current.indexOfFirst { card ->
-                card.stepId == step.id &&
+                card.step.id == step.id &&
                     card.state == CardState.IN_PROGRESS &&
                     card.remainingEffortFor(step.requiredAbility) > 0
             }
@@ -239,7 +241,7 @@ private fun orderTodoByPriority(
 }
 
 private fun Board.withCards(cards: List<Card>): Board {
-    val cardsByStep = cards.groupBy { it.stepId }
+    val cardsByStep = cards.groupBy { it.step.id }
     val updatedSteps =
         steps.map { step ->
             val stepCards = cardsByStep[step.id].orEmpty().sortedBy { it.position }

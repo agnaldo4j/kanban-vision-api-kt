@@ -26,7 +26,7 @@ data class Board(
     ): Board {
         require(name.isNotBlank()) { "Step name must not be blank" }
         require(steps.none { it.name == name }) { "Step name '$name' already exists on this board" }
-        val newStep = Step.create(boardId = id, name = name, position = steps.size, requiredAbility = requiredAbility)
+        val newStep = Step.create(board = toRef(), name = name, position = steps.size, requiredAbility = requiredAbility)
         return copy(steps = steps + newStep)
     }
 
@@ -36,7 +36,7 @@ data class Board(
         description: String = "",
     ): Board {
         val target = steps.firstOrNull { it.id == stepId } ?: error("Step $stepId not found in board $id")
-        val newCard = Card.create(stepId = target.id, title = title, description = description, position = target.cards.size)
+        val newCard = Card.create(step = target.toRef(), title = title, description = description, position = target.cards.size)
         val updatedSteps =
             steps.map { step ->
                 if (step.id == stepId) step.copy(cards = step.cards + newCard) else step
