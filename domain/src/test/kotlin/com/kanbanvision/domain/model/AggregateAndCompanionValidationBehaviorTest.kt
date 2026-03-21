@@ -18,7 +18,7 @@ class AggregateAndCompanionValidationBehaviorTest {
         val board = Board.create(name = "Board").addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
 
         assertFailsWith<IllegalStateException> {
-            board.addCard(stepId = "missing", title = "Task")
+            board.addCard(step = StepRef("missing"), title = "Task")
         }
     }
 
@@ -58,7 +58,8 @@ class AggregateAndCompanionValidationBehaviorTest {
             )
         val snapshot =
             DailySnapshot(
-                simulationId = simulation.id,
+                simulation = SimulationRef(simulation.id),
+                scenario = ScenarioRef(scenario.id),
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0),
                 movements = emptyList(),
@@ -67,6 +68,6 @@ class AggregateAndCompanionValidationBehaviorTest {
         val result = SimulationResult(simulation = simulation, snapshot = snapshot)
 
         assertEquals(SimulationStatus.PAUSED, result.simulation.status)
-        assertEquals(simulation.id, result.snapshot.simulationId)
+        assertEquals(simulation.id, result.snapshot.simulation.id)
     }
 }

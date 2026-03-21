@@ -39,47 +39,6 @@ data class Card(
         require(remainingDeployEffort in 0..deployEffort) { "remainingDeployEffort must be between 0 and deployEffort" }
     }
 
-    val stepId: String
-        get() = step.id
-
-    constructor(
-        id: String = UUID.randomUUID().toString(),
-        stepId: String,
-        title: String,
-        description: String = "",
-        position: Int = 0,
-        serviceClass: ServiceClass = ServiceClass.STANDARD,
-        state: CardState = CardState.TODO,
-        agingDays: Int = 0,
-        analysisEffort: Int = 0,
-        developmentEffort: Int = 0,
-        testEffort: Int = 0,
-        deployEffort: Int = 0,
-        remainingAnalysisEffort: Int = analysisEffort,
-        remainingDevelopmentEffort: Int = developmentEffort,
-        remainingTestEffort: Int = testEffort,
-        remainingDeployEffort: Int = deployEffort,
-        audit: Audit = Audit(),
-    ) : this(
-        id = id,
-        step = StepRef(stepId),
-        title = title,
-        description = description,
-        position = position,
-        serviceClass = serviceClass,
-        state = state,
-        agingDays = agingDays,
-        analysisEffort = analysisEffort,
-        developmentEffort = developmentEffort,
-        testEffort = testEffort,
-        deployEffort = deployEffort,
-        remainingAnalysisEffort = remainingAnalysisEffort,
-        remainingDevelopmentEffort = remainingDevelopmentEffort,
-        remainingTestEffort = remainingTestEffort,
-        remainingDeployEffort = remainingDeployEffort,
-        audit = audit,
-    )
-
     companion object {
         fun create(
             step: StepRef,
@@ -96,13 +55,6 @@ data class Card(
                 position = position,
             )
         }
-
-        fun create(
-            stepId: String,
-            title: String,
-            description: String = "",
-            position: Int,
-        ): Card = create(step = StepRef(stepId), title = title, description = description, position = position)
     }
 
     fun moveTo(
@@ -112,11 +64,6 @@ data class Card(
         require(newPosition >= 0) { "Card target position must be non-negative" }
         return copy(step = targetStep, position = newPosition)
     }
-
-    fun moveTo(
-        targetStepId: String,
-        newPosition: Int,
-    ): Card = moveTo(targetStep = StepRef(targetStepId), newPosition = newPosition)
 
     fun advance(): Card =
         when (state) {

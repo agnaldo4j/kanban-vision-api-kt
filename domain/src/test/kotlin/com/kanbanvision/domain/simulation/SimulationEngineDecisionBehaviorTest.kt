@@ -11,6 +11,7 @@ import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.ScenarioRules
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationStatus
+import com.kanbanvision.domain.model.StepRef
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -84,7 +85,7 @@ class SimulationEngineDecisionBehaviorTest {
                 steps =
                     listOf(
                         step.copy(
-                            cards = listOf(Card(id = cardId, stepId = step.id, title = "Task", state = state)),
+                            cards = listOf(Card(id = cardId, step = StepRef(step.id), title = "Task", state = state)),
                         ),
                     ),
             )

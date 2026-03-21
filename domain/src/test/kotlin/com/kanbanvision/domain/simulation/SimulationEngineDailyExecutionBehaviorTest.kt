@@ -14,6 +14,7 @@ import com.kanbanvision.domain.model.Seniority
 import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationStatus
+import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.domain.model.Worker
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,7 +30,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
 
         assertEquals(simulation.currentDay.value + 1, result.simulation.currentDay.value)
         assertEquals(1, result.simulation.scenario.history.size)
-        assertEquals(simulation.id, result.snapshot.simulationId)
+        assertEquals(simulation.id, result.snapshot.simulation.id)
     }
 
     @Test
@@ -141,14 +142,14 @@ class SimulationEngineDailyExecutionBehaviorTest {
             steps =
                 board.steps.map { step ->
                     when (step.id) {
-                        stepIds.analysis -> step.copy(cards = listOf(Card(id = "analysis-card", stepId = step.id, title = "Spec")))
+                        stepIds.analysis -> step.copy(cards = listOf(Card(id = "analysis-card", step = StepRef(step.id), title = "Spec")))
                         stepIds.development ->
                             step.copy(
                                 cards =
                                     listOf(
                                         Card(
                                             id = "dev-card",
-                                            stepId = step.id,
+                                            step = StepRef(step.id),
                                             title = "Build",
                                             state = developmentCard.state,
                                             developmentEffort = developmentCard.effort,
@@ -181,8 +182,8 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val input = board.steps.first()
         val cards =
             listOf(
-                Card(id = "standard-card", stepId = input.id, title = "Std", serviceClass = ServiceClass.STANDARD),
-                Card(id = "expedite-card", stepId = input.id, title = "Exp", serviceClass = ServiceClass.EXPEDITE),
+                Card(id = "standard-card", step = StepRef(input.id), title = "Std", serviceClass = ServiceClass.STANDARD),
+                Card(id = "expedite-card", step = StepRef(input.id), title = "Exp", serviceClass = ServiceClass.EXPEDITE),
             )
 
         val boardWithCards = board.copy(steps = listOf(input.copy(cards = cards)))

@@ -138,7 +138,7 @@ class JdbcCardRepository : CardRepository {
                     WHERE id = ?
                     """.trimIndent(),
                 ).use { stmt ->
-                    stmt.setString(PARAM_STEP_ID, updated.stepId)
+                    stmt.setString(PARAM_STEP_ID, updated.step.id)
                     stmt.setString(PARAM_TITLE, updated.title)
                     stmt.setString(PARAM_DESCRIPTION, updated.description)
                     stmt.setInt(PARAM_POSITION, updated.position)

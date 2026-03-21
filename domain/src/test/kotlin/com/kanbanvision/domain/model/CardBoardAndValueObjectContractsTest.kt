@@ -11,7 +11,7 @@ class CardBoardAndValueObjectContractsTest {
     fun `given card when consuming effort for each ability then remaining effort is updated per ability`() {
         val card =
             Card(
-                stepId = "s-1",
+                step = StepRef("s-1"),
                 title = "Feature",
                 analysisEffort = 2,
                 developmentEffort = 3,
@@ -36,7 +36,7 @@ class CardBoardAndValueObjectContractsTest {
         val original =
             Card(
                 id = "card-1",
-                stepId = "step-1",
+                step = StepRef("step-1"),
                 title = "Task",
                 description = "desc",
                 position = 1,
@@ -67,7 +67,7 @@ class CardBoardAndValueObjectContractsTest {
         val analysis = board.steps.first { it.requiredAbility == AbilityName.PRODUCT_MANAGER }
         val development = board.steps.first { it.requiredAbility == AbilityName.DEVELOPER }
 
-        val updated = board.addCard(stepId = development.id, title = "Build", description = "impl")
+        val updated = board.addCard(step = StepRef(development.id), title = "Build", description = "impl")
 
         val updatedAnalysis = updated.steps.first { it.id == analysis.id }
         val updatedDevelopment = updated.steps.first { it.id == development.id }
@@ -85,7 +85,8 @@ class CardBoardAndValueObjectContractsTest {
         val snapshot =
             DailySnapshot(
                 id = "snap-1",
-                simulationId = "sim-1",
+                simulation = SimulationRef("sim-1"),
+                scenario = ScenarioRef("scn-1"),
                 day = SimulationDay(2),
                 metrics = flow,
                 movements = listOf(movement),

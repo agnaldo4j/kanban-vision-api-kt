@@ -19,7 +19,7 @@ class WorkerCapacityAndExecutionEligibilityBehaviorTest {
     fun `given step and worker abilities when checking execution eligibility then can execute mirrors ability match`() {
         val developer = Worker(name = "Dev", abilities = setOf(ability(AbilityName.DEVELOPER)))
         val tester = Worker(name = "Tester", abilities = setOf(ability(AbilityName.TESTER), ability(AbilityName.DEPLOYER)))
-        val devStep = Step.create(boardId = "b-1", name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+        val devStep = Step.create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
 
         assertTrue(developer.canExecute(devStep))
         assertFalse(tester.canExecute(devStep))

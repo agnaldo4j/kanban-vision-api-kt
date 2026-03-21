@@ -17,7 +17,8 @@ class DataClassContractsAndFactoryGuardsTest {
         val simulation = Simulation.create(name = "Sim", organization = Organization.create("Org"), scenario = scenario)
         val snapshot =
             DailySnapshot(
-                simulationId = simulation.id,
+                simulation = SimulationRef(simulation.id),
+                scenario = ScenarioRef(scenario.id),
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 1, wipCount = 1, blockedCount = 0, avgAgingDays = 1.0),
                 movements = listOf(Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(1), reason = "move")),
@@ -29,7 +30,7 @@ class DataClassContractsAndFactoryGuardsTest {
         assertEquals(scenario, sameScenario)
         assertEquals(scenario.hashCode(), sameScenario.hashCode())
         assertNotEquals(scenario, changedScenario)
-        assertEquals(simulation.id, snapshot.simulationId)
+        assertEquals(simulation.id, snapshot.simulation.id)
     }
 
     @Test
@@ -52,8 +53,8 @@ class DataClassContractsAndFactoryGuardsTest {
 
     @Test
     fun `given companion factories with invalid input when creating domain objects then validation guards trigger`() {
-        assertFailsWith<IllegalArgumentException> { Card.create(stepId = "", title = "Task", position = 0) }
-        assertFailsWith<IllegalArgumentException> { Card.create(stepId = "step-1", title = "", position = 0) }
+        assertFailsWith<IllegalArgumentException> { Card.create(step = StepRef(""), title = "Task", position = 0) }
+        assertFailsWith<IllegalArgumentException> { Card.create(step = StepRef("step-1"), title = "", position = 0) }
         assertFailsWith<IllegalArgumentException> {
             Scenario.create(name = "", rules = ScenarioRules.create(1, 1, 1L), board = Board.create("B"))
         }

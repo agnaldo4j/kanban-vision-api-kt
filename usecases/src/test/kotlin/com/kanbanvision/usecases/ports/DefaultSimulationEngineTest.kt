@@ -16,6 +16,6 @@ class DefaultSimulationEngineTest {
 
         assertEquals(2, result.simulation.currentDay.value)
         assertEquals(1, result.snapshot.day.value)
-        assertEquals(simulation.id, result.snapshot.simulationId)
+        assertEquals(simulation.id, result.snapshot.simulation.id)
     }
 }

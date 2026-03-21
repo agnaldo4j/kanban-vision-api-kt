@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.support
 import com.kanbanvision.domain.model.Ability
 import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.BoardRef
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.Decision
@@ -13,14 +14,17 @@ import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.PolicySet
 import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioRef
 import com.kanbanvision.domain.model.ScenarioRules
 import com.kanbanvision.domain.model.Seniority
 import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationRef
 import com.kanbanvision.domain.model.SimulationStatus
 import com.kanbanvision.domain.model.Squad
 import com.kanbanvision.domain.model.Step
+import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.domain.model.Tribe
 import com.kanbanvision.domain.model.Worker
 import com.kanbanvision.persistence.DatabaseConfig
@@ -202,7 +206,7 @@ internal object PersistenceFixtures {
         val step =
             Step(
                 id = "50000000-0000-0000-0000-000000000001",
-                boardId = "60000000-0000-0000-0000-000000000001",
+                board = BoardRef("60000000-0000-0000-0000-000000000001"),
                 name = "Development",
                 position = 1,
                 requiredAbility = AbilityName.DEVELOPER,
@@ -243,7 +247,7 @@ internal object PersistenceFixtures {
     ): Card =
         Card(
             id = id,
-            stepId = stepId,
+            step = StepRef(stepId),
             title = "Card 1",
             description = "desc",
             position = 0,
@@ -260,11 +264,13 @@ internal object PersistenceFixtures {
 
     fun snapshot(
         simulationId: String = "10000000-0000-0000-0000-000000000001",
+        scenarioId: String = "a0000000-0000-0000-0000-000000000001",
         day: Int = 2,
     ): DailySnapshot =
         DailySnapshot(
             id = "c0000000-0000-0000-0000-000000000001",
-            simulationId = simulationId,
+            simulation = SimulationRef(simulationId),
+            scenario = ScenarioRef(scenarioId),
             day = SimulationDay(day),
             metrics =
                 FlowMetrics(

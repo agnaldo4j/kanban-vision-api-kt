@@ -11,6 +11,7 @@ import com.kanbanvision.domain.model.ScenarioRules
 import com.kanbanvision.domain.model.Seniority
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationStatus
+import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.domain.model.Worker
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,7 +50,7 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
         val card =
             Card(
                 id = "card-1",
-                stepId = stepWithWorkers.id,
+                step = StepRef(stepWithWorkers.id),
                 title = "Task",
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 6,

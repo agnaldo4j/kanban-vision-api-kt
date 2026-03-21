@@ -42,7 +42,13 @@ class DecisionSnapshotAndMetricsBehaviorTest {
         val metrics = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0)
 
         assertFailsWith<IllegalArgumentException> {
-            DailySnapshot(simulationId = "", day = SimulationDay(1), metrics = metrics, movements = emptyList())
+            DailySnapshot(
+                simulation = SimulationRef(""),
+                scenario = ScenarioRef("scn-1"),
+                day = SimulationDay(1),
+                metrics = metrics,
+                movements = emptyList(),
+            )
         }
         assertFailsWith<IllegalArgumentException> {
             Movement(type = MovementType.MOVED, cardId = "", day = SimulationDay(1), reason = "invalid")

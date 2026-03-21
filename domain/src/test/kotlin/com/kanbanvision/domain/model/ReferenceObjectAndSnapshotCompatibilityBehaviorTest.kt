@@ -30,7 +30,7 @@ class ReferenceObjectAndSnapshotCompatibilityBehaviorTest {
     }
 
     @Test
-    fun `given snapshot constructors when using refs and compatibility ids then ids remain in sync`() {
+    fun `given snapshots built from refs when created then referenced identifiers remain consistent`() {
         val metrics = FlowMetrics(throughput = 2, wipCount = 3, blockedCount = 1, avgAgingDays = 1.5)
         val movement = Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(2), reason = "done")
 
@@ -44,15 +44,15 @@ class ReferenceObjectAndSnapshotCompatibilityBehaviorTest {
             )
         val fromIds =
             DailySnapshot(
-                simulationId = "sim-2",
-                scenarioId = "scn-2",
+                simulation = SimulationRef("sim-2"),
+                scenario = ScenarioRef("scn-2"),
                 day = SimulationDay(3),
                 metrics = metrics,
                 movements = emptyList(),
             )
 
-        assertEquals("sim-1", fromRefs.simulationId)
-        assertEquals("scn-1", fromRefs.scenarioId)
+        assertEquals("sim-1", fromRefs.simulation.id)
+        assertEquals("scn-1", fromRefs.scenario.id)
         assertEquals("sim-2", fromIds.simulation.id)
         assertEquals("scn-2", fromIds.scenario.id)
     }

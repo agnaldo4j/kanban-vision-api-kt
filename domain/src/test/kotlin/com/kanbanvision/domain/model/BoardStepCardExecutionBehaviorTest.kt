@@ -23,12 +23,13 @@ class BoardStepCardExecutionBehaviorTest {
         val board = Board.create(name = "Flow").addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
         val stepId = board.steps.first().id
 
-        val updated = board.addCard(stepId = stepId, title = "Build API", description = "Implement endpoint")
+        val updated = board.addCard(step = StepRef(stepId), title = "Build API", description = "Implement endpoint")
 
         val step = updated.steps.first()
+        val card = step.cards.first()
         assertEquals(1, step.cards.size)
-        assertEquals("Build API", step.cards.first().title)
-        assertEquals(stepId, step.cards.first().stepId)
+        assertEquals("Build API", card.title)
+        assertEquals(stepId, card.step.id)
     }
 
     @Test
@@ -36,11 +37,11 @@ class BoardStepCardExecutionBehaviorTest {
         val dev = worker("Dev")
         val step =
             Step
-                .create(boardId = "board-1", name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
+                .create(board = BoardRef("board-1"), name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
                 .assignWorker(dev)
         val card =
             Card(
-                stepId = step.id,
+                step = StepRef(step.id),
                 title = "Feature",
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 5,
@@ -59,11 +60,11 @@ class BoardStepCardExecutionBehaviorTest {
         val deployer = deployWorker()
         val step =
             Step
-                .create(boardId = "board-1", name = "Deploy", position = 3, requiredAbility = AbilityName.DEPLOYER)
+                .create(board = BoardRef("board-1"), name = "Deploy", position = 3, requiredAbility = AbilityName.DEPLOYER)
                 .assignWorker(deployer)
         val card =
             Card(
-                stepId = step.id,
+                step = StepRef(step.id),
                 title = "Release",
                 state = CardState.IN_PROGRESS,
                 deployEffort = 4,
@@ -82,7 +83,7 @@ class BoardStepCardExecutionBehaviorTest {
         val baseAudit = Audit.now(Instant.parse("2026-03-20T00:00:00Z"))
         val card =
             Card(
-                stepId = "step-1",
+                step = StepRef("step-1"),
                 title = "Spec",
                 analysisEffort = 3,
                 remainingAnalysisEffort = 3,
@@ -98,7 +99,7 @@ class BoardStepCardExecutionBehaviorTest {
 
     @Test
     fun `given non in progress card when blocking then operation is rejected`() {
-        val todo = Card(stepId = "step-1", title = "Task", state = CardState.TODO)
+        val todo = Card(step = StepRef("step-1"), title = "Task", state = CardState.TODO)
 
         assertFailsWith<IllegalArgumentException> {
             todo.block()

@@ -6,9 +6,11 @@ import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.Scenario
+import com.kanbanvision.domain.model.ScenarioRef
 import com.kanbanvision.domain.model.ScenarioRules
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.SimulationRef
 import com.kanbanvision.domain.model.SimulationStatus
 
 internal fun fixtureOrganization(
@@ -50,10 +52,12 @@ internal fun fixtureSimulation(
 
 internal fun fixtureSnapshot(
     simulationId: String = "sim-1",
+    scenarioId: String = "scn-1",
     day: Int = 1,
 ): DailySnapshot =
     DailySnapshot(
-        simulationId = simulationId,
+        simulation = SimulationRef(simulationId),
+        scenario = ScenarioRef(scenarioId),
         day = SimulationDay(day),
         metrics = FlowMetrics(throughput = 1, wipCount = 1, blockedCount = 0, avgAgingDays = 0.0),
         movements = emptyList(),

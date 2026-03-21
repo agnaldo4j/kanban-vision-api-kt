@@ -14,28 +14,4 @@ data class DailySnapshot(
     init {
         require(id.isNotBlank()) { "DailySnapshot id must not be blank" }
     }
-
-    val simulationId: String
-        get() = simulation.id
-
-    val scenarioId: String
-        get() = scenario.id
-
-    constructor(
-        id: String = UUID.randomUUID().toString(),
-        simulationId: String,
-        scenarioId: String = "scenario-unknown",
-        day: SimulationDay,
-        metrics: FlowMetrics,
-        movements: List<Movement>,
-        audit: Audit = Audit(),
-    ) : this(
-        id = id,
-        simulation = SimulationRef(simulationId),
-        scenario = ScenarioRef(scenarioId),
-        day = day,
-        metrics = metrics,
-        movements = movements,
-        audit = audit,
-    )
 }
