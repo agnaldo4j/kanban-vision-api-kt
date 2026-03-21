@@ -3,9 +3,11 @@ package com.kanbanvision.persistence.repositories
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.BoardRef
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.Step
+import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import com.kanbanvision.persistence.support.PersistenceFixtures
@@ -92,7 +94,7 @@ class JdbcRepositoriesErrorHandlingTest {
         stepRepository.save(
             Step(
                 id = "06000000-0000-0000-0000-000000000002",
-                boardId = "06000000-0000-0000-0000-000000000001",
+                board = BoardRef("06000000-0000-0000-0000-000000000001"),
                 name = "S",
                 position = 0,
                 requiredAbility = AbilityName.DEVELOPER,
@@ -103,7 +105,7 @@ class JdbcRepositoriesErrorHandlingTest {
         cardRepository.save(
             Card(
                 id = "06000000-0000-0000-0000-000000000003",
-                stepId = "06000000-0000-0000-0000-000000000002",
+                step = StepRef("06000000-0000-0000-0000-000000000002"),
                 title = "C",
                 position = 0,
             ),

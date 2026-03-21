@@ -5,8 +5,10 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.BoardRef
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.Step
+import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll
@@ -78,7 +80,7 @@ class JdbcCoreRepositoriesIntegrationTest {
             val stepA =
                 Step(
                     id = "02000000-0000-0000-0000-000000000101",
-                    boardId = boardId,
+                    board = BoardRef(boardId),
                     name = "Analysis",
                     position = 0,
                     requiredAbility = AbilityName.PRODUCT_MANAGER,
@@ -86,7 +88,7 @@ class JdbcCoreRepositoriesIntegrationTest {
             val stepB =
                 Step(
                     id = "02000000-0000-0000-0000-000000000102",
-                    boardId = boardId,
+                    board = BoardRef(boardId),
                     name = "Development",
                     position = 1,
                     requiredAbility = AbilityName.DEVELOPER,
@@ -110,7 +112,7 @@ class JdbcCoreRepositoriesIntegrationTest {
             val original =
                 Step(
                     id = "02000000-0000-0000-0000-000000000201",
-                    boardId = boardId,
+                    board = BoardRef(boardId),
                     name = "Build",
                     position = 0,
                     requiredAbility = AbilityName.DEVELOPER,
@@ -154,7 +156,7 @@ class JdbcCoreRepositoriesIntegrationTest {
                     .updateCard(card.id) { it.copy(title = "Card B", description = "updated", position = 3) }
                     .getOrElse { error("update failed: $it") }
             val loaded = cardRepository.findById(card.id).getOrElse { error("find failed: $it") }
-            val byStep = cardRepository.findByStepId(card.stepId).getOrElse { error("findByStep failed: $it") }
+            val byStep = cardRepository.findByStepId(card.step.id).getOrElse { error("findByStep failed: $it") }
 
             assertEquals("Card B", updated.title)
             assertEquals("updated", loaded.description)
@@ -218,7 +220,7 @@ class JdbcCoreRepositoriesIntegrationTest {
         )
         return Card(
             id = "03000000-0000-0000-0000-000000000101",
-            stepId = stepId,
+            step = StepRef(stepId),
             title = "Card A",
             description = "desc",
             position = 0,

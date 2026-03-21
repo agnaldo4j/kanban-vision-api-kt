@@ -45,7 +45,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
                                 ON CONFLICT (simulation_id, day) DO UPDATE SET snapshot_json = EXCLUDED.snapshot_json
                                 """.trimIndent(),
                             ).use { stmt ->
-                                stmt.setString(COL_SIMULATION_ID, snapshot.simulationId)
+                                stmt.setString(COL_SIMULATION_ID, snapshot.simulation.id)
                                 stmt.setInt(COL_DAY, snapshot.day.value)
                                 stmt.setString(COL_JSON, json)
                                 stmt.executeUpdate()

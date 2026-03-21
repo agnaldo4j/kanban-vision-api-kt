@@ -14,7 +14,8 @@ class ModelInvariantBoundaryCoverageTest {
         assertFailsWith<IllegalArgumentException> {
             DailySnapshot(
                 id = "",
-                simulationId = "sim-1",
+                simulation = SimulationRef("sim-1"),
+                scenario = ScenarioRef("scn-1"),
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0),
                 movements = emptyList(),

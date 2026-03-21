@@ -43,7 +43,8 @@ class ScenarioSimulationLifecycleBehaviorTest {
         val decision = Decision.move(cardId = "card-1")
         val snapshot =
             DailySnapshot(
-                simulationId = "sim-1",
+                simulation = SimulationRef("sim-1"),
+                scenario = ScenarioRef(scenario.id),
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.5),
                 movements = listOf(Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(1), reason = "manual")),

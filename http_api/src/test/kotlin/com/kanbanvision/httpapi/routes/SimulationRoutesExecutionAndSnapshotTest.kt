@@ -134,7 +134,7 @@ class SimulationRoutesExecutionAndSnapshotTest {
     fun `given existing snapshot when loading daily snapshot then api returns snapshot payload`() =
         testApplication {
             val mocks = SimulationApiMocks()
-            coEvery { mocks.getDailySnapshotUseCase.execute(any()) } returns fixtureSnapshot("sim-1", 3).right()
+            coEvery { mocks.getDailySnapshotUseCase.execute(any()) } returns fixtureSnapshot(simulationId = "sim-1", day = 3).right()
             application { configureSimulationApi(mocks) }
 
             val response = client.get("/api/v1/simulations/sim-1/days/3/snapshot") { withJwt().invoke(this) }

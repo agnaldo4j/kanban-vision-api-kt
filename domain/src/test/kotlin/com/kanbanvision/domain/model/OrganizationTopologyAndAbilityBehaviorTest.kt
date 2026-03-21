@@ -50,7 +50,7 @@ class OrganizationTopologyAndAbilityBehaviorTest {
     fun `given step ability requirement when assigning worker then only compatible worker is accepted`() {
         val developer = worker(name = "Dev", abilities = setOf(ability(AbilityName.DEVELOPER)))
         val tester = worker(name = "Test", abilities = setOf(ability(AbilityName.TESTER), ability(AbilityName.DEPLOYER)))
-        val step = Step.create(boardId = "board-1", name = "Development", position = 0, requiredAbility = AbilityName.DEVELOPER)
+        val step = Step.create(board = BoardRef("board-1"), name = "Development", position = 0, requiredAbility = AbilityName.DEVELOPER)
 
         val assigned = step.assignWorker(developer)
 

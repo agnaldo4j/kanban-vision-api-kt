@@ -72,7 +72,7 @@ data class DailySnapshotResponse(
 
 internal fun DailySnapshot.toResponse() =
     DailySnapshotResponse(
-        simulationId = simulationId,
+        simulationId = simulation.id,
         day = day.value,
         metrics =
             FlowMetricsResponse(
