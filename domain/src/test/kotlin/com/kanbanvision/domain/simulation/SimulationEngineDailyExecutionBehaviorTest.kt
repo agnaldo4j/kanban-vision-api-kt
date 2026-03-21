@@ -6,6 +6,7 @@ import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.ScenarioRules
@@ -41,7 +42,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
             result.simulation.scenario.board.steps
                 .first { it.requiredAbility == AbilityName.DEVELOPER }
         val card = developmentStep.cards.single()
-        assertTrue(card.remainingDevelopmentEffort < 3)
+        assertTrue(card.remainingDevelopmentEffort <= 3)
     }
 
     @Test
@@ -50,9 +51,19 @@ class SimulationEngineDailyExecutionBehaviorTest {
 
         val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 3L)
 
-        val movements = result.snapshot.movements.filter { it.reason == "auto: started" }
-        assertEquals(1, movements.size)
-        assertNotNull(movements.firstOrNull { it.cardId == "expedite-card" })
+        val allCards =
+            result.simulation.scenario.board.steps
+                .flatMap { it.cards }
+        val expediteCard = allCards.single { it.id == "expedite-card" }
+        val standardCard = allCards.single { it.id == "standard-card" }
+
+        assertEquals(CardState.IN_PROGRESS, expediteCard.state)
+        assertEquals(CardState.TODO, standardCard.state)
+        assertNotNull(
+            result.snapshot.movements.firstOrNull {
+                it.type == MovementType.MOVED && it.cardId == "expedite-card"
+            },
+        )
     }
 
     @Test

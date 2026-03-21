@@ -13,6 +13,7 @@ import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationStatus
 import com.kanbanvision.domain.model.Worker
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SimulationEngineWorkerAllocationOrderBehaviorTest {
@@ -20,14 +21,22 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
     fun `given two assigned workers on same step when running day then engine executes deterministically without invalid state`() {
         val simulation = simulationWithTwoWorkersOnDevelopmentStep()
 
-        val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 5L)
-        val updatedCard =
-            result.simulation.scenario.board.steps
+        val resultRun1 = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 5L)
+        val resultRun2 = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 5L)
+
+        val updatedCardRun1 =
+            resultRun1.simulation.scenario.board.steps
+                .first()
+                .cards
+                .first()
+        val updatedCardRun2 =
+            resultRun2.simulation.scenario.board.steps
                 .first()
                 .cards
                 .first()
 
-        assertTrue(updatedCard.remainingDevelopmentEffort in 0..6)
+        assertTrue(updatedCardRun1.remainingDevelopmentEffort in 0..6)
+        assertEquals(updatedCardRun1.remainingDevelopmentEffort, updatedCardRun2.remainingDevelopmentEffort)
     }
 
     private fun simulationWithTwoWorkersOnDevelopmentStep(): Simulation {

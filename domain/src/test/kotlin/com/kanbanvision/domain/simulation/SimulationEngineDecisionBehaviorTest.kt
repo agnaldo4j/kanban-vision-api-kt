@@ -60,7 +60,13 @@ class SimulationEngineDecisionBehaviorTest {
 
         val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("missing-card")), seed = 4L)
 
-        assertEquals(0, result.snapshot.movements.count { it.reason.startsWith("decision:") })
+        assertTrue(result.snapshot.movements.none { it.cardId == "missing-card" })
+        val card =
+            result.simulation.scenario.board.steps
+                .first()
+                .cards
+                .first { it.id == "card-3" }
+        assertEquals(CardState.IN_PROGRESS, card.state)
     }
 
     private fun simulationWithCard(
