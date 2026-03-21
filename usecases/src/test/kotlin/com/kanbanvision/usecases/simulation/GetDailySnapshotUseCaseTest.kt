@@ -6,9 +6,9 @@ import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
+import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.Called
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
