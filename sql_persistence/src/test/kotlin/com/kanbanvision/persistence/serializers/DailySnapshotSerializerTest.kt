@@ -15,6 +15,7 @@ class DailySnapshotSerializerTest {
 
         assertEquals(source.id, decoded.id)
         assertEquals(source.simulation.id, decoded.simulation.id)
+        assertEquals(source.scenario.id, decoded.scenario.id)
         assertEquals(source.day, decoded.day)
         assertEquals(source.metrics.avgAgingDays, decoded.metrics.avgAgingDays)
         assertEquals(source.movements.first().type, decoded.movements.first().type)
@@ -29,6 +30,7 @@ class DailySnapshotSerializerTest {
         val decoded = DailySnapshotSerializer.decode(withUnknown)
 
         assertEquals(source.simulation.id, decoded.simulation.id)
+        assertEquals(source.scenario.id, decoded.scenario.id)
         assertTrue(decoded.movements.isNotEmpty())
     }
 }

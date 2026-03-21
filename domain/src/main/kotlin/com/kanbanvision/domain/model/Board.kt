@@ -38,8 +38,8 @@ data class Board(
         val target = steps.firstOrNull { it.id == step.id } ?: error("Step ${step.id} not found in board $id")
         val newCard = Card.create(step = target.toRef(), title = title, description = description, position = target.cards.size)
         val updatedSteps =
-            steps.map { step ->
-                if (step.id == target.id) step.copy(cards = step.cards + newCard) else step
+            steps.map { currentStep ->
+                if (currentStep.id == target.id) currentStep.copy(cards = currentStep.cards + newCard) else currentStep
             }
         return copy(steps = updatedSteps)
     }
