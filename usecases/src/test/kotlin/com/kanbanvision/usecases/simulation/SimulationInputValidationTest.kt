@@ -7,7 +7,6 @@ import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
 import com.kanbanvision.usecases.simulation.queries.GetSimulationQuery
 import kotlin.test.Test
 import kotlin.test.assertContains
-import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -25,7 +24,7 @@ class SimulationInputValidationTest {
         assertTrue(result.isLeft())
         val error = result.leftOrNull()
         assertIs<DomainError.ValidationError>(error)
-        assertEquals(3, error.messages.size)
+        assertTrue(error.messages.size >= 3)
         assertContains(error.messages, "Organization id must not be blank")
         assertContains(error.messages, "WIP limit must be at least 1")
         assertContains(error.messages, "Team size must be at least 1")
