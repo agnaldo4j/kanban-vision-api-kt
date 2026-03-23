@@ -9,6 +9,7 @@ import com.kanbanvision.domain.model.Step
 import com.kanbanvision.persistence.dbQuery
 import com.kanbanvision.persistence.tables.StepsTable
 import com.kanbanvision.usecases.repositories.StepRepository
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.upsert
@@ -35,15 +36,7 @@ class JdbcStepRepository : StepRepository {
                 .selectAll()
                 .where(StepsTable.id eq id)
                 .singleOrNull()
-                ?.let { row ->
-                    Step(
-                        id = row[StepsTable.id],
-                        board = BoardRef(row[StepsTable.boardId]),
-                        name = row[StepsTable.name],
-                        position = row[StepsTable.position],
-                        requiredAbility = AbilityName.valueOf(row[StepsTable.requiredAbility]),
-                    )
-                }
+                ?.let { rowToStep(it) }
         }.fold(
             ifLeft = { it.left() },
             ifRight = { step -> step?.let { Either.Right(it) } ?: DomainError.StepNotFound(id).left() },
@@ -55,14 +48,15 @@ class JdbcStepRepository : StepRepository {
                 .selectAll()
                 .where(StepsTable.boardId eq boardId)
                 .orderBy(StepsTable.position)
-                .map { row ->
-                    Step(
-                        id = row[StepsTable.id],
-                        board = BoardRef(row[StepsTable.boardId]),
-                        name = row[StepsTable.name],
-                        position = row[StepsTable.position],
-                        requiredAbility = AbilityName.valueOf(row[StepsTable.requiredAbility]),
-                    )
-                }
+                .map { rowToStep(it) }
         }
+
+    private fun rowToStep(row: ResultRow): Step =
+        Step(
+            id = row[StepsTable.id],
+            board = BoardRef(row[StepsTable.boardId]),
+            name = row[StepsTable.name],
+            position = row[StepsTable.position],
+            requiredAbility = AbilityName.valueOf(row[StepsTable.requiredAbility]),
+        )
 }

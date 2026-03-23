@@ -11,6 +11,7 @@ import com.kanbanvision.persistence.tables.CardsTable
 import com.kanbanvision.usecases.repositories.CardRepository
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.vendors.ForUpdateOption
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.jdbc.upsert
@@ -63,19 +64,21 @@ class JdbcCardRepository : CardRepository {
                 CardsTable
                     .selectAll()
                     .where { CardsTable.id eq id }
+                    .forUpdate(ForUpdateOption.ForUpdate)
                     .singleOrNull()
                     ?.let { rowToCard(it) }
             if (existing == null) {
                 null
             } else {
                 val updated = transform(existing)
-                CardsTable.update({ CardsTable.id eq id }) {
-                    it[stepId] = updated.step.id
-                    it[title] = updated.title
-                    it[description] = updated.description
-                    it[position] = updated.position
-                }
-                updated
+                val affectedRows =
+                    CardsTable.update({ CardsTable.id eq id }) {
+                        it[stepId] = updated.step.id
+                        it[title] = updated.title
+                        it[description] = updated.description
+                        it[position] = updated.position
+                    }
+                if (affectedRows == 0) null else updated
             }
         }.fold(
             ifLeft = { it.left() },

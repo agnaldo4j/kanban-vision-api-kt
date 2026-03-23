@@ -49,7 +49,7 @@ class JdbcSimulationRepository : SimulationRepository {
         dbQuery(log) {
             (
                 SimulationsTable
-                    .join(OrganizationsTable, JoinType.LEFT, SimulationsTable.organizationId, OrganizationsTable.id)
+                    .join(OrganizationsTable, JoinType.INNER, SimulationsTable.organizationId, OrganizationsTable.id)
                     .join(SimulationStatesTable, JoinType.LEFT, SimulationsTable.id, SimulationStatesTable.simulationId)
             ).selectAll()
                 .where(SimulationsTable.id eq id)
