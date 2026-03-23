@@ -80,7 +80,7 @@ dependencies {
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.47.0")
 
-    implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("ch.qos.logback:logback-classic:1.5.32")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("org.codehaus.janino:janino:3.1.12")
 
