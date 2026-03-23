@@ -8,7 +8,7 @@
 | Data      | 2026-03-23                                                  |
 | Autores   | @agnaldo4j                                                  |
 | Branch    | feat/adr-0014-exposed-orm                                   |
-| PR        | (preencher após abrir o PR)                                 |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/101  |
 | Supersede | —                                                           |
 
 ---
