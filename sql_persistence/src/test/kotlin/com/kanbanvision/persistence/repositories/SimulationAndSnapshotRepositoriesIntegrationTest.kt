@@ -16,7 +16,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcSimulationAndSnapshotRepositoriesIntegrationTest {
+class SimulationAndSnapshotRepositoriesIntegrationTest {
     private val simulationRepository = JdbcSimulationRepository()
     private val snapshotRepository = JdbcSnapshotRepository()
     private val organizationRepository = JdbcOrganizationRepository()

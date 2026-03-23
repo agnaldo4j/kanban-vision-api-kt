@@ -36,6 +36,17 @@ implementação incremental em 5 passos guiado pelo skill `opentelemetry`. Adici
 `GAP-U` (sem alertas configurados), reposicionado `GAP-O` (OTel traces) de P4 para P3
 — o Java Agent entrega valor no monólito sem exigir extração de microserviços.
 
+**Revisão 5 (2026-03-23):** replanejamento pós-PRs #87–#91. Os refactors `Column → Step`
+(PR #87), unificação do domínio (PR #88), rebuild da suite comportamental (PR #89),
+object refs (PR #90) e enforcement de OO refs (PR #91) alteraram o modelo de domínio e
+revelaram novas lacunas. `GAP-J` re-escopo: de "paginação simples" para "Analytics API"
+(CFD, Lead Time distribution, utilização por Step — derivado de *The Principles of Product
+Development Flow*, Reinertsen). `GAP-X` adicionado: `ServiceClass` incompleto
+(`DATE_DRIVEN` e `INTANGIBLE` ausentes — Burrows define 4 classes de serviço).
+Corrigidos números de ADR no Plano de Implementação (`GAP-H→ADR-0010`, `GAP-K→ADR-0011`,
+`GAP-R→ADR-0012`, `GAP-M→ADR-0013`). Insights derivados do vault Obsidian do autor
+(*Kanban from the Inside*, *KPPM*, *Product Dev Flow*, *O Projeto Fênix*).
+
 **Revisão 4 (2026-03-16):** adicionada dimensão **Governança de Mudanças Evolutivas**,
 guiada pelo skill `evolutionary-change`. Esta dimensão avalia se o projeto tem um protocolo
 explícito para executar seus próprios gaps de forma incremental e normativa — evitando crises
@@ -353,11 +364,12 @@ executar muitos J-curves pequenos em vez de um grande.
 
 | ID    | Tipo | Gap                                       | Dimensão                      | Esforço Estimado |
 |-------|------|-------------------------------------------|-------------------------------|------------------|
-| GAP-L | M    | Testes de mutação (PITest)                | Kotlin Pipeline               | Médio            |
-| GAP-M | E    | JSON blob + schema boundaries no DB       | DB Design / Modularidade      | Médio            |
-| GAP-N | N    | Exemplos e security no OpenAPI            | OpenAPI                       | Baixo            |
-| GAP-R | E    | Domain API Build Module (usecases-api/)   | Modularidade & Evoluibilidade | Médio            |
 | GAP-T | N    | Context Map e documentação de BCs         | DDD / Modularidade            | Baixo            |
+| GAP-X | N    | ServiceClass: DATE_DRIVEN + INTANGIBLE    | DDD                           | Baixo            |
+| GAP-N | N    | Exemplos, query params e Bearer no OpenAPI| OpenAPI                       | Baixo            |
+| GAP-L | M    | Testes de mutação (PITest)                | Kotlin Pipeline               | Médio            |
+| GAP-R | E    | Domain API Build Module (usecases-api/)   | Modularidade & Evoluibilidade | Médio            |
+| GAP-M | E    | JSON blob + schema boundaries no DB       | DB Design / Modularidade      | Médio            |
 
 ---
 
@@ -368,10 +380,10 @@ antes de qualquer deploy. Os de **Prioridade 2** constituem um segundo ciclo de
 operacionalização. Os de **Prioridade 3** e **4** são melhorias contínuas sem urgência.
 
 ```
-Ciclo Hardening  (P1):  GAP-B → GAP-C → GAP-A
-Ciclo Operações  (P2):  GAP-F → GAP-B(ready) → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U
-Ciclo Domínio    (P3):  GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K
-Ciclo Excelência (P4):  GAP-T → GAP-N → GAP-R → GAP-L → GAP-M
+Ciclo Hardening  (P1):  GAP-B → GAP-C → GAP-A                              ✅ CONCLUÍDO
+Ciclo Operações  (P2):  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ CONCLUÍDO
+Ciclo Domínio    (P3):  GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I ✅ → GAP-J → GAP-H → GAP-K
+Ciclo Excelência (P4):  GAP-T → GAP-X → GAP-N → GAP-L → GAP-R → GAP-M
 ```
 
 > **Protocolo de execução (skill `evolutionary-change`):** cada gap deve ser executado em
@@ -403,10 +415,10 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 | ADR-0007  | GAP-D | Métricas Micrometer/Prometheus           | —                    | ✅ Aceita  |
 | ADR-0008  | GAP-V | Pipeline CI/CD (build + push + deploy)   | GAP-G concluído      | ✅ Aceita  |
 | ADR-0009  | GAP-O | OpenTelemetry Agent Integration          | GAP-G concluído      | ✅ Aceita  |
-| ADR-0010  | GAP-H | Domain Events                            | GAP-P concluído      | Pendente  |
+| ADR-0010  | GAP-H | Domain Events (CP5 — feedback loops)     | GAP-P concluído      | Pendente  |
 | ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | Pendente  |
 | ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Pendente  |
-| ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | —                    | Pendente  |
+| ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | PRs #87–#91 (Step)   | Pendente  |
 
 > **Como usar esta tabela:** antes de executar qualquer gap `E`, abra uma sessão LLM
 > dedicada para escrever a ADR correspondente. Só após a ADR estar merged inicie a
@@ -475,16 +487,17 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-Q** — Logar stack trace do erro original em `JdbcBoardRepository` (e demais) com `log.error("Persistence error", e)` antes de mapear para `DomainError.PersistenceError` — PR #71
 - [x] `[M]` **GAP-S** — Adicionar custom Detekt rule ou Gradle constraint impedindo import direto de `JdbcBoardRepository` fora do `AppModule` — PR #72
 - [x] `[M]` **GAP-I** — Mover validações de invariantes de `Column`/`Card` para `Board.addColumn()` / `Board.addCard()` — PR #73
-- [ ] `[M]` **GAP-J** — Adicionar parâmetros `page` e `size` nos endpoints de lista
-- [ ] `[E→ADR-0008]` **GAP-H** — Escrever ADR-0008 (modelo de Domain Events e mecanismo de publicação). Requer GAP-P concluído. Só após aprovação: implementar eventos e listeners
-- [ ] `[E→ADR-0009]` **GAP-K** — Escrever ADR-0009 (estratégia de contract testing com Pact). Requer GAP-G concluído. Só após aprovação: configurar Pact broker e escrever consumer tests
+- [ ] `[M]` **GAP-J** — Analytics API: `GET /simulations` (lista paginada), `GET /simulations/{id}/days` (série temporal paginada), `GET /simulations/{id}/cfd` (dados para CFD — Reinertsen), métricas de utilização por Step (Little's Law). Re-escopo derivado de *The Principles of Product Development Flow*: CFD e Lead Time distribution são ferramentas fundamentais de gestão de fluxo (CP3)
+- [ ] `[E→ADR-0010]` **GAP-H** — Escrever ADR-0010 (modelo de Domain Events e mecanismo de publicação). Requer GAP-P concluído. Eventos de alto valor (CP5 — feedback loops): `SimulationDayExecuted`, `CardBlocked`, `WIPLimitBreached`, `CardCompleted`, `UnplannedWorkAdded`. Só após aprovação: implementar eventos e listeners
+- [ ] `[E→ADR-0011]` **GAP-K** — Escrever ADR-0011 (estratégia de contract testing com Pact). Requer GAP-G concluído. Protege CP4 (políticas explícitas de API). Só após aprovação: configurar Pact broker e escrever consumer tests
 
 **Ciclo Excelência (P4):**
-- [ ] `[N]` **GAP-T** — Criar `docs/context-map.md` documentando bounded contexts atuais e candidatos a extração (Analytics, Tenant Management) com padrões de integração (ACL, Customer-Supplier)
-- [ ] `[N]` **GAP-N** — Adicionar exemplos nos request bodies e documentar `X-Request-ID` nas respostas OpenAPI. Adicionar schema de autenticação quando `GAP-A` for implementado
-- [ ] `[E→ADR-0010]` **GAP-R** — Escrever ADR-0010 apenas quando build time > 2min. Decisão: separação de `usecases-api/` e `usecases-impl/`. Só após aprovação: criar novos módulos Gradle
-- [ ] `[M]` **GAP-L** — Integrar PITest no pipeline de qualidade (Gradle plugin)
-- [ ] `[E→ADR-0011]` **GAP-M** — Escrever ADR-0011 (estratégia de schema boundaries e jsonb vs colunas). Só após aprovação: criar migração Flyway e atualizar queries
+- [ ] `[N]` **GAP-T** — Criar `docs/context-map.md` com 3 BCs atuais (Kanban Management, Simulation, Analytics) + 2 candidatos a extração (Forecasting, Policy). Padrões de integração: ACL, Customer-Supplier. Referência: *Kanban from the Inside* (Burrows) — 9 valores e 6 práticas como lente de design dos BCs
+- [ ] `[N]` **GAP-X** — Completar `ServiceClass` com `DATE_DRIVEN` e `INTANGIBLE`. Burrows define 4 classes de serviço: Expedite, Date-driven, Standard, Intangible. O domínio implementa apenas EXPEDITE e STANDARD — lacuna de modelagem de domínio identificada via vault Obsidian
+- [ ] `[N]` **GAP-N** — Adicionar exemplos nos request bodies, documentar `X-Request-ID` nas respostas e query params dos endpoints de analytics (CFD, days). Schema Bearer já presente (GAP-A concluído)
+- [ ] `[E→ADR-0012]` **GAP-R** — Escrever ADR-0012 apenas quando build time > 2min. Decisão: separação de `usecases-api/` e `usecases-impl/`. Só após aprovação: criar novos módulos Gradle
+- [ ] `[M]` **GAP-L** — Integrar PITest no pipeline de qualidade (Gradle plugin). Valor especial no `SimulationEngine` — Reinertsen: asserções sobre comportamento de fila e WIP são críticas e mutantes podem sobreviver a testes de cobertura de linha
+- [ ] `[E→ADR-0013]` **GAP-M** — Escrever ADR-0013 (estratégia de schema boundaries e jsonb vs colunas). PRs #87–#91 alteraram o schema serializado (Column→Step): migration de dados legados pode ser necessária. Só após aprovação: criar migração Flyway e atualizar queries
 
 ---
 
