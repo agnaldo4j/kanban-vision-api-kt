@@ -63,7 +63,7 @@ class JdbcSimulationRepository : SimulationRepository {
         )
 
     private fun rowToSimulation(row: ResultRow): Simulation {
-        val stateJson = row[SimulationStatesTable.stateJson]
+        val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
         if (!stateJson.isNullOrBlank()) return SimulationSerializer.decode(stateJson)
         return buildFallbackSimulation(row)
     }
@@ -72,7 +72,7 @@ class JdbcSimulationRepository : SimulationRepository {
         val organization =
             Organization(
                 id = row[SimulationsTable.organizationId],
-                name = row[OrganizationsTable.name] ?: "Organization",
+                name = row[OrganizationsTable.name],
             )
         val rules =
             ScenarioRules.create(
