@@ -40,7 +40,7 @@ BoardsTable.selectAll().where { BoardsTable.id eq boardId.value }
 
 ---
 
-### 3. Toda Rota Não-Pública Dentro de `authenticate("jwt")` (A01)
+### 3. Toda Rota Não-Pública Dentro de `authenticate("jwt-auth")` (A01)
 
 ```kotlin
 // ❌ PROIBIDO
@@ -49,7 +49,7 @@ routing {
 
 // ✅ OBRIGATÓRIO
 routing {
-    authenticate("jwt") {
+    authenticate("jwt-auth") {
         get("/boards") { ... }
     }
 }
@@ -114,7 +114,7 @@ catch({ accessService.check(userId) }) { e: Exception ->
 
 | Requisito | Verificação |
 |---|---|
-| `authenticate("jwt")` em rotas privadas | Todo `routing { }` que não seja health/metrics |
+| `authenticate("jwt-auth")` em rotas privadas | Todo `routing { }` que não seja health/metrics |
 | `StatusPages` instalado com handler para `Throwable` | `Application.kt` ou plugin dedicado |
 | CORS sem `anyHost()` | `install(CORS) { }` deve listar origens explícitas |
 | Rate limit em `/auth/*` | `rateLimit(RateLimitName("auth")) { }` |
@@ -132,7 +132,7 @@ catch({ accessService.check(userId) }) { e: Exception ->
 
 | Requisito | Verificação |
 |---|---|
-| Invariantes de negócio no agregado | `Board.addColumn()`, `Board.addCard()` validam pré-condições |
+| Invariantes de negócio no agregado | `Board.addStep()` e `Board.addCard()` validam pré-condições (nome único, step existente) |
 | Sem dependências de framework ou segredos | `domain/` é 100% puro |
 
 ### `sql_persistence/` — Repositórios
@@ -147,22 +147,26 @@ catch({ accessService.check(userId) }) { e: Exception ->
 
 ## Detekt Rules de Segurança
 
-O projeto usa Detekt com `warningsAsErrors: true`. As regras abaixo são verificadas:
+O projeto usa Detekt com `warningsAsErrors: true`. A regra `ForbiddenImport` atualmente aplicada:
 
 ```yaml
-# config/detekt/detekt.yml (não editar — ver feedback_quality_config_immutable.md)
-potential-bugs:
-  LateinitUsage: active: true
-  UnnecessaryNotNullOperator: active: true
-
+# config/detekt/detekt.yml (arquivo imutável por política — não editar diretamente)
 style:
   ForbiddenImport:
     active: true
     imports:
+      - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
+        reason: 'Repositórios JDBC só podem ser usados em wiring de DI (AppModule)'
+```
+
+As entradas abaixo são **recomendadas** para adição futura via ADR — ainda não estão no `detekt.yml`:
+
+```yaml
+# Recomendado (abrir ADR para aplicar):
       - value: 'java.io.ObjectInputStream'
         reason: 'Use kotlinx.serialization instead — ObjectInputStream enables RCE via deserialization'
       - value: 'java.security.MessageDigest'
-        reason: 'Weak crypto — use BCrypt/Argon2 for passwords or SHA-256+ for hashing'
+        reason: 'Weak crypto — use SHA-256+ for hashing, Argon2 for passwords'
 ```
 
 > **Nota**: Para adicionar novas regras Detekt de segurança, abra uma ADR — `config/detekt/detekt.yml` é imutável por política.
@@ -175,8 +179,8 @@ style:
 # Segredos hardcoded (deve retornar zero linhas)
 grep -rn 'password\s*=\s*"[^"]' --include="*.kt" src/
 
-# SQL por concatenação (deve retornar zero linhas)
-grep -rn 'executeQuery\s*(\s*".*\$\|exec\s*(\s*".*\$' --include="*.kt" src/
+# SQL por interpolação/concatenação (deve retornar zero linhas)
+grep -rn -E '(executeQuery|executeUpdate|prepareStatement|exec)\s*\([^)]*"[^"]*(\$\{[^}]+\}|\$[a-zA-Z_])' --include="*.kt" src/
 
 # Rotas sem autenticação (revisar manualmente cada resultado)
 grep -rn 'routing {' --include="*.kt" src/ -A 5 | grep -v authenticate

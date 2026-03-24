@@ -65,19 +65,15 @@ if echo "$CONTENT" | grep -qiE \
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# A05 — SQL Injection via string concatenation (CRITICAL — deny)
+# A05 — SQL Injection via string interpolation or concatenation (CRITICAL — deny)
+# Covers: $var, ${var}, "..." + var patterns in executeQuery/executeUpdate/prepareStatement/exec
 # ─────────────────────────────────────────────────────────────────────────────
 if echo "$CONTENT" | grep -qE \
-  '(executeQuery|executeUpdate|prepareStatement|exec)\s*\(\s*"[^"]*\$[a-zA-Z]'; then
+  '(executeQuery|executeUpdate|prepareStatement|exec)\s*\([^)]*"[^"]*(\$\{[^}]+\}|\$[a-zA-Z_][a-zA-Z0-9_]*)'; then
   CRITICAL="$CRITICAL\n[A05] SQL injection risk — string interpolation in SQL query. Use Exposed DSL or PreparedStatement with ? placeholders"
-fi
-
-# ─────────────────────────────────────────────────────────────────────────────
-# A05 — Raw SQL exec with interpolation (CRITICAL — deny)
-# ─────────────────────────────────────────────────────────────────────────────
-if echo "$CONTENT" | grep -qE \
-  'exec\s*\(\s*"[^"]*\$[a-zA-Z]'; then
-  CRITICAL="$CRITICAL\n[A05] SQL injection via exec() with string interpolation — use Exposed DSL parametrized queries only"
+elif echo "$CONTENT" | grep -qE \
+  '(executeQuery|executeUpdate|prepareStatement|exec)\s*\([^)]*"\s*\+\s*[a-zA-Z_][a-zA-Z0-9_]*'; then
+  CRITICAL="$CRITICAL\n[A05] SQL injection risk — string concatenation in SQL query. Use Exposed DSL or PreparedStatement with ? placeholders"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -151,7 +147,7 @@ if $HAS_CRITICAL || $HAS_WARNINGS; then
 fi
 
 if $HAS_CRITICAL; then
-  REASON=$(echo -e "$CRITICAL" | head -1 | sed 's/^\s*//')
+  REASON=$(echo -e "$CRITICAL" | sed '/^[[:space:]]*$/d' | head -1 | sed 's/^\s*//')
   printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"OWASP Security violation blocked: %s — fix before writing. See /owasp for guidelines."}}' "$REASON"
   exit 0
 fi

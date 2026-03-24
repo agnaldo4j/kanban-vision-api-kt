@@ -64,13 +64,15 @@ post("/admin/action") {
 
 ```kotlin
 // ✅ Rota protegida com autenticação + verificação de propriedade
-authenticate("jwt") {
+// O projeto usa o provider "jwt-auth" (configurado em Authentication.kt)
+authenticate("jwt-auth") {
     get("/boards/{id}") {
-        val tenantId = call.principal<JWTPrincipal>()!!
-            .payload.getClaim("tenantId").asString()
-        val boardId = BoardId(UUID.fromString(call.parameters["id"]!!))
+        // O JWT deste projeto carrega o claim "organizationId"
+        val organizationId = call.principal<JWTPrincipal>()!!
+            .payload.getClaim("organizationId").asString()
+        val boardId = call.parameters["id"]!!   // String UUID — domínio não usa value types
 
-        getBoardUseCase.execute(GetBoardQuery(boardId, TenantId(tenantId)))
+        getBoardUseCase.execute(GetBoardQuery(boardId = boardId, organizationId = organizationId))
             .fold(
                 ifLeft = { call.respondWithDomainError(it) },
                 ifRight = { call.respond(HttpStatusCode.OK, it.toResponse()) }
@@ -81,15 +83,15 @@ authenticate("jwt") {
 // ✅ Verificação de propriedade no use case (domain boundary)
 fun Raise<DomainError>.execute(query: GetBoardQuery): Board {
     val board = repository.findById(query.boardId).bind()
-        ?: raise(DomainError.NotFound("Board", query.boardId.value.toString()))
-    ensure(board.tenantId == query.tenantId) { DomainError.Forbidden("Board") }
+        ?: raise(DomainError.NotFound("Board", query.boardId))
+    ensure(board.organizationId == query.organizationId) { DomainError.Forbidden("Board") }
     return board
 }
 ```
 
 ### Checklist A01
 
-- [ ] Todas as rotas não-públicas estão dentro de `authenticate("jwt") { }`.
+- [ ] Todas as rotas não-públicas estão dentro de `authenticate("jwt-auth") { }`.
 - [ ] Todo use case verifica que o recurso pertence ao tenant do caller.
 - [ ] Nenhum papel (role) ou permissão vem de parâmetros controlados pelo cliente.
 - [ ] CORS configurado explicitamente — não `allowAnyHost()` em produção.
@@ -245,16 +247,17 @@ val jwtSecret = requireNotNull(System.getenv("JWT_SECRET")) {
 require(jwtSecret.length >= 32) { "JWT_SECRET must be at least 32 characters" }
 
 // ✅ JWT com claims corretos — issuer, audience, expiração curta
+// O projeto usa o claim "organizationId" (ver AuthRoutes.kt)
 JWT.create()
     .withIssuer(jwtIssuer)
     .withAudience(jwtAudience)
-    .withClaim("tenantId", tenantId.value.toString())
+    .withClaim("organizationId", organizationId)   // claim real do projeto
     .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
     .sign(Algorithm.HMAC256(jwtSecret))
 
-// ✅ Validação JWT completa no Ktor
+// ✅ Validação JWT completa no Ktor — provider "jwt-auth" (Authentication.kt)
 install(Authentication) {
-    jwt("jwt") {
+    jwt("jwt-auth") {
         verifier(
             JWT.require(Algorithm.HMAC256(jwtSecret))
                 .withIssuer(jwtIssuer)
@@ -262,7 +265,8 @@ install(Authentication) {
                 .build()
         )
         validate { credential ->
-            if (credential.payload.getClaim("tenantId").asString().isNotBlank())
+            // Valida que o audience bate — padrão atual do projeto
+            if (credential.payload.audience.contains(jwtAudience))
                 JWTPrincipal(credential.payload) else null
         }
         challenge { _, _ ->
@@ -386,7 +390,7 @@ fun Raise<BoardError>.addColumn(name: String): Board {
 
 // ✅ Upload com validação estrita
 post("/upload") {
-    authenticate("jwt") {
+    authenticate("jwt-auth") {
         val part = call.receiveMultipart().readPart() as? PartData.FileItem
             ?: return@post call.respond(HttpStatusCode.BadRequest, "File required")
 
@@ -459,8 +463,8 @@ routing {
     }
 }
 
-// ✅ Validação rigorosa de JWT
-jwt("jwt") {
+// ✅ Validação rigorosa de JWT — alinhado com Authentication.kt do projeto
+jwt("jwt-auth") {
     verifier(
         JWT.require(Algorithm.HMAC256(secret))
             .withIssuer(issuer)
@@ -469,9 +473,9 @@ jwt("jwt") {
             .build()
     )
     validate { credential ->
-        val tenantId = credential.payload.getClaim("tenantId").asString()
-        val userId = credential.payload.getClaim("userId").asString()
-        if (tenantId.isNotBlank() && userId.isNotBlank())
+        // Valida audience (padrão do projeto) + organizationId presente
+        val orgId = credential.payload.getClaim("organizationId").asString()
+        if (credential.payload.audience.contains(audience) && orgId.isNotBlank())
             JWTPrincipal(credential.payload) else null
     }
 }
@@ -499,12 +503,12 @@ jwt("jwt") {
 // ❌ Desserialização de objeto Java arbitrário
 val obj = ObjectInputStream(inputStream).readObject()  // RCE potencial
 
-// ❌ Aceitar JSON sem schema validation
+// ❌ Aceitar JSON sem schema validation — expõe campos internos
 @Serializable
 data class UpdateRequest(
-    val role: String,          // cliente pode enviar "ADMIN"
-    val tenantId: String,      // cliente pode sobreescrever tenant
-    val internalFlag: Boolean  // campo interno exposto
+    val role: String,             // cliente pode enviar "ADMIN"
+    val organizationId: String,   // cliente pode sobreescrever organização
+    val internalFlag: Boolean     // campo interno exposto
 )
 ```
 
@@ -512,17 +516,20 @@ data class UpdateRequest(
 
 ```kotlin
 // ✅ kotlinx.serialization — type-safe, sem Java ObjectInputStream
+// DTO de entrada expõe só o que o cliente pode enviar (padrão do projeto)
 @Serializable
-data class CreateBoardRequest(
-    val name: String,          // apenas campos que o cliente pode enviar
-    val description: String?
+data class CreateSimulationRequest(
+    val organizationId: String,
+    val wipLimit: Int,
+    val teamSize: Int,
+    val seedValue: Long,
 )
 
-// ✅ Separar DTO de entrada do modelo interno
-fun CreateBoardRequest.toCommand(tenantId: TenantId): CreateBoardCommand {
-    require(name.isNotBlank()) { "name is required" }
-    require(name.length <= 100) { "name too long" }
-    return CreateBoardCommand(name = name.trim(), tenantId = tenantId)
+// ✅ Separar DTO de entrada do modelo interno — organizationId vem do JWT, não do body
+fun CreateSimulationRequest.toCommand(organizationIdFromJwt: String): CreateSimulationCommand {
+    require(organizationId.isNotBlank()) { "organizationId is required" }
+    require(organizationId == organizationIdFromJwt) { "organizationId mismatch" }
+    return CreateSimulationCommand(organizationId = organizationId, wipLimit = wipLimit, teamSize = teamSize, seedValue = seedValue)
 }
 
 // ✅ CI verifica integridade de artefatos
@@ -552,7 +559,7 @@ multa de 20M+ GDPR por vulnerabilidade em app de pagamento.
 log.info("User login: email=${user.email}, password=${user.password}")
 
 // ❌ Falha de auth sem log
-authenticate("jwt") {
+authenticate("jwt-auth") {
     challenge { _, _ ->
         call.respond(HttpStatusCode.Unauthorized)  // sem registrar tentativa
     }
@@ -566,18 +573,17 @@ log.info("Search: ${userInput}")  // usuário pode injetar newlines/control char
 
 ```kotlin
 // ✅ MDC com contexto de segurança — sem dados sensíveis
+// O projeto usa o claim "organizationId" no JWT (ver AuthRoutes.kt)
 fun ApplicationCall.setupSecurityMDC() {
-    val tenantId = principal<JWTPrincipal>()?.payload?.getClaim("tenantId")?.asString()
-    val userId = principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asString()
-    MDC.put("tenantId", tenantId ?: "anonymous")
-    MDC.put("userId", userId ?: "anonymous")
+    val orgId = principal<JWTPrincipal>()?.payload?.getClaim("organizationId")?.asString()
+    MDC.put("organizationId", orgId ?: "anonymous")
     MDC.put("correlationId", request.headers["X-Correlation-ID"] ?: UUID.randomUUID().toString())
     MDC.put("remoteAddr", request.origin.remoteAddress)
 }
 
 // ✅ Log de eventos de segurança — sem dados sensíveis
-log.warn("Authentication failed: tenantId={}, remoteAddr={}, path={}",
-    MDC.get("tenantId"), MDC.get("remoteAddr"), request.uri)
+log.warn("Authentication failed: organizationId={}, remoteAddr={}, path={}",
+    MDC.get("organizationId"), MDC.get("remoteAddr"), request.uri)
 
 // ✅ Sanitizar input antes de logar
 fun String.sanitizeForLog(): String =
@@ -684,7 +690,7 @@ fun Raise<DomainError>.executeWithRollback(operation: () -> Unit) =
 ## Checklist de Segurança Integrado — Antes de Abrir PR
 
 ### Controle de Acesso (A01)
-- [ ] Toda rota sensível dentro de `authenticate("jwt") { }`.
+- [ ] Toda rota sensível dentro de `authenticate("jwt-auth") { }`.
 - [ ] Propriedade de recurso verificada no use case (tenant check).
 - [ ] CORS sem `anyHost()`.
 
