@@ -72,6 +72,69 @@ class RouteDtosContractTest {
     }
 
     @Test
+    fun `given summary and list response dtos when copy and component methods are used then structural contract is stable`() {
+        val summary = SimulationSummaryResponse(id = "s1", name = "Sim", status = "DRAFT", currentDay = 3)
+        assertEquals("s1", summary.id)
+        assertEquals("s1", summary.component1())
+        assertEquals("Sim", summary.component2())
+        assertEquals("DRAFT", summary.component3())
+        assertEquals(3, summary.component4())
+        assertEquals(3, summary.currentDay)
+        assertEquals(summary, summary.copy())
+        val summaryCopy = summary.copy(currentDay = 5)
+        assertEquals(5, summaryCopy.currentDay)
+
+        val listResp = SimulationListResponse(data = listOf(summary), page = 2, size = 10, total = 25L)
+        assertEquals(1, listResp.data.size)
+        assertEquals(2, listResp.page)
+        assertEquals(10, listResp.size)
+        assertEquals(25L, listResp.total)
+        val listJson = json.encodeToString(SimulationListResponse.serializer(), listResp)
+        val listDecoded = json.decodeFromString(SimulationListResponse.serializer(), listJson)
+        assertEquals(25L, listDecoded.total)
+
+        val dayMetrics = DayMetricsResponse(day = 7, throughput = 5, wipCount = 3, blockedCount = 1, avgAgingDays = 2.5)
+        assertEquals(7, dayMetrics.day)
+        assertEquals(5, dayMetrics.throughput)
+        assertEquals(3, dayMetrics.wipCount)
+        assertEquals(1, dayMetrics.blockedCount)
+        assertEquals(2.5, dayMetrics.avgAgingDays)
+        val dayMetricsCopy = dayMetrics.copy(throughput = 9)
+        assertEquals(9, dayMetricsCopy.throughput)
+    }
+
+    @Test
+    fun `given days and cfd response dtos when serialized and component methods are used then structural contract is stable`() {
+        val dayMetrics = DayMetricsResponse(day = 7, throughput = 5, wipCount = 3, blockedCount = 1, avgAgingDays = 2.5)
+        val daysResp = SimulationDaysResponse(simulationId = "sim-4", days = listOf(dayMetrics))
+        assertEquals("sim-4", daysResp.simulationId)
+        assertEquals(1, daysResp.days.size)
+        val daysJson = json.encodeToString(SimulationDaysResponse.serializer(), daysResp)
+        val daysDecoded = json.decodeFromString(SimulationDaysResponse.serializer(), daysJson)
+        assertEquals("sim-4", daysDecoded.simulationId)
+
+        val cfdPoint = CfdDataPointResponse(day = 4, throughputCumulative = 12, wipCount = 2, blockedCount = 0)
+        assertEquals(4, cfdPoint.day)
+        assertEquals(4, cfdPoint.component1())
+        assertEquals(12, cfdPoint.component2())
+        assertEquals(2, cfdPoint.component3())
+        assertEquals(0, cfdPoint.component4())
+        assertEquals(12, cfdPoint.throughputCumulative)
+        val cfdPointCopy = cfdPoint.copy(throughputCumulative = 15)
+        assertEquals(15, cfdPointCopy.throughputCumulative)
+        assertEquals(cfdPoint, cfdPoint.copy())
+        assertTrue(cfdPoint.toString().contains("12"))
+
+        val cfdResp = SimulationCfdResponse(simulationId = "sim-5", series = listOf(cfdPoint))
+        assertEquals("sim-5", cfdResp.simulationId)
+        assertEquals("sim-5", cfdResp.component1())
+        val cfdJson = json.encodeToString(SimulationCfdResponse.serializer(), cfdResp)
+        val cfdDecoded = json.decodeFromString(SimulationCfdResponse.serializer(), cfdJson)
+        assertEquals("sim-5", cfdDecoded.simulationId)
+        assertEquals(12, cfdDecoded.series.first().throughputCumulative)
+    }
+
+    @Test
     fun `given response dtos when copy and component methods are used then structural contract is stable`() {
         val created = SimulationCreatedResponse(simulationId = "sim-created")
         assertEquals("sim-created", created.component1())

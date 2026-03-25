@@ -1,0 +1,163 @@
+package com.kanbanvision.httpapi.routes
+
+import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.httpapi.adapters.respondWithDomainError
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
+import com.kanbanvision.usecases.simulation.GetSimulationCfdUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationDaysUseCase
+import com.kanbanvision.usecases.simulation.ListSimulationsUseCase
+import com.kanbanvision.usecases.simulation.queries.GetSimulationCfdQuery
+import com.kanbanvision.usecases.simulation.queries.GetSimulationDaysQuery
+import com.kanbanvision.usecases.simulation.queries.ListSimulationsQuery
+import io.github.smiley4.ktoropenapi.config.RouteConfig
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.response.respond
+import org.slf4j.MDC
+
+private const val DEFAULT_PAGE = 1
+private const val DEFAULT_PAGE_SIZE = 20
+
+internal fun listSimulationsSpec(): RouteConfig.() -> Unit =
+    {
+        operationId = "listSimulations"
+        summary = "Lista simulações paginadas de uma organização"
+        tags("simulations")
+        description = "Retorna a lista paginada de simulações para a organização autenticada."
+        applyBearerAuthSecurity()
+        request {
+            queryParameter<String>("organizationId") {
+                description = "UUID da organização."
+                required = true
+            }
+            queryParameter<Int>("page") {
+                description = "Número da página (padrão 1, mínimo 1)."
+                required = false
+            }
+            queryParameter<Int>("size") {
+                description = "Tamanho da página (padrão 20, máximo 100)."
+                required = false
+            }
+        }
+        applyListSimulationsResponses()
+    }
+
+private fun RouteConfig.applyListSimulationsResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Lista de simulações retornada com sucesso."
+            body<SimulationListResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Parâmetros de paginação inválidos."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
+        }
+    }
+}
+
+internal fun getSimulationDaysSpec(): RouteConfig.() -> Unit =
+    {
+        operationId = "getSimulationDays"
+        summary = "Retorna série temporal de métricas da simulação"
+        tags("simulations")
+        description = "Retorna todos os snapshots diários executados de uma simulação."
+        applyBearerAuthSecurity()
+        request {
+            pathParameter<String>("simulationId") {
+                description = "UUID da simulação."
+                required = true
+            }
+        }
+        applySimulationDaysResponses()
+    }
+
+internal fun getSimulationCfdSpec(): RouteConfig.() -> Unit =
+    {
+        operationId = "getSimulationCfd"
+        summary = "Retorna dados para CFD (Cumulative Flow Diagram)"
+        tags("simulations")
+        description = "Retorna a acumulação de throughput e WIP por dia para geração de CFD."
+        applyBearerAuthSecurity()
+        request {
+            pathParameter<String>("simulationId") {
+                description = "UUID da simulação."
+                required = true
+            }
+        }
+        applySimulationCfdResponses()
+    }
+
+private fun RouteConfig.applySimulationDaysResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Série temporal de métricas retornada com sucesso."
+            body<SimulationDaysResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Parâmetro `simulationId` inválido."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
+        }
+    }
+}
+
+private fun RouteConfig.applySimulationCfdResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Dados CFD retornados com sucesso."
+            body<SimulationCfdResponse>()
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Parâmetro `simulationId` inválido."
+            body<ValidationErrorResponse>()
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
+        }
+    }
+}
+
+internal suspend fun ApplicationCall.handleListSimulations(listSimulations: ListSimulationsUseCase) {
+    val organizationId =
+        request.queryParameters["organizationId"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing organizationId"))
+    val page = request.queryParameters["page"]?.toIntOrNull() ?: DEFAULT_PAGE
+    val size = request.queryParameters["size"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+    listSimulations.execute(ListSimulationsQuery(organizationId = organizationId, page = page, size = size)).fold(
+        ifLeft = { error -> respondWithDomainError(error) },
+        ifRight = { result -> respond(result.toListResponse()) },
+    )
+}
+
+internal suspend fun ApplicationCall.handleGetSimulationDays(getSimulationDays: GetSimulationDaysUseCase) {
+    val simulationId =
+        parameters["simulationId"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
+    MDC.putCloseable("simulationId", simulationId).use {
+        getSimulationDays.execute(GetSimulationDaysQuery(simulationId = simulationId)).fold(
+            ifLeft = { error -> respondWithDomainError(error) },
+            ifRight = { snapshots -> respond(snapshots.toDaysResponse(simulationId)) },
+        )
+    }
+}
+
+internal suspend fun ApplicationCall.handleGetSimulationCfd(getSimulationCfd: GetSimulationCfdUseCase) {
+    val simulationId =
+        parameters["simulationId"]
+            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
+    MDC.putCloseable("simulationId", simulationId).use {
+        getSimulationCfd.execute(GetSimulationCfdQuery(simulationId = simulationId)).fold(
+            ifLeft = { error -> respondWithDomainError(error) },
+            ifRight = { result -> respond(result.toResponse()) },
+        )
+    }
+}

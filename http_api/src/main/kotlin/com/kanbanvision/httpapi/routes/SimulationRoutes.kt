@@ -10,7 +10,10 @@ import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.withSpan
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationCfdUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationDaysUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
+import com.kanbanvision.usecases.simulation.ListSimulationsUseCase
 import com.kanbanvision.usecases.simulation.RunDayUseCase
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
@@ -35,9 +38,14 @@ fun Route.simulationRoutes() {
     val getSimulation: GetSimulationUseCase by inject()
     val runDay: RunDayUseCase by inject()
     val getDailySnapshot: GetDailySnapshotUseCase by inject()
+    val listSimulations: ListSimulationsUseCase by inject()
+    val getSimulationDays: GetSimulationDaysUseCase by inject()
+    val getSimulationCfd: GetSimulationCfdUseCase by inject()
     val domainMetrics: DomainMetrics by inject()
 
     route("/simulations") {
+        get(listSimulationsSpec()) { call.handleListSimulations(listSimulations) }
+
         post(createSimulationSpec()) { call.handleCreateSimulation(createSimulation) }
 
         route("/{simulationId}") {
@@ -46,6 +54,10 @@ fun Route.simulationRoutes() {
             post("/run", runDaySpec()) { call.handleRunDay(runDay, domainMetrics) }
 
             get("/days/{day}/snapshot", getDailySnapshotSpec()) { call.handleGetDailySnapshot(getDailySnapshot) }
+
+            get("/days", getSimulationDaysSpec()) { call.handleGetSimulationDays(getSimulationDays) }
+
+            get("/cfd", getSimulationCfdSpec()) { call.handleGetSimulationCfd(getSimulationCfd) }
         }
     }
 }
