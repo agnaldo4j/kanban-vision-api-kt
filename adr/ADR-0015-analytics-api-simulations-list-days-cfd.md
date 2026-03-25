@@ -8,7 +8,7 @@
 | Data      | 2026-03-25                                                         |
 | Autores   | @agnaldo4j                                                         |
 | Branch    | feat/gap-j-analytics-api                                           |
-| PR        | (preencher após abrir o PR)                                        |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/103         |
 | Supersede | —                                                                  |
 
 ---
