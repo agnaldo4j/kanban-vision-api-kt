@@ -94,6 +94,40 @@ class StepValidationAndExecutionBehaviorTest {
     }
 
     @Test
+    fun `given worker already assigned to step when assigning again then operation is rejected`() {
+        val worker =
+            Worker(
+                name = "Dev",
+                abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
+            )
+        val step =
+            Step
+                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .assignWorker(worker)
+
+        assertFailsWith<IllegalArgumentException> { step.assignWorker(worker) }
+    }
+
+    @Test
+    fun `given empty daily capacities map when executing card then zero effort is consumed`() {
+        val worker =
+            Worker(
+                name = "Dev",
+                abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
+            )
+        val step =
+            Step
+                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .assignWorker(worker)
+        val card = Card(step = StepRef(step.id), title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 3)
+
+        val result = step.executeCard(worker = worker, card = card, dailyCapacities = emptyMap())
+
+        assertEquals(0, result.consumedEffort)
+        assertEquals(false, result.isStepCompleted)
+    }
+
+    @Test
     fun `given card already completed for step ability when executing then execution consumes zero and reports completed`() {
         val worker =
             Worker(
