@@ -34,4 +34,14 @@ class SpanHelperTest {
                 }
             }
         }
+
+    @Test
+    fun `given exception with null message when failing block then error fallback is used`() =
+        runTest {
+            assertFailsWith<IllegalStateException> {
+                withSpan("test.null-message") {
+                    throw IllegalStateException()
+                }
+            }
+        }
 }

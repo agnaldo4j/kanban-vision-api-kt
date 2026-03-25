@@ -45,6 +45,27 @@ class AggregateAndCompanionValidationBehaviorTest {
     }
 
     @Test
+    fun `given scenario rules with zero wip limit when constructing then wip limit validation fails`() {
+        assertFailsWith<IllegalArgumentException> {
+            ScenarioRules(
+                policySet = PolicySet(wipLimit = 1),
+                wipLimit = 0,
+                teamSize = 1,
+                seedValue = 1L,
+            )
+        }
+    }
+
+    @Test
+    fun `given board when adding step with blank name then operation is rejected`() {
+        val board = Board.create(name = "Flow Board")
+
+        assertFailsWith<IllegalArgumentException> {
+            board.addStep(name = "", requiredAbility = AbilityName.DEVELOPER)
+        }
+    }
+
+    @Test
     fun `given simulation status and result when creating then data is preserved`() {
         val rules = ScenarioRules.create(wipLimit = 2, teamSize = 2, seedValue = 1L)
         val board = Board.create(name = "Board")
