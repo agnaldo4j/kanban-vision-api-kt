@@ -30,14 +30,17 @@ internal fun listSimulationsSpec(): RouteConfig.() -> Unit =
             queryParameter<String>("organizationId") {
                 description = "UUID da organização."
                 required = true
+                example("default") { value = "550e8400-e29b-41d4-a716-446655440000" }
             }
             queryParameter<Int>("page") {
                 description = "Número da página (padrão 1, mínimo 1)."
                 required = false
+                example("default") { value = DEFAULT_PAGE }
             }
             queryParameter<Int>("size") {
                 description = "Tamanho da página (padrão 20, máximo 100)."
                 required = false
+                example("default") { value = DEFAULT_PAGE_SIZE }
             }
         }
         applyListSimulationsResponses()
@@ -48,14 +51,19 @@ private fun RouteConfig.applyListSimulationsResponses() {
         code(HttpStatusCode.OK) {
             description = "Lista de simulações retornada com sucesso."
             body<SimulationListResponse>()
+            header<String>("X-Request-ID") {
+                description = "Correlation ID para rastreamento de logs."
+            }
         }
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetros de paginação inválidos."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -71,6 +79,7 @@ internal fun getSimulationDaysSpec(): RouteConfig.() -> Unit =
             pathParameter<String>("simulationId") {
                 description = "UUID da simulação."
                 required = true
+                example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
         }
         applySimulationDaysResponses()
@@ -87,6 +96,7 @@ internal fun getSimulationCfdSpec(): RouteConfig.() -> Unit =
             pathParameter<String>("simulationId") {
                 description = "UUID da simulação."
                 required = true
+                example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
         }
         applySimulationCfdResponses()
@@ -97,14 +107,19 @@ private fun RouteConfig.applySimulationDaysResponses() {
         code(HttpStatusCode.OK) {
             description = "Série temporal de métricas retornada com sucesso."
             body<SimulationDaysResponse>()
+            header<String>("X-Request-ID") {
+                description = "Correlation ID para rastreamento de logs."
+            }
         }
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetro `simulationId` inválido."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -114,14 +129,19 @@ private fun RouteConfig.applySimulationCfdResponses() {
         code(HttpStatusCode.OK) {
             description = "Dados CFD retornados com sucesso."
             body<SimulationCfdResponse>()
+            header<String>("X-Request-ID") {
+                description = "Correlation ID para rastreamento de logs."
+            }
         }
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetro `simulationId` inválido."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }

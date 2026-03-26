@@ -73,6 +73,15 @@ private fun createSimulationSpec(): RouteConfig.() -> Unit =
             body<CreateSimulationRequest> {
                 description = "Configuração da simulação: organização, WIP limit, tamanho do time e semente aleatória."
                 required = true
+                example("padrão") {
+                    value =
+                        CreateSimulationRequest(
+                            organizationId = "550e8400-e29b-41d4-a716-446655440000",
+                            wipLimit = 5,
+                            teamSize = 4,
+                            seedValue = 12345L,
+                        )
+                }
             }
         }
         applyCreateSimulationResponses()
@@ -83,18 +92,24 @@ private fun RouteConfig.applyCreateSimulationResponses() {
         code(HttpStatusCode.Created) {
             description = "Simulação criada com sucesso."
             body<SimulationCreatedResponse>()
+            header<String>("X-Request-ID") {
+                description = "Correlation ID para rastreamento de logs."
+            }
         }
         code(HttpStatusCode.BadRequest) {
-            description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
-            body<ValidationErrorResponse>()
+            description = "Requisição inválida — detalhes do erro são retornados no corpo e `requestId` identifica a requisição."
+            body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.NotFound) {
             description = "Organização não encontrada."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -110,23 +125,33 @@ private fun getSimulationSpec(): RouteConfig.() -> Unit =
             pathParameter<String>("simulationId") {
                 description = "UUID da simulação."
                 required = true
+                example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
         }
-        response {
-            code(HttpStatusCode.OK) {
-                description = "Simulação encontrada."
-                body<SimulationResponse>()
+        applyGetSimulationResponses()
+    }
+
+private fun RouteConfig.applyGetSimulationResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Simulação encontrada."
+            body<SimulationResponse>()
+            header<String>("X-Request-ID") {
+                description = "Correlation ID para rastreamento de logs."
             }
-            code(HttpStatusCode.NotFound) {
-                description = "Simulação não encontrada para o `simulationId` informado."
-                body<DomainErrorResponse>()
-            }
-            code(HttpStatusCode.InternalServerError) {
-                description = "Erro de persistência inesperado."
-                body<DomainErrorResponse>()
-            }
+        }
+        code(HttpStatusCode.NotFound) {
+            description = "Simulação não encontrada para o `simulationId` informado."
+            body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro de persistência inesperado."
+            body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
+}
 
 private fun runDaySpec(): RouteConfig.() -> Unit =
     {
@@ -139,10 +164,21 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
             pathParameter<String>("simulationId") {
                 description = "UUID da simulação."
                 required = true
+                example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
             body<RunDayRequest> {
                 description = "Lista de decisões a aplicar no dia corrente."
                 required = true
+                example("sem decisões") { value = RunDayRequest(decisions = emptyList()) }
+                example("mover item") {
+                    value =
+                        RunDayRequest(
+                            decisions =
+                                listOf(
+                                    DecisionRequest(type = "MOVE_ITEM", payload = mapOf("cardId" to "card-1")),
+                                ),
+                        )
+                }
             }
         }
         applyRunDayResponses()
@@ -153,22 +189,27 @@ private fun RouteConfig.applyRunDayResponses() {
         code(HttpStatusCode.OK) {
             description = "Dia executado com sucesso. Retorna o snapshot do dia."
             body<DailySnapshotResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.Conflict) {
             description = "O dia já foi executado anteriormente. Verificar o dia atual via `GET /api/v1/simulations/{simulationId}`."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.NotFound) {
             description = "Simulação não encontrada."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.BadRequest) {
-            description = "Tipo de decisão inválido ou dados malformados. `errors` lista os campos inválidos."
-            body<ValidationErrorResponse>()
+            description = "Requisição inválida (JSON malformado ou tipo de decisão/dados inválidos)."
+            body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -184,10 +225,12 @@ private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
             pathParameter<String>("simulationId") {
                 description = "UUID da simulação."
                 required = true
+                example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
             pathParameter<Int>("day") {
                 description = "Número do dia da simulação (começa em 1)."
                 required = true
+                example("default") { value = 1 }
             }
         }
         applyGetDailySnapshotResponses()
@@ -198,18 +241,24 @@ private fun RouteConfig.applyGetDailySnapshotResponses() {
         code(HttpStatusCode.OK) {
             description = "Snapshot encontrado."
             body<DailySnapshotResponse>()
+            header<String>("X-Request-ID") {
+                description = "Correlation ID para rastreamento de logs."
+            }
         }
         code(HttpStatusCode.NotFound) {
             description = "Simulação ou snapshot não encontrado — `simulationId` inválido ou dia ainda não simulado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetro `day` inválido — deve ser inteiro ≥ 1."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
