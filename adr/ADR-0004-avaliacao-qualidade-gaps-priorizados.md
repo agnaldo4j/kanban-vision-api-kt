@@ -493,7 +493,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 
 **Ciclo Excelência (P4):**
 - [x] `[N]` **GAP-T** — Criar `docs/context-map.md` com 3 BCs atuais (Kanban Management, Simulation, Analytics) + 2 candidatos a extração (Forecasting, Policy). Padrões de integração: ACL, Customer-Supplier. Referência: *Kanban from the Inside* (Burrows) — 9 valores e 6 práticas como lente de design dos BCs
-- [ ] `[N]` **GAP-X** — Completar `ServiceClass` com `DATE_DRIVEN` e `INTANGIBLE`. Burrows define 4 classes de serviço: Expedite, Date-driven, Standard, Intangible. O domínio implementa apenas EXPEDITE e STANDARD — lacuna de modelagem de domínio identificada via vault Obsidian
+- [x] `[N]` **GAP-X** — Completar `ServiceClass` com `FIXED_DATE` e `INTANGIBLE`. Burrows define 4 classes de serviço: Expedite, Date-driven, Standard, Intangible. O domínio agora implementa as quatro (`EXPEDITE`, `FIXED_DATE`, `STANDARD`, `INTANGIBLE`), documentadas na enum `ServiceClass` e cobertas por testes automatizados
 - [ ] `[N]` **GAP-N** — Adicionar exemplos nos request bodies, documentar `X-Request-ID` nas respostas e query params dos endpoints de analytics (CFD, days). Schema Bearer já presente (GAP-A concluído)
 - [ ] `[E→ADR-0012]` **GAP-R** — Escrever ADR-0012 apenas quando build time > 2min. Decisão: separação de `usecases-api/` e `usecases-impl/`. Só após aprovação: criar novos módulos Gradle
 - [ ] `[M]` **GAP-L** — Integrar PITest no pipeline de qualidade (Gradle plugin). Valor especial no `SimulationEngine` — Reinertsen: asserções sobre comportamento de fila e WIP são críticas e mutantes podem sobreviver a testes de cobertura de linha
