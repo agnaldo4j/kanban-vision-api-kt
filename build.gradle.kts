@@ -7,3 +7,9 @@ tasks.register("testAll") {
     group = "verification"
     dependsOn(subprojects.map { "${it.path}:check" })
 }
+
+tasks.register("pitestAll") {
+    description = "Runs PITest mutation testing (domain module: SimulationEngine focus)"
+    group = "verification"
+    dependsOn(":domain:pitest")
+}

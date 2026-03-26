@@ -2,6 +2,8 @@ package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.usecases.Page
+import com.kanbanvision.usecases.simulation.CfdResult
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -88,6 +90,96 @@ internal fun DailySnapshot.toResponse() =
                     cardId = m.cardId,
                     day = m.day.value,
                     reason = m.reason,
+                )
+            },
+    )
+
+@Serializable
+data class SimulationSummaryResponse(
+    val id: String,
+    val name: String,
+    val status: String,
+    val currentDay: Int,
+)
+
+@Serializable
+data class SimulationListResponse(
+    val data: List<SimulationSummaryResponse>,
+    val page: Int,
+    val size: Int,
+    val total: Long,
+)
+
+@Serializable
+data class DayMetricsResponse(
+    val day: Int,
+    val throughput: Int,
+    val wipCount: Int,
+    val blockedCount: Int,
+    val avgAgingDays: Double,
+)
+
+@Serializable
+data class SimulationDaysResponse(
+    val simulationId: String,
+    val days: List<DayMetricsResponse>,
+)
+
+@Serializable
+data class CfdDataPointResponse(
+    val day: Int,
+    val throughputCumulative: Int,
+    val wipCount: Int,
+    val blockedCount: Int,
+)
+
+@Serializable
+data class SimulationCfdResponse(
+    val simulationId: String,
+    val series: List<CfdDataPointResponse>,
+)
+
+internal fun Page<Simulation>.toListResponse() =
+    SimulationListResponse(
+        data = data.map { it.toSummaryResponse() },
+        page = page,
+        size = size,
+        total = total,
+    )
+
+internal fun Simulation.toSummaryResponse() =
+    SimulationSummaryResponse(
+        id = id,
+        name = name,
+        status = status.name,
+        currentDay = currentDay.value,
+    )
+
+internal fun List<DailySnapshot>.toDaysResponse(simulationId: String) =
+    SimulationDaysResponse(
+        simulationId = simulationId,
+        days =
+            map { snapshot ->
+                DayMetricsResponse(
+                    day = snapshot.day.value,
+                    throughput = snapshot.metrics.throughput,
+                    wipCount = snapshot.metrics.wipCount,
+                    blockedCount = snapshot.metrics.blockedCount,
+                    avgAgingDays = snapshot.metrics.avgAgingDays,
+                )
+            },
+    )
+
+internal fun CfdResult.toResponse() =
+    SimulationCfdResponse(
+        simulationId = simulationId,
+        series =
+            series.map { point ->
+                CfdDataPointResponse(
+                    day = point.day,
+                    throughputCumulative = point.throughputCumulative,
+                    wipCount = point.wipCount,
+                    blockedCount = point.blockedCount,
                 )
             },
     )

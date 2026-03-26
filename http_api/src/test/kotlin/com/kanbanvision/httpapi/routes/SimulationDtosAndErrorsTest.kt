@@ -163,6 +163,25 @@ class SimulationDtosAndErrorsTest {
         }
 
     @Test
+    fun `given no request id attribute when responding with domain error then unknown fallback is used`() =
+        testApplication {
+            application {
+                configureSerialization()
+                routing {
+                    get("/error/no-request-id") {
+                        // Deliberately do NOT set REQUEST_ID_KEY
+                        call.respondWithDomainError(DomainError.ValidationError("missing id"))
+                    }
+                }
+            }
+
+            val response = client.get("/error/no-request-id")
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue(response.bodyAsText().contains("unknown"))
+        }
+
+    @Test
     fun `given normal json route when serializing response then serialization plugin writes payload`() =
         testApplication {
             application {

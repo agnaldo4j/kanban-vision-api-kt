@@ -2,7 +2,7 @@
     <!-- Text appender: used in development (default) -->
     <appender name="STDOUT_TEXT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [rid=%X{requestId}] - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [rid=%X{requestId}] [tid=%X{traceId}] [sid=%X{spanId}] - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -10,6 +10,8 @@
     <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
         </encoder>
     </appender>
 
