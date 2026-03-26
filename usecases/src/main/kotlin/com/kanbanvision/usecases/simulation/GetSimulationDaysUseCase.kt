@@ -19,12 +19,13 @@ class GetSimulationDaysUseCase(
             query.validate().bind()
             val id = query.simulationId
             val (snapshots, duration) = timed { snapshotRepository.findAllBySimulation(id) }
+            val sorted = snapshots.sortedBy { it.day.value }
             log.info(
                 "Simulation days fetched: id={} count={} duration={}ms",
                 id,
-                snapshots.size,
+                sorted.size,
                 duration.inWholeMilliseconds,
             )
-            snapshots
+            sorted
         }
 }

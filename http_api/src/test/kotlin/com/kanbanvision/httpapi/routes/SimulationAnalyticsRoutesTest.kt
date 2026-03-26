@@ -175,6 +175,36 @@ class SimulationAnalyticsRoutesTest {
         }
 
     @Test
+    fun `given non-integer page parameter when listing simulations then api returns bad request`() =
+        testApplication {
+            val mocks = SimulationApiMocks()
+            application { configureSimulationApi(mocks) }
+
+            val response =
+                client.get("/api/v1/simulations?organizationId=org-1&page=abc") {
+                    withJwt().invoke(this)
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue(response.bodyAsText().contains("Invalid page"))
+        }
+
+    @Test
+    fun `given non-integer size parameter when listing simulations then api returns bad request`() =
+        testApplication {
+            val mocks = SimulationApiMocks()
+            application { configureSimulationApi(mocks) }
+
+            val response =
+                client.get("/api/v1/simulations?organizationId=org-1&size=xyz") {
+                    withJwt().invoke(this)
+                }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue(response.bodyAsText().contains("Invalid size"))
+        }
+
+    @Test
     fun `given unauthenticated request when listing simulations then api returns unauthorized`() =
         testApplication {
             val mocks = SimulationApiMocks()

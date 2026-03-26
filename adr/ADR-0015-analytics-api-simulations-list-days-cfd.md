@@ -102,15 +102,15 @@ a migração para consulta SQL (Opção B) com benchmark comparativo.
 
 ## Especificação dos Endpoints
 
-### `GET /simulations?page=1&size=20`
+### `GET /simulations?organizationId=&page=1&size=20`
 
-Retorna lista paginada de simulações para a organização do token JWT.
+Retorna lista paginada de simulações para a organização informada via parâmetro `organizationId`.
 
 **Response 200:**
 ```json
 {
   "data": [
-    { "id": "uuid", "name": "Sprint 1", "status": "COMPLETED", "currentDay": 30 }
+    { "id": "uuid", "name": "Sprint 1", "status": "DRAFT", "currentDay": 30 }
   ],
   "page": 1,
   "size": 20,
@@ -118,7 +118,10 @@ Retorna lista paginada de simulações para a organização do token JWT.
 }
 ```
 
-**Query params:** `page` (default 1, min 1), `size` (default 20, min 1, max 100).
+**Query params:**
+- `organizationId` (obrigatório) — UUID da organização.
+- `page` (default 1, min 1) — parâmetro não-inteiro retorna 400.
+- `size` (default 20, min 1, max 100) — parâmetro não-inteiro retorna 400.
 
 ---
 
@@ -146,21 +149,25 @@ Retorna série temporal de métricas para todos os dias executados.
 
 ### `GET /simulations/{id}/cfd`
 
-Retorna dados para CFD: acumulação de itens por Step ao longo dos dias.
+Retorna dados para CFD: throughput cumulativo, WIP e itens bloqueados por dia.
+
+> **Nota de implementação:** O domínio atual não armazena o estado de cards por Step
+> em cada snapshot; `DailySnapshot.movements` registra movimentos mas não o estado
+> estático por coluna. O CFD implementado usa acumulação de `FlowMetrics.throughput`
+> (throughput cumulativo), `wipCount` e `blockedCount` — suficiente para o CFD clássico
+> de throughput vs. WIP. CFD por Step pode ser adicionado via nova ADR quando o domínio
+> capturar estado por coluna.
 
 **Response 200:**
 ```json
 {
   "simulationId": "uuid",
-  "steps": ["Backlog", "Dev", "Test", "Done"],
   "series": [
-    { "day": 1, "counts": [10, 3, 1, 0] },
-    { "day": 2, "counts": [9, 4, 2, 1] }
+    { "day": 1, "throughputCumulative": 3, "wipCount": 5, "blockedCount": 1 },
+    { "day": 2, "throughputCumulative": 5, "wipCount": 4, "blockedCount": 0 }
   ]
 }
 ```
-
-O campo `counts[i]` representa o número de cards na step `steps[i]` no final do dia.
 
 ---
 
@@ -238,7 +245,7 @@ O campo `counts[i]` representa o número de cards na step `steps[i]` no final do
 - [ ] **1. Rastreabilidade**: branch `feat/gap-j-analytics-api`, PR com URL na ADR
 - [ ] **2. Testes Técnicos**: unitários (given–when–then para casos feliz + erro) e integração para cada boundary
 - [ ] **3. Versionamento**: OpenAPI atualizado com os 3 novos endpoints, schemas documentados
-- [ ] **4. Segurança**: rotas dentro de `authenticate("jwt-auth")`, `tenantId` validado em cada use case
+- [ ] **4. Segurança**: rotas dentro de `authenticate("jwt-auth")`, `organizationId` obrigatório em `/simulations`
 - [ ] **5. CI/CD**: `./gradlew testAll` verde, sem testes flaky
 - [ ] **6. Observabilidade**: MDC `simulationId` propagado nos logs dos use cases
 - [ ] **7. Performance**: `size` máximo 100 em `/simulations`, limite de snapshots em `/days` e `/cfd`

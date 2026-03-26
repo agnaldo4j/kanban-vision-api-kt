@@ -20,15 +20,19 @@ class GetSimulationDaysUseCaseTest {
     private val useCase = GetSimulationDaysUseCase(snapshotRepository)
 
     @Test
-    fun `given simulation with snapshots when fetching days then all snapshots are returned ordered`() =
+    fun `given simulation with snapshots when fetching days then all snapshots are returned sorted by day`() =
         runTest {
-            val snapshots = listOf(fixtureSnapshot(day = 1), fixtureSnapshot(day = 2), fixtureSnapshot(day = 3))
+            val snapshots = listOf(fixtureSnapshot(day = 3), fixtureSnapshot(day = 1), fixtureSnapshot(day = 2))
             coEvery { snapshotRepository.findAllBySimulation("sim-1") } returns snapshots.right()
 
             val result = useCase.execute(GetSimulationDaysQuery(simulationId = "sim-1"))
 
             assertTrue(result.isRight())
-            assertEquals(3, result.getOrNull()!!.size)
+            val days = result.getOrNull()!!
+            assertEquals(3, days.size)
+            assertEquals(1, days[0].day.value)
+            assertEquals(2, days[1].day.value)
+            assertEquals(3, days[2].day.value)
             coVerify(exactly = 1) { snapshotRepository.findAllBySimulation("sim-1") }
         }
 

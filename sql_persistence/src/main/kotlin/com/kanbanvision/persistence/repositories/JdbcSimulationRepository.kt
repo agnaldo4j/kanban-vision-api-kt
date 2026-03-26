@@ -17,6 +17,7 @@ import com.kanbanvision.persistence.tables.SimulationsTable
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -76,6 +77,7 @@ class JdbcSimulationRepository : SimulationRepository {
                     .join(SimulationStatesTable, JoinType.LEFT, SimulationsTable.id, SimulationStatesTable.simulationId)
             ).selectAll()
                 .where(SimulationsTable.organizationId eq organizationId)
+                .orderBy(SimulationsTable.id to SortOrder.ASC)
                 .limit(size)
                 .offset(offset)
                 .map { row -> rowToSimulation(row) }

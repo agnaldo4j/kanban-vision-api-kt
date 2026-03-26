@@ -24,7 +24,7 @@ internal fun listSimulationsSpec(): RouteConfig.() -> Unit =
         operationId = "listSimulations"
         summary = "Lista simulações paginadas de uma organização"
         tags("simulations")
-        description = "Retorna a lista paginada de simulações para a organização autenticada."
+        description = "Retorna a lista paginada de simulações para a organização informada via parâmetro organizationId."
         applyBearerAuthSecurity()
         request {
             queryParameter<String>("organizationId") {
@@ -130,8 +130,22 @@ internal suspend fun ApplicationCall.handleListSimulations(listSimulations: List
     val organizationId =
         request.queryParameters["organizationId"]
             ?: return respondWithDomainError(DomainError.ValidationError("Missing organizationId"))
-    val page = request.queryParameters["page"]?.toIntOrNull() ?: DEFAULT_PAGE
-    val size = request.queryParameters["size"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+    val pageParam = request.queryParameters["page"]
+    val page =
+        if (pageParam == null) {
+            DEFAULT_PAGE
+        } else {
+            pageParam.toIntOrNull()
+                ?: return respondWithDomainError(DomainError.ValidationError("Invalid page parameter"))
+        }
+    val sizeParam = request.queryParameters["size"]
+    val size =
+        if (sizeParam == null) {
+            DEFAULT_PAGE_SIZE
+        } else {
+            sizeParam.toIntOrNull()
+                ?: return respondWithDomainError(DomainError.ValidationError("Invalid size parameter"))
+        }
     listSimulations.execute(ListSimulationsQuery(organizationId = organizationId, page = page, size = size)).fold(
         ifLeft = { error -> respondWithDomainError(error) },
         ifRight = { result -> respond(result.toListResponse()) },
