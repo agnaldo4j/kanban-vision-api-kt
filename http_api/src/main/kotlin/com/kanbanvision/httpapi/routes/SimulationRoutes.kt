@@ -97,8 +97,8 @@ private fun RouteConfig.applyCreateSimulationResponses() {
             }
         }
         code(HttpStatusCode.BadRequest) {
-            description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
-            body<ValidationErrorResponse>()
+            description = "Requisição inválida — detalhes do erro são retornados no corpo e `requestId` identifica a requisição."
+            body<DomainErrorResponse>()
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.NotFound) {
@@ -202,8 +202,8 @@ private fun RouteConfig.applyRunDayResponses() {
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.BadRequest) {
-            description = "Tipo de decisão inválido ou dados malformados. `errors` lista os campos inválidos."
-            body<ValidationErrorResponse>()
+            description = "Requisição inválida (JSON malformado ou tipo de decisão/dados inválidos)."
+            body<DomainErrorResponse>()
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {

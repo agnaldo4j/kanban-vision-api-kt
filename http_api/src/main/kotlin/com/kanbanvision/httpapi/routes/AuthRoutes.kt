@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import io.github.smiley4.ktoropenapi.config.RouteConfig
 import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
@@ -69,11 +70,13 @@ private fun RouteConfig.applyIssueDevTokenResponses() {
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.BadRequest) {
-            description = "Requisição inválida."
+            description = "Requisição inválida — JSON malformado."
+            body<DomainErrorResponse>()
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro interno inesperado."
+            body<DomainErrorResponse>()
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
