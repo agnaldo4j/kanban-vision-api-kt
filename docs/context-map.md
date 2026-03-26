@@ -29,9 +29,9 @@
                              │        Analytics         │
                              │                         │
                              │  FlowMetrics, CFD        │
-                             │  GET /simulations        │
-                             │  GET /simulations/{id}/  │
-                             │    days · cfd            │
+                             │  GET /api/v1/simulations │
+                             │  GET /api/v1/simulations/│
+                             │    {id}/days · cfd       │
                              └─────────────┬───────────┘
                                            │
                               Customer-Supplier (futuro)
@@ -151,7 +151,7 @@
 - Previsão de throughput por período
 - Monte Carlo simulation para estimativas probabilísticas de entrega
 
-**Relação esperada:** Customer-Supplier downstream de Analytics (consome `CfdDataPoint` e `SimulationDayResponse` sem acoplar ao modelo de execução)
+**Relação esperada:** Customer-Supplier downstream de Analytics (consome `SimulationDaysResponse` e `CfdDataPointResponse` sem acoplar ao modelo de execução)
 
 ---
 
