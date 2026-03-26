@@ -67,7 +67,7 @@
 |---|---|---|
 | `Board` | Aggregate Root | Estrutura do board; garante nomes de steps únicos |
 | `Step` | Entity | Posição no fluxo; workers com ability obrigatória |
-| `Card` | Entity | Unidade de trabalho; state machine (TODO→IN_PROGRESS→DONE) |
+| `Card` | Entity | Unidade de trabalho; state machine (states: TODO, IN_PROGRESS, BLOCKED, DONE) |
 | `Organization` | Aggregate Root | Hierarquia de times (Tribe → Squad → Worker) |
 | `Worker` | Entity | Capacidade diária por ability (determinística com seed) |
 | `ServiceClass` | Enum | STANDARD · EXPEDITE · FIXED_DATE · INTANGIBLE |
@@ -94,7 +94,7 @@
 | `Scenario` | Aggregate Root | Estado imutável do board + regras + histórico de execução |
 | `ScenarioRules` | Value Object | WIP limit, team size, seed determinístico |
 | `SimulationEngine` | Domain Service | Execução pura e determinística de um dia |
-| `Decision` | Entity | Comando aplicado a um dia (MOVE, BLOCK, UNBLOCK, ADD) |
+| `Decision` | Entity | Comando aplicado a um dia (`DecisionType`: MOVE_ITEM, BLOCK_ITEM, UNBLOCK_ITEM, ADD_ITEM; factories: move, block, unblock, addItem) |
 | `DailySnapshot` | Entity | Estado capturado ao final de cada dia executado |
 | `FlowMetrics` | Value Object | throughput, wipCount, blockedCount, avgAgingDays |
 | `Movement` | Entity | Rastreamento de cada movimentação de card no dia |
@@ -111,15 +111,17 @@
 
 | Endpoint | Descrição |
 |---|---|
-| `GET /simulations` | Lista paginada de simulações (ordenada por id ASC) |
-| `GET /simulations/{id}/days` | Série temporal de snapshots diários |
-| `GET /simulations/{id}/cfd` | Dados de Cumulative Flow Diagram |
+| `GET /api/v1/simulations` | Lista paginada de simulações (ordenada por id ASC) |
+| `GET /api/v1/simulations/{id}/days` | Série temporal de snapshots diários |
+| `GET /api/v1/simulations/{id}/cfd` | Dados de Cumulative Flow Diagram |
 
 | DTO | Campos |
 |---|---|
-| `SimulationSummaryResponse` | id, organizationId, wipLimit, teamSize, seedValue, status, currentDay |
-| `SimulationDayResponse` | simulationId, day, throughput, wipCount, blockedCount, avgAgingDays |
-| `CfdDataPoint` | day, throughputCumulative, wipCount, blockedCount |
+| `SimulationSummaryResponse` | id, name, status, currentDay |
+| `SimulationDaysResponse` | simulationId, days: List\<DayMetricsResponse\> |
+| `DayMetricsResponse` | day, throughput, wipCount, blockedCount, avgAgingDays |
+| `CfdDataPointResponse` | day, throughputCumulative, wipCount, blockedCount |
+| `SimulationCfdResponse` | simulationId, series: List\<CfdDataPointResponse\> |
 
 **Linguagem Ubíqua:** CFD, Time-Series, Throughput Cumulative, Pagination, Day Series
 
