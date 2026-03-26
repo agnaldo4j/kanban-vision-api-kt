@@ -496,7 +496,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-X** — Completar `ServiceClass` com `FIXED_DATE` e `INTANGIBLE`. Burrows define 4 classes de serviço: Expedite, Date-driven, Standard, Intangible. O domínio agora implementa as quatro (`EXPEDITE`, `FIXED_DATE`, `STANDARD`, `INTANGIBLE`), documentadas na enum `ServiceClass` e cobertas por testes automatizados
 - [x] `[N]` **GAP-N** — Adicionar exemplos nos request bodies, documentar `X-Request-ID` nas respostas e query params dos endpoints de analytics (CFD, days). Schema Bearer já presente (GAP-A concluído)
 - [ ] `[E→ADR-0012]` **GAP-R** — Escrever ADR-0012 apenas quando build time > 2min. Decisão: separação de `usecases-api/` e `usecases-impl/`. Só após aprovação: criar novos módulos Gradle
-- [ ] `[M]` **GAP-L** — Integrar PITest no pipeline de qualidade (Gradle plugin). Valor especial no `SimulationEngine` — Reinertsen: asserções sobre comportamento de fila e WIP são críticas e mutantes podem sobreviver a testes de cobertura de linha
+- [x] `[M]` **GAP-L** — PITest 1.15.0 integrado via `domain/build.gradle.kts` (STRONGER mutators, targetClasses=simulation.*). Baseline estabelecida: 38% mutation score (70/182 mutantes eliminados) vs 97% line coverage — confirma Reinertsen: surviving mutants em conditional boundaries e equality checks do `SimulationEngine`. `mutationThreshold=35` previne regressão; task `pitestAll` e step CI adicionados (PR #111)
 - [ ] `[E→ADR-0013]` **GAP-M** — Escrever ADR-0013 (estratégia de schema boundaries e jsonb vs colunas). PRs #87–#91 alteraram o schema serializado (Column→Step): migration de dados legados pode ser necessária. Só após aprovação: criar migração Flyway e atualizar queries
 
 ---
