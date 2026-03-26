@@ -492,7 +492,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [ ] `[E→ADR-0011]` **GAP-K** — Escrever ADR-0011 (estratégia de contract testing com Pact). Requer GAP-G concluído. Protege CP4 (políticas explícitas de API). Só após aprovação: configurar Pact broker e escrever consumer tests
 
 **Ciclo Excelência (P4):**
-- [ ] `[N]` **GAP-T** — Criar `docs/context-map.md` com 3 BCs atuais (Kanban Management, Simulation, Analytics) + 2 candidatos a extração (Forecasting, Policy). Padrões de integração: ACL, Customer-Supplier. Referência: *Kanban from the Inside* (Burrows) — 9 valores e 6 práticas como lente de design dos BCs
+- [x] `[N]` **GAP-T** — Criar `docs/context-map.md` com 3 BCs atuais (Kanban Management, Simulation, Analytics) + 2 candidatos a extração (Forecasting, Policy). Padrões de integração: ACL, Customer-Supplier. Referência: *Kanban from the Inside* (Burrows) — 9 valores e 6 práticas como lente de design dos BCs
 - [ ] `[N]` **GAP-X** — Completar `ServiceClass` com `DATE_DRIVEN` e `INTANGIBLE`. Burrows define 4 classes de serviço: Expedite, Date-driven, Standard, Intangible. O domínio implementa apenas EXPEDITE e STANDARD — lacuna de modelagem de domínio identificada via vault Obsidian
 - [ ] `[N]` **GAP-N** — Adicionar exemplos nos request bodies, documentar `X-Request-ID` nas respostas e query params dos endpoints de analytics (CFD, days). Schema Bearer já presente (GAP-A concluído)
 - [ ] `[E→ADR-0012]` **GAP-R** — Escrever ADR-0012 apenas quando build time > 2min. Decisão: separação de `usecases-api/` e `usecases-impl/`. Só após aprovação: criar novos módulos Gradle
