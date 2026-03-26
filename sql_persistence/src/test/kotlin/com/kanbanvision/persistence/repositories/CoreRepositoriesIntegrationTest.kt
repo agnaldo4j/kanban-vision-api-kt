@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcCoreRepositoriesIntegrationTest {
+class CoreRepositoriesIntegrationTest {
     private val boardRepository = JdbcBoardRepository()
     private val stepRepository = JdbcStepRepository()
     private val cardRepository = JdbcCardRepository()
