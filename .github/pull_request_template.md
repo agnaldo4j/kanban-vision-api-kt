@@ -37,6 +37,11 @@
 - [ ] Sem secrets, tokens ou PII no código ou logs
 - [ ] `JWT_DEV_MODE=true` não presente em código de produção
 
+### Observabilidade
+- [ ] `requestId` propagado no MDC em novas rotas (se aplicável, ou N/A)
+- [ ] Novos erros de domínio mapeados em `StatusPages` (se aplicável, ou N/A)
+- [ ] Métricas existentes não foram quebradas (`/metrics` responde sem erro)
+
 ### Rastreabilidade
 - [ ] Branch segue convenção: `feat/gap-X-slug`, `fix/...`, `docs/...`
 - [ ] Commits com mensagens descritivas e referência ao gap/ticket
@@ -47,6 +52,11 @@
 - [ ] Todos os itens do DOD confirmados ou marcados N/A com justificativa
 - [ ] Diagramas C4 atualizados se novo módulo, rota ou use case foi adicionado
 
+### Bug Fix (preencher apenas se este PR é um `fix/`)
+- [ ] Reprodução mínima do bug documentada no corpo do PR
+- [ ] Teste de regressão adicionado que falharia sem o fix: _(nome do teste)_
+- [ ] Causa raiz identificada
+
 ---
 
 ## Plano de Testes
@@ -56,5 +66,7 @@
 - [ ] CI pipeline verde no PR
 
 ---
+
+> Para features complexas, verifique o checklist `/definition-of-done` completo antes de marcar como Done.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
