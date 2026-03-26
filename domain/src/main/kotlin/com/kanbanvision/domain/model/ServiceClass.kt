@@ -27,9 +27,10 @@ enum class ServiceClass {
 
     /**
      * Strategic or investigative work with no clear deliverable date.
-     * Cost-of-delay is roughly flat over time; should yield capacity to
-     * [EXPEDITE] and [FIXED_DATE] items when WIP is constrained.
-     * Currently scheduled with the same weight as [STANDARD].
+     * Cost-of-delay is roughly flat over time. In Burrows' policy, this class
+     * should yield capacity to [EXPEDITE] and [FIXED_DATE] items when WIP is
+     * constrained. In the current simulation engine, it is scheduled with the
+     * same weight as [STANDARD] and [FIXED_DATE], after [EXPEDITE] work.
      */
     INTANGIBLE,
 }
