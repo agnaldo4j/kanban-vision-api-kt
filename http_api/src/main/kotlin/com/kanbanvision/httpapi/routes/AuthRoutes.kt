@@ -58,16 +58,26 @@ private fun issueTokenSpec(): RouteConfig.() -> Unit =
                 }
             }
         }
-        response {
-            code(HttpStatusCode.OK) {
-                description = "Token JWT emitido com sucesso."
-                body<TokenResponse>()
-                header<String>("X-Request-ID") {
-                    description = "Correlation ID para rastreamento de logs."
-                }
-            }
+        applyIssueDevTokenResponses()
+    }
+
+private fun RouteConfig.applyIssueDevTokenResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Token JWT emitido com sucesso."
+            body<TokenResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Requisição inválida."
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro interno inesperado."
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
+}
 
 @Serializable
 data class IssueTokenRequest(

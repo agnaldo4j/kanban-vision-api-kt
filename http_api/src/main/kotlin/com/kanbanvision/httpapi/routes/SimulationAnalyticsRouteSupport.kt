@@ -58,10 +58,12 @@ private fun RouteConfig.applyListSimulationsResponses() {
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetros de paginação inválidos."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -112,10 +114,12 @@ private fun RouteConfig.applySimulationDaysResponses() {
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetro `simulationId` inválido."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -132,10 +136,12 @@ private fun RouteConfig.applySimulationCfdResponses() {
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetro `simulationId` inválido."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }

@@ -99,14 +99,17 @@ private fun RouteConfig.applyCreateSimulationResponses() {
         code(HttpStatusCode.BadRequest) {
             description = "Validação falhou — `errors` lista os campos inválidos e `requestId` identifica a requisição."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.NotFound) {
             description = "Organização não encontrada."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -140,10 +143,12 @@ private fun RouteConfig.applyGetSimulationResponses() {
         code(HttpStatusCode.NotFound) {
             description = "Simulação não encontrada para o `simulationId` informado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -184,25 +189,27 @@ private fun RouteConfig.applyRunDayResponses() {
         code(HttpStatusCode.OK) {
             description = "Dia executado com sucesso. Retorna o snapshot do dia."
             body<DailySnapshotResponse>()
-            header<String>("X-Request-ID") {
-                description = "Correlation ID para rastreamento de logs."
-            }
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.Conflict) {
             description = "O dia já foi executado anteriormente. Verificar o dia atual via `GET /api/v1/simulations/{simulationId}`."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.NotFound) {
             description = "Simulação não encontrada."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.BadRequest) {
             description = "Tipo de decisão inválido ou dados malformados. `errors` lista os campos inválidos."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
@@ -241,14 +248,17 @@ private fun RouteConfig.applyGetDailySnapshotResponses() {
         code(HttpStatusCode.NotFound) {
             description = "Simulação ou snapshot não encontrado — `simulationId` inválido ou dia ainda não simulado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.BadRequest) {
             description = "Parâmetro `day` inválido — deve ser inteiro ≥ 1."
             body<ValidationErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.InternalServerError) {
             description = "Erro de persistência inesperado."
             body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
 }
