@@ -50,10 +50,15 @@ fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # A04 — Weak cryptographic algorithms (CRITICAL — deny)
+# Covers MessageDigest (MD5/SHA-1) and Cipher.getInstance (DES/RC4/DESede)
 # ─────────────────────────────────────────────────────────────────────────────
 if echo "$CONTENT" | grep -qiE \
-  'MessageDigest\.getInstance\s*\(\s*"(MD5|SHA-1|SHA1|DES|RC4)"'; then
-  CRITICAL="$CRITICAL\n[A04] Weak crypto algorithm (MD5/SHA-1/DES/RC4) — use SHA-256+ for hashing, Argon2 for passwords"
+  'MessageDigest\.getInstance\s*\(\s*"(MD5|SHA-1|SHA1)"'; then
+  CRITICAL="$CRITICAL\n[A04] Weak hash algorithm (MD5/SHA-1) — use SHA-256+ for hashing, Argon2 for passwords"
+fi
+if echo "$CONTENT" | grep -qiE \
+  'Cipher\.getInstance\s*\(\s*"(DES|DESede|RC4|RC2|Blowfish)[/"]'; then
+  CRITICAL="$CRITICAL\n[A04] Weak cipher (DES/RC4/Blowfish) — use AES-256-GCM or ChaCha20-Poly1305"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -147,7 +152,7 @@ if $HAS_CRITICAL || $HAS_WARNINGS; then
 fi
 
 if $HAS_CRITICAL; then
-  REASON=$(echo -e "$CRITICAL" | sed '/^[[:space:]]*$/d' | head -1 | sed 's/^\s*//')
+  REASON=$(echo -e "$CRITICAL" | sed '/^[[:space:]]*$/d' | head -1 | sed 's/^[[:space:]]*//')
   printf '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"OWASP Security violation blocked: %s — fix before writing. See /owasp for guidelines."}}' "$REASON"
   exit 0
 fi

@@ -17,6 +17,8 @@ import com.kanbanvision.persistence.tables.SimulationsTable
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.upsert
@@ -61,6 +63,33 @@ class JdbcSimulationRepository : SimulationRepository {
                 simulation?.let { Either.Right(it) } ?: DomainError.SimulationNotFound(id).left()
             },
         )
+
+    override suspend fun findAll(
+        organizationId: String,
+        page: Int,
+        size: Int,
+    ): Either<DomainError, List<Simulation>> =
+        dbQuery(log) {
+            val offset = ((page - 1) * size).toLong()
+            (
+                SimulationsTable
+                    .join(OrganizationsTable, JoinType.INNER, SimulationsTable.organizationId, OrganizationsTable.id)
+                    .join(SimulationStatesTable, JoinType.LEFT, SimulationsTable.id, SimulationStatesTable.simulationId)
+            ).selectAll()
+                .where(SimulationsTable.organizationId eq organizationId)
+                .orderBy(SimulationsTable.id to SortOrder.ASC)
+                .limit(size)
+                .offset(offset)
+                .map { row -> rowToSimulation(row) }
+        }
+
+    override suspend fun countByOrganization(organizationId: String): Either<DomainError, Long> =
+        dbQuery(log) {
+            SimulationsTable
+                .selectAll()
+                .where(SimulationsTable.organizationId eq organizationId)
+                .count()
+        }
 
     private fun rowToSimulation(row: ResultRow): Simulation {
         val stateJson = row.getOrNull(SimulationStatesTable.stateJson)

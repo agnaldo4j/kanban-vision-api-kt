@@ -81,11 +81,12 @@ authenticate("jwt-auth") {
 }
 
 // ✅ Verificação de propriedade no use case (domain boundary)
-fun Raise<DomainError>.execute(query: GetBoardQuery): Board {
-    val board = repository.findById(query.boardId).bind()
-        ?: raise(DomainError.NotFound("Board", query.boardId))
-    ensure(board.organizationId == query.organizationId) { DomainError.Forbidden("Board") }
-    return board
+// Exemplo com Simulation que possui organization.id
+fun Raise<DomainError>.execute(query: GetSimulationQuery): Simulation {
+    val simulation = repository.findById(query.simulationId).bind()
+        ?: raise(DomainError.SimulationNotFound(query.simulationId))
+    ensure(simulation.organization.id == query.organizationId) { DomainError.Forbidden("Simulation") }
+    return simulation
 }
 ```
 
@@ -96,7 +97,7 @@ fun Raise<DomainError>.execute(query: GetBoardQuery): Board {
 - [ ] Nenhum papel (role) ou permissão vem de parâmetros controlados pelo cliente.
 - [ ] CORS configurado explicitamente — não `allowAnyHost()` em produção.
 - [ ] Rate limiting ativo (já configurado: 100 req/min por IP).
-- [ ] Tentativas de acesso negado são logadas (MDC com `tenantId` e `userId`).
+- [ ] Tentativas de acesso negado são logadas (MDC com `organizationId` e, se disponível, `userId`).
 
 ---
 
@@ -485,7 +486,7 @@ jwt("jwt-auth") {
 
 - [ ] `JWT_DEV_MODE=true` nunca em produção — validado no startup.
 - [ ] Rate limiting em `/auth/*` — stricter que o limite global de 100 req/min.
-- [ ] JWT valida: `issuer`, `audience`, `tenantId`, `userId`, `expiresAt`.
+- [ ] JWT valida: `issuer`, `audience`, `organizationId`, `expiresAt`.
 - [ ] Tokens com expiração curta — refresh token para renovação.
 - [ ] Sem credenciais default — banco exige senha forte via env var.
 - [ ] Enumerate protection — mesmo tempo de resposta para usuário inexistente.
@@ -541,7 +542,7 @@ fun CreateSimulationRequest.toCommand(organizationIdFromJwt: String): CreateSimu
 - [ ] Nenhum uso de `ObjectInputStream` ou Java serialization nativa.
 - [ ] DTOs de entrada separados dos modelos de domínio (sem binding direto).
 - [ ] kotlinx.serialization com `@Serializable` em todos os DTOs HTTP.
-- [ ] Campos internos (`role`, `tenantId`, `isAdmin`) não aceitos em request bodies.
+- [ ] Campos internos (`organizationId`, `role`, `isAdmin`) não aceitos em request bodies.
 - [ ] `gradle/verification-metadata.xml` gerado e versionado.
 - [ ] Imagem Docker construída via CI com digest verificado.
 
@@ -595,8 +596,8 @@ log.info("Search query: {}", userInput.sanitizeForLog())
 ### Checklist A09
 
 - [ ] Nenhum log contém: senha, token, CPF, cartão, chave de API.
-- [ ] Toda falha de autenticação é logada com contexto (IP, path, tenantId).
-- [ ] MDC propagado em todas as requisições (correlationId, tenantId, userId).
+- [ ] Toda falha de autenticação é logada com contexto (IP, path, organizationId).
+- [ ] MDC propagado em todas as requisições (correlationId, organizationId).
 - [ ] Logs em formato JSON em produção (`LOG_FORMAT=json`).
 - [ ] Input do usuário sanitizado antes de logar (sem newlines, truncado).
 - [ ] Alertas configurados no Grafana para taxa anormal de 401/403 (ver skill `/opentelemetry`).

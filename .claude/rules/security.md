@@ -35,7 +35,7 @@ connection.prepareStatement(sql).executeQuery()
 transaction { exec("SELECT * FROM boards WHERE id = '$id'") }
 
 // ✅ OBRIGATÓRIO — Exposed DSL (parametrizado automaticamente)
-BoardsTable.selectAll().where { BoardsTable.id eq boardId.value }
+BoardsTable.selectAll().where { BoardsTable.id eq boardId }
 ```
 
 ---
@@ -88,7 +88,7 @@ log.debug("Token: Bearer $token")
 log.info("User CPF: ${user.cpf}")
 
 // ✅ CORRETO — apenas contexto de rastreamento sem PII/credenciais
-log.warn("Authentication failed: tenantId={}, path={}", MDC.get("tenantId"), request.uri)
+log.warn("Authentication failed: organizationId={}, path={}", MDC.get("organizationId"), request.uri)
 ```
 
 ---
@@ -124,7 +124,7 @@ catch({ accessService.check(userId) }) { e: Exception ->
 
 | Requisito | Verificação |
 |---|---|
-| Verificar `tenantId` no recurso acessado | `ensure(resource.tenantId == callerTenantId)` |
+| Verificar `organizationId` no recurso acessado | `ensure(resource.organizationId == callerOrganizationId)` |
 | Erros de autorização com `DomainError.Forbidden` | Nunca retornar `null` silencioso |
 | Input validado com `ensure()` antes de persistir | Antes de chamar `repository.save()` |
 
@@ -177,19 +177,19 @@ As entradas abaixo são **recomendadas** para adição futura via ADR — ainda 
 
 ```bash
 # Segredos hardcoded (deve retornar zero linhas)
-grep -rn 'password\s*=\s*"[^"]' --include="*.kt" src/
+grep -rn 'password\s*=\s*"[^"]' --include="*.kt" .
 
 # SQL por interpolação/concatenação (deve retornar zero linhas)
-grep -rn -E '(executeQuery|executeUpdate|prepareStatement|exec)\s*\([^)]*"[^"]*(\$\{[^}]+\}|\$[a-zA-Z_])' --include="*.kt" src/
+grep -rn -E '(executeQuery|executeUpdate|prepareStatement|exec)\s*\([^)]*"[^"]*(\$\{[^}]+\}|\$[a-zA-Z_])' --include="*.kt" .
 
 # Rotas sem autenticação (revisar manualmente cada resultado)
-grep -rn 'routing {' --include="*.kt" src/ -A 5 | grep -v authenticate
+grep -rn 'routing {' --include="*.kt" . -A 5 | grep -v authenticate
 
 # Dados sensíveis em logs (deve retornar zero linhas)
-grep -rn 'log\.\(info\|debug\|warn\|error\).*\(password\|token\|secret\|cpf\|credit\)' --include="*.kt" src/
+grep -rn 'log\.\(info\|debug\|warn\|error\).*\(password\|token\|secret\|cpf\|credit\)' --include="*.kt" .
 
 # Imports proibidos de segurança (deve retornar zero linhas)
-grep -rn 'import java\.io\.ObjectInputStream\|import java\.security\.MessageDigest' --include="*.kt" src/
+grep -rn 'import java\.io\.ObjectInputStream\|import java\.security\.MessageDigest' --include="*.kt" .
 ```
 
 ---
