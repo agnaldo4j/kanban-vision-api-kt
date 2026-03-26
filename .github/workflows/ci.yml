@@ -71,7 +71,6 @@ jobs:
 
       - name: Run PITest mutation testing
         run: ./gradlew :domain:pitest
-        continue-on-error: false
 
       - name: Upload PITest mutation reports
         if: always()
@@ -80,6 +79,7 @@ jobs:
           name: pitest-mutation-reports
           path: '**/build/reports/pitest/'
           retention-days: 14
+          if-no-files-found: warn
 
       - name: Test results report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository

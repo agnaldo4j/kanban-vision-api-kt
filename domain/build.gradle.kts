@@ -26,5 +26,5 @@ pitest {
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)
-    threads.set(Runtime.getRuntime().availableProcessors())
+    threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
 }
