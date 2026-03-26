@@ -436,6 +436,163 @@ O `else` esconde casos que o compilador poderia detectar.
 
 ---
 
+## Exposed ORM + FP — Persistência Funcional
+
+O projeto usa **Exposed DSL** (não DAO) no módulo `sql_persistence/`. O modo DSL é FP-friendly:
+transações retornam valores, queries são compostas sem mutação, e `ResultRow` é mapeado para
+data classes imutáveis do domínio.
+
+Reference: https://www.jetbrains.com/help/exposed/home.html
+
+### Princípio central: `transaction {}` retorna valor
+
+```kotlin
+// ✅ transaction devolve o último valor — sem variável mutável
+val simulation: Simulation? = transaction {
+    SimulationsTable
+        .selectAll()
+        .where { SimulationsTable.id eq id.value }
+        .singleOrNull()
+        ?.toDomain()    // mapeado ainda dentro do bloco
+}
+```
+
+### Padrão obrigatório: `either {}` + `catch {}` + `transaction {}`
+
+Todo método de repositório retorna `Either<DomainError, T>`.
+A conversão de `Exception` em erro tipado acontece na borda, nunca em `usecases/` ou `domain/`:
+
+```kotlin
+import arrow.core.Either
+import arrow.core.raise.catch
+import arrow.core.raise.either
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+
+// Repositório — borda de infraestrutura
+fun findById(id: SimulationId): Either<DomainError, Simulation?> =
+    either {
+        catch({
+            transaction {
+                SimulationsTable
+                    .selectAll()
+                    .where { SimulationsTable.id eq id.value }
+                    .singleOrNull()
+                    ?.toDomain()
+            }
+        }) { e: Exception ->
+            raise(DomainError.PersistenceError(e.message ?: "DB error"))
+        }
+    }
+
+// Use case — consome sem ver Exception
+fun Raise<DomainError>.execute(query: GetSimulationQuery): Simulation {
+    return repository.findById(query.id).bind()
+        ?: raise(DomainError.NotFound("Simulation", query.id.value.toString()))
+}
+```
+
+### Mapeamento puro: `ResultRow.toDomain()`
+
+O mapeamento de `ResultRow` para entidade de domínio é uma **função pura de extensão**.
+Nunca inline lógica de mapeamento na chain de query:
+
+```kotlin
+// sql_persistence/mappers/SimulationMapper.kt
+
+// ✅ Puro — mesmo input, mesmo output, sem efeitos
+fun ResultRow.toDomain(): Simulation =
+    Simulation(
+        id             = SimulationId(this[SimulationsTable.id]),
+        organizationId = OrganizationId(this[SimulationsTable.organizationId]),
+        wipLimit       = this[SimulationsTable.wipLimit],
+        teamSize       = this[SimulationsTable.teamSize],
+        seedValue      = this[SimulationsTable.seedValue],
+        state          = Json.decodeFromString(this[SimulationsTable.state]),
+    )
+
+// ✅ Usado na query como transformação final
+transaction {
+    SimulationsTable.selectAll()
+        .where { SimulationsTable.organizationId eq orgId.value }
+        .map { it.toDomain() }   // lista imutável de domain objects
+}
+```
+
+### Composição funcional de queries
+
+Exposed DSL permite composição sem mutação — cada operador retorna a query modificada:
+
+```kotlin
+// Pipeline declarativo — sem `var query`
+fun findActiveSimulations(
+    orgId: OrganizationId,
+    status: SimulationStatus?,
+    limit: Int
+): List<Simulation> = transaction {
+    SimulationsTable
+        .selectAll()
+        .where { SimulationsTable.organizationId eq orgId.value }
+        .apply { status?.let { andWhere { SimulationsTable.status eq it.name } } }
+        .orderBy(SimulationsTable.createdAt to SortOrder.DESC)
+        .limit(limit)
+        .map { it.toDomain() }
+}
+```
+
+Para filtros condicionais sem `apply`, use `andIfNotNull`:
+
+```kotlin
+.where { SimulationsTable.organizationId eq orgId.value }
+.andWhere { status?.let { SimulationsTable.status eq it.name } ?: Op.TRUE }
+```
+
+### INSERT como operação pura de efeito explícito
+
+```kotlin
+fun save(simulation: Simulation): Either<DomainError, Unit> =
+    either {
+        catch({
+            transaction {
+                SimulationsTable.insert {
+                    it[id]             = simulation.id.value
+                    it[organizationId] = simulation.organizationId.value
+                    it[wipLimit]       = simulation.wipLimit
+                    it[teamSize]       = simulation.teamSize
+                    it[seedValue]      = simulation.seedValue
+                    it[state]          = Json.encodeToString(simulation.state)
+                }
+                Unit
+            }
+        }) { e: Exception ->
+            when {
+                e.isUniqueViolation() -> raise(DomainError.Conflict("Simulation already exists"))
+                else                  -> raise(DomainError.PersistenceError(e.message ?: "DB error"))
+            }
+        }
+    }
+```
+
+### Modo DSL vs DAO — por que só DSL
+
+| Critério | DSL ✅ | DAO ❌ |
+|---|---|---|
+| Imutabilidade | Retorna `ResultRow` → mapeado para `data class` | Entidades mutáveis (`var`) |
+| FP style | Funções puras de transformação | Efeitos colaterais em propriedades |
+| Testabilidade | Mock do repositório inteiro | Acoplado ao framework |
+| Aderência ao projeto | Alinha com `Either`/`Raise`/`copy()` | Viola regra de `val` em entidades |
+
+### Sinais de alerta específicos de Exposed
+
+| Sinal | Problema | Solução |
+|---|---|---|
+| `ResultRow` acessado fora de `transaction {}` | LazyLoading lança exceção | Chamar `.map { it.toDomain() }` dentro do bloco |
+| `transaction {}` em coroutine sem dispatcher | Bloqueia thread de coroutine | `withContext(Dispatchers.IO) { transaction { ... } }` |
+| `SchemaUtils.create()` em código de produção | Conflito com Flyway | Remover — Flyway gerencia schema |
+| Entity DAO com `var` | Mutabilidade no repositório | Usar DSL + `data class` imutável |
+| `Exception` capturada em `usecases/` | Infraestrutura vazando | Mover `catch {}` para o repositório |
+
+---
+
 ## Relação com os Outros Skills
 
 | Skill | Como se conecta com FP + OO |

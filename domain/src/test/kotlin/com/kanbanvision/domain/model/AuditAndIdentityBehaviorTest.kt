@@ -67,6 +67,32 @@ class AuditAndIdentityBehaviorTest {
         }
     }
 
+    @Test
+    fun `given blank names in domain entities when constructing with valid id then creation is rejected`() {
+        assertFailsWith<IllegalArgumentException> { Board(id = "b-1", name = "") }
+        assertFailsWith<IllegalArgumentException> { Scenario(id = "sc-1", name = "", rules = scenarioRules(), board = board()) }
+        assertFailsWith<IllegalArgumentException> {
+            Simulation(
+                id = "s-1",
+                name = "",
+                currentDay = SimulationDay(1),
+                status = SimulationStatus.DRAFT,
+                organization = organization(),
+                scenario = scenario(),
+            )
+        }
+    }
+
+    @Test
+    fun `given valid non-null deletedAt when constructing audit then creation succeeds`() {
+        val createdAt = Instant.parse("2026-03-20T00:00:00Z")
+        val deletedAt = Instant.parse("2026-03-21T00:00:00Z")
+
+        val audit = Audit(createdAt = createdAt, updatedAt = createdAt, deletedAt = deletedAt)
+
+        assertEquals(deletedAt, audit.deletedAt)
+    }
+
     private fun organization(): Organization = Organization.create(name = "Org")
 
     private fun board(): Board = Board.create(name = "Board")
