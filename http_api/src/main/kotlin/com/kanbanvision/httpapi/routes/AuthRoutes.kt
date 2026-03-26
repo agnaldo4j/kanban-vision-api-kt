@@ -49,12 +49,22 @@ private fun issueTokenSpec(): RouteConfig.() -> Unit =
             body<IssueTokenRequest> {
                 description = "Sujeito e organizationId para o token."
                 required = true
+                example("padrão") {
+                    value =
+                        IssueTokenRequest(
+                            subject = "user-1",
+                            organizationId = "550e8400-e29b-41d4-a716-446655440000",
+                        )
+                }
             }
         }
         response {
             code(HttpStatusCode.OK) {
                 description = "Token JWT emitido com sucesso."
                 body<TokenResponse>()
+                header<String>("X-Request-ID") {
+                    description = "Correlation ID para rastreamento de logs."
+                }
             }
         }
     }
