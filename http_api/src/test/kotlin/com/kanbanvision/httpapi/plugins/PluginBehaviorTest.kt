@@ -158,6 +158,58 @@ class PluginBehaviorTest {
             application { configureOpenApi() }
         }
 
+    @Test
+    fun `given content transformation exception without request id when status pages handles it then bad request is returned`() =
+        testApplication {
+            application {
+                configureSerialization()
+                configureStatusPages()
+                routing {
+                    get("/cte-no-id") {
+                        throw object : ContentTransformationException("test") {}
+                    }
+                }
+            }
+
+            val response = client.get("/cte-no-id")
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue(response.bodyAsText().contains("Invalid request body"))
+        }
+
+    @Test
+    fun `given unhandled exception without request id when status pages handles it then internal error is returned`() =
+        testApplication {
+            application {
+                configureSerialization()
+                configureStatusPages()
+                routing { get("/boom-no-id") { error("test") } }
+            }
+
+            val response = client.get("/boom-no-id")
+
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            assertTrue(response.bodyAsText().contains("Internal server error"))
+        }
+
+    @Test
+    fun `given rate limited request without request id when rate limit is exceeded then too many requests is returned`() =
+        testApplication {
+            application {
+                configureRateLimit(limit = 1)
+                configureSerialization()
+                configureStatusPages()
+                routing {
+                    get("/slow") { call.respondText("ok") }
+                }
+            }
+
+            client.get("/slow")
+            val second = client.get("/slow")
+
+            assertEquals(HttpStatusCode.TooManyRequests, second.status)
+        }
+
     @kotlinx.serialization.Serializable
     private data class PluginPayload(
         val value: String,
