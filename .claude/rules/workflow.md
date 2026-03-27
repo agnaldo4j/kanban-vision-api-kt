@@ -79,5 +79,13 @@ gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
 P1 Hardening:   GAP-B → GAP-C → GAP-A                              ✅ done
 P2 Operations:  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ done
 P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I ✅ → GAP-J → GAP-H → GAP-K
-P4 Excellence:  GAP-T → GAP-N → GAP-R → GAP-L → GAP-M
+P4 Excellence:  GAP-T → GAP-X → GAP-N → GAP-L → GAP-R → GAP-M
 ```
+
+> **GAP-J re-escopo (2026-03-23):** Analytics API — `GET /simulations` paginado,
+> `GET /simulations/{id}/days` série temporal, `GET /simulations/{id}/cfd` dados CFD.
+> Derivado de *The Principles of Product Development Flow* (Reinertsen) via vault Obsidian.
+>
+> **GAP-X novo (2026-03-23):** `ServiceClass` incompleto — adicionar `DATE_DRIVEN` e
+> `INTANGIBLE`. Burrows (Kanban From the Inside) define 4 classes de serviço; o domínio
+> atual implementa apenas EXPEDITE e STANDARD.

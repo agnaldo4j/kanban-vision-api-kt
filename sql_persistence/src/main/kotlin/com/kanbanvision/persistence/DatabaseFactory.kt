@@ -60,6 +60,8 @@ object DatabaseFactory {
             dataSource.close()
         }
         dataSource = HikariDataSource(buildHikariConfig(config))
+        org.jetbrains.exposed.v1.jdbc.Database
+            .connect(datasource = dataSource)
         runMigrations(config.baselineOnMigrate)
     }
 

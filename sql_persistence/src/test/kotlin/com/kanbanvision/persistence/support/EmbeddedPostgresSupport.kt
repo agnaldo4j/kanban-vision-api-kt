@@ -29,7 +29,13 @@ import com.kanbanvision.domain.model.Tribe
 import com.kanbanvision.domain.model.Worker
 import com.kanbanvision.persistence.DatabaseConfig
 import com.kanbanvision.persistence.DatabaseFactory
+import com.kanbanvision.persistence.tables.BoardsTable
+import com.kanbanvision.persistence.tables.OrganizationsTable
+import com.kanbanvision.persistence.tables.SimulationsTable
+import com.kanbanvision.persistence.tables.StepsTable
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 internal object EmbeddedPostgresSupport {
     data class StepSeed(
@@ -64,18 +70,13 @@ internal object EmbeddedPostgresSupport {
     }
 
     fun resetDatabase() {
-        DatabaseFactory.dataSource.connection.use { conn ->
-            conn
-                .createStatement()
-                .use { stmt ->
-                    stmt.execute(
-                        """
-                        TRUNCATE TABLE daily_snapshots, simulation_states, simulations, cards, steps, boards, organizations
-                        RESTART IDENTITY CASCADE
-                        """.trimIndent(),
-                    )
-                }
-            conn.commit()
+        transaction {
+            exec(
+                """
+                TRUNCATE TABLE daily_snapshots, simulation_states, simulations, cards, steps, boards, organizations
+                RESTART IDENTITY CASCADE
+                """.trimIndent(),
+            )
         }
     }
 
@@ -92,13 +93,11 @@ internal object EmbeddedPostgresSupport {
         id: String,
         name: String = "Org",
     ) {
-        DatabaseFactory.dataSource.connection.use { conn ->
-            conn.prepareStatement("INSERT INTO organizations (id, name) VALUES (?, ?)").use { stmt ->
-                stmt.setString(1, id)
-                stmt.setString(2, name)
-                stmt.executeUpdate()
+        transaction {
+            OrganizationsTable.insert {
+                it[OrganizationsTable.id] = id
+                it[OrganizationsTable.name] = name
             }
-            conn.commit()
         }
     }
 
@@ -107,48 +106,36 @@ internal object EmbeddedPostgresSupport {
         name: String = "Board",
         createdAt: Long = 0L,
     ) {
-        DatabaseFactory.dataSource.connection.use { conn ->
-            conn.prepareStatement("INSERT INTO boards (id, name, created_at) VALUES (?, ?, ?)").use { stmt ->
-                stmt.setString(1, id)
-                stmt.setString(2, name)
-                stmt.setLong(3, createdAt)
-                stmt.executeUpdate()
+        transaction {
+            BoardsTable.insert {
+                it[BoardsTable.id] = id
+                it[BoardsTable.name] = name
+                it[BoardsTable.createdAt] = createdAt
             }
-            conn.commit()
         }
     }
 
     fun insertStep(seed: StepSeed) {
-        DatabaseFactory.dataSource.connection.use { conn ->
-            conn
-                .prepareStatement(
-                    "INSERT INTO steps (id, board_id, name, position, required_ability) VALUES (?, ?, ?, ?, ?)",
-                ).use { stmt ->
-                    stmt.setString(1, seed.id)
-                    stmt.setString(2, seed.boardId)
-                    stmt.setString(3, seed.name)
-                    stmt.setInt(4, seed.position)
-                    stmt.setString(5, seed.requiredAbility)
-                    stmt.executeUpdate()
-                }
-            conn.commit()
+        transaction {
+            StepsTable.insert {
+                it[StepsTable.id] = seed.id
+                it[boardId] = seed.boardId
+                it[StepsTable.name] = seed.name
+                it[position] = seed.position
+                it[requiredAbility] = seed.requiredAbility
+            }
         }
     }
 
     fun insertSimulationRow(seed: SimulationSeed) {
-        DatabaseFactory.dataSource.connection.use { conn ->
-            conn
-                .prepareStatement(
-                    "INSERT INTO simulations (id, organization_id, wip_limit, team_size, seed_value) VALUES (?, ?, ?, ?, ?)",
-                ).use { stmt ->
-                    stmt.setString(1, seed.id)
-                    stmt.setString(2, seed.organizationId)
-                    stmt.setInt(3, seed.wipLimit)
-                    stmt.setInt(4, seed.teamSize)
-                    stmt.setLong(5, seed.seedValue)
-                    stmt.executeUpdate()
-                }
-            conn.commit()
+        transaction {
+            SimulationsTable.insert {
+                it[SimulationsTable.id] = seed.id
+                it[organizationId] = seed.organizationId
+                it[wipLimit] = seed.wipLimit
+                it[teamSize] = seed.teamSize
+                it[seedValue] = seed.seedValue
+            }
         }
     }
 }
