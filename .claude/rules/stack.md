@@ -33,7 +33,7 @@
 **Job `quality`** — every PR and push to `main`:
 1. Setup Java 21 (Temurin)
 2. `./gradlew testAll` — Detekt + KtLint + tests + JaCoCo gate
-3. `./gradlew :domain:pitest` — PITest mutation testing (opt-in, not in `check`)
+3. `./gradlew :domain:pitest` — PITest mutation testing (mandatory in CI; locally opt-in since not in `check`)
 4. Upload artifacts (14 days): test reports, Detekt, JaCoCo, PITest HTML
 5. Post PR comments: Detekt summary + JaCoCo coverage diff
 6. Upload coverage to Codecov
