@@ -19,7 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcRepositoriesErrorHandlingTest {
+class RepositoriesErrorHandlingTest {
     private val boardRepository = JdbcBoardRepository()
     private val stepRepository = JdbcStepRepository()
     private val cardRepository = JdbcCardRepository()

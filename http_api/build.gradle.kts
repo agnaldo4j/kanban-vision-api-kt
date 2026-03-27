@@ -18,7 +18,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
             limit {
-                minimum = "0.95".toBigDecimal()
+                minimum = "0.96".toBigDecimal()
             }
         }
     }
@@ -80,7 +80,7 @@ dependencies {
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.47.0")
 
-    implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("ch.qos.logback:logback-classic:1.5.32")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("org.codehaus.janino:janino:3.1.12")
 
@@ -90,7 +90,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
-    testImplementation("io.mockk:mockk:1.14.2")
+    testImplementation("io.mockk:mockk:1.14.9")
     testImplementation("com.h2database:h2:2.3.232")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("io.kotest:kotest-property:5.9.1")

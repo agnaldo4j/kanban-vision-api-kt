@@ -54,18 +54,24 @@ spec:
                 secretKeyRef:
                   name: kanban-vision-secret
                   key: JWT_SECRET
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            failureThreshold: 12
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /health/live
               port: http
-            initialDelaySeconds: 15
+            initialDelaySeconds: 0
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health/ready
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 0
             periodSeconds: 5
             failureThreshold: 3
           resources:

@@ -10,9 +10,26 @@ import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RateLimitForwardedForTest {
+    @Test
+    fun `given non-positive rate limit when configuring then require rejects invalid input`(): Unit =
+        testApplication {
+            var caught: IllegalArgumentException? = null
+            application {
+                try {
+                    configureRateLimit(limit = 0)
+                } catch (e: IllegalArgumentException) {
+                    caught = e
+                }
+            }
+            startApplication()
+            assertNotNull(caught)
+            assertTrue(caught!!.message!!.contains("positive"))
+        }
+
     @Test
     fun `given one request per minute when forwarded ip changes then each client key has its own quota`() =
         testApplication {
