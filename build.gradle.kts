@@ -1,5 +1,5 @@
 plugins {
-    id("io.ktor.plugin") version "3.1.2" apply false
+    id("io.ktor.plugin") version "3.4.1" apply false
 }
 
 tasks.register("testAll") {

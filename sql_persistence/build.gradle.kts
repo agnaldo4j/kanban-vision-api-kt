@@ -19,7 +19,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
     testImplementation("io.mockk:mockk:1.14.9")
