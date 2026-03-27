@@ -33,6 +33,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `architecture.md` | always | Modules, conventions, pitfalls, dependency rule |
 | `workflow.md` | always | Kanban Board Protocol, Gap Execution Protocol |
 | `stack.md` | always | Tech stack, CI/CD |
+| `security.md` | `**/*.kt` | OWASP Top 10 (2025) — security rules, forbidden patterns, checklists |
 | `kotlin-quality.md` | `**/*.kt`, `**/*.gradle.kts` | Detekt, KtLint, JaCoCo |
 | `testing.md` | `**/test/**/*.kt`, `**/*Test.kt` | Test conventions, MockK pitfalls |
 | `migrations.md` | `**/db/migration/*.sql` | Flyway naming, schema history |
@@ -43,6 +44,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 
 | Skill | When to use |
 |---|---|
+| `/owasp` | Audit and fix security issues — OWASP Top 10 (2025) |
 | `/ddd` | Model Entities, Value Objects, Aggregates, Domain Events |
 | `/adr` | Propose or review Architecture Decision Records |
 | `/clean-architecture` | Decide where a class or dependency belongs |

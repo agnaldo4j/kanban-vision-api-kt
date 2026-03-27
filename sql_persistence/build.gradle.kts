@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+val exposedVersion = "1.1.1"
+
 dependencies {
     implementation(project(":domain"))
     implementation(project(":usecases"))
@@ -12,8 +14,10 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.5")
     implementation("org.flywaydb:flyway-core:10.21.0")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:10.21.0")
-    implementation("ch.qos.logback:logback-classic:1.5.18")
+    implementation("ch.qos.logback:logback-classic:1.5.32")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
@@ -22,16 +26,7 @@ dependencies {
     testImplementation("io.zonky.test:embedded-postgres:2.2.2")
 }
 
-// Exclude Kotlin-generated coroutine continuation classes for the `query` suspend function.
-// These are state-machine classes (JdbcBoardRepository$query$2, JdbcStepRepository$query$2,
-// JdbcCardRepository$query$2) produced by the Kotlin compiler and contain unreachable
-// addSuppressed branches that cannot be exercised without deliberately crashing the JDBC driver.
-// JdbcCardRepository also has JDBC `use`/resource-finalization branches that remain unstable
-// under JaCoCo despite integration + error-path coverage in this module.
-// Applied to both report and verification so the two tasks stay in sync.
-val jacocoExcludes =
-    listOf("**/*\$query\$*.class", "**/*\$\$serializer.class", "**/*\$Companion.class")
-        .plus("**/JdbcCardRepository.class")
+val jacocoExcludes = listOf("**/*\$\$serializer.class", "**/*\$Companion.class")
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     classDirectories.setFrom(

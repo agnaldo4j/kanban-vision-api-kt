@@ -7,6 +7,7 @@ import kotlin.test.assertFailsWith
 class CardValidationAndStateMachineBehaviorTest {
     @Test
     fun `given card constructor invalid inputs when creating card then invariants reject invalid ranges`() {
+        assertFailsWith<IllegalArgumentException> { Card(id = "", step = StepRef("s"), title = "x") }
         assertFailsWith<IllegalArgumentException> { Card(step = StepRef(""), title = "x") }
         assertFailsWith<IllegalArgumentException> { Card(step = StepRef("s"), title = "", position = 0) }
         assertFailsWith<IllegalArgumentException> { Card(step = StepRef("s"), title = "x", position = -1) }
@@ -26,6 +27,22 @@ class CardValidationAndStateMachineBehaviorTest {
         }
         assertFailsWith<IllegalArgumentException> {
             Card(step = StepRef("s"), title = "x", deployEffort = 1, remainingDeployEffort = 2)
+        }
+    }
+
+    @Test
+    fun `given negative remaining effort below zero when creating card then lower bound invariants reject`() {
+        assertFailsWith<IllegalArgumentException> {
+            Card(step = StepRef("s"), title = "x", analysisEffort = 5, remainingAnalysisEffort = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            Card(step = StepRef("s"), title = "x", developmentEffort = 5, remainingDevelopmentEffort = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            Card(step = StepRef("s"), title = "x", testEffort = 5, remainingTestEffort = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            Card(step = StepRef("s"), title = "x", deployEffort = 5, remainingDeployEffort = -1)
         }
     }
 

@@ -11,7 +11,10 @@ import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationCfdUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationDaysUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
+import com.kanbanvision.usecases.simulation.ListSimulationsUseCase
 import com.kanbanvision.usecases.simulation.RunDayUseCase
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -32,5 +35,8 @@ object AppModule {
             single { GetSimulationUseCase(get()) }
             single { RunDayUseCase(get(), get(), get()) }
             single { GetDailySnapshotUseCase(get()) }
+            single { ListSimulationsUseCase(get()) }
+            single { GetSimulationDaysUseCase(get()) }
+            single { GetSimulationCfdUseCase(get()) }
         }
 }

@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import io.github.smiley4.ktoropenapi.config.RouteConfig
 import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
@@ -49,15 +50,37 @@ private fun issueTokenSpec(): RouteConfig.() -> Unit =
             body<IssueTokenRequest> {
                 description = "Sujeito e organizationId para o token."
                 required = true
+                example("padrão") {
+                    value =
+                        IssueTokenRequest(
+                            subject = "user-1",
+                            organizationId = "550e8400-e29b-41d4-a716-446655440000",
+                        )
+                }
             }
         }
-        response {
-            code(HttpStatusCode.OK) {
-                description = "Token JWT emitido com sucesso."
-                body<TokenResponse>()
-            }
+        applyIssueDevTokenResponses()
+    }
+
+private fun RouteConfig.applyIssueDevTokenResponses() {
+    response {
+        code(HttpStatusCode.OK) {
+            description = "Token JWT emitido com sucesso."
+            body<TokenResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
+        }
+        code(HttpStatusCode.BadRequest) {
+            description = "Requisição inválida — JSON malformado."
+            body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
+        }
+        code(HttpStatusCode.InternalServerError) {
+            description = "Erro interno inesperado."
+            body<DomainErrorResponse>()
+            header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
     }
+}
 
 @Serializable
 data class IssueTokenRequest(
