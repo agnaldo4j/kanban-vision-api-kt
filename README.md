@@ -3,11 +3,16 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/agnaldo4j/kanban-vision-api-kt)](https://github.com/agnaldo4j/kanban-vision-api-kt/commits/main)
 
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.20-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![Ktor](https://img.shields.io/badge/ktor-3.1.2-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
-[![Arrow](https://img.shields.io/badge/arrow--kt-2.0.1-E91E63)](https://arrow-kt.io/)
-[![Kotest Property](https://img.shields.io/badge/kotest-property--based%20testing-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Ktor](https://img.shields.io/badge/ktor-3.4.1-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
+[![Gradle](https://img.shields.io/badge/gradle-8.13-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![Java](https://img.shields.io/badge/java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
+[![Arrow](https://img.shields.io/badge/arrow--kt-2.0.1-E91E63)](https://arrow-kt.io/)
+[![Koin](https://img.shields.io/badge/koin-4.1.1-F88900)](https://insert-koin.io/)
+[![Kotest Property](https://img.shields.io/badge/kotest-property--based%20testing-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
+[![PITest](https://img.shields.io/badge/pitest-mutation%20testing-CC0000)](https://pitest.org/)
+[![OpenTelemetry](https://img.shields.io/badge/opentelemetry-1.47.0-425CC7?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-manifests-326CE5?logo=kubernetes&logoColor=white)](k8s/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/agnaldo4j/kanban-vision-api-kt/pkgs/container/kanban-vision-api-kt)
 
 # Kanban Vision API
@@ -23,7 +28,7 @@
 - **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
 - **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces
-- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 95% enforced on every PR
+- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 96% + PITest mutation testing enforced on every PR
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
 
 ---
