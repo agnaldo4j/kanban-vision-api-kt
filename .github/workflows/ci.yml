@@ -81,6 +81,64 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
+      - name: Generate PITest mutation report
+        id: pitest-report
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          {
+            echo 'body<<PITEST_REPORT'
+            echo '## PITest Mutation Report — `domain`'
+            echo ''
+            xml="domain/build/reports/pitest/mutations.xml"
+            if [ ! -f "$xml" ]; then
+              echo '⚠️ Mutation report not found — PITest may have failed or was skipped.'
+            else
+              total=$({ grep -c '<mutation ' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              killed=$({ grep -c 'status="KILLED"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              survived=$({ grep -c 'status="SURVIVED"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              no_coverage=$({ grep -c 'status="NO_COVERAGE"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              timed_out=$({ grep -c 'status="TIMED_OUT"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              total=${total:-0}; killed=${killed:-0}; survived=${survived:-0}
+              no_coverage=${no_coverage:-0}; timed_out=${timed_out:-0}
+              if [ "$total" -gt 0 ]; then score=$((killed * 100 / total)); else score=0; fi
+              threshold=35
+              echo '| Metric | Value |'
+              echo '|--------|-------|'
+              printf '| Mutantes totais | %d |\n' "$total"
+              printf '| ✅ Killed | %d |\n' "$killed"
+              printf '| ❌ Survived | %d |\n' "$survived"
+              printf '| ⚪ No coverage | %d |\n' "$no_coverage"
+              [ "$timed_out" -gt 0 ] && printf '| ⏱️ Timed out | %d |\n' "$timed_out"
+              echo ''
+              if [ "$score" -ge "$threshold" ]; then
+                printf '**Mutation score: %d%% ✅** (threshold: %d%%)\n' "$score" "$threshold"
+              else
+                printf '**Mutation score: %d%% ❌** (threshold: %d%%)\n' "$score" "$threshold"
+              fi
+              echo ''
+              echo '> Target: `com.kanbanvision.domain.simulation.*` · Mutators: `STRONGER`'
+            fi
+            echo 'PITEST_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing PITest comment
+        id: find-pitest
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## PITest Mutation Report'
+
+      - name: Post PITest report on PR
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find-pitest.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.pitest-report.outputs.body }}
+          edit-mode: replace
+
       - name: Test results report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: EnricoMi/publish-unit-test-result-action@v2
