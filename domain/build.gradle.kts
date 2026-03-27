@@ -1,12 +1,12 @@
 plugins {
     id("kanban.kotlin-common")
-    id("info.solidsoft.pitest") version "1.15.0"
+    id("info.solidsoft.pitest")
 }
 
 dependencies {
     implementation("io.arrow-kt:arrow-core:2.0.1")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.20")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
     testImplementation("io.mockk:mockk:1.14.9")
