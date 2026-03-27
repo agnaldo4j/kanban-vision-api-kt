@@ -2,15 +2,15 @@
 name: kotlin-quality-pipeline
 description: >
   Guia completo para aplicar e manter o pipeline de qualidade Kotlin neste projeto:
-  Gradle 8 (Kotlin DSL), Detekt, KtLint, JaCoCo e Kotest Property-based Testing.
-  Use este skill sempre que for adicionar código novo, corrigir violações, ajustar
-  exclusões de cobertura, escrever property tests ou configurar qualquer uma dessas
-  ferramentas.
+  Gradle 8 (Kotlin DSL), Detekt, KtLint, JaCoCo, Kotest Property-based Testing
+  e PITest Mutation Testing. Use este skill sempre que for adicionar código novo,
+  corrigir violações, ajustar exclusões de cobertura, escrever property tests,
+  interpretar relatórios de mutação ou configurar qualquer uma dessas ferramentas.
 argument-hint: "[module or violation to fix (optional)]"
 allowed-tools: Read, Grep, Glob, Bash, Edit
 ---
 
-# Pipeline de Qualidade Kotlin — Detekt · KtLint · JaCoCo · Gradle 8
+# Pipeline de Qualidade Kotlin — Detekt · KtLint · JaCoCo · PITest · Gradle 8
 
 > **Princípio central**: qualidade não é opcional. Cada ferramenta protege um aspecto
 > diferente do código. O pipeline é o contrato que garante que nenhuma entrega degrada
@@ -57,7 +57,10 @@ documente no PR com justificativa e aguarde aprovação humana explícita.
         ├── :*:ktlintCheck       ← formatação
         ├── :*:test              ← testes (JUnit 5 + Kotest Property)
         │       └── finalizedBy jacocoTestReport
-        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 95%)
+        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 96%)
+
+./gradlew :domain:pitest         ← mutation testing (opt-in, não está em testAll)
+        └── relatório HTML: domain/build/reports/pitest/index.html
 ```
 
 O task `check` de cada módulo depende de `jacocoTestCoverageVerification`.
@@ -326,9 +329,9 @@ Para evitar violações antes mesmo de chegar ao Gradle:
 
 ## 5. JaCoCo — Cobertura de Código
 
-### Gate de cobertura: 95% de instruções
+### Gate de cobertura: 96% de instruções
 
-O build falha se qualquer módulo ativo ficar abaixo de 95% de cobertura de instruções.
+O build falha se qualquer módulo ativo ficar abaixo de 96% de cobertura de instruções.
 Essa métrica é a mais objetiva: conta instruções bytecode executadas, não linhas.
 
 ```kotlin
@@ -336,7 +339,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
             limit {
-                minimum = "0.95".toBigDecimal()
+                minimum = "0.96".toBigDecimal()
             }
         }
     }
@@ -675,7 +678,246 @@ Generators criados com `Arb.bind` herdam o shrinking dos generators internos.
 
 ---
 
-## 7. Workflow Diário — Onde Cada Ferramenta Entra
+## 7. PITest — Mutation Testing
+
+> **Referência:** https://pitest.org/quickstart/
+>
+> Reinertsen (*The Principles of Product Development Flow*): alta cobertura de linhas não
+> garante qualidade de asserções. Mutantes que sobrevivem revelam testes que executam o
+> código mas não verificam seu comportamento — o diagnóstico mais valioso que JaCoCo
+> **não consegue dar**.
+
+### Por que mutation testing?
+
+JaCoCo mede **o que foi executado**. PITest mede **o que foi verificado**.
+Um teste pode executar uma linha 1000 vezes sem nunca fazer uma asserção sobre ela —
+o JaCoCo reporta 100% de cobertura, o PITest reporta 0% de mutação morta.
+
+```
+// Este "teste" passa no JaCoCo mas mata zero mutantes:
+@Test
+fun `run day does not throw`() {
+    engine.runDay(command)  // executa, mas sem asserção alguma
+}
+```
+
+O PITest aplica operadores de mutação ao bytecode e verifica se os testes existentes
+detectam cada alteração. Se um teste não falha quando o código é corrompido, ele não
+está realmente testando aquele comportamento.
+
+### Conceitos fundamentais
+
+#### Mutante
+
+Uma cópia do bytecode com uma única alteração intencional aplicada por um operador
+de mutação. Ex.: `if (count > 0)` → `if (count >= 0)`.
+
+#### Estados de um mutante
+
+| Estado | Significado | O que fazer |
+|---|---|---|
+| **Killed** | Um teste falhou — mutante detectado | ✅ Bom — o teste verifica o comportamento |
+| **Survived** | Nenhum teste falhou | ❌ Fraqueza — adicione ou fortaleça asserções |
+| **No coverage** | Nenhum teste executou aquela linha | ❌ Gap — escreva o teste faltante |
+| **Timed Out** | Mutação causou loop infinito | ℹ️ Considerado killed automaticamente |
+| **Non viable** | Bytecode inválido — JVM recusou carregar | ℹ️ Raro, ignorar |
+| **Memory error** | Mutação causou OOM | ℹ️ Considerado killed automaticamente |
+
+**Meta: maximizar Killed + Timed Out. Zero tolerância para Survived em lógica crítica.**
+
+#### Mutações equivalentes
+
+Algumas mutações não alteram o comportamento observável do programa — são
+**mutações equivalentes**. Ex.: `>=1` → `>1` quando a variável nunca vale 1.
+São inevitáveis; não causam falha de build — o PITest simplesmente não consegue
+matar esses mutantes mesmo com testes perfeitos. Aceite-as como parte do score.
+
+### Grupos de mutadores
+
+O PITest organiza mutadores em grupos cumulativos:
+
+| Grupo | Conteúdo | Uso |
+|---|---|---|
+| `DEFAULTS` | Mutadores padrão ativos por default | Baseline razoável |
+| `STRONGER` | DEFAULTS + mutadores opcionais mais agressivos | **Usado neste projeto** |
+| `ALL` | STRONGER + experimentais | Muito lento, gera ruído |
+
+### Mutadores DEFAULTS (sempre ativos)
+
+| Mutador | O que faz | Exemplo |
+|---|---|---|
+| `CONDITIONALS_BOUNDARY` | Substitui operadores relacionais pelos limites adjacentes | `a < b` → `a <= b` |
+| `INCREMENTS` | Inverte `++` e `--` em variáveis locais | `i++` → `i--` |
+| `INVERT_NEGS` | Inverte negação numérica | `return -i` → `return i` |
+| `MATH` | Substitui operadores aritméticos e bitwise | `a + b` → `a - b`, `a & b` → `a \| b` |
+| `NEGATE_CONDITIONALS` | Nega condicionais | `==` → `!=`, `<=` → `>` |
+| `VOID_METHOD_CALLS` | Remove chamadas a métodos void | `logger.info(...)` removido |
+| `EMPTY_RETURNS` | Substitui retornos por valores vazios | `String` → `""`, `List` → `emptyList()` |
+| `FALSE_RETURNS` | Substitui `Boolean` return por `false` | `return isValid()` → `return false` |
+| `TRUE_RETURNS` | Substitui `Boolean` return por `true` | `return isValid()` → `return true` |
+| `NULL_RETURNS` | Substitui retornos de objeto por `null` | `return board` → `return null` |
+| `PRIMITIVE_RETURNS` | Substitui primitivos por `0` | `return count` → `return 0` |
+
+### Mutadores adicionais no grupo STRONGER
+
+| Mutador | O que faz | Por que é mais agressivo |
+|---|---|---|
+| `CONSTRUCTOR_CALLS` | Substitui `new Foo()` por `null` | Pode causar NPE em cadeia |
+| `INLINE_CONSTS` | Muta constantes literais: `true→false`, `5→-1→0` | Testa que constantes têm valor correto |
+| `NON_VOID_METHOD_CALLS` | Remove chamadas a métodos não-void, substitui retorno por default | `int i = foo()` → `int i = 0` |
+| `REMOVE_CONDITIONALS` | Força `if` a sempre executar ou nunca executar | `if (cond)` → sempre true ou sempre false |
+| `REMOVE_INCREMENTS` | Remove `i++` sem substituir | Detecta que o incremento é necessário |
+
+### Configuração neste projeto
+
+```kotlin
+// domain/build.gradle.kts
+pitest {
+    junit5PluginVersion.set("1.2.1")
+
+    // Foco no SimulationEngine — lógica mais crítica de fila e WIP
+    targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
+    targetTests.set(setOf("com.kanbanvision.domain.simulation.*"))
+
+    mutators.set(setOf("STRONGER"))   // DEFAULT + mutadores opcionais agressivos
+
+    // Baseline: 38% (70/182 mutantes mortos). Elevar progressivamente.
+    // Reinertsen: 97% de line coverage ≠ qualidade de asserção no SimulationEngine.
+    mutationThreshold.set(35)
+
+    outputFormats.set(setOf("XML", "HTML"))
+    timestampedReports.set(false)     // relatório em path fixo — facilita diff
+    failWhenNoMutations.set(true)     // garante que o foco não ficou sem código
+    threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
+}
+```
+
+**Por que o threshold é 35% e não 80%?**
+O baseline medido foi 38%. Definir threshold acima do baseline atual quebraria o CI
+imediatamente. A estratégia é elevar progressivamente à medida que as asserções
+melhoram — o PITest como guia de melhoria, não punição.
+
+### Como interpretar o relatório HTML
+
+```bash
+# Gerar relatório
+./gradlew :domain:pitest
+
+# Abrir
+open domain/build/reports/pitest/index.html
+```
+
+No relatório:
+- **Verde** = mutante killed (✅ teste verificou o comportamento)
+- **Vermelho** = mutante survived (❌ asserção fraca ou ausente)
+- **Laranja** = no coverage (❌ código não testado)
+
+Clique em um mutante survived para ver **exatamente qual linha foi mutada e qual
+mutação específica sobreviveu** — isso aponta diretamente onde fortalecer o teste.
+
+### Como matar um mutante survived
+
+**Passo 1**: identifique a mutação no relatório. Ex.:
+```
+SimulationEngine.kt line 42: NEGATE_CONDITIONALS — survived
+Original:  if (wipLimit > 0)
+Mutated:   if (wipLimit <= 0)
+```
+
+**Passo 2**: veja qual teste cobre aquela linha (`No coverage` → escreva um teste;
+`Survived` → o teste existe mas não verifica o comportamento afetado).
+
+**Passo 3**: fortaleça ou adicione a asserção:
+
+```kotlin
+// ❌ teste que cobre a linha mas não mata o mutante
+@Test
+fun `run day with wip limit does not throw`() {
+    engine.runDay(command)  // sem asserção sobre o efeito do WIP limit
+}
+
+// ✅ teste que mata o mutante — verifica o comportamento afetado
+@Test
+fun `run day respects WIP limit — cards beyond limit stay in queue`() {
+    val result = engine.runDay(command)
+    // asserção direta sobre o que muda quando wipLimit > 0 vs <= 0
+    result.queuedCards shouldHaveSize (totalCards - wipLimit)
+}
+```
+
+**Regra**: a asserção deve ser **sobre o valor que a mutação altera**. Se a mutação
+inverte `>`, o teste deve verificar que o comportamento é diferente em `> 0` vs `<= 0`.
+
+### Padrões de asserção que matam mutadores específicos
+
+| Mutador que sobrevive | Asserção fraca | Asserção que mata |
+|---|---|---|
+| `CONDITIONALS_BOUNDARY` (`> → >=`) | `result != null` | `result.size == exactExpectedCount` |
+| `FALSE_RETURNS` / `TRUE_RETURNS` | Não verifica o retorno | `result.isSuccess shouldBe true` |
+| `NULL_RETURNS` | Não verifica conteúdo | `result shouldNotBe null` + `result.id shouldBe expectedId` |
+| `EMPTY_RETURNS` | Não verifica tamanho | `result shouldHaveSize n` |
+| `MATH` (`+ → -`) | Não verifica valor calculado | `result.totalFlow shouldBe expectedFlow` |
+| `VOID_METHOD_CALLS` | Não verifica efeito colateral | Verificar que o estado mudou |
+| `REMOVE_CONDITIONALS` | Executa sem verificar caminho | Teste para when-true E when-false |
+
+### Relação entre JaCoCo e PITest
+
+| Dimensão | JaCoCo | PITest |
+|---|---|---|
+| O que mede | Instruções executadas | Comportamento verificado |
+| 100% = | Toda linha foi executada | Todo mutante foi morto |
+| Fraqueza | Não detecta asserções ausentes | Lento; mutações equivalentes |
+| Complementaridade | Gate obrigatório em todo PR | Guia de melhoria de testes |
+| Gate neste projeto | ≥ 96% por módulo | ≥ 35% em `domain/` (baseline progressivo) |
+
+**Regra**: JaCoCo é o floor (mínimo aceitável). PITest é o espelho (qualidade real).
+Um score PITest alto com JaCoCo alto é o objetivo. JaCoCo alto com PITest baixo é
+um sinal de testes que executam sem verificar — dívida técnica silenciosa.
+
+### Incremental analysis — para codebase grande
+
+Quando o projeto crescer e `./gradlew :domain:pitest` demorar demais:
+
+```kotlin
+// domain/build.gradle.kts — habilitar análise incremental
+pitest {
+    // ... config existente ...
+    withHistory.set(true)  // armazena em java.io.tmpdir automaticamente
+    // ou explicitamente:
+    // historyInputLocation.set(file("$buildDir/pitest-history.bin"))
+    // historyOutputLocation.set(file("$buildDir/pitest-history.bin"))
+}
+```
+
+Com `withHistory`, o PITest evita re-testar mutantes cujo código e testes não mudaram —
+dramaticamente mais rápido para PRs que tocam apenas uma parte do código.
+
+### Tasks PITest disponíveis
+
+| Task | O que faz |
+|---|---|
+| `./gradlew :domain:pitest` | Mutation testing no `domain/` (foco no SimulationEngine) |
+| `./gradlew pitestAll` | Mutation testing em todos os módulos (mais lento) |
+
+**PITest NÃO está em `check` nem em `testAll`** — é opt-in por ser lento.
+O CI executa `:domain:pitest` em step separado e faz upload do relatório HTML como artefato.
+
+### Elevando o threshold progressivamente
+
+O threshold atual (35%) é o baseline medido. O objetivo de longo prazo:
+
+| Marco | Score alvo | Ação necessária |
+|---|---|---|
+| Baseline | 35% | Estado atual — sem ação |
+| Próximo ciclo | 50% | Fortalecer asserções nas top-10 survived mutations |
+| Ciclo intermediário | 65% | Adicionar testes de boundary para condicionais |
+| Meta de maturidade | 80% | Asserções precisas em toda lógica de fila e WIP |
+
+**Nunca eleve o threshold sem primeiro verificar que o score atual supera o novo valor.**
+
+---
+
+## 8. Workflow Diário — Onde Cada Ferramenta Entra
 
 ### Ao escrever código novo
 
@@ -753,7 +995,7 @@ gh api repos/<owner>/<repo>/pulls/<pr-number>/comments \
 
 ---
 
-## 8. Diagnóstico de Falhas Comuns
+## 9. Diagnóstico de Falhas Comuns
 
 ### Detekt: `TooGenericExceptionCaught`
 
@@ -820,7 +1062,7 @@ Vermelho = instrução nunca executada nos testes.
 
 ---
 
-## 9. Referência Rápida
+## 10. Referência Rápida
 
 ```bash
 # Pipeline completo (use antes de todo PR)
@@ -843,16 +1085,24 @@ open modulo/build/reports/detekt/detekt.html
 
 # Rodar só property tests de um módulo (são JUnit 5 normais)
 ./gradlew :domain:test --tests "*PropertyTest"
+
+# PITest — mutation testing (opt-in)
+./gradlew :domain:pitest                     # SimulationEngine — foco principal
+./gradlew pitestAll                          # todos os módulos (lento)
+open domain/build/reports/pitest/index.html  # relatório HTML
 ```
 
 ---
 
-## 10. Princípios Não Negociáveis
+## 11. Princípios Não Negociáveis
 
 1. **`warningsAsErrors = true` nunca é desativado** — aviso não visto é bug em produção
-2. **Gate de cobertura 95% nunca desce** — escreva o teste, não baixe o número
+2. **Gate de cobertura 96% nunca desce** — escreva o teste, não baixe o número
 3. **`@Suppress` exige justificativa** — sem comentário, o PR não passa
 4. **`ktlintFormat` antes do commit** — não perca tempo revisando formatação em PR
-5. **Exclusões do JaCoCo são documentadas** — só para código não testável por natureza
+5. **Exclusões do JaCoCo são documentadas** — só para código não testável por natureza (lambdas de DSL, serializadores gerados)
 6. **Convention plugin é a única fonte de verdade** — não duplique config em módulos
 7. **Property tests verificam invariantes, não casos fixos** — se você está hardcoding o input, use um teste de exemplo
+8. **Threshold PITest só sobe, nunca desce** — cada elevação exige que o score atual já supere o novo valor
+9. **JaCoCo alto + PITest baixo = dívida silenciosa** — testes que executam sem verificar são piores que ausentes porque dão falsa segurança
+10. **Mutante survived é um TODO** — registre ou resolva; nunca ignore sem entender o que o mutante revela
