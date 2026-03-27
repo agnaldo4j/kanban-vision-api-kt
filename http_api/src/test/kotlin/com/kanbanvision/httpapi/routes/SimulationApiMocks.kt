@@ -11,7 +11,10 @@ import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationCfdUseCase
+import com.kanbanvision.usecases.simulation.GetSimulationDaysUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
+import com.kanbanvision.usecases.simulation.ListSimulationsUseCase
 import com.kanbanvision.usecases.simulation.RunDayUseCase
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -28,6 +31,9 @@ internal data class SimulationApiMocks(
     val getSimulationUseCase: GetSimulationUseCase = mockk(),
     val runDayUseCase: RunDayUseCase = mockk(),
     val getDailySnapshotUseCase: GetDailySnapshotUseCase = mockk(),
+    val listSimulationsUseCase: ListSimulationsUseCase = mockk(),
+    val getSimulationDaysUseCase: GetSimulationDaysUseCase = mockk(),
+    val getSimulationCfdUseCase: GetSimulationCfdUseCase = mockk(),
 )
 
 internal fun Application.configureSimulationApi(mocks: SimulationApiMocks) {
@@ -38,6 +44,9 @@ internal fun Application.configureSimulationApi(mocks: SimulationApiMocks) {
                 single { mocks.getSimulationUseCase }
                 single { mocks.runDayUseCase }
                 single { mocks.getDailySnapshotUseCase }
+                single { mocks.listSimulationsUseCase }
+                single { mocks.getSimulationDaysUseCase }
+                single { mocks.getSimulationCfdUseCase }
                 single { DomainMetrics(SimpleMeterRegistry()) }
             },
         )

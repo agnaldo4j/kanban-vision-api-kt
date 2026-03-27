@@ -16,7 +16,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JdbcSimulationAndSnapshotRepositoriesIntegrationTest {
+class SimulationAndSnapshotRepositoriesIntegrationTest {
     private val simulationRepository = JdbcSimulationRepository()
     private val snapshotRepository = JdbcSnapshotRepository()
     private val organizationRepository = JdbcOrganizationRepository()
@@ -182,5 +182,55 @@ class JdbcSimulationAndSnapshotRepositoriesIntegrationTest {
         runBlocking {
             val result = organizationRepository.findById("05000000-0000-0000-0000-000000009999")
             assertIs<DomainError.OrganizationNotFound>(result.leftOrNull())
+        }
+
+    @Test
+    fun `given multiple simulations for same organization when listing with pagination then correct page is returned`() =
+        runBlocking {
+            val orgId = "06000000-0000-0000-0000-000000000001"
+            EmbeddedPostgresSupport.insertOrganization(orgId, "Paged Org")
+            val sim1 = PersistenceFixtures.simulation("06000000-0000-0000-0001-000000000001", orgId)
+            val sim2 = PersistenceFixtures.simulation("06000000-0000-0000-0002-000000000001", orgId)
+            val sim3 = PersistenceFixtures.simulation("06000000-0000-0000-0003-000000000001", orgId)
+            simulationRepository.save(sim1).getOrElse { error("save sim1 failed: $it") }
+            simulationRepository.save(sim2).getOrElse { error("save sim2 failed: $it") }
+            simulationRepository.save(sim3).getOrElse { error("save sim3 failed: $it") }
+
+            val page1 = simulationRepository.findAll(orgId, 1, 2).getOrElse { error("findAll page1 failed: $it") }
+            val page2 = simulationRepository.findAll(orgId, 2, 2).getOrElse { error("findAll page2 failed: $it") }
+            val total = simulationRepository.countByOrganization(orgId).getOrElse { error("count failed: $it") }
+
+            assertEquals(2, page1.size)
+            assertEquals(1, page2.size)
+            assertEquals(3L, total)
+        }
+
+    @Test
+    fun `given organization with no simulations when counting then zero is returned`() =
+        runBlocking {
+            val orgId = "07000000-0000-0000-0000-000000000001"
+            EmbeddedPostgresSupport.insertOrganization(orgId, "Empty Org")
+
+            val total = simulationRepository.countByOrganization(orgId).getOrElse { error("count failed: $it") }
+
+            assertEquals(0L, total)
+        }
+
+    @Test
+    fun `given simulations from different organizations when listing by org then only matching simulations are returned`() =
+        runBlocking {
+            val org1 = "08000000-0000-0000-0000-000000000001"
+            val org2 = "08000000-0000-0000-0000-000000000002"
+            EmbeddedPostgresSupport.insertOrganization(org1, "Org One")
+            EmbeddedPostgresSupport.insertOrganization(org2, "Org Two")
+            val simForOrg1 = PersistenceFixtures.simulation("08000000-0000-0000-0001-000000000001", org1)
+            val simForOrg2 = PersistenceFixtures.simulation("08000000-0000-0000-0002-000000000001", org2)
+            simulationRepository.save(simForOrg1).getOrElse { error("save org1 sim failed: $it") }
+            simulationRepository.save(simForOrg2).getOrElse { error("save org2 sim failed: $it") }
+
+            val org1Simulations = simulationRepository.findAll(org1, 1, 10).getOrElse { error("findAll org1 failed: $it") }
+
+            assertEquals(1, org1Simulations.size)
+            assertEquals(simForOrg1.id, org1Simulations[0].id)
         }
 }
