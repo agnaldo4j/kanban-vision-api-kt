@@ -15,7 +15,7 @@ dependencies {
     implementation("org.flywaydb:flyway-core:10.21.0")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:10.21.0")
     implementation("ch.qos.logback:logback-classic:1.5.32")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 
