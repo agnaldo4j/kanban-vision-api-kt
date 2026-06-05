@@ -30,7 +30,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
                 "**/*\$\$inlined\$*",
                 "**/*\$\$serializer.class",
                 "**/*\$Companion.class",
-                // Kotlin 2.3.0 + Ktor 3.4.1 DSL generates synthetic lambda classes for
+                // Kotlin 2.4.0 + Ktor 3.4.1 DSL generates synthetic lambda classes for
                 // routing builders and plugin configuration blocks. These are framework
                 // infrastructure, not business logic — excluded analogously to $inlined$.
                 "**/*RoutesKt\$*",
@@ -49,7 +49,7 @@ tasks.named<JacocoReport>("jacocoTestReport") {
                 "**/*\$\$inlined\$*",
                 "**/*\$\$serializer.class",
                 "**/*\$Companion.class",
-                // Kotlin 2.3.0 + Ktor 3.4.1 DSL generates synthetic lambda classes for
+                // Kotlin 2.4.0 + Ktor 3.4.1 DSL generates synthetic lambda classes for
                 // routing builders and plugin configuration blocks. These are framework
                 // infrastructure, not business logic — excluded analogously to $inlined$.
                 "**/*RoutesKt\$*",
@@ -63,7 +63,7 @@ dependencies {
     implementation(project(":usecases"))
     implementation(project(":sql_persistence"))
 
-    implementation("io.arrow-kt:arrow-core:2.0.1")
+    implementation("io.arrow-kt:arrow-core:2.2.3")
 
     implementation("io.ktor:ktor-server-core-jvm:3.4.1")
     implementation("io.ktor:ktor-server-netty-jvm:3.4.1")
@@ -97,7 +97,7 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host-jvm:3.4.1")
     testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.4.1")
     testImplementation("io.insert-koin:koin-test-junit5:4.1.1")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
     testImplementation("io.mockk:mockk:1.14.9")
