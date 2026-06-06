@@ -8,7 +8,7 @@
 | Data      | 2026-06-06                                                         |
 | Autores   | @agnaldo4j                                                         |
 | Branch    | feat/gap-k-contract-tests-pact                                     |
-| PR        | (preencher após abrir o PR)                                        |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/135         |
 | Supersede | —                                                                  |
 
 ---
@@ -183,9 +183,8 @@ Endpoints excluídos do escopo Pact inicial:
   zero violações Detekt, zero erros KtLint
 - [x] **9. CI pipeline** — step `Upload Pact contract files` adicionado a `.github/workflows/ci.yml`;
   pact files arquivados em `pact-contracts` por 14 dias junto com JaCoCo e PITest
-- [ ] **10. ADR e documentação** — marcar GAP-K `[x]` em `ADR-0004`, atualizar
-  `memory/project_adr_progress.md`, preencher campo `PR` nesta ADR, e fechar o item no
-  board GitHub Project #6
+- [x] **10. ADR e documentação** — GAP-K `[x]` em `ADR-0004`, campo `PR` preenchido,
+  `memory/project_adr_progress.md` atualizado, item movido para Done no board GitHub Project #6
 
 ---
 
@@ -201,7 +200,7 @@ Endpoints excluídos do escopo Pact inicial:
 - [x] **6. Observabilidade**: N/A — nenhuma nova métrica de negócio introduzida neste gap
 - [x] **7. Performance e Confiabilidade**: testes Pact completam em < 10s; sem degradação do ciclo de build
 - [x] **8. Deploy Seguro**: N/A — sem mudança de schema ou migração
-- [ ] **9. Documentação**: campo `PR` preenchido nesta ADR; ADR-0004 atualizado com GAP-K `[x]`
+- [x] **9. Documentação**: campo `PR` preenchido (PR #135); ADR-0004 atualizado com GAP-K `[x]`
 
 ### Qualidade de Código
 
