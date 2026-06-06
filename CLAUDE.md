@@ -14,8 +14,9 @@ JWT_DEV_MODE=true ./gradlew :http_api:run                # run (dev mode)
 ./gradlew ktlintFormat                                   # auto-fix formatting
 ```
 
-> **Java 21 required.** Gradle 8.13 is incompatible with newer JDKs.
-> Pin via `gradle.properties` (`org.gradle.java.home`) or `export JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
+> **Java 25 LTS required.** Gradle 8.14.5+ required (Kotlin 2.5 minimum is 8.14.4).
+> Pin via `gradle.properties` (`org.gradle.java.home`) or `export JAVA_HOME=$(/usr/libexec/java_home -v 25)`.
+> Foojay toolchain resolver auto-provisions Java 25 if not installed locally.
 
 ```bash
 # Full stack (API + PostgreSQL + Prometheus + Grafana)

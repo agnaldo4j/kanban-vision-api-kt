@@ -14,6 +14,29 @@ ktor {
     }
 }
 
+val jacocoExcludes =
+    listOf(
+        "com/kanbanvision/httpapi/MainKt.class",
+        "com/kanbanvision/httpapi/di/**",
+        "**/*\$\$inlined\$*",
+        "**/*\$\$serializer.class",
+        "**/*\$Companion.class",
+        // Kotlin 2.4.0 + Ktor 3.5.0 DSL generates synthetic lambda classes for
+        // routing builders and plugin configuration blocks. These are framework
+        // infrastructure, not business logic — excluded analogously to $inlined$.
+        "**/*RoutesKt\$*",
+        "**/plugins/*Kt\$*",
+        // Java 25 + kotlinx.serialization 1.11.0: write$Self$ and synthetic
+        // SerializationConstructorMarker constructors are generated inside DTO
+        // classes directly (not in separate $$serializer files as in older versions).
+        // Requests: write$Self$ is unreachable — server never serializes request bodies.
+        // Responses: SerializationConstructorMarker constructor unused at test client side.
+        "**/routes/*Request.class",
+        "**/routes/*Response.class",
+        // Error DTO classes: same pattern as above for serialization-generated code.
+        "**/dtos/**",
+    )
+
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
@@ -23,39 +46,19 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
         }
     }
     classDirectories.setFrom(
-        sourceSets.main.get().output.asFileTree.matching {
-            exclude(
-                "com/kanbanvision/httpapi/MainKt.class",
-                "com/kanbanvision/httpapi/di/**",
-                "**/*\$\$inlined\$*",
-                "**/*\$\$serializer.class",
-                "**/*\$Companion.class",
-                // Kotlin 2.4.0 + Ktor 3.5.0 DSL generates synthetic lambda classes for
-                // routing builders and plugin configuration blocks. These are framework
-                // infrastructure, not business logic — excluded analogously to $inlined$.
-                "**/*RoutesKt\$*",
-                "**/plugins/*Kt\$*",
-            )
-        },
+        sourceSets.main
+            .get()
+            .output.asFileTree
+            .matching { exclude(jacocoExcludes) },
     )
 }
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     classDirectories.setFrom(
-        sourceSets.main.get().output.asFileTree.matching {
-            exclude(
-                "com/kanbanvision/httpapi/MainKt.class",
-                "com/kanbanvision/httpapi/di/**",
-                "**/*\$\$inlined\$*",
-                "**/*\$\$serializer.class",
-                "**/*\$Companion.class",
-                // Kotlin 2.4.0 + Ktor 3.5.0 DSL generates synthetic lambda classes for
-                // routing builders and plugin configuration blocks. These are framework
-                // infrastructure, not business logic — excluded analogously to $inlined$.
-                "**/*RoutesKt\$*",
-                "**/plugins/*Kt\$*",
-            )
-        },
+        sourceSets.main
+            .get()
+            .output.asFileTree
+            .matching { exclude(jacocoExcludes) },
     )
 }
 

@@ -15,7 +15,10 @@ dependencies {
 }
 
 pitest {
-    junit5PluginVersion.set("1.2.1")
+    // PITest 1.25.3 uses ASM 9.9.1 which supports Java 25 class files (major version 69).
+    // The Gradle plugin (1.15.0) is pinned but pitestVersion overrides the core JAR used.
+    pitestVersion.set("1.25.3")
+    junit5PluginVersion.set("1.2.3")
     targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
     targetTests.set(setOf("com.kanbanvision.domain.simulation.*"))
     mutators.set(setOf("STRONGER"))
@@ -27,4 +30,14 @@ pitest {
     timestampedReports.set(false)
     failWhenNoMutations.set(true)
     threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
+}
+
+// PitestTask extends JavaExec and uses the Gradle daemon JVM (Java 21 via org.gradle.java.home)
+// by default. With jvmToolchain(25), compiled bytecode targets Java 25 (major version 69).
+// Java 21 cannot read Java 25 class files — both the orchestrator and forked mutation
+// processes must run on Java 25.
+tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) },
+    )
 }

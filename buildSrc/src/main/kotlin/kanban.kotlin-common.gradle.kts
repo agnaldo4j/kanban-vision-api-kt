@@ -6,7 +6,7 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xjsr305=strict",
@@ -24,6 +24,9 @@ detekt {
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    // Detekt 1.23.8 supports JVM targets up to 22; pin explicitly so it doesn't
+    // inherit the toolchain version (25) which Detekt doesn't yet recognize.
+    jvmTarget = "22"
     reports {
         sarif.required.set(true)
     }
