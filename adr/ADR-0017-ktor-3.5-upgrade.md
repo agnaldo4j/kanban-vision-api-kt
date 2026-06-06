@@ -8,7 +8,7 @@
 | Data      | 2026-06-05                     |
 | Autores   | @agnaldo4j                     |
 | Branch    | chore/ktor-3.5-upgrade         |
-| PR        | —                              |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/129 |
 | Supersede | —                              |
 
 ---
