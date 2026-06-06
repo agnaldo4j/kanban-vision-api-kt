@@ -17,21 +17,21 @@
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit Jupiter 6.0.3 + MockK 1.14.9 |
-| Mutation testing | PITest 1.15.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
+| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.15.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
-| Static analysis | Detekt 1.23.8 |
+| Static analysis | Detekt 1.23.8 (jvmTarget pinned to 22 — Detekt max) |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 96% per module) |
-| Containerisation | Docker multi-stage (`eclipse-temurin:21-jre`) + docker-compose |
+| Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
 | Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.14.0 (API 1.47.0) |
-| Java | Java 21 (Gradle 8.13 incompatible with newer versions) |
+| Java | Java 25 LTS (Gradle 8.14.5+; Foojay resolver auto-provisions toolchain) |
 | Kotlin | 2.4.0 |
 
 ## CI/CD — GitHub Actions (`.github/workflows/ci.yml`)
 
 **Job `quality`** — every PR and push to `main`:
-1. Setup Java 21 (Temurin)
+1. Setup Java 25 (Temurin)
 2. `./gradlew testAll` — Detekt + KtLint + tests + JaCoCo gate
 3. `./gradlew :domain:pitest` — PITest mutation testing (mandatory in CI; locally opt-in since not in `check`)
 4. Upload artifacts (14 days): test reports, Detekt, JaCoCo, PITest HTML

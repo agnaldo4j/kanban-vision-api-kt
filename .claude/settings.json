@@ -23,13 +23,13 @@
     ],
     "deny": [
       "Edit(buildSrc/**)",
+      "Edit(gradle.properties)",
       "Bash(git push --force *)",
       "Bash(git push -f *)",
       "Bash(git reset --hard *)",
       "Bash(git clean -f *)",
       "Bash(rm -rf *)",
       "Edit(config/detekt/detekt.yml)",
-      "Edit(gradle.properties)",
       "Edit(.editorconfig)"
     ]
   },

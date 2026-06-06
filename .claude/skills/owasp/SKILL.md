@@ -213,7 +213,7 @@ dependencyCheck {
 - [ ] `gradle/verification-metadata.xml` com checksums SHA-256 atualizado.
 - [ ] CI executa scan de vulnerabilidades (OWASP Dependency Check ou Snyk).
 - [ ] Dependências transitivas monitoradas (não só diretas).
-- [ ] Base Docker usa digest fixo (não `latest`): `eclipse-temurin:21-jre@sha256:...`.
+- [ ] Base Docker usa digest fixo (não `latest`): `eclipse-temurin:25-jre@sha256:...`.
 - [ ] Nenhuma dependência de fonte não-oficial ou não verificada.
 
 ---

@@ -456,7 +456,7 @@ OTEL_LOGS_EXPORTER=none     # desabilitar se usando logstash-logback-encoder
 
 ```dockerfile
 # http_api/Dockerfile
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 
 # Download do agente (fixar versão para builds reproduzíveis)
 ARG OTEL_AGENT_VERSION=2.12.0
