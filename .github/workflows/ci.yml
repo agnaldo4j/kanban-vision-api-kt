@@ -94,10 +94,10 @@ jobs:
               echo '⚠️ Mutation report not found — PITest may have failed or was skipped.'
             else
               total=$({ grep -c '<mutation ' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
-              killed=$({ grep -c 'status="KILLED"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
-              survived=$({ grep -c 'status="SURVIVED"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
-              no_coverage=$({ grep -c 'status="NO_COVERAGE"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
-              timed_out=$({ grep -c 'status="TIMED_OUT"' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              killed=$({ grep -c "status='KILLED'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              survived=$({ grep -c "status='SURVIVED'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              no_coverage=$({ grep -c "status='NO_COVERAGE'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
+              timed_out=$({ grep -c "status='TIMED_OUT'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
               total=${total:-0}; killed=${killed:-0}; survived=${survived:-0}
               no_coverage=${no_coverage:-0}; timed_out=${timed_out:-0}
               if [ "$total" -gt 0 ]; then score=$((killed * 100 / total)); else score=0; fi
