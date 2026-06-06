@@ -63,7 +63,7 @@ Multi-stage build: o estágio de build compila o JAR; o estágio de runtime é e
 ```dockerfile
 # Dockerfile
 # ─────────────────────────────── Estágio 1: Build ───────────────────────────────
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 
 WORKDIR /build
 
@@ -86,7 +86,7 @@ COPY config/ config/
 RUN ./gradlew :http_api:buildFatJar --no-daemon -x test -x detekt -x ktlintCheck
 
 # ─────────────────────────────── Estágio 2: Runtime ──────────────────────────────
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 
 # Versão fixada do OTel Java Agent — nunca use "latest" para builds reproduzíveis
 ARG OTEL_AGENT_VERSION=2.12.0
@@ -861,7 +861,7 @@ kubectl get endpoints kanban-vision-api -n kanban    # pods no load balancer
 - [ ] Container roda como usuário não-root?
 - [ ] `runAsNonRoot: true` no `securityContext` do Pod?
 - [ ] Secrets não expostos em logs ou variáveis visíveis via `kubectl describe`?
-- [ ] Imagem baseada em `eclipse-temurin:21-jre` (não `latest`, não `jdk` em runtime)?
+- [ ] Imagem baseada em `eclipse-temurin:25-jre` (não `latest`, não `jdk` em runtime)?
 - [ ] Registry de imagens com scanning de vulnerabilidades (Trivy, Snyk)?
 
 ---

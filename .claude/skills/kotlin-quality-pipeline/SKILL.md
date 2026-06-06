@@ -108,7 +108,7 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(21)                          // versão fixa — nunca dependa do JAVA_HOME
+    jvmToolchain(25)                          // versão fixa — nunca dependa do JAVA_HOME
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xjsr305=strict",                // null-safety rigorosa para anotações JSR-305

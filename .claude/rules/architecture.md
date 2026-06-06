@@ -17,7 +17,7 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 
 ## Key Conventions
 
-- **Convention plugin**: `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` — Kotlin JVM, `jvmToolchain(21)`, Detekt, KtLint, JaCoCo, JUnit for all modules.
+- **Convention plugin**: `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` — Kotlin JVM, `jvmToolchain(25)`, Detekt (jvmTarget pinned to 22), KtLint, JaCoCo, JUnit for all modules.
 - **Versions**: Declared inline per `build.gradle.kts`. No `libs.versions.toml`.
 - **Kotlin serialization plugin**: applied in `http_api` and `sql_persistence` without version — already on classpath from `buildSrc`.
 - **Domain stays pure**: `:domain` must have zero framework imports.
