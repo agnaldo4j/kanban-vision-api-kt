@@ -14,9 +14,10 @@ JWT_DEV_MODE=true ./gradlew :http_api:run                # run (dev mode)
 ./gradlew ktlintFormat                                   # auto-fix formatting
 ```
 
-> **Java 25 LTS required.** Gradle 8.14.5+ required (Kotlin 2.5 minimum is 8.14.4).
-> Pin via `gradle.properties` (`org.gradle.java.home`) or `export JAVA_HOME=$(/usr/libexec/java_home -v 25)`.
-> Foojay toolchain resolver auto-provisions Java 25 if not installed locally.
+> **Gradle daemon: Java 21.** Kotlin 2.4.0 bundled IntelliJ library fails on Java 25 daemon.
+> Use `.sdkmanrc` (`sdk env`) or `export JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
+> **Compilation + runtime target: Java 25 LTS.** Foojay toolchain resolver auto-provisions JDK 25.
+> Gradle 8.14.5+ required (Kotlin 2.5 minimum is 8.14.4).
 
 ```bash
 # Full stack (API + PostgreSQL + Prometheus + Grafana)

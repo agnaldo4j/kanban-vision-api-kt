@@ -25,19 +25,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Java 21
+      - name: Set up Java 21 (Gradle daemon)
         uses: actions/setup-java@v5
         with:
-          java-version: '25'
+          java-version: '21'
           distribution: 'temurin'
+        # Kotlin 2.4.0 bundled IntelliJ library fails to parse "25.0.3" when the
+        # Gradle daemon runs on Java 25. Daemon uses Java 21; the Foojay toolchain
+        # resolver auto-provisions Java 25 for compilation, tests, and PITest.
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-
-      - name: Configure Gradle Java home
-        run: echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
 
       - name: Run quality gates
         run: ./gradlew testAll
