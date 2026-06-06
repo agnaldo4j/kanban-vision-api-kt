@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 @ExtendWith(PactConsumerTestExt::class)
 @PactTestFor(providerName = "kanban-vision-api")
 class SimulationsCommandsConsumerPactTest {
-    private val bearerToken = "Bearer test-jwt-consumer-pact"
+    private val bearerToken = PACT_BEARER_TOKEN
 
     @Pact(consumer = "simulation-consumer")
     fun createSimulationPact(builder: PactBuilder): V4Pact =

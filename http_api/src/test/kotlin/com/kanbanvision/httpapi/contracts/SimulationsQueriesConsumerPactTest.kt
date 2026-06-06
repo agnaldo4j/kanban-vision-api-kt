@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
 @ExtendWith(PactConsumerTestExt::class)
 @PactTestFor(providerName = "kanban-vision-api")
 class SimulationsQueriesConsumerPactTest {
-    private val bearerToken = "Bearer test-jwt-consumer-pact"
+    private val bearerToken = PACT_BEARER_TOKEN
 
     @Pact(consumer = "simulation-consumer")
     fun getSimulationPact(builder: PactBuilder): V4Pact =
@@ -167,6 +167,7 @@ class SimulationsQueriesConsumerPactTest {
                         req.method("GET")
                         req.path("/api/v1/simulations")
                         req.header(HttpHeaders.Authorization, bearerToken)
+                        req.queryParameter("organizationId", "org-1")
                     }.willRespondWith { res ->
                         res.status(200)
                         res.body(
@@ -192,7 +193,7 @@ class SimulationsQueriesConsumerPactTest {
         runTest {
             val client = HttpClient()
             val response =
-                client.get("${mockServer.getUrl()}/api/v1/simulations") {
+                client.get("${mockServer.getUrl()}/api/v1/simulations?organizationId=org-1") {
                     header(HttpHeaders.Authorization, bearerToken)
                 }
             assertEquals(HttpStatusCode.OK, response.status)

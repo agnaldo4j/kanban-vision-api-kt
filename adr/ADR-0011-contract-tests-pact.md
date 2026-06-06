@@ -173,18 +173,16 @@ Endpoints excluídos do escopo Pact inicial:
   + `integerType("throughputCumulative")`
 - [x] **5. Consumer test — GET /simulations (lista paginada)** — interação com
   `eachLike("data")` + `integerType("page", "size", "total")`
-- [ ] **6. Provider verification** — escrever `SimulationsPactProviderTest` usando
-  `@Provider` + `@PactFolder("build/pacts")` e `@State` para cada interação; usar
-  `testApplication` do Ktor como provider real (não mock)
-- [ ] **7. Integração com `testAll`** — verificar que `./gradlew testAll` inclui
-  os novos testes Pact; ajustar `test { }` task se necessário para que pact consumer
-  e provider verification rodem no mesmo ciclo de CI
-- [ ] **8. JaCoCo e Detekt** — confirmar que `./gradlew testAll` mantém cobertura ≥ 96%
-  e zero violações Detekt/KtLint; ajustar exclusões de JaCoCo se necessário para
-  classes geradas por Pact
-- [ ] **9. CI pipeline** — verificar que `./gradlew testAll` no GitHub Actions inclui
-  a verificação Pact e que os arquivos `build/pacts/*.json` são arquivados como artefatos
-  de CI (14 dias, junto com JaCoCo e PITest)
+- [x] **6. Provider verification** — `SimulationsPactProviderTest` com `embeddedServer(Netty, port = 0)`
+  usando `configureSimulationApi(mocks)` como provider real; `@Consumer("simulation-consumer")`
+  filtra o pact spike; todos os 5 contratos verificados (`POST /simulations`, `GET /simulations/{id}`,
+  `/days`, `/cfd`, `GET /simulations?organizationId=org-1`) passam
+- [x] **7. Integração com `testAll`** — `./gradlew testAll` inclui consumer tests e provider
+  verification no mesmo ciclo; BUILD SUCCESSFUL com 67 tasks
+- [x] **8. JaCoCo e Detekt** — `./gradlew testAll` verde: cobertura ≥ 96% em todos os módulos,
+  zero violações Detekt, zero erros KtLint
+- [x] **9. CI pipeline** — step `Upload Pact contract files` adicionado a `.github/workflows/ci.yml`;
+  pact files arquivados em `pact-contracts` por 14 dias junto com JaCoCo e PITest
 - [ ] **10. ADR e documentação** — marcar GAP-K `[x]` em `ADR-0004`, atualizar
   `memory/project_adr_progress.md`, preencher campo `PR` nesta ADR, e fechar o item no
   board GitHub Project #6
@@ -195,14 +193,14 @@ Endpoints excluídos do escopo Pact inicial:
 
 ### DOD — Definition of Done
 
-- [ ] **1. Contrato e Rastreabilidade**: branch `feat/gap-k-contract-tests-pact` ↔ PR ↔ CI
-- [ ] **2. Testes Técnicos**: consumer pact tests (5 interações) + provider verification; ambos passam em `./gradlew testAll`
-- [ ] **3. Versionamento e Compatibilidade**: pact files em `build/pacts/` com versão do consumer declarada; nenhum contrato existente quebrado
-- [ ] **4. Segurança e Compliance**: testes Pact não expõem secrets; JWT mockado nos testes consumer
-- [ ] **5. CI/CD**: `./gradlew testAll` verde no CI com pact consumer + provider; pacts arquivados como artefatos
-- [ ] **6. Observabilidade**: N/A — nenhuma nova métrica de negócio introduzida neste gap
-- [ ] **7. Performance e Confiabilidade**: testes Pact são unit/integration level — sem degradação de tempo de build significativa
-- [ ] **8. Deploy Seguro**: N/A — sem mudança de schema ou migração
+- [x] **1. Contrato e Rastreabilidade**: branch `feat/gap-k-contract-tests-pact` ↔ PR ↔ CI
+- [x] **2. Testes Técnicos**: 5 consumer pact tests + 5 provider interactions; todos passam em `./gradlew testAll`
+- [x] **3. Versionamento e Compatibilidade**: pact files em `build/pacts/` arquivados como artefato CI; nenhum contrato existente quebrado
+- [x] **4. Segurança e Compliance**: JWT longa duração (exp 2099) com `TEST_JWT_SECRET` — sem secrets hardcoded no código de produção
+- [x] **5. CI/CD**: `./gradlew testAll` verde; step `Upload Pact contract files` adicionado ao `ci.yml`
+- [x] **6. Observabilidade**: N/A — nenhuma nova métrica de negócio introduzida neste gap
+- [x] **7. Performance e Confiabilidade**: testes Pact completam em < 10s; sem degradação do ciclo de build
+- [x] **8. Deploy Seguro**: N/A — sem mudança de schema ou migração
 - [ ] **9. Documentação**: campo `PR` preenchido nesta ADR; ADR-0004 atualizado com GAP-K `[x]`
 
 ### Qualidade de Código
