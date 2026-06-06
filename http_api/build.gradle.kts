@@ -107,4 +107,7 @@ dependencies {
     testImplementation("com.h2database:h2:2.4.240")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("io.kotest:kotest-property:5.9.1")
+    // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
+    testImplementation("au.com.dius.pact.consumer:junit5:4.6.17")
+    testImplementation("au.com.dius.pact.provider:junit5:4.6.17")
 }

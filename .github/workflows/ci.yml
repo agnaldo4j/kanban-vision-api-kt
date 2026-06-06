@@ -69,6 +69,16 @@ jobs:
             **/build/reports/jacoco/
           retention-days: 14
 
+      - name: Upload Pact contract files
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pact-contracts
+          path: |
+            **/build/pacts/
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Run PITest mutation testing
         run: ./gradlew :domain:pitest
 
