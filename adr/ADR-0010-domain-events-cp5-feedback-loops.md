@@ -8,7 +8,7 @@
 | Data      | 2026-06-06                                                         |
 | Autores   | @agnaldo4j                                                         |
 | Branch    | feat/gap-h-domain-events                                           |
-| PR        | (preencher após abrir o PR)                                        |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/134         |
 | Supersede | —                                                                  |
 
 ---
