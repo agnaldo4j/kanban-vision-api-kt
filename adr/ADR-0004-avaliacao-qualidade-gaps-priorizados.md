@@ -415,7 +415,7 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 | ADR-0007  | GAP-D | Métricas Micrometer/Prometheus           | —                    | ✅ Aceita  |
 | ADR-0008  | GAP-V | Pipeline CI/CD (build + push + deploy)   | GAP-G concluído      | ✅ Aceita  |
 | ADR-0009  | GAP-O | OpenTelemetry Agent Integration          | GAP-G concluído      | ✅ Aceita  |
-| ADR-0010  | GAP-H | Domain Events (CP5 — feedback loops)     | GAP-P concluído      | Pendente  |
+| ADR-0010  | GAP-H | Domain Events (CP5 — feedback loops)     | GAP-P concluído      | ✅ Aceita  |
 | ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | Pendente  |
 | ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Pendente  |
 | ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | PRs #87–#91 (Step)   | Pendente  |
@@ -488,7 +488,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[M]` **GAP-S** — Adicionar custom Detekt rule ou Gradle constraint impedindo import direto de `JdbcBoardRepository` fora do `AppModule` — PR #72
 - [x] `[M]` **GAP-I** — Mover validações de invariantes de `Column`/`Card` para `Board.addColumn()` / `Board.addCard()` — PR #73
 - [x] `[M]` **GAP-J** — Analytics API: `GET /simulations` (lista paginada), `GET /simulations/{id}/days` (série temporal paginada), `GET /simulations/{id}/cfd` (dados para CFD — Reinertsen), métricas de utilização por Step (Little's Law). Re-escopo derivado de *The Principles of Product Development Flow*: CFD e Lead Time distribution são ferramentas fundamentais de gestão de fluxo (CP3) → PR #103
-- [ ] `[E→ADR-0010]` **GAP-H** — Escrever ADR-0010 (modelo de Domain Events e mecanismo de publicação). Requer GAP-P concluído. Eventos de alto valor (CP5 — feedback loops): `SimulationDayExecuted`, `CardBlocked`, `WIPLimitBreached`, `CardCompleted`, `UnplannedWorkAdded`. Só após aprovação: implementar eventos e listeners
+- [x] `[E→ADR-0010]` **GAP-H** — Domain Events / CP5 Feedback Loops. ADR-0010 aprovada e implementada: `DomainEvent` sealed class, `EventPublisherPort`, `MicrometerEventPublisher`, publisher em `CreateSimulationUseCase` e `RunDayUseCase` → PR #134
 - [ ] `[E→ADR-0011]` **GAP-K** — Escrever ADR-0011 (estratégia de contract testing com Pact). Requer GAP-G concluído. Protege CP4 (políticas explícitas de API). Só após aprovação: configurar Pact broker e escrever consumer tests
 
 **Ciclo Excelência (P4):**
