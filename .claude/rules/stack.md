@@ -4,7 +4,7 @@
 
 | Concern | Library |
 |---|---|
-| HTTP | Ktor 3.4.1 (Netty engine) |
+| HTTP | Ktor 3.5.0 (Netty engine) |
 | Authentication | JWT Bearer (`ktor-server-auth-jwt`) |
 | Rate Limiting | `ktor-server-rate-limit` (100 req/min per IP) |
 | Serialization | kotlinx.serialization |
@@ -18,7 +18,7 @@
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit Jupiter 6.0.3 + MockK 1.14.9 |
 | Mutation testing | PITest 1.15.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
-| OpenAPI | ktor-openapi 5.6.0 + ktor-swagger-ui 5.6.0 |
+| OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 1.23.8 |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 96% per module) |
