@@ -1,10 +1,11 @@
 package com.kanbanvision.httpapi.di
 
-import com.kanbanvision.httpapi.metrics.DomainMetrics
+import com.kanbanvision.httpapi.events.MicrometerEventPublisher
 import com.kanbanvision.persistence.repositories.JdbcOrganizationRepository
 import com.kanbanvision.persistence.repositories.JdbcSimulationRepository
 import com.kanbanvision.persistence.repositories.JdbcSnapshotRepository
 import com.kanbanvision.usecases.ports.DefaultSimulationEngine
+import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.SimulationRepository
@@ -24,16 +25,16 @@ object AppModule {
     val koinModule =
         module {
             single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
-            single { DomainMetrics(get()) }
+            single<EventPublisherPort> { MicrometerEventPublisher(get()) }
 
             single<OrganizationRepository> { JdbcOrganizationRepository() }
             single<SimulationRepository> { JdbcSimulationRepository() }
             single<SnapshotRepository> { JdbcSnapshotRepository() }
             single<SimulationEnginePort> { DefaultSimulationEngine() }
 
-            single { CreateSimulationUseCase(get(), get()) }
+            single { CreateSimulationUseCase(get(), get(), get()) }
             single { GetSimulationUseCase(get()) }
-            single { RunDayUseCase(get(), get(), get()) }
+            single { RunDayUseCase(get(), get(), get(), get()) }
             single { GetDailySnapshotUseCase(get()) }
             single { ListSimulationsUseCase(get()) }
             single { GetSimulationDaysUseCase(get()) }

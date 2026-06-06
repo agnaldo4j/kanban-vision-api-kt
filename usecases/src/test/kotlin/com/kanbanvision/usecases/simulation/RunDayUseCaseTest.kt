@@ -3,9 +3,11 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.events.DomainEvent
 import com.kanbanvision.domain.model.Decision
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationResult
+import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -13,6 +15,7 @@ import com.kanbanvision.usecases.simulation.commands.RunDayCommand
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +26,8 @@ class RunDayUseCaseTest {
     private val simulationRepository = mockk<SimulationRepository>()
     private val snapshotRepository = mockk<SnapshotRepository>()
     private val simulationEngine = mockk<SimulationEnginePort>()
-    private val useCase = RunDayUseCase(simulationRepository, snapshotRepository, simulationEngine)
+    private val publisher = mockk<EventPublisherPort>(relaxed = true)
+    private val useCase = RunDayUseCase(simulationRepository, snapshotRepository, simulationEngine, publisher)
 
     @Test
     fun `given already executed day when running simulation day then conflict error is returned`() =
@@ -71,6 +75,13 @@ class RunDayUseCaseTest {
             coVerify(exactly = 1) { simulationEngine.runDay(simulation, any(), simulation.scenario.rules.seedValue) }
             coVerify(exactly = 1) { simulationRepository.save(updatedSimulation) }
             coVerify(exactly = 1) { snapshotRepository.save(snapshot) }
+            verify(exactly = 1) {
+                publisher.publish(
+                    match { events ->
+                        events.any { it is DomainEvent.SimulationDayExecuted }
+                    },
+                )
+            }
         }
 
     @Test

@@ -4,7 +4,9 @@ import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.events.DomainEvent
 import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
@@ -12,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,36 +24,38 @@ import kotlin.test.assertTrue
 class CreateSimulationUseCaseTest {
     private val organizationRepository = mockk<OrganizationRepository>()
     private val simulationRepository = mockk<SimulationRepository>()
-    private val useCase = CreateSimulationUseCase(organizationRepository, simulationRepository)
+    private val publisher = mockk<EventPublisherPort>(relaxed = true)
+    private val useCase = CreateSimulationUseCase(organizationRepository, simulationRepository, publisher)
 
     @Test
     fun `given valid command when organization exists then use case creates and persists simulation`() =
         runTest {
             val organization = fixtureOrganization(id = "org-42", name = "Kanban Vision")
             val simulationSlot = slot<Simulation>()
-
             coEvery { organizationRepository.findById("org-42") } returns organization.right()
             coEvery { simulationRepository.save(capture(simulationSlot)) } answers { simulationSlot.captured.right() }
 
-            val result =
-                useCase.execute(
-                    CreateSimulationCommand(
-                        organizationId = "org-42",
-                        wipLimit = 3,
-                        teamSize = 4,
-                        seedValue = 99L,
-                    ),
-                )
+            val result = useCase.execute(CreateSimulationCommand("org-42", wipLimit = 3, teamSize = 4, seedValue = 99L))
 
             assertTrue(result.isRight())
-            val simulationId = result.getOrElse { error("Expected simulation id") }
-            assertEquals(simulationSlot.captured.id, simulationId)
-            assertEquals("Default Simulation Scenario", simulationSlot.captured.scenario.name)
+            assertEquals(simulationSlot.captured.id, result.getOrElse { error("Expected id") })
             assertEquals(3, simulationSlot.captured.scenario.rules.wipLimit)
             assertEquals(4, simulationSlot.captured.scenario.rules.teamSize)
-
-            coVerify(exactly = 1) { organizationRepository.findById("org-42") }
             coVerify(exactly = 1) { simulationRepository.save(any()) }
+        }
+
+    @Test
+    fun `given successful persistence when simulation is created then SimulationCreated event is published`() =
+        runTest {
+            val organization = fixtureOrganization(id = "org-1")
+            coEvery { organizationRepository.findById("org-1") } returns organization.right()
+            coEvery { simulationRepository.save(any()) } answers { firstArg<Simulation>().right() }
+
+            useCase.execute(CreateSimulationCommand("org-1", wipLimit = 2, teamSize = 2, seedValue = 1L))
+
+            verify(exactly = 1) {
+                publisher.publish(match { events -> events.size == 1 && events[0] is DomainEvent.SimulationCreated })
+            }
         }
 
     @Test

@@ -4,7 +4,7 @@
 
 | Campo     | Valor                                                              |
 |-----------|--------------------------------------------------------------------|
-| Status    | Proposta                                                           |
+| Status    | Aceita                                                             |
 | Data      | 2026-06-06                                                         |
 | Autores   | @agnaldo4j                                                         |
 | Branch    | feat/gap-h-domain-events                                           |
