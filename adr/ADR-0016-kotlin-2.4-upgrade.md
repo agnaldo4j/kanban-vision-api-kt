@@ -8,7 +8,7 @@
 | Data      | 2026-06-05                     |
 | Autores   | @agnaldo4j                     |
 | Branch    | chore/kotlin-2.4-upgrade       |
-| PR        | —                              |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/127 |
 | Supersede | —                              |
 
 ---
