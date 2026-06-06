@@ -4,7 +4,6 @@ import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
 import com.kanbanvision.httpapi.TEST_JWT_ISSUER
 import com.kanbanvision.httpapi.TEST_JWT_REALM
 import com.kanbanvision.httpapi.TEST_JWT_SECRET
-import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.RequestIdPlugin
 import com.kanbanvision.httpapi.plugins.configureAuthentication
 import com.kanbanvision.httpapi.plugins.configureSerialization
@@ -21,7 +20,6 @@ import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
@@ -47,7 +45,6 @@ internal fun Application.configureSimulationApi(mocks: SimulationApiMocks) {
                 single { mocks.listSimulationsUseCase }
                 single { mocks.getSimulationDaysUseCase }
                 single { mocks.getSimulationCfdUseCase }
-                single { DomainMetrics(SimpleMeterRegistry()) }
             },
         )
     }

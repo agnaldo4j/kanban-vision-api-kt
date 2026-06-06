@@ -4,9 +4,12 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.events.DomainEvent
 import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -18,6 +21,7 @@ class RunDayUseCase(
     private val simulationRepository: SimulationRepository,
     private val snapshotRepository: SnapshotRepository,
     private val simulationEngine: SimulationEnginePort,
+    private val publisher: EventPublisherPort,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -57,6 +61,35 @@ class RunDayUseCase(
         either {
             simulationRepository.save(updatedSimulation).bind()
             snapshotRepository.save(snapshot).bind()
+            publisher.publish(buildDomainEvents(updatedSimulation.id, snapshot))
             snapshot
+        }
+
+    private fun buildDomainEvents(
+        simulationId: String,
+        snapshot: DailySnapshot,
+    ): List<DomainEvent> =
+        buildList {
+            snapshot.movements.forEach { movement ->
+                when (movement.type) {
+                    MovementType.COMPLETED ->
+                        add(DomainEvent.CardCompleted(simulationId, movement.cardId, snapshot.day.value))
+                    MovementType.BLOCKED ->
+                        add(DomainEvent.CardBlocked(simulationId, movement.cardId, snapshot.day.value, movement.reason))
+                    MovementType.MOVED ->
+                        add(DomainEvent.CardMoved(simulationId, movement.cardId, snapshot.day.value))
+                    MovementType.UNBLOCKED ->
+                        add(DomainEvent.CardUnblocked(simulationId, movement.cardId, snapshot.day.value))
+                }
+            }
+            add(
+                DomainEvent.SimulationDayExecuted(
+                    simulationId = simulationId,
+                    day = snapshot.day.value,
+                    throughput = snapshot.metrics.throughput,
+                    wipCount = snapshot.metrics.wipCount,
+                    blockedCount = snapshot.metrics.blockedCount,
+                ),
+            )
         }
 }

@@ -4,7 +4,6 @@ import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
 import com.kanbanvision.httpapi.TEST_JWT_ISSUER
 import com.kanbanvision.httpapi.TEST_JWT_REALM
 import com.kanbanvision.httpapi.TEST_JWT_SECRET
-import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.routes.SimulationApiMocks
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
@@ -15,7 +14,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
@@ -45,7 +43,6 @@ class RoutingPluginTest {
                     single<GetSimulationUseCase> { mocks.getSimulationUseCase }
                     single<RunDayUseCase> { mocks.runDayUseCase }
                     single<GetDailySnapshotUseCase> { mocks.getDailySnapshotUseCase }
-                    single { DomainMetrics(SimpleMeterRegistry()) }
                 },
             )
         }

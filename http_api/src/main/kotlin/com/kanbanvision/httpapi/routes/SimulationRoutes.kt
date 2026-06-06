@@ -6,7 +6,6 @@ import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
-import com.kanbanvision.httpapi.metrics.DomainMetrics
 import com.kanbanvision.httpapi.plugins.withSpan
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
@@ -41,8 +40,6 @@ fun Route.simulationRoutes() {
     val listSimulations: ListSimulationsUseCase by inject()
     val getSimulationDays: GetSimulationDaysUseCase by inject()
     val getSimulationCfd: GetSimulationCfdUseCase by inject()
-    val domainMetrics: DomainMetrics by inject()
-
     route("/simulations") {
         get(listSimulationsSpec()) { call.handleListSimulations(listSimulations) }
 
@@ -51,7 +48,7 @@ fun Route.simulationRoutes() {
         route("/{simulationId}") {
             get(getSimulationSpec()) { call.handleGetSimulation(getSimulation) }
 
-            post("/run", runDaySpec()) { call.handleRunDay(runDay, domainMetrics) }
+            post("/run", runDaySpec()) { call.handleRunDay(runDay) }
 
             get("/days/{day}/snapshot", getDailySnapshotSpec()) { call.handleGetDailySnapshot(getDailySnapshot) }
 
@@ -295,10 +292,7 @@ private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimula
     }
 }
 
-private suspend fun ApplicationCall.handleRunDay(
-    runDay: RunDayUseCase,
-    domainMetrics: DomainMetrics,
-) {
+private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
     val simulationId =
         parameters["simulationId"]
             ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
@@ -316,7 +310,6 @@ private suspend fun ApplicationCall.handleRunDay(
             runDay.execute(RunDayCommand(simulationId = simulationId, decisions = decisions)).fold(
                 ifLeft = { error -> respondWithDomainError(error) },
                 ifRight = { snapshot ->
-                    domainMetrics.recordSimulationDayExecuted()
                     MDC.putCloseable("day", snapshot.day.value.toString()).use {
                         respond(snapshot.toResponse())
                     }
