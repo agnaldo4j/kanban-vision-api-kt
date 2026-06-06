@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 
 @Provider("kanban-vision-api")
 @Consumer("simulation-consumer")
-@PactFolder("build/pacts")
+@PactFolder("src/test/resources/pacts")
 @ExtendWith(PactVerificationInvocationContextProvider::class)
 class SimulationsPactProviderTest {
     companion object {
@@ -76,7 +76,6 @@ class SimulationsPactProviderTest {
     }
 
     @TestTemplate
-    @ExtendWith(PactVerificationInvocationContextProvider::class)
     fun verifyPactInteraction(context: PactVerificationContext) {
         context.verifyInteraction()
     }

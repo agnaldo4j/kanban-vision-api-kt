@@ -34,9 +34,9 @@ class PactCompatibilitySpikeTest {
     @PactTestFor(pactMethod = "healthPact")
     fun `given pact mock server when requesting health then 200 is returned`(mockServer: MockServer) =
         runTest {
-            val client = HttpClient()
-            val response = client.get("${mockServer.getUrl()}/health")
-            assertEquals(HttpStatusCode.OK, response.status)
-            client.close()
+            HttpClient().use { client ->
+                val response = client.get("${mockServer.getUrl()}/health")
+                assertEquals(HttpStatusCode.OK, response.status)
+            }
         }
 }

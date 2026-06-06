@@ -56,15 +56,15 @@ class SimulationsCommandsConsumerPactTest {
     @PactTestFor(pactMethod = "createSimulationPact")
     fun `given valid body when POST simulations then 201 with simulationId field`(mockServer: MockServer) =
         runTest {
-            val client = HttpClient()
-            val response =
-                client.post("${mockServer.getUrl()}/api/v1/simulations") {
-                    header(HttpHeaders.Authorization, bearerToken)
-                    contentType(ContentType.Application.Json)
-                    setBody("""{"organizationId":"org-1","wipLimit":2,"teamSize":3,"seedValue":0}""")
-                }
-            assertEquals(HttpStatusCode.Created, response.status)
-            assertTrue(response.bodyAsText().contains("simulationId"))
-            client.close()
+            HttpClient().use { client ->
+                val response =
+                    client.post("${mockServer.getUrl()}/api/v1/simulations") {
+                        header(HttpHeaders.Authorization, bearerToken)
+                        contentType(ContentType.Application.Json)
+                        setBody("""{"organizationId":"org-1","wipLimit":2,"teamSize":3,"seedValue":0}""")
+                    }
+                assertEquals(HttpStatusCode.Created, response.status)
+                assertTrue(response.bodyAsText().contains("simulationId"))
+            }
         }
 }

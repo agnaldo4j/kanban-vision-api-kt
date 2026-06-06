@@ -58,17 +58,17 @@ class SimulationsQueriesConsumerPactTest {
     @PactTestFor(pactMethod = "getSimulationPact")
     fun `given existing simulation when GET simulations id then 200 with all contract fields`(mockServer: MockServer) =
         runTest {
-            val client = HttpClient()
-            val response =
-                client.get("${mockServer.getUrl()}/api/v1/simulations/sim-1") {
-                    header(HttpHeaders.Authorization, bearerToken)
-                }
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = response.bodyAsText()
-            assertTrue(body.contains("simulationId"))
-            assertTrue(body.contains("organizationId"))
-            assertTrue(body.contains("state"))
-            client.close()
+            HttpClient().use { client ->
+                val response =
+                    client.get("${mockServer.getUrl()}/api/v1/simulations/sim-1") {
+                        header(HttpHeaders.Authorization, bearerToken)
+                    }
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains("simulationId"))
+                assertTrue(body.contains("organizationId"))
+                assertTrue(body.contains("state"))
+            }
         }
 
     @Pact(consumer = "simulation-consumer")
@@ -102,17 +102,17 @@ class SimulationsQueriesConsumerPactTest {
     @PactTestFor(pactMethod = "getSimulationDaysPact")
     fun `given existing simulation when GET simulations id days then 200 with time series fields`(mockServer: MockServer) =
         runTest {
-            val client = HttpClient()
-            val response =
-                client.get("${mockServer.getUrl()}/api/v1/simulations/sim-1/days") {
-                    header(HttpHeaders.Authorization, bearerToken)
-                }
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = response.bodyAsText()
-            assertTrue(body.contains("simulationId"))
-            assertTrue(body.contains("days"))
-            assertTrue(body.contains("avgAgingDays"))
-            client.close()
+            HttpClient().use { client ->
+                val response =
+                    client.get("${mockServer.getUrl()}/api/v1/simulations/sim-1/days") {
+                        header(HttpHeaders.Authorization, bearerToken)
+                    }
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains("simulationId"))
+                assertTrue(body.contains("days"))
+                assertTrue(body.contains("avgAgingDays"))
+            }
         }
 
     @Pact(consumer = "simulation-consumer")
@@ -145,17 +145,17 @@ class SimulationsQueriesConsumerPactTest {
     @PactTestFor(pactMethod = "getSimulationCfdPact")
     fun `given existing simulation when GET simulations id cfd then 200 with series fields`(mockServer: MockServer) =
         runTest {
-            val client = HttpClient()
-            val response =
-                client.get("${mockServer.getUrl()}/api/v1/simulations/sim-1/cfd") {
-                    header(HttpHeaders.Authorization, bearerToken)
-                }
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = response.bodyAsText()
-            assertTrue(body.contains("simulationId"))
-            assertTrue(body.contains("series"))
-            assertTrue(body.contains("throughputCumulative"))
-            client.close()
+            HttpClient().use { client ->
+                val response =
+                    client.get("${mockServer.getUrl()}/api/v1/simulations/sim-1/cfd") {
+                        header(HttpHeaders.Authorization, bearerToken)
+                    }
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains("simulationId"))
+                assertTrue(body.contains("series"))
+                assertTrue(body.contains("throughputCumulative"))
+            }
         }
 
     @Pact(consumer = "simulation-consumer")
@@ -191,16 +191,16 @@ class SimulationsQueriesConsumerPactTest {
     @PactTestFor(pactMethod = "listSimulationsPact")
     fun `given simulations exist when GET simulations then 200 with paginated list fields`(mockServer: MockServer) =
         runTest {
-            val client = HttpClient()
-            val response =
-                client.get("${mockServer.getUrl()}/api/v1/simulations?organizationId=org-1") {
-                    header(HttpHeaders.Authorization, bearerToken)
-                }
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = response.bodyAsText()
-            assertTrue(body.contains("data"))
-            assertTrue(body.contains("page"))
-            assertTrue(body.contains("total"))
-            client.close()
+            HttpClient().use { client ->
+                val response =
+                    client.get("${mockServer.getUrl()}/api/v1/simulations?organizationId=org-1") {
+                        header(HttpHeaders.Authorization, bearerToken)
+                    }
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains("data"))
+                assertTrue(body.contains("page"))
+                assertTrue(body.contains("total"))
+            }
         }
 }
