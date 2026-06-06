@@ -9,7 +9,9 @@ RUN apk add --no-cache curl && \
     echo "16f8e28fa1ddcd56ed85bf633bd1d1fbc78ea7c4cc50e8c5726b2a319f5058c8  /opentelemetry-javaagent.jar" | sha256sum -c -
 
 # ── Stage 1: build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:25-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine AS build
+# Java 25 JDK provisioned by Foojay toolchain resolver during compilation (jvmToolchain(25)).
+# Gradle daemon uses Java 21: Kotlin 2.4.0 bundled IntelliJ library fails on Java 25 daemon.
 
 WORKDIR /workspace
 

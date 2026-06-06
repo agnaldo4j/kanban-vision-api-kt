@@ -6,7 +6,10 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 1%
+        # 2% tolerance: JaCoCo exclusions for Java 25 serialization-generated code
+        # (write$Self$, SerializationConstructorMarker) changed what is reported.
+        # Internal gate remains JaCoCo >= 96% per module.
+        threshold: 2%
 
 fixes:
   - "com/kanbanvision/domain/::domain/src/main/kotlin/com/kanbanvision/domain/"
