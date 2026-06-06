@@ -18,6 +18,8 @@ class MicrometerEventPublisher(
                     registry.counter("kanban.card.moved").increment()
                 is DomainEvent.CardBlocked ->
                     registry.counter("kanban.card.blocked").increment()
+                is DomainEvent.CardUnblocked ->
+                    registry.counter("kanban.card.unblocked").increment()
                 is DomainEvent.CardCompleted ->
                     registry.counter("kanban.card.completed").increment()
             }

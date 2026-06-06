@@ -46,6 +46,13 @@ class MicrometerEventPublisherTest {
     }
 
     @Test
+    fun `given CardUnblocked event when published then kanban_card_unblocked counter is incremented`() {
+        publisher.publish(listOf(DomainEvent.CardUnblocked("sim-1", "card-4", day = 2)))
+
+        assertEquals(1.0, registry.get("kanban.card.unblocked").counter().count())
+    }
+
+    @Test
     fun `given mixed events when published then each counter reflects only its event type`() {
         publisher.publish(
             listOf(
@@ -53,6 +60,7 @@ class MicrometerEventPublisherTest {
                 DomainEvent.CardCompleted("sim-1", "card-1", day = 1),
                 DomainEvent.CardMoved("sim-1", "card-2", day = 1),
                 DomainEvent.CardBlocked("sim-1", "card-3", day = 1, reason = "blocked"),
+                DomainEvent.CardUnblocked("sim-1", "card-3", day = 2),
             ),
         )
 
@@ -60,5 +68,6 @@ class MicrometerEventPublisherTest {
         assertEquals(1.0, registry.get("kanban.card.completed").counter().count())
         assertEquals(1.0, registry.get("kanban.card.moved").counter().count())
         assertEquals(1.0, registry.get("kanban.card.blocked").counter().count())
+        assertEquals(1.0, registry.get("kanban.card.unblocked").counter().count())
     }
 }

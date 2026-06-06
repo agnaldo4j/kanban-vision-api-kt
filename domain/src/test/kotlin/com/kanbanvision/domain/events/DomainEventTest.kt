@@ -55,6 +55,16 @@ class DomainEventTest {
     }
 
     @Test
+    fun `CardUnblocked carries simulationId cardId and day`() {
+        val event = DomainEvent.CardUnblocked("sim-1", "card-5", day = 4)
+
+        assertIs<DomainEvent.CardUnblocked>(event)
+        assertEquals("sim-1", event.simulationId)
+        assertEquals("card-5", event.cardId)
+        assertEquals(4, event.day)
+    }
+
+    @Test
     fun `all event subtypes are DomainEvent`() {
         val events: List<DomainEvent> =
             listOf(
@@ -63,9 +73,10 @@ class DomainEventTest {
                 DomainEvent.CardCompleted("s", "c", 1),
                 DomainEvent.CardBlocked("s", "c", 1, "r"),
                 DomainEvent.CardMoved("s", "c", 1),
+                DomainEvent.CardUnblocked("s", "c", 1),
             )
 
-        assertEquals(5, events.size)
+        assertEquals(6, events.size)
         events.forEach { assertIs<DomainEvent>(it) }
     }
 }

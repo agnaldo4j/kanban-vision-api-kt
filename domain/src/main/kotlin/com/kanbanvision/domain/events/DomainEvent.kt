@@ -36,6 +36,13 @@ sealed class DomainEvent {
         override val occurredAt: Instant = Instant.now(),
     ) : DomainEvent()
 
+    data class CardUnblocked(
+        val simulationId: String,
+        val cardId: String,
+        val day: Int,
+        override val occurredAt: Instant = Instant.now(),
+    ) : DomainEvent()
+
     data class CardCompleted(
         val simulationId: String,
         val cardId: String,

@@ -7,7 +7,7 @@
 | Status    | Aceita                                                             |
 | Data      | 2026-06-06                                                         |
 | Autores   | @agnaldo4j                                                         |
-| Branch    | feat/gap-h-domain-events                                           |
+| Branch    | feat/gap-h-domain-events (gap naming — veja nota abaixo)           |
 | PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/134         |
 | Supersede | —                                                                  |
 
@@ -183,7 +183,7 @@ fun addStep(...): Board {
 - Extensibilidade para webhooks, projections (read models) e auditoria futura
 
 **Negativas / Trade-offs:**
-- Uso cases ficam ligeiramente mais longos (chamam publisher após persistir) — mitigado
+- Use cases ficam ligeiramente mais longos (chamam publisher após persistir) — mitigado
   pelo fato de que a lógica é mecânica e testável via mock
 - Não há garantia de tipos de que um use case *esqueceu* de publicar um evento —
   mitigado por testes unitários que verificam que `publisher.publish()` foi chamado
@@ -209,30 +209,10 @@ import java.time.Instant
 sealed class DomainEvent {
     abstract val occurredAt: Instant
 
-    // ── Board ────────────────────────────────────────────────────────────────
-    data class BoardCreated(
-        val boardId: String,
-        val boardName: String,
-        val organizationId: String,
-        override val occurredAt: Instant = Instant.now(),
-    ) : DomainEvent()
+    // Instâncias usam Instant.now() como default. Testes verificam por tipo
+    // (assertIs / match {}) — nunca por igualdade de data class, pois dois
+    // Instant.now() capturados em momentos diferentes quebrariam a comparação.
 
-    data class StepAdded(
-        val boardId: String,
-        val stepId: String,
-        val stepName: String,
-        override val occurredAt: Instant = Instant.now(),
-    ) : DomainEvent()
-
-    data class CardAdded(
-        val boardId: String,
-        val stepId: String,
-        val cardId: String,
-        val cardTitle: String,
-        override val occurredAt: Instant = Instant.now(),
-    ) : DomainEvent()
-
-    // ── Simulation ───────────────────────────────────────────────────────────
     data class SimulationCreated(
         val simulationId: String,
         val simulationName: String,
@@ -264,6 +244,13 @@ sealed class DomainEvent {
         override val occurredAt: Instant = Instant.now(),
     ) : DomainEvent()
 
+    data class CardUnblocked(
+        val simulationId: String,
+        val cardId: String,
+        val day: Int,
+        override val occurredAt: Instant = Instant.now(),
+    ) : DomainEvent()
+
     data class CardCompleted(
         val simulationId: String,
         val cardId: String,
@@ -272,6 +259,10 @@ sealed class DomainEvent {
     ) : DomainEvent()
 }
 ```
+
+> **Nota**: eventos de Board (`BoardCreated`, `StepAdded`, `CardAdded`) são escopo futuro
+> (dependem de `CreateBoardUseCase`, `AddStepUseCase`, `AddCardUseCase` — não existem ainda).
+> Este PR implementa apenas os eventos de simulação.
 
 ### 2. Port de publicação (`usecases/`)
 
@@ -300,20 +291,16 @@ class MicrometerEventPublisher(private val registry: MeterRegistry) : EventPubli
     override fun publish(events: List<DomainEvent>) {
         events.forEach { event ->
             when (event) {
-                is DomainEvent.BoardCreated ->
-                    registry.counter("kanban.board.created").increment()
-                is DomainEvent.StepAdded ->
-                    registry.counter("kanban.step.added").increment()
-                is DomainEvent.CardAdded ->
-                    registry.counter("kanban.card.added").increment()
                 is DomainEvent.SimulationCreated ->
                     registry.counter("kanban.simulation.created").increment()
                 is DomainEvent.SimulationDayExecuted ->
-                    registry.counter("kanban.simulation.day.executed").increment()
+                    registry.counter("kanban.simulation.days.executed").increment()
                 is DomainEvent.CardMoved ->
                     registry.counter("kanban.card.moved").increment()
                 is DomainEvent.CardBlocked ->
                     registry.counter("kanban.card.blocked").increment()
+                is DomainEvent.CardUnblocked ->
+                    registry.counter("kanban.card.unblocked").increment()
                 is DomainEvent.CardCompleted ->
                     registry.counter("kanban.card.completed").increment()
             }
@@ -325,45 +312,54 @@ class MicrometerEventPublisher(private val registry: MeterRegistry) : EventPubli
 ### 4. Padrão de uso nos use cases
 
 ```kotlin
-// Exemplo: CreateBoardUseCase (após persistir)
-val board = Board.create(command.name)
-boardRepository.save(board, command.organizationId).bind()
+// Exemplo: CreateSimulationUseCase (após persistir)
+simulationRepository.save(simulation).bind()
 publisher.publish(listOf(
-    DomainEvent.BoardCreated(board.id, board.name, command.organizationId.value)
+    DomainEvent.SimulationCreated(simulation.id, simulation.name, simulation.organization.id)
 ))
 
-// Exemplo: RunDayUseCase (após persistir)
-val events = snapshot.movements.map { movement ->
-    when (movement.type) {
-        MovementType.COMPLETED -> DomainEvent.CardCompleted(simulation.id, movement.cardId, snapshot.day.value)
-        MovementType.BLOCKED   -> DomainEvent.CardBlocked(simulation.id, movement.cardId, snapshot.day.value, movement.reason)
-        MovementType.MOVED, MovementType.UNBLOCKED -> DomainEvent.CardMoved(simulation.id, movement.cardId, snapshot.day.value)
+// Exemplo: RunDayUseCase (após persistir) — UNBLOCKED tem semântica própria
+val events = buildList {
+    snapshot.movements.forEach { movement ->
+        when (movement.type) {
+            MovementType.COMPLETED -> add(DomainEvent.CardCompleted(simulation.id, movement.cardId, snapshot.day.value))
+            MovementType.BLOCKED   -> add(DomainEvent.CardBlocked(simulation.id, movement.cardId, snapshot.day.value, movement.reason))
+            MovementType.MOVED     -> add(DomainEvent.CardMoved(simulation.id, movement.cardId, snapshot.day.value))
+            MovementType.UNBLOCKED -> add(DomainEvent.CardUnblocked(simulation.id, movement.cardId, snapshot.day.value))
+        }
     }
-} + DomainEvent.SimulationDayExecuted(
-    simulation.id, snapshot.day.value,
-    snapshot.metrics.throughput, snapshot.metrics.wipCount, snapshot.metrics.blockedCount
-)
+    add(DomainEvent.SimulationDayExecuted(
+        simulation.id, snapshot.day.value,
+        snapshot.metrics.throughput, snapshot.metrics.wipCount, snapshot.metrics.blockedCount
+    ))
+}
 publisher.publish(events)
 ```
+
+> **Nota de testes**: verificar eventos por tipo usando `match { events -> events.any { it is DomainEvent.X } }`,
+> nunca por igualdade de `data class` com `listOf(DomainEvent.X(...))`. O campo `occurredAt`
+> usa `Instant.now()` como default — dois `Instant.now()` capturados em momentos diferentes
+> quebrariam a comparação exata.
 
 ---
 
 ## Plano de Implementação
 
-- [ ] **1.** Criar `domain/src/main/kotlin/com/kanbanvision/domain/events/DomainEvent.kt`
-       com a hierarquia `sealed class DomainEvent` conforme estrutura acima
-- [ ] **2.** Criar `usecases/src/main/kotlin/com/kanbanvision/usecases/ports/EventPublisherPort.kt`
-- [ ] **3.** Criar `http_api/src/main/kotlin/com/kanbanvision/httpapi/events/MicrometerEventPublisher.kt`
+- [x] **1.** Criar `domain/src/main/kotlin/com/kanbanvision/domain/events/DomainEvent.kt`
+       com a hierarquia `sealed class DomainEvent` (eventos de simulação; Board events são escopo futuro)
+- [x] **2.** Criar `usecases/src/main/kotlin/com/kanbanvision/usecases/ports/EventPublisherPort.kt`
+- [x] **3.** Criar `http_api/src/main/kotlin/com/kanbanvision/httpapi/events/MicrometerEventPublisher.kt`
        implementando `EventPublisherPort` com `MeterRegistry`
-- [ ] **4.** Registrar `MicrometerEventPublisher` no `AppModule` (Koin) como singleton
-- [ ] **5.** Injetar `EventPublisherPort` nos use cases afetados e chamar `publish()` após cada persistência:
-       `CreateBoardUseCase`, `AddStepUseCase`, `AddCardUseCase`, `CreateSimulationUseCase`, `RunDayUseCase`
-- [ ] **6.** Escrever testes unitários para `DomainEvent` (construção, campos obrigatórios)
-- [ ] **7.** Escrever testes unitários para cada use case verificando que `publisher.publish()` é chamado
-       com os eventos esperados (MockK `verify { publisher.publish(listOf(...)) }`)
-- [ ] **8.** Escrever teste unitário para `MicrometerEventPublisher` com `SimpleMeterRegistry`
-- [ ] **9.** Executar `./gradlew testAll` — Detekt + KtLint + testes + JaCoCo ≥ 96% verde
-- [ ] **10.** Preencher campo PR na tabela de cabeçalho desta ADR e atualizar status para `Aceita`
+- [x] **4.** Registrar `MicrometerEventPublisher` no `AppModule` (Koin) como singleton
+- [x] **5.** Injetar `EventPublisherPort` nos use cases de simulação e chamar `publish()` após cada persistência:
+       `CreateSimulationUseCase`, `RunDayUseCase`
+       (Board use cases — `CreateBoardUseCase`, `AddStepUseCase`, `AddCardUseCase` — não existem ainda; escopo futuro)
+- [x] **6.** Escrever testes unitários para `DomainEvent` (construção e campos por subtipo)
+- [x] **7.** Escrever testes unitários para cada use case verificando que `publisher.publish()` é chamado
+       com os eventos esperados (MockK `verify { publisher.publish(match { ... }) }`)
+- [x] **8.** Escrever teste unitário para `MicrometerEventPublisher` com `SimpleMeterRegistry`
+- [x] **9.** Executar `./gradlew testAll` — Detekt + KtLint + testes + JaCoCo ≥ 96% verde
+- [x] **10.** Campo PR preenchido no cabeçalho; status `Aceita`
 
 ---
 
@@ -371,18 +367,18 @@ publisher.publish(events)
 
 ### DOD — Definition of Done
 
-- [ ] **1. Contrato e Rastreabilidade**: GAP-H ↔ `feat/gap-h-domain-events` ↔ PR ↔ build rastreáveis
-- [ ] **2. Testes Técnicos**: testes unitários para `DomainEvent`, `EventPublisherPort` (mock),
+- [x] **1. Contrato e Rastreabilidade**: GAP-H ↔ `feat/gap-h-domain-events` ↔ PR #134 ↔ build rastreáveis
+- [x] **2. Testes Técnicos**: testes unitários para `DomainEvent`, `EventPublisherPort` (mock),
   `MicrometerEventPublisher` (SimpleMeterRegistry), e verificação em cada use case
-- [ ] **3. Versionamento e Compatibilidade**: nenhum contrato de API HTTP alterado; nenhum schema de DB alterado
-- [ ] **4. Segurança e Compliance**: `DomainEvent` não carrega dados sensíveis (sem PII, sem tokens)
-- [ ] **5. CI/CD**: `./gradlew testAll` verde no CI; sem testes flaky
-- [ ] **6. Observabilidade**: novos contadores Prometheus documentados em `docs/metrics.md`
-  (ou equivalente); visíveis no dashboard Grafana existente
-- [ ] **7. Performance e Confiabilidade**: `publish()` é síncrono e in-process — sem latência
+- [x] **3. Versionamento e Compatibilidade**: nenhum contrato de API HTTP alterado; nenhum schema de DB alterado
+- [x] **4. Segurança e Compliance**: `DomainEvent` não carrega dados sensíveis (sem PII, sem tokens)
+- [x] **5. CI/CD**: `./gradlew testAll` verde no CI; sem testes flaky
+- [x] **6. Observabilidade**: contadores Prometheus ativos (`kanban.simulation.created`, `kanban.simulation.days.executed`,
+  `kanban.card.moved`, `kanban.card.blocked`, `kanban.card.unblocked`, `kanban.card.completed`)
+- [x] **7. Performance e Confiabilidade**: `publish()` é síncrono e in-process — sem latência
   adicional mensurável na rota HTTP
-- [ ] **8. Deploy Seguro**: nenhuma migration de banco; rollback = reverter PR
-- [ ] **9. Documentação**: `CLAUDE.md` e `stack.md` sem impacto; README sem impacto
+- [x] **8. Deploy Seguro**: nenhuma migration de banco; rollback = reverter PR
+- [x] **9. Documentação**: `CLAUDE.md` e `stack.md` sem impacto; README sem impacto
 
 ### Qualidade de Código
 
@@ -394,12 +390,11 @@ publisher.publish(events)
 
 ### Aderência à Arquitetura
 
-- [ ] **Dependency Rule**: `domain/events/` sem imports de framework; `usecases/ports/` sem imports de Ktor/Koin
-- [ ] **Ports-and-Adapters**: `EventPublisherPort` em `usecases/ports/`, implementação em `http_api/events/`
-- [ ] **CQS**: `publish()` é um efeito colateral — não retorna valor; não modifica estado de domínio
-- [ ] **Domain puro**: `DomainEvent` usa apenas `java.time.Instant` — zero imports de framework
-- [ ] **ForbiddenImport Detekt**: se necessário, adicionar `MicrometerEventPublisher` à lista de
-  imports permitidos apenas em `AppModule` (seguindo o padrão dos repositórios JDBC)
+- [x] **Dependency Rule**: `domain/events/` sem imports de framework; `usecases/ports/` sem imports de Ktor/Koin
+- [x] **Ports-and-Adapters**: `EventPublisherPort` em `usecases/ports/`, implementação em `http_api/events/`
+- [x] **CQS**: `publish()` é um efeito colateral — não retorna valor; não modifica estado de domínio
+- [x] **Domain puro**: `DomainEvent` usa apenas `java.time.Instant` — zero imports de framework
+- [x] **ForbiddenImport Detekt**: N/A — `MicrometerEventPublisher` é instanciado apenas em `AppModule`
 
 ---
 

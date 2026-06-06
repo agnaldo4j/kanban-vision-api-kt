@@ -76,8 +76,10 @@ class RunDayUseCase(
                         add(DomainEvent.CardCompleted(simulationId, movement.cardId, snapshot.day.value))
                     MovementType.BLOCKED ->
                         add(DomainEvent.CardBlocked(simulationId, movement.cardId, snapshot.day.value, movement.reason))
-                    MovementType.MOVED, MovementType.UNBLOCKED ->
+                    MovementType.MOVED ->
                         add(DomainEvent.CardMoved(simulationId, movement.cardId, snapshot.day.value))
+                    MovementType.UNBLOCKED ->
+                        add(DomainEvent.CardUnblocked(simulationId, movement.cardId, snapshot.day.value))
                 }
             }
             add(
