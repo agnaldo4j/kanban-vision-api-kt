@@ -4,6 +4,8 @@ import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.Movement
+import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.Scenario
 import com.kanbanvision.domain.model.ScenarioRef
@@ -61,4 +63,18 @@ internal fun fixtureSnapshot(
         day = SimulationDay(day),
         metrics = FlowMetrics(throughput = 1, wipCount = 1, blockedCount = 0, avgAgingDays = 0.0),
         movements = emptyList(),
+    )
+
+internal fun fixtureSnapshotWithAllMovements(
+    simulationId: String = "sim-1",
+    day: Int = 1,
+): DailySnapshot =
+    fixtureSnapshot(simulationId = simulationId, day = day).copy(
+        movements =
+            listOf(
+                Movement(type = MovementType.MOVED, cardId = "c-1", day = SimulationDay(day), reason = "moved"),
+                Movement(type = MovementType.BLOCKED, cardId = "c-2", day = SimulationDay(day), reason = "dep"),
+                Movement(type = MovementType.UNBLOCKED, cardId = "c-3", day = SimulationDay(day), reason = "resumed"),
+                Movement(type = MovementType.COMPLETED, cardId = "c-4", day = SimulationDay(day), reason = "done"),
+            ),
     )

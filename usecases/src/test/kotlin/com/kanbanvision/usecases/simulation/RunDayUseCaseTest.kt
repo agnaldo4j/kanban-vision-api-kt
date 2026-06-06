@@ -85,6 +85,34 @@ class RunDayUseCaseTest {
         }
 
     @Test
+    fun `given snapshot with all movement types when running day then each produces its typed event`() =
+        runTest {
+            val simulation = fixtureSimulation(id = "sim-1", day = 1)
+            val updatedSimulation = fixtureSimulation(id = "sim-1", day = 2)
+            val snapshot = fixtureSnapshotWithAllMovements(simulationId = "sim-1", day = 1)
+
+            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
+            coEvery { snapshotRepository.findByDay("sim-1", SimulationDay(1)) } returns null.right()
+            coEvery { simulationEngine.runDay(simulation, any(), any()) } returns
+                SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
+            coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
+            coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
+
+            useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList()))
+
+            verify(exactly = 1) {
+                publisher.publish(
+                    match { events ->
+                        events.any { it is DomainEvent.CardMoved } &&
+                            events.any { it is DomainEvent.CardBlocked } &&
+                            events.any { it is DomainEvent.CardUnblocked } &&
+                            events.any { it is DomainEvent.CardCompleted }
+                    },
+                )
+            }
+        }
+
+    @Test
     fun `given blank simulation id when running simulation day then validation error is returned`() =
         runTest {
             val result = useCase.execute(RunDayCommand(simulationId = "", decisions = emptyList()))
