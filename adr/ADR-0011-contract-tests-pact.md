@@ -163,16 +163,16 @@ Endpoints excluídos do escopo Pact inicial:
 - [x] **1. Spike de compatibilidade** — `au.com.dius.pact.consumer:junit5:4.6.17` adicionado a
   `http_api/build.gradle.kts`; `@ExtendWith(PactConsumerTestExt::class)` compila e executa com
   JUnit Jupiter 6.0.3; pact file V4 gerado em `build/pacts/`; `testAll` verde
-- [ ] **2. Consumer test — POST /simulations** — escrever
-  `SimulationsConsumerPactTest` com `MockProviderConfig` e expectativa de `201 Created`
-  com body `{ simulationId: "sim-123" }` e header `Content-Type: application/json`
-- [ ] **3. Consumer test — GET /simulations/{id}** — adicionar interação de `200 OK` com
-  body `SimulationResponse` mínimo (campos obrigatórios: `simulationId`, `organizationId`,
-  `wipLimit`, `teamSize`, `state.currentDay`)
-- [ ] **4. Consumer test — GET /simulations/{id}/days e /cfd** — adicionar interações para
-  série temporal (`SimulationDaysResponse`) e CFD (`SimulationCfdResponse`)
-- [ ] **5. Consumer test — GET /simulations (lista paginada)** — adicionar interação com
-  query params `page` e `size`, body `SimulationListResponse`
+- [x] **2. Consumer test — POST /simulations** — `SimulationsCommandsConsumerPactTest`
+  com interação `201 Created`, body com `stringType("simulationId")`, type-matched
+- [x] **3. Consumer test — GET /simulations/{id}** — `SimulationsQueriesConsumerPactTest`,
+  interação `200 OK` com todos os campos de `SimulationResponse` type-matched incluindo
+  nested `state` object com `integerType`
+- [x] **4. Consumer test — GET /simulations/{id}/days e /cfd** — interações com
+  `eachLike("days")` + `decimalType("avgAgingDays")` e `eachLike("series")`
+  + `integerType("throughputCumulative")`
+- [x] **5. Consumer test — GET /simulations (lista paginada)** — interação com
+  `eachLike("data")` + `integerType("page", "size", "total")`
 - [ ] **6. Provider verification** — escrever `SimulationsPactProviderTest` usando
   `@Provider` + `@PactFolder("build/pacts")` e `@State` para cada interação; usar
   `testApplication` do Ktor como provider real (não mock)
