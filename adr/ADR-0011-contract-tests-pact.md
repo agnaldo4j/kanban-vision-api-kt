@@ -71,11 +71,11 @@ Como não há consumidores externos hoje, os testes Pact serão escritos como **
 o módulo `http_api` define o contrato que ele mesmo se compromete a honrar, do ponto de vista
 de um cliente HTTP genérico. Isso estabelece a baseline antes que consumidores reais surjam.
 
-**Risco identificado**: Pact JVM 4.6.x usa a API de extensões do JUnit Jupiter 5.x
-(`@ExtendWith(PactConsumerTestExt::class)`). O projeto usa JUnit Jupiter 6.0.3, que pode
-ter alterado o SPI de extensões. A primeira tarefa de implementação é um **spike de
-compatibilidade** para verificar se Pact 4.6.x (ou 5.x, se disponível) funciona com
-JUnit Jupiter 6.0.3 antes de qualquer código de contrato.
+**Risco resolvido (spike 2026-06-06)**: Pact JVM 4.6.17 é **compatível** com JUnit
+Jupiter 6.0.3. A extensão `PactConsumerTestExt` carrega e executa corretamente. O pact
+file V4 é gerado em `build/pacts/`. A API correta para V4 é `PactBuilder → V4Pact`
+via `expectsToReceiveHttpInteraction()` — não `PactDslWithProvider → RequestResponsePact`
+(API V3 legada). Ver commit `5327037` no branch `feat/gap-k-contract-tests-pact`.
 
 ---
 
@@ -160,10 +160,9 @@ Endpoints excluídos do escopo Pact inicial:
 
 ## Plano de Implementação
 
-- [ ] **1. Spike de compatibilidade** — adicionar `au.com.dius.pact.consumer:junit5:<versão>` a
-  `http_api/build.gradle.kts` em modo `testImplementation` e verificar se `@ExtendWith(PactConsumerTestExt::class)`
-  compila e executa com JUnit Jupiter 6.0.3; se houver incompatibilidade, avaliar Pact JVM 5.x ou
-  alternativa de extensão (`@PactTestFor`)
+- [x] **1. Spike de compatibilidade** — `au.com.dius.pact.consumer:junit5:4.6.17` adicionado a
+  `http_api/build.gradle.kts`; `@ExtendWith(PactConsumerTestExt::class)` compila e executa com
+  JUnit Jupiter 6.0.3; pact file V4 gerado em `build/pacts/`; `testAll` verde
 - [ ] **2. Consumer test — POST /simulations** — escrever
   `SimulationsConsumerPactTest` com `MockProviderConfig` e expectativa de `201 Created`
   com body `{ simulationId: "sim-123" }` e header `Content-Type: application/json`
