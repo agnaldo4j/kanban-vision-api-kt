@@ -382,8 +382,8 @@ operacionalização. Os de **Prioridade 3** e **4** são melhorias contínuas se
 ```
 Ciclo Hardening  (P1):  GAP-B → GAP-C → GAP-A                              ✅ CONCLUÍDO
 Ciclo Operações  (P2):  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ CONCLUÍDO
-Ciclo Domínio    (P3):  GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I ✅ → GAP-J → GAP-H → GAP-K
-Ciclo Excelência (P4):  GAP-T → GAP-X → GAP-N → GAP-L → GAP-R → GAP-M
+Ciclo Domínio    (P3):  GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K  ✅ CONCLUÍDO
+Ciclo Excelência (P4):  GAP-T → GAP-X → GAP-N → GAP-L → [GAP-R: descartado, build 16s < 2min] → GAP-M  ✅ CONCLUÍDO
 ```
 
 > **Protocolo de execução (skill `evolutionary-change`):** cada gap deve ser executado em
@@ -495,9 +495,9 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-T** — Criar `docs/context-map.md` com 3 BCs atuais (Kanban Management, Simulation, Analytics) + 2 candidatos a extração (Forecasting, Policy). Padrões de integração: ACL, Customer-Supplier. Referência: *Kanban from the Inside* (Burrows) — 9 valores e 6 práticas como lente de design dos BCs
 - [x] `[N]` **GAP-X** — Completar `ServiceClass` com `FIXED_DATE` e `INTANGIBLE`. Burrows define 4 classes de serviço: Expedite, Date-driven, Standard, Intangible. O domínio agora implementa as quatro (`EXPEDITE`, `FIXED_DATE`, `STANDARD`, `INTANGIBLE`), documentadas na enum `ServiceClass` e cobertas por testes automatizados
 - [x] `[N]` **GAP-N** — Adicionar exemplos nos request bodies, documentar `X-Request-ID` nas respostas e query params dos endpoints de analytics (CFD, days). Schema Bearer já presente (GAP-A concluído)
-- [ ] `[E→ADR-0012]` **GAP-R** — Escrever ADR-0012 apenas quando build time > 2min. Decisão: separação de `usecases-api/` e `usecases-impl/`. Só após aprovação: criar novos módulos Gradle
+- [~] `[E→ADR-0012]` **GAP-R** — ~~Escrever ADR-0012 apenas quando build time > 2min.~~ **Condição não atingida** (build time medido: 16s vs threshold 2min). GAP descartado por condição de ativação.
 - [x] `[M]` **GAP-L** — PITest 1.15.0 integrado via `domain/build.gradle.kts` (STRONGER mutators, targetClasses=simulation.*). Baseline estabelecida: 38% mutation score (70/182 mutantes eliminados) vs 97% line coverage — confirma Reinertsen: surviving mutants em conditional boundaries e equality checks do `SimulationEngine`. `mutationThreshold=35` previne regressão; task `pitestAll` e step CI adicionados (PR #111)
-- [ ] `[E→ADR-0013]` **GAP-M** — Escrever ADR-0013 (estratégia de schema boundaries e jsonb vs colunas). PRs #87–#91 alteraram o schema serializado (Column→Step): migration de dados legados pode ser necessária. Só após aprovação: criar migração Flyway e atualizar queries
+- [x] `[E→ADR-0013]` **GAP-M** — ADR-0013 aprovada: TEXT → JSONB para `simulation_states.state_json` e `daily_snapshots.snapshot_json` (V2 migration). Schema boundaries mantidas por naming convention no schema `public` (documentadas em `docs/context-map.md`). Zero mudanças em código de aplicação. → PR em aberto
 
 ---
 
