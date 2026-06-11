@@ -66,6 +66,24 @@ class SimulationConfigInvariantPropertyTest {
         }
     }
 
+    @Test
+    fun `Simulation create rejects any blank name`() {
+        runBlocking {
+            forAll(ARB_BLANK) { blank ->
+                runCatching { Simulation.create(name = blank, organization = ORG, scenario = SCENARIO) }.isFailure
+            }
+        }
+    }
+
+    @Test
+    fun `Simulation create accepts any non-blank name`() {
+        runBlocking {
+            forAll(ARB_NON_BLANK) { name ->
+                runCatching { Simulation.create(name = name, organization = ORG, scenario = SCENARIO) }.isSuccess
+            }
+        }
+    }
+
     private companion object {
         const val NAME_MAX = 50
         const val NEG_BOUND = -1000
@@ -73,5 +91,8 @@ class SimulationConfigInvariantPropertyTest {
         val ARB_BLANK: Arb<String> = Arb.of("", " ", "   ", "\t", "\n")
         val ARB_NON_BLANK: Arb<String> =
             Arb.string(minSize = 1, maxSize = NAME_MAX).filter { it.isNotBlank() }
+        val ORG = Organization.create("Org")
+        val RULES = ScenarioRules.create(wipLimit = 3, teamSize = 2, seedValue = 0L)
+        val SCENARIO = Scenario.create(name = "Scenario", rules = RULES)
     }
 }
