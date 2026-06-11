@@ -43,26 +43,32 @@ spec:
         - name: migrate
           image: kanban-vision-api:latest
           imagePullPolicy: IfNotPresent
-          envFrom:
-            - configMapRef:
-                name: kanban-vision-config
+          # Use -cp instead of -jar to invoke MigrationMainKt, bypassing the
+          # default MainKt entry point. MigrationMainKt reads DATABASE_* env vars
+          # directly, runs Flyway, closes the connection pool, and exits — Ktor
+          # is never started.
+          command:
+            - "java"
+            - "-Djava.io.tmpdir=/tmp"
+            - "-cp"
+            - "/app/app.jar"
+            - "com.kanbanvision.httpapi.MigrationMainKt"
           env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: kanban-vision-config
+                  key: DATABASE_URL
+            - name: DATABASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: kanban-vision-config
+                  key: DATABASE_USER
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: kanban-vision-secret
                   key: DATABASE_PASSWORD
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: kanban-vision-secret
-                  key: JWT_SECRET
-            # Override FLYWAY_ENABLED=false from ConfigMap — this Job exists to run migrations.
-            - name: FLYWAY_ENABLED
-              value: "true"
-            # Run migrations and exit without starting the HTTP server.
-            - name: RUN_MIGRATIONS_ONLY
-              value: "true"
           resources:
             requests:
               cpu: "100m"

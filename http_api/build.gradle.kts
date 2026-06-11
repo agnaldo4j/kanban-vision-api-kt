@@ -17,6 +17,7 @@ ktor {
 val jacocoExcludes =
     listOf(
         "com/kanbanvision/httpapi/MainKt.class",
+        "com/kanbanvision/httpapi/MigrationMainKt.class",
         "com/kanbanvision/httpapi/di/**",
         "**/*\$\$inlined\$*",
         "**/*\$\$serializer.class",

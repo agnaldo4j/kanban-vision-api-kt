@@ -42,15 +42,8 @@ fun Application.module() {
         modules(AppModule.koinModule)
     }
 
-    val databaseConfig = buildDatabaseConfig()
-
-    if (System.getenv("RUN_MIGRATIONS_ONLY")?.lowercase() == "true") {
-        DatabaseFactory.init(databaseConfig, migrationsEnabled = true)
-        kotlin.system.exitProcess(0)
-    }
-
     val migrationsEnabled = System.getenv("FLYWAY_ENABLED")?.lowercase() != "false"
-    DatabaseFactory.init(databaseConfig, migrationsEnabled = migrationsEnabled)
+    DatabaseFactory.init(buildDatabaseConfig(), migrationsEnabled = migrationsEnabled)
 
     configureMetrics()
     configureObservability()

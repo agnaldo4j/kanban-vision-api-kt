@@ -55,6 +55,10 @@ object DatabaseFactory {
         }
     }
 
+    fun close() {
+        if (::dataSource.isInitialized) dataSource.close()
+    }
+
     fun init(
         config: DatabaseConfig,
         migrationsEnabled: Boolean = true,
