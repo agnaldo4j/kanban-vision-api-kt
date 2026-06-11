@@ -50,7 +50,7 @@ internal object SimulationsTable : Table("simulations") {
 
 internal object SimulationStatesTable : Table("simulation_states") {
     val simulationId = varchar("simulation_id", 36).references(SimulationsTable.id)
-    val stateJson = text("state_json")
+    val stateJson = jsonb("state_json")
 
     override val primaryKey = PrimaryKey(simulationId)
 }
@@ -58,7 +58,7 @@ internal object SimulationStatesTable : Table("simulation_states") {
 internal object DailySnapshotsTable : Table("daily_snapshots") {
     val simulationId = varchar("simulation_id", 36).references(SimulationsTable.id)
     val day = integer("day")
-    val snapshotJson = text("snapshot_json")
+    val snapshotJson = jsonb("snapshot_json")
 
     override val primaryKey = PrimaryKey(simulationId, day)
 }

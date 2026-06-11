@@ -17,13 +17,12 @@ paths:
 
 | Migration | Purpose |
 |---|---|
-| `V1__initial_schema.sql` | Core tables: `boards`, `columns`, `cards`, `tenants`, `scenarios`, `scenario_states`, `daily_snapshots` |
-| `V2__add_indexes_and_constraints.sql` | Performance indexes + FK constraints |
-| `V3__unique_column_name_per_board.sql` | `UNIQUE(board_id, name)` on `columns` table — enforces Board aggregate invariant at DB level |
+| `V1__initial_schema.sql` | All tables consolidated: `boards`, `steps`, `cards`, `organizations`, `simulations`, `simulation_states`, `daily_snapshots` (post-unification PRs #87–#91) |
+| `V2__jsonb_simulation_blobs.sql` | Migrate `simulation_states.state_json` and `daily_snapshots.snapshot_json` from TEXT to JSONB (ADR-0013) |
 
 ## Rules
 
 - New migration file = new PR — never bundle schema changes with application code in the same PR without explicit justification.
 - Integration tests automatically apply all migrations via `DatabaseFactory` + Embedded PostgreSQL.
-- JSON columns (`scenario_states.state`, `daily_snapshots.snapshot`) use `TEXT` — queryability improvement is tracked as GAP-M.
-- Next available migration number: **V4**.
+- JSON columns (`simulation_states.state_json`, `daily_snapshots.snapshot_json`) use `JSONB` (migrated in V2 — ADR-0013).
+- Next available migration number: **V3**.
