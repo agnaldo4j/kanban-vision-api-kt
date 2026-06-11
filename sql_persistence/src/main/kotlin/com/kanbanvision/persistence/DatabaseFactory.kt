@@ -55,14 +55,17 @@ object DatabaseFactory {
         }
     }
 
-    fun init(config: DatabaseConfig) {
+    fun init(
+        config: DatabaseConfig,
+        migrationsEnabled: Boolean = true,
+    ) {
         if (::dataSource.isInitialized) {
             dataSource.close()
         }
         dataSource = HikariDataSource(buildHikariConfig(config))
         org.jetbrains.exposed.v1.jdbc.Database
             .connect(datasource = dataSource)
-        runMigrations(config.baselineOnMigrate)
+        if (migrationsEnabled) runMigrations(config.baselineOnMigrate)
     }
 
     private fun runMigrations(baselineOnMigrate: Boolean) {

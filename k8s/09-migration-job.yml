@@ -1,0 +1,83 @@
+# Pre-deploy migration Job for schema changes that are NOT safe under RollingUpdate.
+#
+# When a migration changes a column type (e.g. TEXT → JSONB), old pods still serving
+# traffic will fail writes after the migration runs, because PostgreSQL rejects varchar
+# in prepared statements targeting JSONB columns. Running this Job BEFORE the deployment
+# rollout ensures all schema changes are complete before any new pod starts.
+#
+# Deploy procedure for migrations that change column types:
+#
+#   1. kubectl apply -f k8s/09-migration-job.yml
+#   2. kubectl wait --for=condition=complete job/kanban-migration \
+#        --namespace kanban-vision --timeout=120s
+#   3. kubectl apply -k k8s/           # rolling update — pods have FLYWAY_ENABLED=false
+#   4. kubectl delete -f k8s/09-migration-job.yml   # clean up after success
+#
+# For additive migrations (ADD COLUMN nullable, CREATE INDEX CONCURRENTLY) this Job
+# is optional — the application's FLYWAY_ENABLED=false only needs to be temporarily
+# overridden in that case. See ADR-0013 and GAP-Y for rationale.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kanban-migration
+  namespace: kanban-vision
+  labels:
+    app.kubernetes.io/name: kanban-vision-api
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kanban-vision-api
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: migrate
+          image: kanban-vision-api:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: kanban-vision-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kanban-vision-secret
+                  key: DATABASE_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: kanban-vision-secret
+                  key: JWT_SECRET
+            # Override FLYWAY_ENABLED=false from ConfigMap — this Job exists to run migrations.
+            - name: FLYWAY_ENABLED
+              value: "true"
+            # Run migrations and exit without starting the HTTP server.
+            - name: RUN_MIGRATIONS_ONLY
+              value: "true"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: tmp
+          emptyDir: {}
