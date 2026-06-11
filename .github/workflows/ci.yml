@@ -221,6 +221,8 @@ jobs:
             usecases/build/reports/jacoco/test/jacocoTestReport.xml,
             sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
             http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          disable_search: true
+          codecov_yml_path: ./codecov.yml
           flags: unittests
           fail_ci_if_error: true
           verbose: true
