@@ -106,15 +106,9 @@ class StepWorkerCapacityPropertyTest {
             checkAll(
                 ARB_NON_BLANK,
                 Arb.int(0..MAX_POINTS),
-            ) { name, min ->
-                val max =
-                    min +
-                        Arb
-                            .int(0..MAX_POINTS)
-                            .sample(
-                                io.kotest.property.RandomSource
-                                    .default(),
-                            ).value
+                Arb.int(0..MAX_POINTS),
+            ) { name, min, extra ->
+                val max = min + extra
                 val worker =
                     Worker(name = name, abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
                 val capacity = worker.generateDailyCapacities(Random.Default, minPoints = min, maxPoints = max)[AbilityName.DEVELOPER]!!

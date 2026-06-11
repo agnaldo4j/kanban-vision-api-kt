@@ -78,7 +78,7 @@ class CommandValidationPropertyTest {
     @Test
     fun `ListSimulationsQuery rejects size outside 1 to 100`() {
         runBlocking {
-            forAll(Arb.int(NEG_BOUND..0).filter { it != 0 }.let { Arb.int(NEG_BOUND..0) }) { invalid ->
+            forAll(Arb.int(NEG_BOUND..0)) { invalid ->
                 ListSimulationsQuery(organizationId = "org-1", size = invalid).validate().isLeft()
             }
         }
