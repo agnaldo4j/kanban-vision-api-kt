@@ -86,9 +86,9 @@ class SimulationQueryValidationPropertyTest {
     }
 
     private companion object {
-        const val NAME_MAX = 50
+        const val ID_MAX_LENGTH = 50
         val ARB_BLANK: Arb<String> = Arb.of("", " ", "   ", "\t", "\n")
         val ARB_NON_BLANK: Arb<String> =
-            Arb.string(minSize = 1, maxSize = NAME_MAX).filter { it.isNotBlank() }
+            Arb.string(minSize = 1, maxSize = ID_MAX_LENGTH).filter { it.isNotBlank() }
     }
 }
