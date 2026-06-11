@@ -151,15 +151,22 @@ permanecem inalterados.
 - Queryabilidade habilitada: Analytics queries futuras (Lead Time distribution, throughput
   por cenário, snapshots por intervalo de WIP) podem ser executadas no banco sem round-trip.
 - Fundação para GIN index em `daily_snapshots` quando volume justificar.
-- Custo de implementação mínimo: uma migration, zero mudanças em código Kotlin.
+- Custo de implementação baixo: uma migration + `JsonbColumnType` em `sql_persistence`; serializers não mudam.
 
 **Negativas:**
 - `ALTER TABLE ... ALTER COLUMN ... TYPE JSONB` é uma operação de lock exclusivo. Em banco
   com dados reais, requer janela de manutenção ou migration multi-passo.
+- **Incompatível com RollingUpdate padrão.** `k8s/03-deployment.yml` usa `maxUnavailable: 0` /
+  `maxSurge: 1`: o pod novo roda Flyway (TEXT → JSONB) enquanto os pods velhos ainda estão
+  vivos. Pods velhos continuam usando `text()` e enviam strings simples via JDBC; o PostgreSQL
+  rejeita `character varying` em colunas JSONB em prepared statements — toda escrita de
+  simulação ou snapshot roteada para um pod velho falha até o drain completar.
+  **Procedimento seguro:** usar `strategy: type: Recreate` para este rollout, ou executar
+  Flyway como um Kubernetes Job antes do deploy, garantindo que nenhum writer antigo esteja
+  ativo quando o tipo da coluna mudar.
 - Storage pode aumentar levemente (formato binário vs texto UTF-8 compacto para JSONs simples).
 
 **Neutras:**
-- Código de aplicação não precisa ser alterado: Exposed e serializers continuam iguais.
 - Schema PostgreSQL permanece em `public`: mudança de naming conventions para boundaries
   fica documentada no Context Map, não implementada no banco.
 
