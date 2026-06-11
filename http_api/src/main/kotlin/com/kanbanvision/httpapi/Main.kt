@@ -46,7 +46,7 @@ fun Application.module() {
 
     if (System.getenv("RUN_MIGRATIONS_ONLY")?.lowercase() == "true") {
         DatabaseFactory.init(databaseConfig, migrationsEnabled = true)
-        return
+        kotlin.system.exitProcess(0)
     }
 
     val migrationsEnabled = System.getenv("FLYWAY_ENABLED")?.lowercase() != "false"
