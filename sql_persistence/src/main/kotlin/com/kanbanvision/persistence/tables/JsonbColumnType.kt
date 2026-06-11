@@ -13,9 +13,9 @@ internal class JsonbColumnType : ColumnType<String>() {
 
     override fun valueFromDB(value: Any): String =
         when (value) {
-            is PGobject -> value.value ?: ""
+            is PGobject -> value.value ?: error("Unexpected NULL for JSONB column value")
             is String -> value
-            else -> value.toString()
+            else -> error("Unexpected JDBC type for JSONB column: ${value::class.qualifiedName}")
         }
 
     override fun notNullValueToDB(value: String): Any =

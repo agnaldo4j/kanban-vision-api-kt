@@ -58,7 +58,7 @@ de `TEXT` para `JSONB` via migration Flyway V2.
 | Performance de leitura | ✅ Retorna texto direto | ✅ Equivalente (binário parseado) |
 | Storage | ✅ Compacto | ≈ Equivalente (binary, pode ser levemente maior) |
 | Custo de migração | — | Baixo: `ALTER COLUMN ... TYPE JSONB USING state_json::jsonb` |
-| Mudança em código de aplicação | — | **Zero** — Exposed usa `text()` e PostgreSQL faz cast automático |
+| Mudança em código de aplicação | — | Pequena — Exposed precisa enviar parâmetros com type-hint JSONB (`JsonbColumnType` + colunas `jsonb()` em `Tables.kt`); serializers não mudam |
 
 **Benefícios concretos:**
 
@@ -137,13 +137,10 @@ programada ou use uma migration multi-passo (ADD COLUMN JSONB, UPDATE, DROP OLD)
 
 ### Código de Aplicação
 
-**Zero mudanças necessárias.** O Exposed com coluna `text()` funciona transparentemente
-contra uma coluna JSONB — o PostgreSQL JDBC driver lida com o cast automaticamente.
-Serializers (`SimulationSerializer`, `DailySnapshotSerializer`) não mudam.
-
-Se no futuro `jsonb()` column type for adicionado ao Exposed (disponível em versões ≥ 1.0.x
-como `KotlinxSerializationColumn`), atualizar `Tables.kt` para usar `jsonb()` seria uma
-melhoria opcional para habilitar type-safe JSON operators via DSL.
+Pequena mudança necessária: para persistir em colunas `JSONB` via Exposed sem casts explícitos
+na query, usamos `JsonbColumnType` (envia `PGobject` com `type=jsonb`) e declaramos as colunas
+como `jsonb()` em `Tables.kt`. Serializers (`SimulationSerializer`, `DailySnapshotSerializer`)
+permanecem inalterados.
 
 ---
 

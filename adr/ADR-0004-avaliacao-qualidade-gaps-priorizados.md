@@ -497,7 +497,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-N** — Adicionar exemplos nos request bodies, documentar `X-Request-ID` nas respostas e query params dos endpoints de analytics (CFD, days). Schema Bearer já presente (GAP-A concluído)
 - [~] `[E→ADR-0012]` **GAP-R** — ~~Escrever ADR-0012 apenas quando build time > 2min.~~ **Condição não atingida** (build time medido: 16s vs threshold 2min). GAP descartado por condição de ativação.
 - [x] `[M]` **GAP-L** — PITest 1.15.0 integrado via `domain/build.gradle.kts` (STRONGER mutators, targetClasses=simulation.*). Baseline estabelecida: 38% mutation score (70/182 mutantes eliminados) vs 97% line coverage — confirma Reinertsen: surviving mutants em conditional boundaries e equality checks do `SimulationEngine`. `mutationThreshold=35` previne regressão; task `pitestAll` e step CI adicionados (PR #111)
-- [x] `[E→ADR-0013]` **GAP-M** — ADR-0013 aprovada: TEXT → JSONB para `simulation_states.state_json` e `daily_snapshots.snapshot_json` (V2 migration). Schema boundaries mantidas por naming convention no schema `public` (documentadas em `docs/context-map.md`). Zero mudanças em código de aplicação. → PR em aberto
+- [x] `[E→ADR-0013]` **GAP-M** — ADR-0013 aprovada: TEXT → JSONB para `simulation_states.state_json` e `daily_snapshots.snapshot_json` (V2 migration). Schema boundaries mantidas por naming convention no schema `public` (documentadas em `docs/context-map.md`). Pequena mudança em `sql_persistence`: `JsonbColumnType` + colunas `jsonb()` em `Tables.kt` para tipar parâmetros JSONB corretamente; serializers não mudaram.
 
 ---
 
