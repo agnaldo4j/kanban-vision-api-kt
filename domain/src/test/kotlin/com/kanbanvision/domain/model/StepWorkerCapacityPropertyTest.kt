@@ -111,7 +111,7 @@ class StepWorkerCapacityPropertyTest {
                 val max = min + extra
                 val worker =
                     Worker(name = name, abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
-                val capacity = worker.generateDailyCapacities(Random.Default, minPoints = min, maxPoints = max)[AbilityName.DEVELOPER]!!
+                val capacity = worker.generateDailyCapacities(Random.Default, minPoints = min, maxPoints = max)[AbilityName.DEVELOPER] ?: 0
                 assertTrue(capacity in min..max)
             }
         }
