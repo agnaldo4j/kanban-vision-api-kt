@@ -122,6 +122,9 @@ class DomainInvariantPropertyTest {
                     }.isFailure &&
                     runCatching {
                         FlowMetrics(throughput = 0, wipCount = 0, blockedCount = neg, avgAgingDays = 0.0)
+                    }.isFailure &&
+                    runCatching {
+                        FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = neg.toDouble())
                     }.isFailure
             }
         }
