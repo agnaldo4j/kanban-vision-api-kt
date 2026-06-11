@@ -216,10 +216,10 @@ jobs:
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: |
-            domain/build/reports/jacoco/test/jacocoTestReport.xml
-            usecases/build/reports/jacoco/test/jacocoTestReport.xml
-            sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml
+          files: >-
+            domain/build/reports/jacoco/test/jacocoTestReport.xml,
+            usecases/build/reports/jacoco/test/jacocoTestReport.xml,
+            sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
             http_api/build/reports/jacoco/test/jacocoTestReport.xml
           disable_search: true
           codecov_yml_path: ./codecov.yml
