@@ -165,24 +165,30 @@ jobs:
             echo 'body<<DETEKT_REPORT'
             echo '## Detekt Analysis'
             echo ''
-            echo '| Module | Issues |'
-            echo '|--------|--------|'
+            echo '| Module | main | test |'
+            echo '|--------|------|------|'
             total=0
             for module in domain usecases sql_persistence http_api; do
               xml="${module}/build/reports/detekt/detekt.xml"
+              xml_test="${module}/build/reports/detekt/detektTest.xml"
               if [ -f "$xml" ]; then
-                count=$({ grep '<error ' "$xml" 2>/dev/null || true; } | wc -l)
+                count=$({ grep -c '<error ' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
               else
                 count=0
               fi
-              total=$((total + count))
-              printf "| \`%s\` | %d |\n" "$module" "$count"
+              if [ -f "$xml_test" ]; then
+                count_test=$({ grep -c '<error ' "$xml_test" 2>/dev/null || true; } | tr -d '[:space:]')
+              else
+                count_test=0
+              fi
+              total=$((total + count + count_test))
+              printf "| \`%s\` | %d | %d |\n" "$module" "$count" "$count_test"
             done
             echo ''
             if [ "$total" -eq 0 ]; then
-              echo '✅ **Total: 0 issues**'
+              echo '✅ **Total: 0 issues** (main + test sources)'
             else
-              printf '❌ **Total: %d issue(s)**\n' "$total"
+              printf '❌ **Total: %d issue(s)** (main + test sources)\n' "$total"
             fi
             echo 'DETEKT_REPORT'
           } >> "$GITHUB_OUTPUT"
@@ -215,6 +221,8 @@ jobs:
             usecases/build/reports/jacoco/test/jacocoTestReport.xml,
             sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
             http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          disable_search: true
+          codecov_yml_path: ./codecov.yml
           flags: unittests
           fail_ci_if_error: true
           verbose: true

@@ -67,7 +67,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | [API Reference](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/API-Reference) | Endpoints, JWT auth, OpenAPI |
 | [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel Agent, structured logs |
 | [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Docker, Kubernetes manifests, CI/CD, env vars |
-| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (8.5/10), gap roadmap |
+| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (9.2/10), gap roadmap |
 
 ---
 
