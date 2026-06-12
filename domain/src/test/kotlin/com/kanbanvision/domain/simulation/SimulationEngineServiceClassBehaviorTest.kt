@@ -86,6 +86,60 @@ class SimulationEngineServiceClassBehaviorTest {
         assertEquals(ServiceClass.INTANGIBLE, firstStep.cards.single { it.title == "Research" }.serviceClass)
     }
 
+    @Test
+    fun `given todo fixed_date and standard cards with limited wip when running day then fixed_date starts first`() {
+        val simulation =
+            simulationWithTwoCards(
+                first = Pair("standard-card", ServiceClass.STANDARD),
+                second = Pair("fixed-date-card", ServiceClass.FIXED_DATE),
+                wipLimit = 1,
+            )
+
+        val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 3L)
+
+        val allCards =
+            result.simulation.scenario.board.steps
+                .flatMap { it.cards }
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "fixed-date-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id == "standard-card" }.state)
+    }
+
+    @Test
+    fun `given todo fixed_date and intangible cards with limited wip when running day then fixed_date starts first`() {
+        val simulation =
+            simulationWithTwoCards(
+                first = Pair("intangible-card", ServiceClass.INTANGIBLE),
+                second = Pair("fixed-date-card", ServiceClass.FIXED_DATE),
+                wipLimit = 1,
+            )
+
+        val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 3L)
+
+        val allCards =
+            result.simulation.scenario.board.steps
+                .flatMap { it.cards }
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "fixed-date-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id == "intangible-card" }.state)
+    }
+
+    @Test
+    fun `given todo standard and intangible cards with limited wip when running day then standard starts first`() {
+        val simulation =
+            simulationWithTwoCards(
+                first = Pair("intangible-card", ServiceClass.INTANGIBLE),
+                second = Pair("standard-card", ServiceClass.STANDARD),
+                wipLimit = 1,
+            )
+
+        val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 3L)
+
+        val allCards =
+            result.simulation.scenario.board.steps
+                .flatMap { it.cards }
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "standard-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id == "intangible-card" }.state)
+    }
+
     private fun simulationWithTwoCards(
         first: Pair<String, ServiceClass>,
         second: Pair<String, ServiceClass>,
