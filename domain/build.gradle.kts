@@ -22,10 +22,10 @@ pitest {
     targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
     targetTests.set(setOf("com.kanbanvision.domain.simulation.*"))
     mutators.set(setOf("STRONGER"))
-    // Baseline: 38% (70/182 killed). Round 2: 54% (98/182) after guard + metrics assertions.
-    // Reinertsen: surviving mutants reveal weak assertions on queue/WIP logic.
-    // Raise threshold progressively as assertions improve.
-    mutationThreshold.set(45)
+    // Baseline: 38% (70/182 killed). Round 2: 54% (98/182). Round 3: 63% (114/182).
+    // Surviving mutants concentrated in null-safety guards (hard to kill) and
+    // calculateMetrics lambda bytecode coverage gaps.
+    mutationThreshold.set(58)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)
