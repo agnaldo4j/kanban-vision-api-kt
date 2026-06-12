@@ -16,7 +16,6 @@ import com.kanbanvision.domain.model.StepRef
 import com.kanbanvision.domain.model.Worker
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class SimulationEngineCardOrderAndMetricsTest {
     @Test
@@ -44,8 +43,8 @@ class SimulationEngineCardOrderAndMetricsTest {
     }
 
     @Test
-    fun `given worker with effort and in progress card when running day then remaining effort decreases`() {
-        val sim = simWithWorkerAndCard(developmentEffort = 10, remainingEffort = 10)
+    fun `given deployer worker and in progress card when running day then remaining deploy effort becomes zero`() {
+        val sim = simWithWorkerAndCard(deployEffort = 5, remainingDeployEffort = 5)
 
         val result = SimulationEngine.runDay(sim, emptyList(), seed = 1L)
 
@@ -53,7 +52,7 @@ class SimulationEngineCardOrderAndMetricsTest {
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
                 .first()
-        assertTrue(after.remainingDevelopmentEffort < 10)
+        assertEquals(0, after.remainingDeployEffort)
     }
 
     @Test
@@ -99,17 +98,19 @@ class SimulationEngineCardOrderAndMetricsTest {
         assertEquals("c-pos2", resultCards[2].id)
     }
 
+    // Uses DEPLOYER ability whose daily capacity is always Int.MAX_VALUE (not random 0..10),
+    // making this helper deterministic regardless of the step ID's hash-based seed.
     private fun simWithWorkerAndCard(
-        developmentEffort: Int,
-        remainingEffort: Int,
+        deployEffort: Int,
+        remainingDeployEffort: Int,
     ): Simulation {
-        val board = Board.create("Board").addStep("Dev", AbilityName.DEVELOPER)
+        val board = Board.create("Board").addStep("Deploy", AbilityName.DEPLOYER)
         val step = board.steps.first()
         val worker =
             Worker(
                 id = "w1",
-                name = "Dev",
-                abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
+                name = "Deployer",
+                abilities = setOf(Ability(name = AbilityName.DEPLOYER, seniority = Seniority.PL)),
             )
         val card =
             Card(
@@ -117,8 +118,8 @@ class SimulationEngineCardOrderAndMetricsTest {
                 step = StepRef(step.id),
                 title = "Task",
                 state = CardState.IN_PROGRESS,
-                developmentEffort = developmentEffort,
-                remainingDevelopmentEffort = remainingEffort,
+                deployEffort = deployEffort,
+                remainingDeployEffort = remainingDeployEffort,
             )
         return boardSim(board.copy(steps = listOf(step.assignWorker(worker).copy(cards = listOf(card)))), wipLimit = 3)
     }
