@@ -236,8 +236,10 @@ private fun orderTodoByPriority(
 ): List<Int> {
     val todoIndices = cards.indices.filter { cards[it].state == CardState.TODO }
     val expedite = todoIndices.filter { cards[it].serviceClass == ServiceClass.EXPEDITE }
-    val others = todoIndices.filter { cards[it].serviceClass != ServiceClass.EXPEDITE }.shuffled(rng)
-    return expedite + others
+    val fixedDate = todoIndices.filter { cards[it].serviceClass == ServiceClass.FIXED_DATE }
+    val standard = todoIndices.filter { cards[it].serviceClass == ServiceClass.STANDARD }.shuffled(rng)
+    val intangible = todoIndices.filter { cards[it].serviceClass == ServiceClass.INTANGIBLE }.shuffled(rng)
+    return expedite + fixedDate + standard + intangible
 }
 
 private fun Board.withCards(cards: List<Card>): Board {
