@@ -12,15 +12,27 @@
 # Flyway is idempotent: if no pending migrations exist the Job logs and exits 0.
 # ttlSecondsAfterFinished cleans up the completed pod automatically.
 #
-# Deploy procedure for migrations that change column types:
+# Deploy procedure for migrations that change column types (two-phase):
 #
-#   1. kubectl apply -k k8s/
-#      # kustomize applies the Job (with correct secret name) and the Deployment.
-#      # The Job starts immediately; the Deployment rollout starts in parallel.
-#   2. kubectl wait --for=condition=complete job/kanban-migration \
-#        --namespace kanban-vision --timeout=120s
-#      # Confirm migrations completed before verifying rollout health.
-#   3. kubectl rollout status deployment/kanban-vision-api -n kanban-vision
+# Phase 1 — run migration BEFORE any new pod starts:
+#   kubectl kustomize k8s/ | kubectl apply -f - -l app.kubernetes.io/component=migration
+#   kubectl wait --for=condition=complete job/kanban-migration \
+#     --namespace kanban-vision --timeout=120s
+#
+#   kubectl kustomize resolves the hash-suffixed secret name; -l filters to only
+#   the Job so the Deployment is not started yet.
+#
+# Phase 2 — rollout new application pods after migration is confirmed complete:
+#   kubectl apply -k k8s/
+#   kubectl rollout status deployment/kanban-vision-api -n kanban-vision
+#
+# WARNING: running kubectl apply -k k8s/ without Phase 1 first will start the
+# Deployment rollout in parallel with the migration Job. Old pods serving TEXT-era
+# writes will fail once the column becomes JSONB. Always follow the two-phase
+# procedure for migrations that change column types.
+#
+# For additive migrations (ADD COLUMN nullable, CREATE INDEX CONCURRENTLY) a single
+# kubectl apply -k k8s/ is safe — no type change, no write incompatibility.
 #
 # See ADR-0013 and GAP-Y for rationale.
 ---
