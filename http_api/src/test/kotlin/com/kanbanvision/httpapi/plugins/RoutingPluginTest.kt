@@ -5,6 +5,7 @@ import com.kanbanvision.httpapi.TEST_JWT_ISSUER
 import com.kanbanvision.httpapi.TEST_JWT_REALM
 import com.kanbanvision.httpapi.TEST_JWT_SECRET
 import com.kanbanvision.httpapi.routes.SimulationApiMocks
+import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
@@ -18,7 +19,6 @@ import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class RoutingPluginTest {
     @Test
@@ -39,6 +39,7 @@ class RoutingPluginTest {
     @Test
     fun `given routing plugin when health readiness is checked then isDatabaseReady is invoked and endpoint responds`() =
         testApplication {
+            DatabaseFactory.close() // close any previously initialised pool so isReady() returns false
             application {
                 installRoutingDependencies(SimulationApiMocks())
                 configureRouting()
@@ -46,11 +47,7 @@ class RoutingPluginTest {
 
             val ready = client.get("/health/ready")
 
-            // isDatabaseReady() delegates to DatabaseFactory.isReady(); the exact status depends on
-            // whether the embedded DB is initialised in the test JVM — either outcome is valid.
-            assertTrue(
-                ready.status == HttpStatusCode.OK || ready.status == HttpStatusCode.ServiceUnavailable,
-            )
+            assertEquals(HttpStatusCode.ServiceUnavailable, ready.status)
         }
 
     private fun Application.installRoutingDependencies(mocks: SimulationApiMocks) {

@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 
 class RateLimitForwardedForTest {
     @Test
-    fun `given default rate limit when configuring without explicit limit then plugin installs with limit 100`() =
+    fun `given default rate limit when configuring without explicit limit then routing works`() =
         testApplication {
             application {
                 configureRateLimit() // exercises the Kotlin $default bridge (DEFAULT_RATE_LIMIT = 100)
