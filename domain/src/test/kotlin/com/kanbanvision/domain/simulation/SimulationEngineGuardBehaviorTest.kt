@@ -57,7 +57,7 @@ class SimulationEngineGuardBehaviorTest {
                 .flatMap { it.cards }
                 .first { it.id == "done" }
         assertEquals(CardState.DONE, card.state)
-        assertTrue(result.snapshot.movements.none { it.cardId == "done" && it.type == MovementType.COMPLETED })
+        assertTrue(result.snapshot.movements.none { it.cardId == "done" })
     }
 
     @Test

@@ -51,12 +51,12 @@ class SimulationEngineMetricsBehaviorTest {
     }
 
     @Test
-    fun `given non-done card with aging when metrics computed then avg aging is positive`() {
+    fun `given in progress card with aging days 4 when running day then avg aging days is 5`() {
         val simulation = simulationWithSingleCard(cardId = "wip", state = CardState.IN_PROGRESS, agingDays = 4)
 
         val result = SimulationEngine.runDay(simulation, decisions = emptyList(), seed = 1L)
 
-        assertTrue(result.snapshot.metrics.avgAgingDays > 0.0)
+        assertEquals(5.0, result.snapshot.metrics.avgAgingDays)
     }
 
     @Test
@@ -79,7 +79,7 @@ class SimulationEngineMetricsBehaviorTest {
     }
 
     @Test
-    fun `given same simulation when running day twice with same seed then effort reduction is identical`() {
+    fun `given same simulation state when running same day with same seed twice then effort reduction is identical`() {
         val simulation = simulationWithWorkerAndCard()
 
         val resultA = SimulationEngine.runDay(simulation, decisions = emptyList(), seed = 999L)
