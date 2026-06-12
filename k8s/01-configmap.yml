@@ -15,6 +15,10 @@ data:
   JWT_AUDIENCE: "kanban-vision-clients"
   JWT_TTL_MS: "86400000"
   LOG_FORMAT: "json"
+  # Flyway migrations are run by the pre-deploy Job (09-migration-job.yml), not by app pods.
+  # Setting this to "false" prevents races during RollingUpdate where old pods would fail
+  # writes to columns whose type was changed by the migration.
+  FLYWAY_ENABLED: "false"
   # OpenTelemetry — traces are disabled by default because this repo does not deploy
   # a Tempo/OTLP collector Service. To enable tracing in an environment that has a
   # collector, add a kustomization.yaml patch that sets:

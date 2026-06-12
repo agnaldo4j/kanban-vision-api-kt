@@ -42,16 +42,8 @@ fun Application.module() {
         modules(AppModule.koinModule)
     }
 
-    val dbConfig = environment.config.config("database")
-    DatabaseFactory.init(
-        DatabaseConfig(
-            url = dbConfig.property("url").getString(),
-            driver = dbConfig.property("driver").getString(),
-            user = dbConfig.property("user").getString(),
-            password = dbConfig.property("password").getString(),
-            poolSize = dbConfig.property("poolSize").getString().toInt(),
-        ),
-    )
+    val migrationsEnabled = System.getenv("FLYWAY_ENABLED")?.lowercase() != "false"
+    DatabaseFactory.init(buildDatabaseConfig(), migrationsEnabled = migrationsEnabled)
 
     configureMetrics()
     configureObservability()
@@ -62,6 +54,17 @@ fun Application.module() {
     configureAuthentication()
     configureRouting()
     configureDevAuthRoutes()
+}
+
+private fun Application.buildDatabaseConfig(): DatabaseConfig {
+    val dbConfig = environment.config.config("database")
+    return DatabaseConfig(
+        url = dbConfig.property("url").getString(),
+        driver = dbConfig.property("driver").getString(),
+        user = dbConfig.property("user").getString(),
+        password = dbConfig.property("password").getString(),
+        poolSize = dbConfig.property("poolSize").getString().toInt(),
+    )
 }
 
 private fun Application.configureDevAuthRoutes() {
