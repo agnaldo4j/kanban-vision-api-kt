@@ -37,7 +37,7 @@ class RoutingPluginTest {
         }
 
     @Test
-    fun `given routing plugin when health readiness is checked then isDatabaseReady is invoked and endpoint responds`() =
+    fun `given routing plugin when health readiness is checked then endpoint responds service unavailable when db is not ready`() =
         testApplication {
             DatabaseFactory.close() // close any previously initialised pool so isReady() returns false
             application {
