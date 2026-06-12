@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val exposedVersion = "1.1.1"
+val exposedVersion = "1.3.0"
 
 dependencies {
     implementation(project(":domain"))
