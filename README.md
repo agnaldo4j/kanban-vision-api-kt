@@ -28,7 +28,7 @@
 - **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
 - **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces
-- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 96% + PITest mutation testing enforced on every PR
+- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 97% + PITest mutation testing enforced on every PR
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
 
 ---

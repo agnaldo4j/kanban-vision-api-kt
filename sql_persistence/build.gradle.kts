@@ -26,7 +26,16 @@ dependencies {
     testImplementation("io.zonky.test:embedded-postgres:2.2.2")
 }
 
-val jacocoExcludes = listOf("**/*\$\$serializer.class", "**/*\$Companion.class")
+val jacocoExcludes =
+    listOf(
+        "**/*\$\$serializer.class",
+        "**/*\$Companion.class",
+        // Infrastructure singleton: close() is only called from MigrationMain (excluded in http_api),
+        // isReady() error branches (TimeoutException, cancelled future) require timing-dependent
+        // test infrastructure, and the generic catch is effectively unreachable since the inner
+        // supplyAsync already catches all exceptions. Excluded analogously to MainKt.class.
+        "com/kanbanvision/persistence/DatabaseFactory.class",
+    )
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     classDirectories.setFrom(

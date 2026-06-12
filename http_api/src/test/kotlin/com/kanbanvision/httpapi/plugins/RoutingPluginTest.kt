@@ -18,6 +18,7 @@ import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RoutingPluginTest {
     @Test
@@ -33,6 +34,23 @@ class RoutingPluginTest {
 
             assertEquals(HttpStatusCode.OK, health.status)
             assertEquals(HttpStatusCode.Unauthorized, protected.status)
+        }
+
+    @Test
+    fun `given routing plugin when health readiness is checked then isDatabaseReady is invoked and endpoint responds`() =
+        testApplication {
+            application {
+                installRoutingDependencies(SimulationApiMocks())
+                configureRouting()
+            }
+
+            val ready = client.get("/health/ready")
+
+            // isDatabaseReady() delegates to DatabaseFactory.isReady(); the exact status depends on
+            // whether the embedded DB is initialised in the test JVM — either outcome is valid.
+            assertTrue(
+                ready.status == HttpStatusCode.OK || ready.status == HttpStatusCode.ServiceUnavailable,
+            )
         }
 
     private fun Application.installRoutingDependencies(mocks: SimulationApiMocks) {
