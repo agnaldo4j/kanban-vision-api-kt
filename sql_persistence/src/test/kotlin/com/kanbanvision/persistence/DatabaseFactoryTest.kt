@@ -45,6 +45,33 @@ class DatabaseFactoryTest {
     }
 
     @Test
+    fun `given initialized datasource when close is called then datasource is shut down and isReady returns false`() {
+        EmbeddedPostgresSupport.ensureStarted()
+        EmbeddedPostgresSupport.refreshDataSource()
+
+        DatabaseFactory.close()
+
+        assertFalse(DatabaseFactory.isReady())
+
+        EmbeddedPostgresSupport.refreshDataSource() // restore for subsequent tests
+    }
+
+    @Test
+    fun `given database config when initializing with migrations disabled then connection is established without running migrations`() {
+        EmbeddedPostgresSupport.ensureStarted()
+        val url = DatabaseFactory.dataSource.jdbcUrl
+
+        DatabaseFactory.init(
+            DatabaseConfig(url = url, driver = "org.postgresql.Driver", user = "postgres", password = "postgres", poolSize = 1),
+            migrationsEnabled = false,
+        )
+
+        assertTrue(DatabaseFactory.isReady())
+
+        EmbeddedPostgresSupport.refreshDataSource() // restore full pool config
+    }
+
+    @Test
     fun `given database config created with default constructor values then pool size defaults to ten`() {
         val config =
             DatabaseConfig(

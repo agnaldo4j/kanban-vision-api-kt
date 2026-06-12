@@ -15,6 +15,19 @@ import kotlin.test.assertTrue
 
 class RateLimitForwardedForTest {
     @Test
+    fun `given default rate limit when configuring without explicit limit then routing works`() =
+        testApplication {
+            application {
+                configureRateLimit() // exercises the Kotlin $default bridge (DEFAULT_RATE_LIMIT = 100)
+                routing { get("/check") { call.respondText("ok") } }
+            }
+
+            val response = client.get("/check")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+        }
+
+    @Test
     fun `given non-positive rate limit when configuring then require rejects invalid input`(): Unit =
         testApplication {
             var caught: IllegalArgumentException? = null

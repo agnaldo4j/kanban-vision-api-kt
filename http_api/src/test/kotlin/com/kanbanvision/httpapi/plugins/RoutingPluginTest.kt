@@ -5,6 +5,7 @@ import com.kanbanvision.httpapi.TEST_JWT_ISSUER
 import com.kanbanvision.httpapi.TEST_JWT_REALM
 import com.kanbanvision.httpapi.TEST_JWT_SECRET
 import com.kanbanvision.httpapi.routes.SimulationApiMocks
+import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
@@ -33,6 +34,20 @@ class RoutingPluginTest {
 
             assertEquals(HttpStatusCode.OK, health.status)
             assertEquals(HttpStatusCode.Unauthorized, protected.status)
+        }
+
+    @Test
+    fun `given routing plugin when health readiness is checked then endpoint responds service unavailable when db is not ready`() =
+        testApplication {
+            DatabaseFactory.close() // close any previously initialised pool so isReady() returns false
+            application {
+                installRoutingDependencies(SimulationApiMocks())
+                configureRouting()
+            }
+
+            val ready = client.get("/health/ready")
+
+            assertEquals(HttpStatusCode.ServiceUnavailable, ready.status)
         }
 
     private fun Application.installRoutingDependencies(mocks: SimulationApiMocks) {

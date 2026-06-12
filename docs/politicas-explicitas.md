@@ -78,7 +78,7 @@ Nenhum PR pode ser mergeado se qualquer uma delas for violada.
 
 | Política | Limite | Enforçado por |
 |---|---|---|
-| Cobertura de instruções JaCoCo | ≥ 95% por módulo | CI — bloqueia merge |
+| Cobertura de instruções JaCoCo | ≥ 97% por módulo | CI — bloqueia merge |
 | Detekt violations | 0 (`warningsAsErrors = true`) | CI — bloqueia merge |
 | KtLint formatting | 0 erros | CI — bloqueia merge |
 | `./gradlew testAll` | verde | CI — bloqueia merge |
