@@ -65,6 +65,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/local-and-production-environment` | Dockerfile, docker-compose, Kubernetes manifests |
 | `/evolutionary-change` | Plan incremental changes, J-Curve, 1-gap-per-session protocol |
 | `/xp-kanban` | XP + Kanban practices — **includes Board Protocol** (pull/push GitHub Project) |
+| `/circular-dependency-control` | Detect, classify and eliminate circular dependencies (class, package, Gradle module) |
 
 ## Docs
 
