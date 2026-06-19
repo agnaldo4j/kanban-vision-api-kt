@@ -25,34 +25,41 @@ object SimulationEngine {
         decisions: List<Decision>,
         seed: Long,
     ): SimulationResult {
+        val ctx = EngineContext(day = simulation.currentDay.value, seed = seed, now = Instant.now())
+        val rng = Random(seed)
         val scenario = simulation.scenario
-        val day = simulation.currentDay.value
-        val ctx = EngineContext(day = day, seed = seed, movements = mutableListOf(), rng = Random(seed), now = Instant.now())
 
         val initialCards = scenario.board.steps.flatMap { it.cards }
-        val afterDecisions = applyDecisions(initialCards, scenario.board, decisions, ctx)
-        val afterAutoAdvance = autoAdvance(afterDecisions, scenario.rules.policySet.wipLimit, ctx)
+        val (afterDecisions, movDecisions) = applyDecisions(initialCards, scenario.board, decisions, ctx)
+        val (afterAutoAdvance, movAutoAdvance) = autoAdvance(afterDecisions, scenario.rules.policySet.wipLimit, rng, ctx)
         val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, scenario.board.steps, ctx)
         val afterAging = afterExecution.map { card -> if (card.state != CardState.DONE) card.incrementAge() else card }
 
+        return buildResult(simulation, decisions, afterAging, movDecisions + movAutoAdvance)
+    }
+
+    private fun buildResult(
+        simulation: Simulation,
+        decisions: List<Decision>,
+        afterAging: List<Card>,
+        allMovements: List<Movement>,
+    ): SimulationResult {
+        val scenario = simulation.scenario
         val snapshot =
             DailySnapshot(
                 simulation = simulation.toRef(),
                 scenario = scenario.toRef(),
                 day = simulation.currentDay,
-                metrics = calculateMetrics(afterAging, ctx.movements),
-                movements = ctx.movements.toList(),
+                metrics = calculateMetrics(afterAging, allMovements),
+                movements = allMovements,
             )
-
-        val updatedBoard = scenario.board.withCards(afterAging)
         val updatedScenario =
             scenario.copy(
-                board = updatedBoard,
+                board = scenario.board.withCards(afterAging),
                 decisions = scenario.decisions + decisions,
                 history = scenario.history + snapshot,
             )
-        val updatedSimulation = simulation.copy(currentDay = SimulationDay(day + 1), scenario = updatedScenario)
-
+        val updatedSimulation = simulation.copy(currentDay = SimulationDay(simulation.currentDay.value + 1), scenario = updatedScenario)
         return SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
     }
 
@@ -61,100 +68,38 @@ object SimulationEngine {
         board: Board,
         decisions: List<Decision>,
         ctx: EngineContext,
-    ): List<Card> {
+    ): Pair<List<Card>, List<Movement>> {
         val current = cards.toMutableList()
+        val movements = mutableListOf<Movement>()
         decisions.forEach { decision ->
             when (decision.type) {
-                DecisionType.MOVE_ITEM -> applyMove(current, decision.payload, ctx)
-                DecisionType.BLOCK_ITEM -> applyBlock(current, decision.payload, ctx)
-                DecisionType.UNBLOCK_ITEM -> applyUnblock(current, decision.payload, ctx)
+                DecisionType.MOVE_ITEM -> applyMove(current, decision.payload, ctx.day)?.let { movements += it }
+                DecisionType.BLOCK_ITEM -> applyBlock(current, decision.payload, ctx.day)?.let { movements += it }
+                DecisionType.UNBLOCK_ITEM -> applyUnblock(current, decision.payload, ctx.day)?.let { movements += it }
                 DecisionType.ADD_ITEM -> applyAdd(current, board, decision.payload)
             }
         }
-        return current
-    }
-
-    private fun applyMove(
-        current: MutableList<Card>,
-        payload: Map<String, String>,
-        ctx: EngineContext,
-    ) {
-        val cardId = payload["cardId"] ?: return
-        val idx = current.indexOfFirst { it.id == cardId }
-        if (idx < 0 || current[idx].state == CardState.DONE) return
-        val card = current[idx]
-        val advanced = card.advance()
-        val movementType = if (advanced.state == CardState.DONE) MovementType.COMPLETED else MovementType.MOVED
-        current[idx] = advanced
-        ctx.movements.add(Movement(type = movementType, cardId = card.id, day = SimulationDay(ctx.day), reason = "decision: move"))
-    }
-
-    private fun applyBlock(
-        current: MutableList<Card>,
-        payload: Map<String, String>,
-        ctx: EngineContext,
-    ) {
-        val cardId = payload["cardId"] ?: return
-        val idx = current.indexOfFirst { it.id == cardId }
-        if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return
-        val card = current[idx]
-        current[idx] = card.block()
-        val reason = payload["reason"] ?: "decision: block"
-        ctx.movements.add(Movement(type = MovementType.BLOCKED, cardId = card.id, day = SimulationDay(ctx.day), reason = reason))
-    }
-
-    private fun applyUnblock(
-        current: MutableList<Card>,
-        payload: Map<String, String>,
-        ctx: EngineContext,
-    ) {
-        val cardId = payload["cardId"] ?: return
-        val idx = current.indexOfFirst { it.id == cardId }
-        if (idx < 0 || current[idx].state != CardState.BLOCKED) return
-        val card = current[idx]
-        current[idx] = card.advance()
-        ctx.movements.add(
-            Movement(
-                type = MovementType.UNBLOCKED,
-                cardId = card.id,
-                day = SimulationDay(ctx.day),
-                reason = "decision: unblock",
-            ),
-        )
-    }
-
-    private fun applyAdd(
-        current: MutableList<Card>,
-        board: Board,
-        payload: Map<String, String>,
-    ) {
-        val title = payload["title"] ?: return
-        val firstStep = board.steps.minByOrNull { it.position } ?: return
-        val serviceClass =
-            payload["serviceClass"]
-                ?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() }
-                ?: ServiceClass.STANDARD
-        val position = current.count { it.step.id == firstStep.id }
-        current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
+        return current.toList() to movements.toList()
     }
 
     private fun autoAdvance(
         cards: List<Card>,
         wipLimit: Int,
+        rng: Random,
         ctx: EngineContext,
-    ): List<Card> {
+    ): Pair<List<Card>, List<Movement>> {
         var wipCount = cards.count { it.state == CardState.IN_PROGRESS }
         val current = cards.toMutableList()
-        val orderedTodo = orderTodoByPriority(current, ctx.rng)
-
+        val movements = mutableListOf<Movement>()
+        val orderedTodo = orderTodoByPriority(current, rng)
         for (idx in orderedTodo) {
             if (wipCount >= wipLimit) break
             val card = current[idx]
             current[idx] = card.advance()
-            ctx.movements.add(Movement(type = MovementType.MOVED, cardId = card.id, day = SimulationDay(ctx.day), reason = "auto: started"))
+            movements.add(Movement(type = MovementType.MOVED, cardId = card.id, day = SimulationDay(ctx.day), reason = "auto: started"))
             wipCount++
         }
-        return current
+        return current.toList() to movements.toList()
     }
 
     private fun applyAssignedWorkerExecution(
@@ -163,7 +108,6 @@ object SimulationEngine {
         ctx: EngineContext,
     ): List<Card> {
         if (steps.isEmpty()) return cards
-
         val current = cards.toMutableList()
         steps
             .sortedBy { it.position }
@@ -172,7 +116,7 @@ object SimulationEngine {
                     applySingleWorkerExecution(current, step, worker, ctx)
                 }
             }
-        return current
+        return current.toList()
     }
 
     private fun applySingleWorkerExecution(
@@ -182,7 +126,6 @@ object SimulationEngine {
         ctx: EngineContext,
     ) {
         if (!worker.hasAbility(step.requiredAbility)) return
-
         val targetIndex =
             current.indexOfFirst { card ->
                 card.step.id == step.id &&
@@ -190,7 +133,6 @@ object SimulationEngine {
                     card.remainingEffortFor(step.requiredAbility) > 0
             }
         if (targetIndex < 0) return
-
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
         val result = step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
@@ -212,11 +154,71 @@ object SimulationEngine {
     }
 }
 
+private fun applyMove(
+    current: MutableList<Card>,
+    payload: Map<String, String>,
+    day: Int,
+): Movement? {
+    val cardId = payload["cardId"] ?: return null
+    val idx = current.indexOfFirst { it.id == cardId }
+    if (idx < 0 || current[idx].state == CardState.DONE) return null
+    val card = current[idx]
+    val advanced = card.advance()
+    val movementType = if (advanced.state == CardState.DONE) MovementType.COMPLETED else MovementType.MOVED
+    current[idx] = advanced
+    return Movement(type = movementType, cardId = card.id, day = SimulationDay(day), reason = "decision: move")
+}
+
+private fun applyBlock(
+    current: MutableList<Card>,
+    payload: Map<String, String>,
+    day: Int,
+): Movement? {
+    val cardId = payload["cardId"] ?: return null
+    val idx = current.indexOfFirst { it.id == cardId }
+    if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return null
+    val card = current[idx]
+    current[idx] = card.block()
+    val reason = payload["reason"] ?: "decision: block"
+    return Movement(type = MovementType.BLOCKED, cardId = card.id, day = SimulationDay(day), reason = reason)
+}
+
+private fun applyUnblock(
+    current: MutableList<Card>,
+    payload: Map<String, String>,
+    day: Int,
+): Movement? {
+    val cardId = payload["cardId"] ?: return null
+    val idx = current.indexOfFirst { it.id == cardId }
+    if (idx < 0 || current[idx].state != CardState.BLOCKED) return null
+    val card = current[idx]
+    current[idx] = card.advance()
+    return Movement(
+        type = MovementType.UNBLOCKED,
+        cardId = card.id,
+        day = SimulationDay(day),
+        reason = "decision: unblock",
+    )
+}
+
+private fun applyAdd(
+    current: MutableList<Card>,
+    board: Board,
+    payload: Map<String, String>,
+) {
+    val title = payload["title"] ?: return
+    val firstStep = board.steps.minByOrNull { it.position } ?: return
+    val serviceClass =
+        payload["serviceClass"]
+            ?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() }
+            ?: ServiceClass.STANDARD
+    val position = current.count { it.step.id == firstStep.id }
+    current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
+}
+
 private data class EngineContext(
     val day: Int,
     val seed: Long,
-    val movements: MutableList<Movement>,
-    val rng: Random,
     val now: Instant,
 )
 

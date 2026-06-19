@@ -5,6 +5,7 @@ import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.Scenario
@@ -68,6 +69,80 @@ class SimulationEngineDecisionBehaviorTest {
                 .cards
                 .first { it.id == "card-3" }
         assertEquals(CardState.IN_PROGRESS, card.state)
+    }
+
+    @Test
+    fun `given move decision on todo card when running day then movement type is moved`() {
+        val simulation = simulationWithCard(cardId = "card-t", state = CardState.TODO)
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("card-t")), seed = 1L)
+
+        assertTrue(result.snapshot.movements.any { it.cardId == "card-t" && it.type == MovementType.MOVED })
+    }
+
+    @Test
+    fun `given move decision without cardId in payload when running day then no movement is recorded`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
+        val decision = Decision(type = DecisionType.MOVE_ITEM, payload = emptyMap())
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+
+        assertTrue(result.snapshot.movements.isEmpty())
+    }
+
+    @Test
+    fun `given block decision without cardId in payload when running day then no blocked movement`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
+        val decision = Decision(type = DecisionType.BLOCK_ITEM, payload = emptyMap())
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+
+        assertTrue(result.snapshot.movements.none { it.type == MovementType.BLOCKED })
+    }
+
+    @Test
+    fun `given block decision on unknown card when running day then no blocked movement`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
+        val decision = Decision(type = DecisionType.BLOCK_ITEM, payload = mapOf("cardId" to "unknown"))
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+
+        assertTrue(result.snapshot.movements.none { it.type == MovementType.BLOCKED })
+    }
+
+    @Test
+    fun `given block decision without reason key when running day then default reason is used`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
+        val decision = Decision(type = DecisionType.BLOCK_ITEM, payload = mapOf("cardId" to "card-1"))
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+
+        assertEquals(
+            "decision: block",
+            result.snapshot.movements
+                .first { it.type == MovementType.BLOCKED }
+                .reason,
+        )
+    }
+
+    @Test
+    fun `given unblock decision without cardId in payload when running day then no unblocked movement`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.BLOCKED)
+        val decision = Decision(type = DecisionType.UNBLOCK_ITEM, payload = emptyMap())
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+
+        assertTrue(result.snapshot.movements.none { it.type == MovementType.UNBLOCKED })
+    }
+
+    @Test
+    fun `given unblock decision on unknown card when running day then no unblocked movement`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.BLOCKED)
+        val decision = Decision(type = DecisionType.UNBLOCK_ITEM, payload = mapOf("cardId" to "unknown"))
+
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+
+        assertTrue(result.snapshot.movements.none { it.type == MovementType.UNBLOCKED })
     }
 
     private fun simulationWithCard(
