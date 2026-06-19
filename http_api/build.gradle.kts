@@ -90,9 +90,9 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
 
     // OpenTelemetry API — spans manuais somente em http_api (agente v2.14.0 empacota API v1.47.0)
-    implementation("io.opentelemetry:opentelemetry-api:1.47.0")
+    implementation("io.opentelemetry:opentelemetry-api:1.63.0")
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
-    implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.47.0")
+    implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.63.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.32")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
