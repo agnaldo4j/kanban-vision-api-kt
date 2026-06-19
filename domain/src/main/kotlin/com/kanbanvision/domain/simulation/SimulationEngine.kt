@@ -79,7 +79,7 @@ object SimulationEngine {
                 DecisionType.ADD_ITEM -> applyAdd(current, board, decision.payload)
             }
         }
-        return current to movements
+        return current.toList() to movements.toList()
     }
 
     private fun autoAdvance(
@@ -99,7 +99,7 @@ object SimulationEngine {
             movements.add(Movement(type = MovementType.MOVED, cardId = card.id, day = SimulationDay(ctx.day), reason = "auto: started"))
             wipCount++
         }
-        return current to movements
+        return current.toList() to movements.toList()
     }
 
     private fun applyAssignedWorkerExecution(
@@ -116,7 +116,7 @@ object SimulationEngine {
                     applySingleWorkerExecution(current, step, worker, ctx)
                 }
             }
-        return current
+        return current.toList()
     }
 
     private fun applySingleWorkerExecution(
