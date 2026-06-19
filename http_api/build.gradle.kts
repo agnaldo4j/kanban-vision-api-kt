@@ -87,7 +87,7 @@ dependencies {
 
     implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.0")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.0")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
 
     // OpenTelemetry API — spans manuais somente em http_api (agente v2.14.0 empacota API v1.47.0)
     implementation("io.opentelemetry:opentelemetry-api:1.47.0")
