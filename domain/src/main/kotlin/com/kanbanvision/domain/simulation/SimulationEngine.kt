@@ -5,7 +5,6 @@ import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.domain.model.MovementType
@@ -72,11 +71,11 @@ object SimulationEngine {
         val current = cards.toMutableList()
         val movements = mutableListOf<Movement>()
         decisions.forEach { decision ->
-            when (decision.type) {
-                DecisionType.MOVE_ITEM -> applyMove(current, decision.payload, ctx.day)?.let { movements += it }
-                DecisionType.BLOCK_ITEM -> applyBlock(current, decision.payload, ctx.day)?.let { movements += it }
-                DecisionType.UNBLOCK_ITEM -> applyUnblock(current, decision.payload, ctx.day)?.let { movements += it }
-                DecisionType.ADD_ITEM -> applyAdd(current, board, decision.payload)
+            when (decision) {
+                is Decision.MoveItem -> applyMove(current, decision.cardId, ctx.day)?.let { movements += it }
+                is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
+                is Decision.UnblockItem -> applyUnblock(current, decision.cardId, ctx.day)?.let { movements += it }
+                is Decision.AddItem -> applyAdd(current, board, decision.title, decision.serviceClass)
             }
         }
         return current.toList() to movements.toList()
@@ -156,10 +155,9 @@ object SimulationEngine {
 
 private fun applyMove(
     current: MutableList<Card>,
-    payload: Map<String, String>,
+    cardId: String,
     day: Int,
 ): Movement? {
-    val cardId = payload["cardId"] ?: return null
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state == CardState.DONE) return null
     val card = current[idx]
@@ -171,24 +169,22 @@ private fun applyMove(
 
 private fun applyBlock(
     current: MutableList<Card>,
-    payload: Map<String, String>,
+    cardId: String,
+    reason: String,
     day: Int,
 ): Movement? {
-    val cardId = payload["cardId"] ?: return null
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return null
     val card = current[idx]
     current[idx] = card.block()
-    val reason = payload["reason"] ?: "decision: block"
     return Movement(type = MovementType.BLOCKED, cardId = card.id, day = SimulationDay(day), reason = reason)
 }
 
 private fun applyUnblock(
     current: MutableList<Card>,
-    payload: Map<String, String>,
+    cardId: String,
     day: Int,
 ): Movement? {
-    val cardId = payload["cardId"] ?: return null
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.BLOCKED) return null
     val card = current[idx]
@@ -204,14 +200,10 @@ private fun applyUnblock(
 private fun applyAdd(
     current: MutableList<Card>,
     board: Board,
-    payload: Map<String, String>,
+    title: String,
+    serviceClass: ServiceClass,
 ) {
-    val title = payload["title"] ?: return
     val firstStep = board.steps.minByOrNull { it.position } ?: return
-    val serviceClass =
-        payload["serviceClass"]
-            ?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() }
-            ?: ServiceClass.STANDARD
     val position = current.count { it.step.id == firstStep.id }
     current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
 }

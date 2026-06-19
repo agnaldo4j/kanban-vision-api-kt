@@ -1,6 +1,8 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.usecases.Page
 import com.kanbanvision.usecases.simulation.CfdResult
@@ -183,6 +185,24 @@ internal fun CfdResult.toResponse() =
                 )
             },
     )
+
+internal fun DecisionRequest.toDomain(): Decision? =
+    when (type.uppercase()) {
+        "MOVE_ITEM" -> payload["cardId"]?.let { Decision.MoveItem(it) }
+        "BLOCK_ITEM" -> toBlockDecision()
+        "UNBLOCK_ITEM" -> payload["cardId"]?.let { Decision.UnblockItem(it) }
+        "ADD_ITEM" -> toAddDecision()
+        else -> null
+    }
+
+private fun DecisionRequest.toBlockDecision(): Decision.BlockItem? =
+    payload["cardId"]?.let { Decision.BlockItem(it, payload["reason"] ?: "blocked") }
+
+private fun DecisionRequest.toAddDecision(): Decision.AddItem? =
+    payload["title"]?.let { Decision.AddItem(it, decisionServiceClass(payload["serviceClass"])) }
+
+private fun decisionServiceClass(value: String?): ServiceClass =
+    value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
 
 internal fun Simulation.toSimulationResponse(): SimulationResponse {
     val cardCount = scenario.board.steps.sumOf { it.cards.size }

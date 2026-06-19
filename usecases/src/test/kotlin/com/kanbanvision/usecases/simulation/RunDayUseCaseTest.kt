@@ -65,7 +65,7 @@ class RunDayUseCaseTest {
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
             coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
 
-            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = listOf(Decision.move("card-1"))))
+            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = listOf(Decision.MoveItem("card-1"))))
 
             assertTrue(result.isRight())
             assertEquals(snapshot.id, result.getOrNull()?.id)

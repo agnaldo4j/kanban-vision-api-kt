@@ -38,17 +38,17 @@ class DataClassContractsAndFactoryGuardsTest {
         val movement = Movement(type = MovementType.BLOCKED, cardId = "card-1", day = SimulationDay(2), reason = "blocked")
         val flow = FlowMetrics(throughput = 3, wipCount = 4, blockedCount = 1, avgAgingDays = 2.5)
         val policySet = PolicySet(wipLimit = 5)
-        val decision = Decision.addItem(title = "Task", serviceClass = "STANDARD")
+        val decision = Decision.AddItem(title = "Task")
 
         val movementCopy = movement.copy(reason = "still blocked")
         val flowCopy = flow.copy(wipCount = 5)
         val policyCopy = policySet.copy(wipLimit = 6)
-        val decisionCopy = decision.copy(payload = decision.payload + ("priority" to "high"))
+        val decisionCopy = decision.copy(title = "Task-2")
 
         assertEquals("still blocked", movementCopy.reason)
         assertEquals(5, flowCopy.wipCount)
         assertEquals(6, policyCopy.wipLimit)
-        assertEquals("high", decisionCopy.payload["priority"])
+        assertEquals("Task-2", decisionCopy.title)
     }
 
     @Test
