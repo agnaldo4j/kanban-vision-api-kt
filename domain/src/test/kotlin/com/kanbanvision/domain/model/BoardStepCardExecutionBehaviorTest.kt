@@ -48,7 +48,8 @@ class BoardStepCardExecutionBehaviorTest {
                 remainingDevelopmentEffort = 5,
             )
 
-        val result = step.executeCard(worker = dev, card = card, dailyCapacities = dev.generateDailyCapacities(Random(1), 2, 2))
+        val result =
+            step.executeCard(worker = dev, card = card, dailyCapacities = dev.generateDailyCapacities(Random(1), 2, 2), now = Instant.EPOCH)
 
         assertEquals(2, result.consumedEffort)
         assertEquals(3, result.updatedCard.remainingDevelopmentEffort)
@@ -71,7 +72,8 @@ class BoardStepCardExecutionBehaviorTest {
                 remainingDeployEffort = 4,
             )
 
-        val result = step.executeCard(worker = deployer, card = card, dailyCapacities = mapOf(AbilityName.DEPLOYER to 0))
+        val result =
+            step.executeCard(worker = deployer, card = card, dailyCapacities = mapOf(AbilityName.DEPLOYER to 0), now = Instant.EPOCH)
 
         assertEquals(4, result.consumedEffort)
         assertEquals(0, result.updatedCard.remainingDeployEffort)

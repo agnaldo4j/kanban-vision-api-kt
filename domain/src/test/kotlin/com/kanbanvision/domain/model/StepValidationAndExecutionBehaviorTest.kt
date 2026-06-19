@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -89,7 +90,7 @@ class StepValidationAndExecutionBehaviorTest {
         val card = Card(step = StepRef(step.id), title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 1)
 
         assertFailsWith<IllegalArgumentException> {
-            step.executeCard(worker = tester, card = card, dailyCapacities = mapOf(AbilityName.DEVELOPER to 1))
+            step.executeCard(worker = tester, card = card, dailyCapacities = mapOf(AbilityName.DEVELOPER to 1), now = Instant.EPOCH)
         }
     }
 
@@ -121,7 +122,7 @@ class StepValidationAndExecutionBehaviorTest {
                 .assignWorker(worker)
         val card = Card(step = StepRef(step.id), title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 3)
 
-        val result = step.executeCard(worker = worker, card = card, dailyCapacities = emptyMap())
+        val result = step.executeCard(worker = worker, card = card, dailyCapacities = emptyMap(), now = Instant.EPOCH)
 
         assertEquals(0, result.consumedEffort)
         assertEquals(false, result.isStepCompleted)
@@ -147,7 +148,13 @@ class StepValidationAndExecutionBehaviorTest {
                 remainingDevelopmentEffort = 0,
             )
 
-        val result = step.executeCard(worker = worker, card = doneEffortCard, dailyCapacities = mapOf(AbilityName.DEVELOPER to 2))
+        val result =
+            step.executeCard(
+                worker = worker,
+                card = doneEffortCard,
+                dailyCapacities = mapOf(AbilityName.DEVELOPER to 2),
+                now = Instant.EPOCH,
+            )
 
         assertEquals(0, result.consumedEffort)
         assertTrue(result.isStepCompleted)

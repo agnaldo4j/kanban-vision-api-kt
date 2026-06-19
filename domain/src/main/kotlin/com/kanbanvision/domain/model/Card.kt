@@ -91,7 +91,7 @@ data class Card(
     fun consumeEffort(
         ability: AbilityName,
         points: Int,
-        now: Instant = Instant.now(),
+        now: Instant,
     ): Card {
         require(points >= 0) { "Consumed points must be non-negative" }
 

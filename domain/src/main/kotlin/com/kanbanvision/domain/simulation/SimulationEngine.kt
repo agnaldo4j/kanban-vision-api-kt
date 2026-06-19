@@ -16,6 +16,7 @@ import com.kanbanvision.domain.model.SimulationResult
 import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.Worker
 import com.kanbanvision.domain.model.toRef
+import java.time.Instant
 import kotlin.random.Random
 
 object SimulationEngine {
@@ -26,7 +27,7 @@ object SimulationEngine {
     ): SimulationResult {
         val scenario = simulation.scenario
         val day = simulation.currentDay.value
-        val ctx = EngineContext(day = day, seed = seed, movements = mutableListOf(), rng = Random(seed))
+        val ctx = EngineContext(day = day, seed = seed, movements = mutableListOf(), rng = Random(seed), now = Instant.now())
 
         val initialCards = scenario.board.steps.flatMap { it.cards }
         val afterDecisions = applyDecisions(initialCards, scenario.board, decisions, ctx)
@@ -192,7 +193,7 @@ object SimulationEngine {
 
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
-        val result = step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities)
+        val result = step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
         current[targetIndex] = result.updatedCard
     }
 
@@ -216,6 +217,7 @@ private data class EngineContext(
     val seed: Long,
     val movements: MutableList<Movement>,
     val rng: Random,
+    val now: Instant,
 )
 
 private const val STABLE_HASH_SEED = 17L
