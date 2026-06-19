@@ -297,11 +297,10 @@ private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
         val request = receive<RunDayRequest>()
         val decisions = mutableListOf<Decision>()
         for (d in request.decisions) {
-            decisions +=
-                d.toDomain()
-                    ?: return@use respondWithDomainError(
-                        DomainError.InvalidDecision("Unknown decision type: ${d.type}"),
-                    )
+            d.toDomain().fold(
+                ifLeft = { error -> return@use respondWithDomainError(error) },
+                ifRight = { decisions += it },
+            )
         }
         withSpan("simulation.run_day") {
             runDay.execute(RunDayCommand(simulationId = simulationId, decisions = decisions)).fold(
