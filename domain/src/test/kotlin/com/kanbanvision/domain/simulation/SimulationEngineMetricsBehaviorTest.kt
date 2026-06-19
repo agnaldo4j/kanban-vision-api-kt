@@ -63,7 +63,7 @@ class SimulationEngineMetricsBehaviorTest {
     fun `given move decision completing in progress card when metrics computed then throughput is one`() {
         val simulation = simulationWithSingleCard(cardId = "wip", state = CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("wip")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("wip")), seed = 1L)
 
         assertEquals(1, result.snapshot.metrics.throughput)
         assertTrue(result.snapshot.movements.any { it.type == MovementType.COMPLETED && it.cardId == "wip" })

@@ -5,7 +5,6 @@ import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.CardState
 import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.Organization
 import com.kanbanvision.domain.model.Scenario
@@ -23,7 +22,7 @@ class SimulationEngineDecisionBehaviorTest {
     fun `given move decision on in progress card when running day then movement is registered`() {
         val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("card-1")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("card-1")), seed = 1L)
 
         assertNotNull(result.snapshot.movements.firstOrNull { it.cardId == "card-1" && it.type == MovementType.COMPLETED })
     }
@@ -36,14 +35,14 @@ class SimulationEngineDecisionBehaviorTest {
             SimulationEngine
                 .runDay(
                     simulation,
-                    decisions = listOf(Decision.block(cardId = "card-2", reason = "waiting")),
+                    decisions = listOf(Decision.BlockItem(cardId = "card-2", reason = "waiting")),
                     seed = 2L,
                 ).simulation
 
         val unblocked =
             SimulationEngine.runDay(
                 blocked,
-                decisions = listOf(Decision.unblock(cardId = "card-2")),
+                decisions = listOf(Decision.UnblockItem(cardId = "card-2")),
                 seed = 3L,
             )
 
@@ -60,7 +59,7 @@ class SimulationEngineDecisionBehaviorTest {
     fun `given unknown card decision when running day then engine ignores decision safely`() {
         val simulation = simulationWithCard(cardId = "card-3", state = CardState.TODO)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("missing-card")), seed = 4L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("missing-card")), seed = 4L)
 
         assertTrue(result.snapshot.movements.none { it.cardId == "missing-card" })
         val card =
@@ -75,50 +74,28 @@ class SimulationEngineDecisionBehaviorTest {
     fun `given move decision on todo card when running day then movement type is moved`() {
         val simulation = simulationWithCard(cardId = "card-t", state = CardState.TODO)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("card-t")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("card-t")), seed = 1L)
 
         assertTrue(result.snapshot.movements.any { it.cardId == "card-t" && it.type == MovementType.MOVED })
     }
 
     @Test
-    fun `given move decision without cardId in payload when running day then no movement is recorded`() {
-        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
-        val decision = Decision(type = DecisionType.MOVE_ITEM, payload = emptyMap())
-
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
-
-        assertTrue(result.snapshot.movements.isEmpty())
-    }
-
-    @Test
-    fun `given block decision without cardId in payload when running day then no blocked movement`() {
-        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
-        val decision = Decision(type = DecisionType.BLOCK_ITEM, payload = emptyMap())
-
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
-
-        assertTrue(result.snapshot.movements.none { it.type == MovementType.BLOCKED })
-    }
-
-    @Test
     fun `given block decision on unknown card when running day then no blocked movement`() {
         val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
-        val decision = Decision(type = DecisionType.BLOCK_ITEM, payload = mapOf("cardId" to "unknown"))
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem("unknown")), seed = 1L)
 
         assertTrue(result.snapshot.movements.none { it.type == MovementType.BLOCKED })
     }
 
     @Test
-    fun `given block decision without reason key when running day then default reason is used`() {
+    fun `given block decision without reason when running day then default reason is used`() {
         val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
-        val decision = Decision(type = DecisionType.BLOCK_ITEM, payload = mapOf("cardId" to "card-1"))
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem("card-1")), seed = 1L)
 
         assertEquals(
-            "decision: block",
+            "blocked",
             result.snapshot.movements
                 .first { it.type == MovementType.BLOCKED }
                 .reason,
@@ -126,21 +103,10 @@ class SimulationEngineDecisionBehaviorTest {
     }
 
     @Test
-    fun `given unblock decision without cardId in payload when running day then no unblocked movement`() {
-        val simulation = simulationWithCard(cardId = "card-1", state = CardState.BLOCKED)
-        val decision = Decision(type = DecisionType.UNBLOCK_ITEM, payload = emptyMap())
-
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
-
-        assertTrue(result.snapshot.movements.none { it.type == MovementType.UNBLOCKED })
-    }
-
-    @Test
     fun `given unblock decision on unknown card when running day then no unblocked movement`() {
         val simulation = simulationWithCard(cardId = "card-1", state = CardState.BLOCKED)
-        val decision = Decision(type = DecisionType.UNBLOCK_ITEM, payload = mapOf("cardId" to "unknown"))
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(decision), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem("unknown")), seed = 1L)
 
         assertTrue(result.snapshot.movements.none { it.type == MovementType.UNBLOCKED })
     }

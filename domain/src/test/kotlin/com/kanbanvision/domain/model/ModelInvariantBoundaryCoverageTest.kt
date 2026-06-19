@@ -30,9 +30,6 @@ class ModelInvariantBoundaryCoverageTest {
         }
         assertFailsWith<IllegalArgumentException> { Tribe(id = "", name = "Tribe") }
         assertFailsWith<IllegalArgumentException> { Squad(id = "", name = "Squad") }
-        assertFailsWith<IllegalArgumentException> {
-            Decision(id = "", type = DecisionType.MOVE_ITEM, payload = mapOf("cardId" to "card-1"))
-        }
     }
 
     @Test
@@ -47,12 +44,12 @@ class ModelInvariantBoundaryCoverageTest {
     }
 
     @Test
-    fun `given decision helper defaults when creating block and add item then default payload values are present`() {
-        val blocked = Decision.block(cardId = "card-1")
-        val added = Decision.addItem(title = "Task")
+    fun `given decision subtypes when creating block and add item then default values are present`() {
+        val blocked = Decision.BlockItem(cardId = "card-1")
+        val added = Decision.AddItem(title = "Task")
 
-        assertEquals("blocked", blocked.payload["reason"])
-        assertEquals("STANDARD", added.payload["serviceClass"])
+        assertEquals("blocked", blocked.reason)
+        assertEquals(ServiceClass.STANDARD, added.serviceClass)
     }
 
     @Test

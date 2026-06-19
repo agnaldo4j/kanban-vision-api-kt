@@ -22,7 +22,7 @@ class SimulationEngineDecisionStateTest {
     fun `given in progress card when block decision then card state becomes blocked`() {
         val sim = singleCard("c", CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.block("c", "wait")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.BlockItem("c", "wait")), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
@@ -36,7 +36,7 @@ class SimulationEngineDecisionStateTest {
     fun `given blocked card when unblock decision then card state becomes in progress`() {
         val sim = singleCard("c", CardState.BLOCKED)
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.unblock("c")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.UnblockItem("c")), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
@@ -50,7 +50,7 @@ class SimulationEngineDecisionStateTest {
     fun `given add item decision when running day then card appears in first step with standard class`() {
         val sim = emptyBoardSim()
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.addItem("NewTask")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem("NewTask")), seed = 1L)
 
         val allCards =
             result.simulation.scenario.board.steps
@@ -64,26 +64,13 @@ class SimulationEngineDecisionStateTest {
     fun `given add item with expedite service class when running day then card has expedite service class`() {
         val sim = emptyBoardSim()
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.addItem("Urgent", "EXPEDITE")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem("Urgent", ServiceClass.EXPEDITE)), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
                 .first()
         assertEquals(ServiceClass.EXPEDITE, card.serviceClass)
-    }
-
-    @Test
-    fun `given add item with invalid service class when running day then card defaults to standard`() {
-        val sim = emptyBoardSim()
-
-        val result = SimulationEngine.runDay(sim, listOf(Decision.addItem("Task", "NONEXISTENT")), seed = 1L)
-
-        val card =
-            result.simulation.scenario.board.steps
-                .flatMap { it.cards }
-                .first()
-        assertEquals(ServiceClass.STANDARD, card.serviceClass)
     }
 
     @Test
@@ -97,7 +84,7 @@ class SimulationEngineDecisionStateTest {
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = existing))), wipLimit = 5)
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.addItem("New")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem("New")), seed = 1L)
 
         val newCard =
             result.simulation.scenario.board.steps

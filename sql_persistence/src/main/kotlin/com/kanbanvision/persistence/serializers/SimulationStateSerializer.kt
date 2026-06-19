@@ -96,9 +96,8 @@ internal data class ScenarioRulesSurrogate(
 
 @Serializable
 internal data class DecisionSurrogate(
-    val id: String,
     val type: String,
-    val payload: Map<String, String>,
+    val payload: Map<String, String> = emptyMap(),
 )
 
 @Serializable

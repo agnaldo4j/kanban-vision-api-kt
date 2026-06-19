@@ -74,7 +74,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val result =
             SimulationEngine.runDay(
                 simulation = simulation,
-                decisions = listOf(Decision.addItem(title = "Extra", serviceClass = "STANDARD")),
+                decisions = listOf(Decision.AddItem(title = "Extra")),
                 seed = 2L,
             )
 

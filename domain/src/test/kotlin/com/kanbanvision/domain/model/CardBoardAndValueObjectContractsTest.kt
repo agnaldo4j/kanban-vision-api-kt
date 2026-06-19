@@ -82,7 +82,7 @@ class CardBoardAndValueObjectContractsTest {
         val flow = FlowMetrics(id = "f-1", throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.0)
         val movement = Movement(id = "m-1", type = MovementType.MOVED, cardId = "c-1", day = SimulationDay(2), reason = "ok")
         val policy = PolicySet(id = "p-1", wipLimit = 2)
-        val decision = Decision(id = "d-1", type = DecisionType.MOVE_ITEM, payload = mapOf("cardId" to "c-1"))
+        val decision = Decision.MoveItem(cardId = "c-1")
         val snapshot =
             DailySnapshot(
                 id = "snap-1",

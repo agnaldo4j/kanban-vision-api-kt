@@ -3,22 +3,23 @@ package com.kanbanvision.domain.model
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 class DecisionSnapshotAndMetricsBehaviorTest {
     @Test
-    fun `given decision factories when creating decisions then payload and type match intent`() {
-        val move = Decision.move(cardId = "card-1")
-        val block = Decision.block(cardId = "card-2", reason = "dependency")
-        val unblock = Decision.unblock(cardId = "card-2")
-        val add = Decision.addItem(title = "New item", serviceClass = "EXPEDITE")
+    fun `given decision subtypes when creating decisions then fields match intent`() {
+        val move = Decision.MoveItem(cardId = "card-1")
+        val block = Decision.BlockItem(cardId = "card-2", reason = "dependency")
+        val unblock = Decision.UnblockItem(cardId = "card-2")
+        val add = Decision.AddItem(title = "New item", serviceClass = ServiceClass.EXPEDITE)
 
-        assertEquals(DecisionType.MOVE_ITEM, move.type)
-        assertEquals("card-1", move.payload["cardId"])
-        assertEquals(DecisionType.BLOCK_ITEM, block.type)
-        assertEquals("dependency", block.payload["reason"])
-        assertEquals(DecisionType.UNBLOCK_ITEM, unblock.type)
-        assertEquals(DecisionType.ADD_ITEM, add.type)
-        assertEquals("EXPEDITE", add.payload["serviceClass"])
+        assertIs<Decision.MoveItem>(move)
+        assertEquals("card-1", move.cardId)
+        assertIs<Decision.BlockItem>(block)
+        assertEquals("dependency", block.reason)
+        assertIs<Decision.UnblockItem>(unblock)
+        assertIs<Decision.AddItem>(add)
+        assertEquals(ServiceClass.EXPEDITE, add.serviceClass)
     }
 
     @Test

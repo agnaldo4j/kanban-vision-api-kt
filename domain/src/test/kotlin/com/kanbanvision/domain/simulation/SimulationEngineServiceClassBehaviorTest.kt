@@ -59,7 +59,7 @@ class SimulationEngineServiceClassBehaviorTest {
         val result =
             SimulationEngine.runDay(
                 simulation = simulation,
-                decisions = listOf(Decision.addItem(title = "Deadline", serviceClass = "FIXED_DATE")),
+                decisions = listOf(Decision.AddItem(title = "Deadline", serviceClass = ServiceClass.FIXED_DATE)),
                 seed = 2L,
             )
 
@@ -76,7 +76,7 @@ class SimulationEngineServiceClassBehaviorTest {
         val result =
             SimulationEngine.runDay(
                 simulation = simulation,
-                decisions = listOf(Decision.addItem(title = "Research", serviceClass = "INTANGIBLE")),
+                decisions = listOf(Decision.AddItem(title = "Research", serviceClass = ServiceClass.INTANGIBLE)),
                 seed = 2L,
             )
 

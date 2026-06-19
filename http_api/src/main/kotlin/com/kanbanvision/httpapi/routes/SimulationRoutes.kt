@@ -2,7 +2,6 @@ package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -29,8 +28,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import org.koin.ktor.ext.inject
 import org.slf4j.MDC
-import java.util.Locale
-import java.util.UUID
 
 fun Route.simulationRoutes() {
     val createSimulation: CreateSimulationUseCase by inject()
@@ -298,14 +295,13 @@ private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
             ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
     MDC.putCloseable("simulationId", simulationId).use {
         val request = receive<RunDayRequest>()
-        val decisions =
-            request.decisions.map { d ->
-                val type =
-                    runCatching { DecisionType.valueOf(d.type.uppercase(Locale.ROOT)) }.getOrElse {
-                        return@use respondWithDomainError(DomainError.ValidationError("Unknown decision type: ${d.type}"))
-                    }
-                Decision(id = UUID.randomUUID().toString(), type = type, payload = d.payload)
-            }
+        val decisions = mutableListOf<Decision>()
+        for (d in request.decisions) {
+            d.toDomain().fold(
+                ifLeft = { error -> return@use respondWithDomainError(error) },
+                ifRight = { decisions += it },
+            )
+        }
         withSpan("simulation.run_day") {
             runDay.execute(RunDayCommand(simulationId = simulationId, decisions = decisions)).fold(
                 ifLeft = { error -> respondWithDomainError(error) },

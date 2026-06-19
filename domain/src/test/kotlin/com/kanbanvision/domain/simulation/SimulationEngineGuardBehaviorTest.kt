@@ -50,7 +50,7 @@ class SimulationEngineGuardBehaviorTest {
     fun `given move decision on done card when running day then card remains done and no movement registered`() {
         val simulation = simulationWithSingleCard(cardId = "done", state = CardState.DONE)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.move("done")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("done")), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
@@ -64,7 +64,7 @@ class SimulationEngineGuardBehaviorTest {
     fun `given block decision on todo card when running day then no blocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "todo", state = CardState.TODO)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.block("todo", "reason")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem("todo", "reason")), seed = 1L)
 
         assertTrue(result.snapshot.movements.none { it.cardId == "todo" && it.type == MovementType.BLOCKED })
     }
@@ -73,7 +73,7 @@ class SimulationEngineGuardBehaviorTest {
     fun `given block decision on done card when running day then no blocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "done", state = CardState.DONE)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.block("done", "reason")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem("done", "reason")), seed = 1L)
 
         assertTrue(result.snapshot.movements.none { it.cardId == "done" && it.type == MovementType.BLOCKED })
     }
@@ -82,7 +82,7 @@ class SimulationEngineGuardBehaviorTest {
     fun `given unblock decision on in progress card when running day then no unblocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "wip", state = CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.unblock("wip")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem("wip")), seed = 1L)
 
         assertTrue(result.snapshot.movements.none { it.cardId == "wip" && it.type == MovementType.UNBLOCKED })
     }
@@ -91,7 +91,7 @@ class SimulationEngineGuardBehaviorTest {
     fun `given unblock decision on todo card when running day then no unblocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "todo", state = CardState.TODO)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.unblock("todo")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem("todo")), seed = 1L)
 
         assertTrue(result.snapshot.movements.none { it.cardId == "todo" && it.type == MovementType.UNBLOCKED })
     }

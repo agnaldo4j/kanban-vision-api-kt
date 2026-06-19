@@ -2,17 +2,35 @@ package com.kanbanvision.persistence.serializers
 
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.ScenarioRef
+import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationRef
 
-internal fun Decision.toSurrogate() = DecisionSurrogate(id = id, type = type.name, payload = payload)
+internal fun Decision.toSurrogate(): DecisionSurrogate =
+    when (this) {
+        is Decision.MoveItem -> DecisionSurrogate(type = "MOVE_ITEM", payload = mapOf("cardId" to cardId))
+        is Decision.BlockItem -> DecisionSurrogate(type = "BLOCK_ITEM", payload = mapOf("cardId" to cardId, "reason" to reason))
+        is Decision.UnblockItem -> DecisionSurrogate(type = "UNBLOCK_ITEM", payload = mapOf("cardId" to cardId))
+        is Decision.AddItem -> DecisionSurrogate(type = "ADD_ITEM", payload = mapOf("title" to title, "serviceClass" to serviceClass.name))
+    }
 
-internal fun DecisionSurrogate.toDomain() = Decision(id = id, type = DecisionType.valueOf(type), payload = payload)
+internal fun DecisionSurrogate.toDomain(): Decision =
+    when (type) {
+        "MOVE_ITEM" -> Decision.MoveItem(cardId = payload.need("cardId"))
+        "BLOCK_ITEM" -> Decision.BlockItem(cardId = payload.need("cardId"), reason = payload["reason"] ?: "blocked")
+        "UNBLOCK_ITEM" -> Decision.UnblockItem(cardId = payload.need("cardId"))
+        "ADD_ITEM" -> Decision.AddItem(title = payload.need("title"), serviceClass = surrogateServiceClass(payload))
+        else -> error("Unknown decision type: $type")
+    }
+
+private fun Map<String, String>.need(key: String): String = this[key] ?: error("Decision payload missing '$key'")
+
+private fun surrogateServiceClass(payload: Map<String, String>): ServiceClass =
+    payload["serviceClass"]?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
 
 internal fun DailySnapshot.toSurrogate() =
     DailySnapshotSurrogate(

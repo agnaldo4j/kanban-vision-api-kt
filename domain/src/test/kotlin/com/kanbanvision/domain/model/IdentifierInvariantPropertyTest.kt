@@ -43,28 +43,6 @@ class IdentifierInvariantPropertyTest {
     }
 
     @Test
-    fun `Decision rejects any blank id`() {
-        runBlocking {
-            forAll(ARB_BLANK) { blank ->
-                runCatching {
-                    Decision(id = blank, type = DecisionType.MOVE_ITEM, payload = mapOf("cardId" to "c-1"))
-                }.isFailure
-            }
-        }
-    }
-
-    @Test
-    fun `Decision accepts any non-blank id`() {
-        runBlocking {
-            forAll(ARB_NON_BLANK) { id ->
-                runCatching {
-                    Decision(id = id, type = DecisionType.MOVE_ITEM, payload = mapOf("cardId" to "c-1"))
-                }.isSuccess
-            }
-        }
-    }
-
-    @Test
     fun `DailySnapshot rejects any blank id`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->

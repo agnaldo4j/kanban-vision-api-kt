@@ -7,7 +7,6 @@ import com.kanbanvision.domain.model.BoardRef
 import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.DailySnapshot
 import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.DecisionType
 import com.kanbanvision.domain.model.FlowMetrics
 import com.kanbanvision.domain.model.Movement
 import com.kanbanvision.domain.model.MovementType
@@ -212,12 +211,7 @@ internal object PersistenceFixtures {
             seedValue = 42L,
         )
 
-    private fun scenarioDecision() =
-        Decision(
-            id = "90000000-0000-0000-0000-000000000001",
-            type = DecisionType.MOVE_ITEM,
-            payload = mapOf("cardId" to "c-1"),
-        )
+    private fun scenarioDecision() = Decision.MoveItem(cardId = "c-1")
 
     private fun sampleOrganization(
         organizationId: String,

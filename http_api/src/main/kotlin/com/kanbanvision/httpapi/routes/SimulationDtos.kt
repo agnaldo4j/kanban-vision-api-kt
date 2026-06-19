@@ -1,10 +1,17 @@
 package com.kanbanvision.httpapi.routes
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.DailySnapshot
+import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.ServiceClass
 import com.kanbanvision.domain.model.Simulation
 import com.kanbanvision.usecases.Page
 import com.kanbanvision.usecases.simulation.CfdResult
 import kotlinx.serialization.Serializable
+import java.util.Locale
 
 @Serializable
 data class CreateSimulationRequest(
@@ -183,6 +190,38 @@ internal fun CfdResult.toResponse() =
                 )
             },
     )
+
+internal fun DecisionRequest.toDomain(): Either<DomainError, Decision> =
+    when (type.uppercase(Locale.ROOT)) {
+        "MOVE_ITEM" -> toMoveDecision()
+        "BLOCK_ITEM" -> toBlockDecision()
+        "UNBLOCK_ITEM" -> toUnblockDecision()
+        "ADD_ITEM" -> toAddDecision()
+        else -> DomainError.InvalidDecision("Unknown decision type: $type").left()
+    }
+
+private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveItem> =
+    payload["cardId"]
+        ?.let { Decision.MoveItem(it).right() }
+        ?: DomainError.InvalidDecision("Missing required field 'cardId' for MOVE_ITEM").left()
+
+private fun DecisionRequest.toBlockDecision(): Either<DomainError, Decision.BlockItem> =
+    payload["cardId"]
+        ?.let { Decision.BlockItem(it, payload["reason"] ?: "blocked").right() }
+        ?: DomainError.InvalidDecision("Missing required field 'cardId' for BLOCK_ITEM").left()
+
+private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.UnblockItem> =
+    payload["cardId"]
+        ?.let { Decision.UnblockItem(it).right() }
+        ?: DomainError.InvalidDecision("Missing required field 'cardId' for UNBLOCK_ITEM").left()
+
+private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
+    payload["title"]
+        ?.let { Decision.AddItem(it, decisionServiceClass(payload["serviceClass"])).right() }
+        ?: DomainError.InvalidDecision("Missing required field 'title' for ADD_ITEM").left()
+
+private fun decisionServiceClass(value: String?): ServiceClass =
+    value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
 
 internal fun Simulation.toSimulationResponse(): SimulationResponse {
     val cardCount = scenario.board.steps.sumOf { it.cards.size }

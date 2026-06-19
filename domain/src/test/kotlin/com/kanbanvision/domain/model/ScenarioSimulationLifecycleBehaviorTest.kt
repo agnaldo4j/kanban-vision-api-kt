@@ -40,7 +40,7 @@ class ScenarioSimulationLifecycleBehaviorTest {
     @Test
     fun `given scenario when appending decision and snapshot then history grows consistently`() {
         val scenario = scenario()
-        val decision = Decision.move(cardId = "card-1")
+        val decision = Decision.MoveItem(cardId = "card-1")
         val snapshot =
             DailySnapshot(
                 simulation = SimulationRef("sim-1"),
@@ -54,12 +54,7 @@ class ScenarioSimulationLifecycleBehaviorTest {
 
         assertEquals(1, updated.decisions.size)
         assertEquals(1, updated.history.size)
-        assertTrue(
-            updated.decisions
-                .first()
-                .payload
-                .containsKey("cardId"),
-        )
+        assertTrue(updated.decisions.first() is Decision.MoveItem)
     }
 
     @Test
