@@ -2,6 +2,7 @@ package com.kanbanvision.domain.model.organization
 
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.ScenarioRef
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision
@@ -36,6 +37,8 @@ data class Scenario(
             )
         }
     }
+
+    fun toRef(): ScenarioRef = ScenarioRef(id = id)
 
     fun appendDecision(decision: Decision): Scenario = copy(decisions = decisions + decision)
 

@@ -14,7 +14,6 @@ import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationResult
-import com.kanbanvision.domain.model.toRef
 import java.time.Instant
 import kotlin.random.Random
 
