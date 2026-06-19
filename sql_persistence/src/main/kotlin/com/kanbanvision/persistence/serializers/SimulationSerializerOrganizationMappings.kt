@@ -1,15 +1,15 @@
 package com.kanbanvision.persistence.serializers
 
-import com.kanbanvision.domain.model.Ability
-import com.kanbanvision.domain.model.AbilityName
-import com.kanbanvision.domain.model.Organization
-import com.kanbanvision.domain.model.Seniority
-import com.kanbanvision.domain.model.Simulation
-import com.kanbanvision.domain.model.SimulationDay
-import com.kanbanvision.domain.model.SimulationStatus
-import com.kanbanvision.domain.model.Squad
-import com.kanbanvision.domain.model.Tribe
-import com.kanbanvision.domain.model.Worker
+import com.kanbanvision.domain.model.kanban.Ability
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.kanban.Worker
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Squad
+import com.kanbanvision.domain.model.organization.Tribe
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 
 internal fun Simulation.toSurrogate() =
     SimulationSurrogate(

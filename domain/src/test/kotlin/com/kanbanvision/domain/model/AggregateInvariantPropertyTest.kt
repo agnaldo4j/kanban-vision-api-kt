@@ -1,5 +1,8 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Squad
+import com.kanbanvision.domain.model.organization.Tribe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.of

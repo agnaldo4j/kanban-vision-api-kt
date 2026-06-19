@@ -1,6 +1,6 @@
 package com.kanbanvision.usecases.ports
 
-import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.usecases.simulation.fixtureSimulation
 import kotlin.test.Test
 import kotlin.test.assertEquals

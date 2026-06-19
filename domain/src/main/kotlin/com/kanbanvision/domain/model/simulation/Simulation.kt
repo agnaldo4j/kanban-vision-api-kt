@@ -1,5 +1,9 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.simulation
 
+import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Scenario
 import java.util.UUID
 
 data class Simulation(

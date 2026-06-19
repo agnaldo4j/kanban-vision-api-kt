@@ -4,11 +4,11 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.events.DomainEvent
-import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Scenario
-import com.kanbanvision.domain.model.ScenarioRules
-import com.kanbanvision.domain.model.Simulation
-import com.kanbanvision.domain.model.SimulationStatus
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.organization.Scenario
+import com.kanbanvision.domain.model.organization.ScenarioRules
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.SimulationRepository

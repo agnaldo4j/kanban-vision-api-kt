@@ -1,5 +1,10 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.organization
 
+import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.Decision
 import java.util.UUID
 
 data class Scenario(

@@ -1,5 +1,10 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.organization.Scenario
+import com.kanbanvision.domain.model.simulation.Simulation
+
 data class BoardRef(
     val id: String,
 ) {

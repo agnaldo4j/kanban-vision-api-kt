@@ -1,4 +1,4 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.kanban
 
 /**
  * The four service classes defined by Mike Burrows in *Kanban from the Inside*.

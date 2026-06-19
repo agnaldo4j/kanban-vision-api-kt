@@ -5,7 +5,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.events.DomainEvent
-import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.repositories.OrganizationRepository
 import com.kanbanvision.usecases.repositories.SimulationRepository

@@ -3,7 +3,7 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.FlowMetrics
+import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.httpapi.fixtureSimulation
 import com.kanbanvision.httpapi.fixtureSnapshot
 import com.kanbanvision.httpapi.plugins.configureSerialization

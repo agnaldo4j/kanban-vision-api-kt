@@ -1,5 +1,8 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.organization
 
+import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.kanban.Worker
 import java.util.UUID
 
 data class Squad(

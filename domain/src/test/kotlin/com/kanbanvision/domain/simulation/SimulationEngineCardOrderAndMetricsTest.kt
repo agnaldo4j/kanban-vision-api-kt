@@ -1,19 +1,19 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.Ability
-import com.kanbanvision.domain.model.AbilityName
-import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.CardState
-import com.kanbanvision.domain.model.Organization
-import com.kanbanvision.domain.model.Scenario
-import com.kanbanvision.domain.model.ScenarioRules
-import com.kanbanvision.domain.model.Seniority
-import com.kanbanvision.domain.model.ServiceClass
-import com.kanbanvision.domain.model.Simulation
-import com.kanbanvision.domain.model.SimulationStatus
 import com.kanbanvision.domain.model.StepRef
-import com.kanbanvision.domain.model.Worker
+import com.kanbanvision.domain.model.kanban.Ability
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardState
+import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.kanban.Worker
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Scenario
+import com.kanbanvision.domain.model.organization.ScenarioRules
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

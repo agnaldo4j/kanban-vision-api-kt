@@ -1,14 +1,14 @@
 package com.kanbanvision.persistence.serializers
 
-import com.kanbanvision.domain.model.DailySnapshot
-import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.FlowMetrics
-import com.kanbanvision.domain.model.Movement
-import com.kanbanvision.domain.model.MovementType
 import com.kanbanvision.domain.model.ScenarioRef
-import com.kanbanvision.domain.model.ServiceClass
-import com.kanbanvision.domain.model.SimulationDay
 import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.domain.model.simulation.Movement
+import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.SimulationDay
 
 internal fun Decision.toSurrogate(): DecisionSurrogate =
     when (this) {

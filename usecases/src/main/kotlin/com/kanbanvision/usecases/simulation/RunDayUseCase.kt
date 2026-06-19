@@ -5,10 +5,10 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.events.DomainEvent
-import com.kanbanvision.domain.model.DailySnapshot
-import com.kanbanvision.domain.model.MovementType
-import com.kanbanvision.domain.model.Simulation
-import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.SimulationRepository

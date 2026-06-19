@@ -4,8 +4,8 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.DailySnapshot
-import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
 import com.kanbanvision.usecases.timed

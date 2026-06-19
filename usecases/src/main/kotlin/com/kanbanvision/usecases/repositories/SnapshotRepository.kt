@@ -2,8 +2,8 @@ package com.kanbanvision.usecases.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.DailySnapshot
-import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.SimulationDay
 
 interface SnapshotRepository {
     suspend fun save(snapshot: DailySnapshot): Either<DomainError, DailySnapshot>

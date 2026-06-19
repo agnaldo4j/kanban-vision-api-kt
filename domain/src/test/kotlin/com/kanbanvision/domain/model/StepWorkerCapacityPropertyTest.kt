@@ -1,5 +1,10 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.Ability
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.kanban.Worker
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.int

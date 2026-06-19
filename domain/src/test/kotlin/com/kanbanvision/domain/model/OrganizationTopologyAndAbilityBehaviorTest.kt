@@ -1,5 +1,13 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.Ability
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.kanban.Worker
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Squad
+import com.kanbanvision.domain.model.organization.Tribe
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals

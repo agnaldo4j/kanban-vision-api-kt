@@ -1,5 +1,12 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Scenario
+import com.kanbanvision.domain.model.organization.ScenarioRules
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals

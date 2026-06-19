@@ -1,8 +1,8 @@
 package com.kanbanvision.usecases.ports
 
-import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.Simulation
-import com.kanbanvision.domain.model.SimulationResult
+import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationResult
 
 /**
  * Boundary that executes one simulation day from the use case layer.

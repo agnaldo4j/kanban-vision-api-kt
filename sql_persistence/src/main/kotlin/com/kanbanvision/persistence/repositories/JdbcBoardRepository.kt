@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Audit
-import com.kanbanvision.domain.model.Board
+import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.persistence.dbQuery
 import com.kanbanvision.persistence.tables.BoardsTable
 import com.kanbanvision.usecases.repositories.BoardRepository

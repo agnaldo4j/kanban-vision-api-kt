@@ -3,7 +3,7 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
 import io.mockk.Called

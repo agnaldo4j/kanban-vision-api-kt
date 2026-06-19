@@ -2,8 +2,8 @@ package com.kanbanvision.persistence.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.DailySnapshot
-import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.persistence.dbQuery
 import com.kanbanvision.persistence.serializers.DailySnapshotSerializer
 import com.kanbanvision.persistence.tables.DailySnapshotsTable

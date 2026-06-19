@@ -1,9 +1,9 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Movement
-import com.kanbanvision.domain.model.MovementType
-import com.kanbanvision.domain.model.SimulationDay
+import com.kanbanvision.domain.model.simulation.Movement
+import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.fixtureSimulation
 import com.kanbanvision.httpapi.fixtureSnapshot
