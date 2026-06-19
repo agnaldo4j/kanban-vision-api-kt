@@ -4,9 +4,9 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.events.DomainEvent
-import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.SimulationDay
-import com.kanbanvision.domain.model.SimulationResult
+import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationResult
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.SimulationRepository

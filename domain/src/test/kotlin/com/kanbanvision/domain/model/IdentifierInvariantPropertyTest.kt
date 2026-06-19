@@ -1,5 +1,13 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.Ability
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.domain.model.simulation.Movement
+import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.of

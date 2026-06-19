@@ -1,4 +1,4 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.kanban
 
 enum class AbilityName {
     PRODUCT_MANAGER,

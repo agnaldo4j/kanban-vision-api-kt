@@ -4,8 +4,8 @@ import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.Audit
-import com.kanbanvision.domain.model.Card
 import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.persistence.dbQuery
 import com.kanbanvision.persistence.tables.CardsTable
 import com.kanbanvision.usecases.repositories.CardRepository

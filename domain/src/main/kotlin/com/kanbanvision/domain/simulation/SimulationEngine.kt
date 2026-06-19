@@ -1,20 +1,19 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.Board
-import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.CardState
-import com.kanbanvision.domain.model.DailySnapshot
-import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.FlowMetrics
-import com.kanbanvision.domain.model.Movement
-import com.kanbanvision.domain.model.MovementType
-import com.kanbanvision.domain.model.ServiceClass
-import com.kanbanvision.domain.model.Simulation
-import com.kanbanvision.domain.model.SimulationDay
-import com.kanbanvision.domain.model.SimulationResult
-import com.kanbanvision.domain.model.Step
-import com.kanbanvision.domain.model.Worker
-import com.kanbanvision.domain.model.toRef
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardState
+import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.kanban.Worker
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.domain.model.simulation.Movement
+import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationResult
 import java.time.Instant
 import kotlin.random.Random
 

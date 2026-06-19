@@ -2,13 +2,13 @@ package com.kanbanvision.persistence.repositories
 
 import arrow.core.getOrElse
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.AbilityName
 import com.kanbanvision.domain.model.Audit
-import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.BoardRef
-import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.Step
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll

@@ -1,4 +1,4 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.simulation
 
 enum class SimulationStatus {
     DRAFT,

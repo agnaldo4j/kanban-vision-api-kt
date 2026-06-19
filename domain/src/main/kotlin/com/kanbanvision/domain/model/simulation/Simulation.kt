@@ -1,5 +1,10 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.simulation
 
+import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.Scenario
 import java.util.UUID
 
 data class Simulation(
@@ -34,6 +39,8 @@ data class Simulation(
             )
         }
     }
+
+    fun toRef(): SimulationRef = SimulationRef(id = id)
 
     fun withStatus(newStatus: SimulationStatus): Simulation = copy(status = newStatus)
 

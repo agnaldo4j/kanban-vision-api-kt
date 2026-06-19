@@ -1,5 +1,13 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.Ability
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardState
+import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.kanban.Worker
 import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test

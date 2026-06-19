@@ -1,5 +1,18 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.PolicySet
+import com.kanbanvision.domain.model.organization.Scenario
+import com.kanbanvision.domain.model.organization.ScenarioRules
+import com.kanbanvision.domain.model.organization.Squad
+import com.kanbanvision.domain.model.organization.Tribe
+import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.domain.model.simulation.Movement
+import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

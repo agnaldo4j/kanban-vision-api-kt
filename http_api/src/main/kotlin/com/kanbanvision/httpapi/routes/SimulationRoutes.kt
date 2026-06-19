@@ -1,7 +1,7 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Decision
+import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse

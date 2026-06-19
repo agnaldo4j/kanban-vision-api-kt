@@ -2,7 +2,7 @@ package com.kanbanvision.usecases.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Step
+import com.kanbanvision.domain.model.kanban.Step
 
 interface StepRepository {
     suspend fun save(step: Step): Either<DomainError, Step>

@@ -1,6 +1,6 @@
 package com.kanbanvision.persistence.serializers
 
-import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.domain.model.simulation.Simulation
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString

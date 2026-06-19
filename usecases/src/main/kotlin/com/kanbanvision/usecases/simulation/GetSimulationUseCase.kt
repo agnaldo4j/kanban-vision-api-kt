@@ -3,7 +3,7 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationQuery
 import com.kanbanvision.usecases.timed

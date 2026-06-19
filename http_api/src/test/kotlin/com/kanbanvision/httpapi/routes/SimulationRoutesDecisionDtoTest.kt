@@ -1,8 +1,8 @@
 package com.kanbanvision.httpapi.routes
 
 import arrow.core.right
-import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.ServiceClass
+import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.httpapi.fixtureSnapshot
 import com.kanbanvision.httpapi.withJwt
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand

@@ -1,5 +1,9 @@
-package com.kanbanvision.domain.model
+package com.kanbanvision.domain.model.kanban
 
+import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.model.BoardRef
+import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.StepRef
 import java.time.Instant
 import java.util.UUID
 
@@ -56,6 +60,8 @@ data class Step(
         require(workers.none { it.id == worker.id }) { "Worker '${worker.name}' is already assigned to step '$name'" }
         return copy(workers = workers + worker)
     }
+
+    fun toRef(): StepRef = StepRef(id = id)
 
     fun unassignWorker(workerId: String): Step = copy(workers = workers.filterNot { it.id == workerId })
 

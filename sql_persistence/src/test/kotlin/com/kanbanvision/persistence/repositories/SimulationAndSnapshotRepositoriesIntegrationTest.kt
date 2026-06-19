@@ -2,8 +2,8 @@ package com.kanbanvision.persistence.repositories
 
 import arrow.core.getOrElse
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.SimulationDay
-import com.kanbanvision.domain.model.SimulationStatus
+import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import com.kanbanvision.persistence.support.PersistenceFixtures
 import kotlinx.coroutines.runBlocking

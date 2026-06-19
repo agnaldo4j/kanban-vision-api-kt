@@ -31,11 +31,3 @@ data class ScenarioRef(
         require(id.isNotBlank()) { "ScenarioRef id must not be blank" }
     }
 }
-
-fun Board.toRef(): BoardRef = BoardRef(id = id)
-
-fun Step.toRef(): StepRef = StepRef(id = id)
-
-fun Simulation.toRef(): SimulationRef = SimulationRef(id = id)
-
-fun Scenario.toRef(): ScenarioRef = ScenarioRef(id = id)

@@ -2,7 +2,7 @@ package com.kanbanvision.usecases.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.domain.model.simulation.Simulation
 
 interface SimulationRepository {
     suspend fun save(simulation: Simulation): Either<DomainError, Simulation>

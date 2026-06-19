@@ -1,5 +1,8 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

@@ -1,8 +1,8 @@
 package com.kanbanvision.persistence.serializers
 
-import com.kanbanvision.domain.model.Decision
-import com.kanbanvision.domain.model.ServiceClass
-import com.kanbanvision.domain.model.Simulation
+import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.persistence.support.PersistenceFixtures
 import kotlin.test.Test
 import kotlin.test.assertEquals

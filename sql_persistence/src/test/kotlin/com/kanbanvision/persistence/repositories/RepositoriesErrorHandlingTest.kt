@@ -1,13 +1,13 @@
 package com.kanbanvision.persistence.repositories
 
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.AbilityName
-import com.kanbanvision.domain.model.Board
 import com.kanbanvision.domain.model.BoardRef
-import com.kanbanvision.domain.model.Card
-import com.kanbanvision.domain.model.SimulationDay
-import com.kanbanvision.domain.model.Step
 import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.kanban.AbilityName
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import com.kanbanvision.persistence.support.PersistenceFixtures
