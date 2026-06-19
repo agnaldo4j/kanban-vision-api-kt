@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import java.time.Instant
 import java.util.UUID
 
 data class Step(
@@ -62,6 +63,7 @@ data class Step(
         worker: Worker,
         card: Card,
         dailyCapacities: Map<AbilityName, Int>,
+        now: Instant,
     ): ExecutionResult {
         require(canAssign(worker)) {
             "Worker '${worker.name}' cannot execute step '$name' (required ability: $requiredAbility)"
@@ -79,7 +81,7 @@ data class Step(
                 else -> minOf(remaining, available.coerceAtLeast(0))
             }
 
-        val updated = card.consumeEffort(requiredAbility, consumed)
+        val updated = card.consumeEffort(requiredAbility, consumed, now)
         return ExecutionResult(
             updatedCard = updated,
             consumedEffort = consumed,

@@ -8,6 +8,7 @@ import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
 import io.kotest.property.forAll
 import kotlinx.coroutines.runBlocking
+import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -99,7 +100,7 @@ class CardWorkerBehaviorPropertyTest {
                         deployEffort = effort,
                         remainingDeployEffort = effort,
                     )
-                assertTrue(card.consumeEffort(ability, points).remainingEffortFor(ability) >= 0)
+                assertTrue(card.consumeEffort(ability, points, Instant.EPOCH).remainingEffortFor(ability) >= 0)
             }
         }
     }

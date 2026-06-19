@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -19,16 +20,16 @@ class CardBoardAndValueObjectContractsTest {
                 deployEffort = 5,
             )
 
-        val afterAnalysis = card.consumeEffort(AbilityName.PRODUCT_MANAGER, 1)
-        val afterDevelopment = card.consumeEffort(AbilityName.DEVELOPER, 1)
-        val afterTest = card.consumeEffort(AbilityName.TESTER, 2)
-        val afterDeploy = card.consumeEffort(AbilityName.DEPLOYER, 3)
+        val afterAnalysis = card.consumeEffort(AbilityName.PRODUCT_MANAGER, 1, Instant.EPOCH)
+        val afterDevelopment = card.consumeEffort(AbilityName.DEVELOPER, 1, Instant.EPOCH)
+        val afterTest = card.consumeEffort(AbilityName.TESTER, 2, Instant.EPOCH)
+        val afterDeploy = card.consumeEffort(AbilityName.DEPLOYER, 3, Instant.EPOCH)
 
         assertEquals(1, afterAnalysis.remainingAnalysisEffort)
         assertEquals(2, afterDevelopment.remainingDevelopmentEffort)
         assertEquals(2, afterTest.remainingTestEffort)
         assertEquals(2, afterDeploy.remainingDeployEffort)
-        assertFailsWith<IllegalArgumentException> { card.consumeEffort(AbilityName.DEVELOPER, -1) }
+        assertFailsWith<IllegalArgumentException> { card.consumeEffort(AbilityName.DEVELOPER, -1, Instant.EPOCH) }
     }
 
     @Test
