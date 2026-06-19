@@ -11,7 +11,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation("com.zaxxer:HikariCP:7.0.2")
-    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("org.postgresql:postgresql:42.7.11")
     implementation("org.flywaydb:flyway-core:12.8.1")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:12.8.1")
     implementation("ch.qos.logback:logback-classic:1.5.34")
