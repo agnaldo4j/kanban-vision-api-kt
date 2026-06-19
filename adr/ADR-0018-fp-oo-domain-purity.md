@@ -2,14 +2,15 @@
 
 ## Cabeçalho
 
-| Campo     | Valor                                                            |
-|-----------|------------------------------------------------------------------|
-| Status    | Implementada ✅                                                  |
-| Data      | 2026-06-12                                                       |
-| Conclusão | 2026-06-19 — GAP-AA #160, GAP-AB #166, GAP-AC #168, GAP-AD #169 |
-| Autores   | @agnaldo4j                                                       |
-| Branch    | —                                                                |
-| Supersede | —                                                                |
+| Campo     | Valor                                                                        |
+|-----------|------------------------------------------------------------------------------|
+| Status    | Aceita                                                                       |
+| Data      | 2026-06-12                                                                   |
+| Execução  | 2026-06-19 ✅ — GAP-AA #160, GAP-AB #166, GAP-AC #168, GAP-AD #169          |
+| Autores   | @agnaldo4j                                                                   |
+| Branch    | docs/adr-0018-implementada                                                   |
+| PR        | https://github.com/agnaldo4j/kanban-vision-api-kt/pull/170                  |
+| Supersede | —                                                                            |
 
 ---
 
