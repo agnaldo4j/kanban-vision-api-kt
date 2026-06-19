@@ -4,8 +4,9 @@
 
 | Campo     | Valor                                                            |
 |-----------|------------------------------------------------------------------|
-| Status    | Aceita                                                           |
+| Status    | Implementada ✅                                                  |
 | Data      | 2026-06-12                                                       |
+| Conclusão | 2026-06-19 — GAP-AA #160, GAP-AB #166, GAP-AC #168, GAP-AD #169 |
 | Autores   | @agnaldo4j                                                       |
 | Branch    | —                                                                |
 | Supersede | —                                                                |
@@ -205,12 +206,12 @@ Após a mudança, o PITest score deve subir: null-guards eliminados → mutantes
 
 ## Execução por sessão (protocolo 1-gap-por-sessão)
 
-| Sessão | Gap | Tipo | Dependência | Branch sugerida |
-|---|---|---|---|---|
-| 1 | GAP-AA | N | nenhuma | `feat/gap-aa-service-class-scheduling` |
-| 2 | GAP-AB | N | nenhuma | `feat/gap-ab-card-consume-effort-pure` |
-| 3 | GAP-AC | N | nenhuma | `feat/gap-ac-engine-context-immutable` |
-| 4 | GAP-AD | M | GAP-AA e GAP-AC recomendados antes | `feat/gap-ad-decision-sealed-hierarchy` |
+| Sessão | Gap | Tipo | Dependência | Branch | PR |
+|---|---|---|---|---|---|
+| 1 | GAP-AA | N | nenhuma | `feat/gap-aa-service-class-scheduling` | #160 ✅ |
+| 2 | GAP-AB | N | nenhuma | `feat/gap-ab-card-consume-effort-pure` | #166 ✅ |
+| 3 | GAP-AC | N | nenhuma | `feat/gap-ac-engine-context-immutable` | #168 ✅ |
+| 4 | GAP-AD | M | GAP-AA e GAP-AC recomendados antes | `feat/gap-ad-decision-sealed-hierarchy` | #169 ✅ |
 
 GAP-AA e GAP-AC podem ser executados em qualquer ordem independentemente.
 GAP-AD é recomendado após GAP-AC porque ambos tocam `SimulationEngine.kt` — fazê-los em
