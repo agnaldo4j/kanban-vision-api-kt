@@ -6,12 +6,15 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeStringUtf8
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -84,4 +87,34 @@ class RequestLimitsPluginTest {
             }
             assertEquals(HttpStatusCode.OK, client.get("/test").status)
         }
+
+    @Test
+    fun `POST without Content-Length header returns 413 regardless of body size`() =
+        testApplication {
+            application {
+                configureRequestLimits(maxBodySize = 100_000L)
+                routing { post("/test") { call.respondText("ok") } }
+            }
+            // Body sent without Content-Length (e.g. chunked transfer) is always rejected
+            val response =
+                client.post("/test") {
+                    setBody(
+                        object : OutgoingContent.WriteChannelContent() {
+                            override val contentType = ContentType.Application.Json
+                            override val contentLength: Long? = null
+
+                            override suspend fun writeTo(channel: ByteWriteChannel) {
+                                channel.writeStringUtf8("""{"x": "y"}""")
+                            }
+                        },
+                    )
+                }
+            assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
+        }
+
+    @Test
+    fun `loadMaxBodySize falls back to default when env var is zero or negative`() {
+        assertEquals(DEFAULT_MAX_BODY_SIZE, loadMaxBodySize { "0" })
+        assertEquals(DEFAULT_MAX_BODY_SIZE, loadMaxBodySize { "-512" })
+    }
 }
