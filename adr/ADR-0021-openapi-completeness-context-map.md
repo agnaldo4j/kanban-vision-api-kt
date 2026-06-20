@@ -169,7 +169,7 @@ graph LR
 
 ## Referências
 
-- ktor-openapi DSL: https://github.com/LukasForst/ktor-openapi-tools
+- ktor-openapi DSL: https://github.com/smiley4/ktor-openapi (`io.github.smiley4:ktor-openapi`) — biblioteca usada no projeto
 - Mermaid: https://mermaid.js.org/
 - Evans, Eric. *Domain-Driven Design*. Addison-Wesley, 2003 — capítulo Context Maps
 - Burrows, Mike. *Kanban From the Inside*. Blue Hole Press, 2014

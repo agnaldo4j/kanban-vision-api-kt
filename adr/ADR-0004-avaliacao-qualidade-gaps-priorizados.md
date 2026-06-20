@@ -424,10 +424,10 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 | ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | ✅ Aceita  |
 | ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Descartada (condição não atingida — build 16s < 2min) |
 | ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | PRs #87–#91 (Step)   | ✅ Aceita  |
-| ADR-0019  | GAP-AG/AH/AI | HTTP Security Hardening (CORS + payload + headers) | — | Pendente |
-| ADR-0020  | GAP-AJ | Circuit Breaker para DB (resilience4j)  | —                    | Pendente  |
-| ADR-0021  | GAP-AK/AM | OpenAPI Completeness + Context Map     | —                    | Pendente  |
-| ADR-0022  | GAP-AL | API Versioning Strategy (v1/v2)         | —                    | Pendente  |
+| ADR-0019  | GAP-AG/AH/AI | HTTP Security Hardening (CORS + payload + headers) | — | ✅ Aceita |
+| ADR-0020  | GAP-AJ | Circuit Breaker para DB (resilience4j)  | —                    | ✅ Aceita  |
+| ADR-0021  | GAP-AK/AM | OpenAPI Completeness + Context Map     | —                    | ✅ Aceita  |
+| ADR-0022  | GAP-AL | API Versioning Strategy (v1/v2)         | —                    | ✅ Aceita  |
 
 > **Como usar esta tabela:** antes de executar qualquer gap `E`, abra uma sessão LLM
 > dedicada para escrever a ADR correspondente. Só após a ADR estar merged inicie a

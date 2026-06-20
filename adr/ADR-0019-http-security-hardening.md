@@ -63,7 +63,7 @@ fun Application.configureCors() {
         ?: emptyList()
 
     install(CORS) {
-        allowedOrigins.forEach { allowHost(it) }
+        allowOrigins { origin -> origin in allowedOrigins }
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
         allowMethod(HttpMethod.Options)
@@ -77,10 +77,12 @@ fun Application.configureCors() {
 
 **Razões:**
 - `anyHost()` é explicitamente proibido pela regra security.md (OWASP A05)
+- `allowOrigins { }` aceita a URL completa da origin (ex.: `http://localhost:3000`, `https://app.example.com`), compatível com o header `Origin` que o browser envia — evita erro de runtime com `allowHost` que espera host sem scheme
 - Origens via env var permite configuração diferente por ambiente (dev vs prod) sem recompilação
 - Se `CORS_ALLOWED_ORIGINS` não estiver definida, nenhuma origem cross-origin é permitida (fail closed)
+- Valor do env var: URL completa com scheme, ex.: `CORS_ALLOWED_ORIGINS=http://localhost:3000,https://app.example.com`
 
-**Alternativa descartada:** lista hardcoded de origens — viola o princípio de não ter configuração de ambiente no código.
+**Alternativa descartada:** `allowHost(host, schemes)` — requer parse da URL para separar host de scheme; `allowOrigins { }` é mais simples e menos propenso a erro de implementação.
 
 ### GAP-AH — Payload Size Limit
 
@@ -157,7 +159,7 @@ fun Application.configureSecurityHeaders() {
 2. Criar `http_api/src/main/kotlin/com/kanbanvision/httpapi/plugins/RequestLimits.kt`
 3. Criar `http_api/src/main/kotlin/com/kanbanvision/httpapi/plugins/SecurityHeaders.kt`
 4. Instalar os 3 plugins em `Application.kt` (função `configurePlugins()`)
-5. Adicionar `CORS_ALLOWED_ORIGINS` e `MAX_REQUEST_BODY_SIZE` ao `docker-compose.yml` (dev: `http://localhost:3000`) e ao K8s ConfigMap (`k8s/02-configmap.yml`)
+5. Adicionar `CORS_ALLOWED_ORIGINS` e `MAX_REQUEST_BODY_SIZE` ao `docker-compose.yml` (dev: `CORS_ALLOWED_ORIGINS=http://localhost:3000` — URL completa com scheme) e ao K8s ConfigMap (`k8s/02-configmap.yml`)
 6. Testes: `testApplication { }` verificando headers de resposta e rejeição de origem não permitida
 7. Verificar JaCoCo ≥ 97% e Detekt 0
 

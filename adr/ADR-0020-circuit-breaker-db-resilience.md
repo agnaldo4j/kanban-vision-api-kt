@@ -92,6 +92,30 @@ class CircuitBreakerDataSource(
 }
 ```
 
+> **Escopo e limitação:** `CircuitBreakerDataSource` interceta apenas o checkout de conexão do
+> pool — protege contra exaustão do pool HikariCP (quando todas as conexões estão bloqueadas
+> aguardando o banco). Porém, se o PostgreSQL aceita a conexão mas executa queries lentamente
+> (ex.: lock contention, full table scan), o `getConnection()` retorna rápido e o circuito
+> **não abre** para esse cenário.
+>
+> Para proteção completa contra queries lentas, os repositórios devem também envolver o bloco
+> `transaction { }` com `circuitBreaker.executeSupplier { }`:
+>
+> ```kotlin
+> // Exemplo em JdbcSimulationRepository.kt
+> fun save(simulation: Simulation): Either<DomainError, Unit> =
+>     either {
+>         catch({
+>             circuitBreaker.executeSupplier {
+>                 transaction { SimulationsTable.insert { /* ... */ } }
+>             }
+>         }) { e -> raise(DomainError.PersistenceError(e.message ?: "DB error")) }
+>     }
+> ```
+>
+> A implementação do GAP-AJ deve incluir ambas as camadas: `CircuitBreakerDataSource` como
+> proteção de pool + injeção do `CircuitBreaker` nos repositórios para proteção de operação.
+
 ### Configuração do Circuit Breaker
 
 ```kotlin

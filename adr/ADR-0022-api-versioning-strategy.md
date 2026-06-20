@@ -86,7 +86,7 @@ v1 deprecated → suporte garantido por 12 meses após lançamento de v2
 v1 removed    → após 12 meses de deprecação; comunicado com 90 dias de antecedência
 ```
 
-Header de deprecação (adicionado automaticamente pelo `SecurityHeaders.kt` quando versão é deprecada):
+Header de deprecação (adicionado por um plugin dedicado `VersioningHeaders.kt`, não em `SecurityHeaders.kt` — responsabilidades separadas):
 ```
 Deprecation: true
 Sunset: <data de remoção em RFC7231>
@@ -99,57 +99,60 @@ Link: </api/v2>; rel="successor-version"
 
 ```kotlin
 // http_api/src/main/kotlin/com/kanbanvision/httpapi/plugins/Routing.kt
-fun Application.configureRouting(
-    boardRepository: BoardRepository,
-    simulationRepository: SimulationRepository,
-    // ...
-) {
+// Implementação real — repositórios injetados via Koin, não como parâmetros
+fun Application.configureRouting() {
     routing {
-        route("/api/v1") {
-            authenticate("jwt-auth") {
-                boardRoutes(boardRepository)
-                simulationRoutes(simulationRepository)
-                simulationAnalyticsRoutes(simulationRepository)
+        // Rotas operacionais — INTENCIONALMENTE fora de /api/v1
+        // /health/live e /health/ready são usados por Kubernetes probes
+        // /metrics é usado pelo Prometheus scraping
+        healthRoutes(::isDatabaseReady)
+
+        authenticate("jwt-auth") {
+            route("/api/v1") {
+                simulationRoutes()
+                // v2 será adicionado aqui quando necessário:
+                // route("/api/v2") { simulationRoutesV2() }
             }
         }
-        // v2 será adicionado aqui quando necessário:
-        // route("/api/v2") { ... }
-
-        // Rotas sem versão (public):
-        healthRoutes(healthCheckUseCase)
-        get("/metrics") { /* Prometheus */ }
     }
 }
 ```
+
+> **Nota:** `/health/*` e `/metrics` são intencionalmente expostos fora do prefixo `/api/v1`.
+> São endpoints operacionais, não recursos de negócio da API — devem permanecer em `/` para
+> compatibilidade com a configuração Kubernetes (`Deployment.livenessProbe`, `readinessProbe`)
+> e Prometheus (`scrape_configs`). O passo 5 do Plano de Implementação aplica-se apenas a rotas
+> de negócio, não a endpoints operacionais.
 
 **Spec OpenAPI por versão:**
 
 ```kotlin
 // http_api/src/main/kotlin/com/kanbanvision/httpapi/plugins/OpenApi.kt
+// Usa io.github.smiley4.ktoropenapi.OpenApi — API real do projeto
 fun Application.configureOpenApi() {
-    install(OpenApiPlugin) {
-        openApiSpec {
-            info {
-                title = "Kanban Vision API"
-                version = "1.0.0"
-                description = "Kanban simulation and analytics API"
-            }
-            servers {
-                server { url = "/api/v1"; description = "Version 1 (current)" }
+    install(OpenApi) {
+        info {
+            title = "Kanban Vision API"
+            version = "1.0.0"
+            summary = "API REST para simulação e gerenciamento de quadros Kanban"
+        }
+        // Adicionar bloco servers para documentar versão explicitamente:
+        servers {
+            server {
+                url = "/api/v1"
+                description = "Version 1 (current)"
             }
         }
-        swaggerUI { path = "/swagger" }
+        // demais configurações existentes (tags, security) inalteradas
+    }
+    routing {
+        route("/api.json") { openApi() }
+        route("/swagger") { swaggerUI("/api.json") }
+        // Quando v2 existir:
+        // route("/api/v2.json") { openApi("v2") }
+        // route("/swagger/v2") { swaggerUI("/api/v2.json") }
     }
 }
-```
-
-Quando v2 for introduzida:
-```kotlin
-openApiSpec("v2") {
-    info { version = "2.0.0" }
-    servers { server { url = "/api/v2" } }
-}
-swaggerUI("v2") { path = "/swagger/v2" }
 ```
 
 ### Documentação de Deprecação na Spec
@@ -172,15 +175,15 @@ get<SimulationsPath>(
 2. Refatorar `Routing.kt`: extrair bloco `route("/api/v1") { ... }` explicitamente no código
    (atualmente o prefixo pode estar implícito em cada rota — padronizar)
 3. Atualizar `OpenApi.kt`: adicionar `servers { }` explícito apontando para `/api/v1`
-4. Adicionar header `API-Version: 1.0` nas responses (via `SecurityHeaders.kt` já planejado no GAP-AI)
-5. Verificar que todos os endpoints usam o prefixo `/api/v1` consistentemente (nenhuma rota em `/`)
+4. Adicionar header `API-Version: 1.0` nas responses (via `VersioningHeaders.kt` dedicado — separado do `SecurityHeaders.kt` para respeitar SRP)
+5. Verificar que todos os endpoints de **negócio** usam o prefixo `/api/v1` consistentemente (rotas operacionais `/health/*` e `/metrics` permanecem em `/` intencionalmente)
 6. Testes: verificar que rotas em `/api/v1/...` retornam corretamente; verificar headers de versão
 
 **Arquivos modificados:**
 - `docs/api-versioning.md` (criar — política pública)
 - `http_api/.../plugins/Routing.kt` (prefixo v1 explícito)
 - `http_api/.../plugins/OpenApi.kt` (servers block)
-- `http_api/.../plugins/SecurityHeaders.kt` (header `API-Version`)
+- `http_api/.../plugins/VersioningHeaders.kt` (criar — header `API-Version`; separado de `SecurityHeaders.kt`)
 
 ---
 
@@ -194,7 +197,7 @@ get<SimulationsPath>(
 
 **Negativas:**
 - Manutenção de múltiplas versões em paralelo aumenta complexidade do código de routing
-- Ciclo de vida de 12 meses é um compromisso de longo prazo que requer discipline de equipe
+- Ciclo de vida de 12 meses é um compromisso de longo prazo que requer disciplina de equipe
 
 **Neutras:**
 - Nenhuma breaking change em v1 nesta ADR — apenas formalização do que já existe
