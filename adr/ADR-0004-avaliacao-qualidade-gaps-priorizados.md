@@ -66,14 +66,15 @@ registry ou acionar deployment.
 
 ---
 
-## Nota Geral: **7.8 / 10**
+## Nota Geral: **8.97 / 10** *(original Mar/2026: 7.8 — revisado Jun/2026 após execução de todos os gaps P1–P4)*
 
 ### Metodologia de Pontuação
 
 Cada dimensão foi avaliada independentemente e ponderada pelo seu impacto no ciclo de vida
 do projeto (correção, manutenção, operação, evolução). A revisão 4 adicionou a dimensão
 *Governança de Mudanças Evolutivas* e redistribuiu levemente os pesos das demais dimensões
-(–1pp nas dimensões com peso ≥ 9%), resultando na revisão do score geral para **7.8**.
+(–1pp nas dimensões com peso ≥ 9%), resultando na revisão do score geral original para **7.8**.
+A auditoria de Jun/2026 (pós execução de todos os gaps P1–P4) atualizou o score para **8.97**.
 
 | Dimensão                              | Nota Original | Nota Atual | Peso | Contribuição |
 |---------------------------------------|---------------|------------|------|--------------|

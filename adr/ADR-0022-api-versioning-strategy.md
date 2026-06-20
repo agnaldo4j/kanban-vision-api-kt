@@ -110,9 +110,10 @@ fun Application.configureRouting() {
         authenticate("jwt-auth") {
             route("/api/v1") {
                 simulationRoutes()
-                // v2 será adicionado aqui quando necessário:
-                // route("/api/v2") { simulationRoutesV2() }
             }
+            // v2 deve ser rota-irmã de v1 dentro do mesmo authenticate,
+            // NÃO aninhada dentro de /api/v1 (evitaria /api/v1/api/v2):
+            // route("/api/v2") { simulationRoutesV2() }
         }
     }
 }
@@ -148,8 +149,9 @@ fun Application.configureOpenApi() {
     routing {
         route("/api.json") { openApi() }
         route("/swagger") { swaggerUI("/api.json") }
-        // Quando v2 existir:
-        // route("/api/v2.json") { openApi("v2") }
+        // Quando v2 existir — validar na hora da implementação se openApi()
+        // da versão ktor-openapi em uso suporta múltiplas specs:
+        // route("/api/v2.json") { openApi(/* spec v2 */) }
         // route("/swagger/v2") { swaggerUI("/api/v2.json") }
     }
 }

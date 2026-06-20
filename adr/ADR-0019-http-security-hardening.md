@@ -20,9 +20,12 @@ Auditoria de qualidade de Jun/2026 revelou que a dimensão **Prontidão para Pro
 **8.5/10** — abaixo da meta de 9.0. Três lacunas de segurança HTTP permanecem após a conclusão
 de P1–P4:
 
-1. **Sem CORS configurado:** qualquer origem pode fazer requisições ao servidor. Um cliente web
-   legítimo (SPA React, Angular) pode ser bloqueado por CORS inconsistente; um atacante pode
-   fazer chamadas cross-origin sem restrição. O padrão seguro é lista explícita de origens.
+1. **Sem CORS configurado:** CORS é uma política aplicada pelo *browser* — sem o header
+   `Access-Control-Allow-Origin` correto, browsers bloqueiam requests cross-origin de SPAs
+   (React, Angular) ao ler a resposta. Sem configuração explícita, um cliente web legítimo
+   pode ser impedido de consumir a API. Importante: CORS **não protege** contra clientes
+   não-browser (curl, bots, scripts) — para isso servem autenticação e rate limiting.
+   O padrão seguro é lista explícita de origens permitidas (sem `anyHost()`).
 
 2. **Sem payload size limit:** Ktor/Netty aceita bodies de tamanho arbitrário por padrão.
    Um payload de 100MB enviado concorrentemente pode saturar memória e derrubar o serviço —
