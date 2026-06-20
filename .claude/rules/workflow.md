@@ -78,8 +78,8 @@ gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
 ```
 P1 Hardening:   GAP-B → GAP-C → GAP-A                              ✅ done
 P2 Operations:  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ done
-P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I ✅ → GAP-J → GAP-H → GAP-K
-P4 Excellence:  GAP-T → GAP-X → GAP-N → GAP-L → GAP-R → GAP-M
+P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K  ✅ done
+P4 Excellence:  GAP-T → GAP-X → GAP-N → GAP-L → GAP-R → GAP-M                          ✅ done
 ```
 
 > **GAP-J re-escopo (2026-03-23):** Analytics API — `GET /simulations` paginado,
