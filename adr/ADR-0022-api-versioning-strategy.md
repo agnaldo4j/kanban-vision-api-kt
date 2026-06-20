@@ -89,7 +89,7 @@ v1 removed    → após 12 meses de deprecação; comunicado com 90 dias de ante
 Header de deprecação (adicionado por um plugin dedicado `VersioningHeaders.kt`, não em `SecurityHeaders.kt` — responsabilidades separadas):
 ```
 Deprecation: true
-Sunset: <data de remoção em RFC7231>
+Sunset: <data de remoção — formato HTTP-date conforme RFC 7231, header definido na RFC 8594>
 Link: </api/v2>; rel="successor-version"
 ```
 

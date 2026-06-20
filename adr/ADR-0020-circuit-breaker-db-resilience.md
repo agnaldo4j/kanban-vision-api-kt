@@ -27,7 +27,7 @@ o pool de saturar quando o PostgreSQL está indisponível ou lento.
 3. Requisições HTTP começam a se acumular aguardando conexão disponível
 4. Pool de threads do Netty satura — a API inteira fica irresponsiva para requisições que não
    precisam de banco (ex.: `GET /health/live`, `GET /metrics`)
-5. O Kubernetes interpreta o liveness probe como falha e reinicia o pod — cascata de reinicios
+5. O Kubernetes interpreta o liveness probe como falha e reinicia o pod — cascata de reinícios
 
 **Com circuit breaker:**
 1. PostgreSQL fica lento → primeiras falhas incrementam contador de erros
@@ -92,7 +92,7 @@ class CircuitBreakerDataSource(
 }
 ```
 
-> **Escopo e limitação:** `CircuitBreakerDataSource` interceta apenas o checkout de conexão do
+> **Escopo e limitação:** `CircuitBreakerDataSource` intercepta apenas o checkout de conexão do
 > pool — protege contra exaustão do pool HikariCP (quando todas as conexões estão bloqueadas
 > aguardando o banco). Porém, se o PostgreSQL aceita a conexão mas executa queries lentamente
 > (ex.: lock contention, full table scan), o `getConnection()` retorna rápido e o circuito
@@ -221,7 +221,7 @@ Métricas geradas automaticamente:
 **Positivas:**
 - Prontidão para Produção sobe de 8.5 → 9.0+
 - Proteção contra cascata de falhas quando PostgreSQL está lento/indisponível
-- Pod sai do load balancer via readiness probe quando circuito está aberto (sem reinicios desnecessários)
+- Pod sai do load balancer via readiness probe quando circuito está aberto (sem reinícios desnecessários)
 - Métricas de estado do circuit breaker visíveis no Grafana dashboard existente
 
 **Negativas:**
