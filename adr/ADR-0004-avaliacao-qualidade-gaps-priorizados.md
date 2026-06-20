@@ -419,8 +419,8 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 | ADR-0009  | GAP-O | OpenTelemetry Agent Integration          | GAP-G concluído      | ✅ Aceita  |
 | ADR-0010  | GAP-H | Domain Events (CP5 — feedback loops)     | GAP-P concluído      | ✅ Aceita  |
 | ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | ✅ Aceita  |
-| ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Pendente  |
-| ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | PRs #87–#91 (Step)   | Pendente  |
+| ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Descartada (condição não atingida — build 16s < 2min) |
+| ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | PRs #87–#91 (Step)   | ✅ Aceita  |
 
 > **Como usar esta tabela:** antes de executar qualquer gap `E`, abra uma sessão LLM
 > dedicada para escrever a ADR correspondente. Só após a ADR estar merged inicie a
@@ -491,7 +491,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[M]` **GAP-I** — Mover validações de invariantes de `Column`/`Card` para `Board.addColumn()` / `Board.addCard()` — PR #73
 - [x] `[M]` **GAP-J** — Analytics API: `GET /simulations` (lista paginada), `GET /simulations/{id}/days` (série temporal paginada), `GET /simulations/{id}/cfd` (dados para CFD — Reinertsen), métricas de utilização por Step (Little's Law). Re-escopo derivado de *The Principles of Product Development Flow*: CFD e Lead Time distribution são ferramentas fundamentais de gestão de fluxo (CP3) → PR #103
 - [x] `[E→ADR-0010]` **GAP-H** — Domain Events / CP5 Feedback Loops. ADR-0010 aprovada e implementada: `DomainEvent` sealed class, `EventPublisherPort`, `MicrometerEventPublisher`, publisher em `CreateSimulationUseCase` e `RunDayUseCase` → PR #134
-- [x] `[E→ADR-0011]` **GAP-K** — Contract Tests com Pact JVM 4.6.17. ADR-0011 aprovada e implementada: spike de compatibilidade JUnit Jupiter 6.0.3 confirmada, 5 consumer pacts (POST /simulations, GET /simulations/{id}, /days, /cfd, GET /simulations?organizationId), provider verification com embeddedServer(Netty) — todos 5 passam. CI arquiva pact contracts. → PR (em aberto)
+- [x] `[E→ADR-0011]` **GAP-K** — Contract Tests com Pact JVM 4.6.17. ADR-0011 aprovada e implementada: spike de compatibilidade JUnit Jupiter 6.0.3 confirmada, 5 consumer pacts (POST /simulations, GET /simulations/{id}, /days, /cfd, GET /simulations?organizationId), provider verification com embeddedServer(Netty) — todos 5 passam. CI arquiva pact contracts. → PR #135
 
 **Ciclo Excelência (P4):**
 - [x] `[N]` **GAP-T** — Criar `docs/context-map.md` com 3 BCs atuais (Kanban Management, Simulation, Analytics) + 2 candidatos a extração (Forecasting, Policy). Padrões de integração: ACL, Customer-Supplier. Referência: *Kanban from the Inside* (Burrows) — 9 valores e 6 práticas como lente de design dos BCs
