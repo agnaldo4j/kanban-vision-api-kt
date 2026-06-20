@@ -502,6 +502,11 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[E→ADR-0013]` **GAP-M** — ADR-0013 aprovada: TEXT → JSONB para `simulation_states.state_json` e `daily_snapshots.snapshot_json` (V2 migration). Schema boundaries mantidas por naming convention no schema `public` (documentadas em `docs/context-map.md`). Pequena mudança em `sql_persistence`: `JsonbColumnType` + colunas `jsonb()` em `Tables.kt` para tipar parâmetros JSONB corretamente; serializers não mudaram.
 - [x] `[M]` **GAP-Y** — Flyway como Kubernetes Job pré-deploy. `MigrationMainKt` entry point dedicado (sem Ktor), `DatabaseFactory.close()`, `FLYWAY_ENABLED=false` no ConfigMap K8s, `k8s/09-migration-job.yml` incluído em `kustomization.yaml` para resolução correta do secret hash. Detectado durante review do GAP-M (ADR-0013).
 
+**Ciclo Circular Dependency Control (extra, detectado via skill):**
+- [x] `[N]` **GAP-AE** — Screaming Architecture: dividir `domain/model/` flat (27 classes) em 3 sub-pacotes de intenção (`kanban/`, `organization/`, `simulation/`). Extension functions `toRef()` migradas para métodos de instância eliminando ciclo `root ↔ kanban/` → PR #171
+- [x] `[N]` **skill** — circular-dependency-control: detecção, classificação e eliminação de dependências circulares em 3 níveis (classe, pacote, módulo Gradle). Skill adicionada em `.claude/skills/circular-dependency-control/` → PR #172
+- [x] `[N]` **GAP-AF** — Eliminar ciclo `organization ↔ simulation`: `Scenario` era portador de estado de execução (`decisions`, `history`) importando de `simulation/`. Migração para `Simulation` como agregado de execução (pattern 3 — Extract Shared Type). Dependência passa a ser unidirecional `simulation → organization` → PR #173
+
 ---
 
 ## Referências
