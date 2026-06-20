@@ -45,13 +45,16 @@ class CorsPluginTest {
         }
 
     @Test
-    fun `empty origins set — request works without CORS header`() =
+    fun `empty origins set — cross-origin request is denied (fail-closed)`() =
         testApplication {
             application {
                 configureCors(emptySet())
                 routing { get("/test") { call.respondText("ok") } }
             }
-            val response = client.get("/test")
+            val response =
+                client.get("/test") {
+                    header(HttpHeaders.Origin, "http://localhost:3000")
+                }
             assertEquals(HttpStatusCode.OK, response.status)
             assertNull(response.headers[HttpHeaders.AccessControlAllowOrigin])
         }
@@ -91,7 +94,7 @@ class CorsPluginTest {
     }
 
     @Test
-    fun `no-arg configureCors uses system env — no CORS header when var not set`() =
+    fun `configureCors default call — request without Origin header gets no CORS header`() =
         testApplication {
             application {
                 configureCors()

@@ -11,7 +11,7 @@ private val log = LoggerFactory.getLogger("Cors")
 
 fun Application.configureCors(allowedOrigins: Set<String> = loadCorsOrigins()) {
     if (allowedOrigins.isEmpty()) {
-        log.info("CORS_ALLOWED_ORIGINS not set — cross-origin requests blocked by browser")
+        log.info("CORS_ALLOWED_ORIGINS is empty — cross-origin requests blocked by browser")
         return
     }
     log.info("CORS configured for {} origin(s)", allowedOrigins.size)
