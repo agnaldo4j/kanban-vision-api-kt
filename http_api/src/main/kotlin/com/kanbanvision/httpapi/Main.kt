@@ -9,6 +9,7 @@ import com.kanbanvision.httpapi.plugins.configureOpenApi
 import com.kanbanvision.httpapi.plugins.configureRateLimit
 import com.kanbanvision.httpapi.plugins.configureRequestLimits
 import com.kanbanvision.httpapi.plugins.configureRouting
+import com.kanbanvision.httpapi.plugins.configureSecurityHeaders
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
 import com.kanbanvision.httpapi.routes.authRoutes
@@ -52,6 +53,7 @@ fun Application.module() {
     configureOpenApi()
     configureSerialization()
     configureStatusPages()
+    configureSecurityHeaders()
     configureRequestLimits()
     configureRateLimit()
     configureCors()
