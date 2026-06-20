@@ -76,6 +76,43 @@ class CorsPluginTest {
         }
 
     @Test
+    fun `preflight with X-Request-ID in requested headers is accepted`() =
+        testApplication {
+            application {
+                configureCors(setOf("http://localhost:3000"))
+                routing { get("/test") { call.respondText("ok") } }
+            }
+            val preflight =
+                client.options("/test") {
+                    header(HttpHeaders.Origin, "http://localhost:3000")
+                    header(HttpHeaders.AccessControlRequestMethod, "GET")
+                    header(HttpHeaders.AccessControlRequestHeaders, "X-Request-ID")
+                }
+            // 200 (not 403 Forbidden) means X-Request-ID is in the allow list
+            assertEquals(HttpStatusCode.OK, preflight.status)
+            assertNotNull(preflight.headers[HttpHeaders.AccessControlAllowOrigin])
+        }
+
+    @Test
+    fun `X-Request-ID is exposed in actual CORS response headers`() =
+        testApplication {
+            application {
+                configureCors(setOf("http://localhost:3000"))
+                routing { get("/test") { call.respondText("ok") } }
+            }
+            // Access-Control-Expose-Headers is sent on actual responses, not preflights
+            val response =
+                client.get("/test") {
+                    header(HttpHeaders.Origin, "http://localhost:3000")
+                }
+            assertEquals(HttpStatusCode.OK, response.status)
+            val exposed = response.headers[HttpHeaders.AccessControlExposeHeaders].orEmpty()
+            assert(exposed.contains("X-Request-ID", ignoreCase = true)) {
+                "Expected X-Request-ID in Access-Control-Expose-Headers but got: '$exposed'"
+            }
+        }
+
+    @Test
     fun `loadCorsOrigins parses comma-separated list and trims whitespace`() {
         val origins = loadCorsOrigins { "http://localhost:3000 , https://app.example.com" }
         assertEquals(setOf("http://localhost:3000", "https://app.example.com"), origins)
