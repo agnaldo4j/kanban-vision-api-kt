@@ -14,6 +14,7 @@ import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class SecurityHeadersPluginTest {
     @Test
@@ -73,13 +74,13 @@ class SecurityHeadersPluginTest {
         }
 
     @Test
-    fun `X-XSS-Protection is 1 mode block`() =
+    fun `X-XSS-Protection is 0 (explicitly disabled)`() =
         testApplication {
             application {
                 configureSecurityHeaders()
                 routing { get("/test") { call.respondText("ok") } }
             }
-            assertEquals("1; mode=block", client.get("/test").headers["X-XSS-Protection"])
+            assertEquals("0", client.get("/test").headers["X-XSS-Protection"])
         }
 
     @Test
@@ -110,5 +111,50 @@ class SecurityHeadersPluginTest {
             assertEquals(HttpStatusCode.NotFound, response.status)
             assertEquals("DENY", response.headers["X-Frame-Options"])
             assertEquals("nosniff", response.headers["X-Content-Type-Options"])
+        }
+
+    @Test
+    fun `security headers are present on 500 response from StatusPages`() =
+        testApplication {
+            application {
+                configureSerialization()
+                configureStatusPages()
+                configureSecurityHeaders()
+                routing {
+                    get("/boom") { error("intentional failure") }
+                }
+            }
+            val response = client.get("/boom")
+            assertEquals(HttpStatusCode.InternalServerError, response.status)
+            assertEquals("DENY", response.headers["X-Frame-Options"])
+            assertEquals("nosniff", response.headers["X-Content-Type-Options"])
+            assertNotNull(response.headers["Content-Security-Policy"])
+        }
+
+    @Test
+    fun `Content-Security-Policy is absent for swagger paths`() =
+        testApplication {
+            application {
+                configureSecurityHeaders()
+                routing {
+                    get("/swagger") { call.respondText("swagger") }
+                    get("/api.json") { call.respondText("{}") }
+                }
+            }
+            assertNull(client.get("/swagger").headers["Content-Security-Policy"])
+            assertNull(client.get("/api.json").headers["Content-Security-Policy"])
+        }
+
+    @Test
+    fun `other security headers are still present on swagger paths`() =
+        testApplication {
+            application {
+                configureSecurityHeaders()
+                routing { get("/swagger") { call.respondText("swagger") } }
+            }
+            val response = client.get("/swagger")
+            assertEquals("DENY", response.headers["X-Frame-Options"])
+            assertEquals("nosniff", response.headers["X-Content-Type-Options"])
+            assertEquals("0", response.headers["X-XSS-Protection"])
         }
 }
