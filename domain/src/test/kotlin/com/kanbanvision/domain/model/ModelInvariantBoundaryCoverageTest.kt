@@ -16,7 +16,6 @@ import com.kanbanvision.domain.model.simulation.SimulationDay
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 
 class ModelInvariantBoundaryCoverageTest {
     @Test
@@ -52,8 +51,6 @@ class ModelInvariantBoundaryCoverageTest {
         val scenario = Scenario.create(name = "Scenario", rules = rules)
 
         assertEquals("Main Board", scenario.board.name)
-        assertTrue(scenario.decisions.isEmpty())
-        assertTrue(scenario.history.isEmpty())
     }
 
     @Test

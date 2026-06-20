@@ -27,11 +27,11 @@ class SimulationSerializerTest {
     fun `given simulation with block item decision when encoding and decoding then decision is preserved`() {
         val base = PersistenceFixtures.simulation()
         val decision = Decision.BlockItem(cardId = "c-2", reason = "waiting")
-        val source = base.copy(scenario = base.scenario.copy(decisions = listOf(decision)))
+        val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
-        val restored = assertIs<Decision.BlockItem>(decoded.scenario.decisions.first())
+        val restored = assertIs<Decision.BlockItem>(decoded.decisions.first())
         assertEquals("c-2", restored.cardId)
         assertEquals("waiting", restored.reason)
     }
@@ -40,11 +40,11 @@ class SimulationSerializerTest {
     fun `given simulation with unblock item decision when encoding and decoding then decision is preserved`() {
         val base = PersistenceFixtures.simulation()
         val decision = Decision.UnblockItem(cardId = "c-3")
-        val source = base.copy(scenario = base.scenario.copy(decisions = listOf(decision)))
+        val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
-        val restored = assertIs<Decision.UnblockItem>(decoded.scenario.decisions.first())
+        val restored = assertIs<Decision.UnblockItem>(decoded.decisions.first())
         assertEquals("c-3", restored.cardId)
     }
 
@@ -52,11 +52,11 @@ class SimulationSerializerTest {
     fun `given simulation with add item decision when encoding and decoding then decision and service class are preserved`() {
         val base = PersistenceFixtures.simulation()
         val decision = Decision.AddItem(title = "Fast track", serviceClass = ServiceClass.EXPEDITE)
-        val source = base.copy(scenario = base.scenario.copy(decisions = listOf(decision)))
+        val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
-        val restored = assertIs<Decision.AddItem>(decoded.scenario.decisions.first())
+        val restored = assertIs<Decision.AddItem>(decoded.decisions.first())
         assertEquals("Fast track", restored.title)
         assertEquals(ServiceClass.EXPEDITE, restored.serviceClass)
     }
@@ -65,11 +65,11 @@ class SimulationSerializerTest {
     fun `given simulation with add item default service class when encoding and decoding then standard is preserved`() {
         val base = PersistenceFixtures.simulation()
         val decision = Decision.AddItem(title = "Backlog item")
-        val source = base.copy(scenario = base.scenario.copy(decisions = listOf(decision)))
+        val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
-        val restored = assertIs<Decision.AddItem>(decoded.scenario.decisions.first())
+        val restored = assertIs<Decision.AddItem>(decoded.decisions.first())
         assertEquals(ServiceClass.STANDARD, restored.serviceClass)
     }
 
@@ -77,12 +77,12 @@ class SimulationSerializerTest {
     fun `given encoded block item with reason removed when decoding then default reason is used`() {
         val base = PersistenceFixtures.simulation()
         val decision = Decision.BlockItem(cardId = "c-2", reason = "dep")
-        val source = base.copy(scenario = base.scenario.copy(decisions = listOf(decision)))
+        val source = base.copy(decisions = listOf(decision))
         val encoded = SimulationSerializer.encode(source).replace(""","reason":"dep"""", "")
 
         val decoded = SimulationSerializer.decode(encoded)
 
-        val restored = assertIs<Decision.BlockItem>(decoded.scenario.decisions.first())
+        val restored = assertIs<Decision.BlockItem>(decoded.decisions.first())
         assertEquals("blocked", restored.reason)
     }
 
@@ -90,7 +90,7 @@ class SimulationSerializerTest {
     fun `given encoded add item with invalid service class when decoding then standard is used as fallback`() {
         val base = PersistenceFixtures.simulation()
         val decision = Decision.AddItem(title = "UniqueMarker-Title")
-        val source = base.copy(scenario = base.scenario.copy(decisions = listOf(decision)))
+        val source = base.copy(decisions = listOf(decision))
         val encoded =
             SimulationSerializer.encode(source).replace(
                 """"title":"UniqueMarker-Title","serviceClass":"STANDARD"""",
@@ -99,7 +99,7 @@ class SimulationSerializerTest {
 
         val decoded = SimulationSerializer.decode(encoded)
 
-        val restored = assertIs<Decision.AddItem>(decoded.scenario.decisions.first())
+        val restored = assertIs<Decision.AddItem>(decoded.decisions.first())
         assertEquals(ServiceClass.STANDARD, restored.serviceClass)
     }
 
@@ -133,7 +133,7 @@ class SimulationSerializerTest {
 
         val decoded = SimulationSerializer.decode(withLegacyId)
 
-        assertIs<Decision.MoveItem>(decoded.scenario.decisions.first())
+        assertIs<Decision.MoveItem>(decoded.decisions.first())
     }
 
     @Test
@@ -146,6 +146,16 @@ class SimulationSerializerTest {
 
         assertEquals(source.id, decoded.id)
         assertTrue(decoded.organization.tribes.isNotEmpty())
+    }
+
+    @Test
+    fun `given simulation with empty decisions and history when encoding and decoding then empty lists are preserved`() {
+        val source = PersistenceFixtures.simulation().copy(decisions = emptyList(), history = emptyList())
+
+        val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
+
+        assertTrue(decoded.decisions.isEmpty())
+        assertTrue(decoded.history.isEmpty())
     }
 
     private fun assertCoreSimulationFields(

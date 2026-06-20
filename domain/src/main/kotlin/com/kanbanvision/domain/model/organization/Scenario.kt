@@ -4,8 +4,6 @@ import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Domain
 import com.kanbanvision.domain.model.ScenarioRef
 import com.kanbanvision.domain.model.kanban.Board
-import com.kanbanvision.domain.model.simulation.DailySnapshot
-import com.kanbanvision.domain.model.simulation.Decision
 import java.util.UUID
 
 data class Scenario(
@@ -13,8 +11,6 @@ data class Scenario(
     val name: String,
     val rules: ScenarioRules,
     val board: Board,
-    val decisions: List<Decision> = emptyList(),
-    val history: List<DailySnapshot> = emptyList(),
     override val audit: Audit = Audit(),
 ) : Domain {
     init {
@@ -39,8 +35,4 @@ data class Scenario(
     }
 
     fun toRef(): ScenarioRef = ScenarioRef(id = id)
-
-    fun appendDecision(decision: Decision): Scenario = copy(decisions = decisions + decision)
-
-    fun appendSnapshot(snapshot: DailySnapshot): Scenario = copy(history = history + snapshot)
 }

@@ -51,13 +51,14 @@ object SimulationEngine {
                 metrics = calculateMetrics(afterAging, allMovements),
                 movements = allMovements,
             )
-        val updatedScenario =
-            scenario.copy(
-                board = scenario.board.withCards(afterAging),
-                decisions = scenario.decisions + decisions,
-                history = scenario.history + snapshot,
+        val updatedScenario = scenario.copy(board = scenario.board.withCards(afterAging))
+        val updatedSimulation =
+            simulation.copy(
+                currentDay = SimulationDay(simulation.currentDay.value + 1),
+                scenario = updatedScenario,
+                decisions = simulation.decisions + decisions,
+                history = simulation.history + snapshot,
             )
-        val updatedSimulation = simulation.copy(currentDay = SimulationDay(simulation.currentDay.value + 1), scenario = updatedScenario)
         return SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
     }
 

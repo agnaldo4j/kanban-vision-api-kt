@@ -19,6 +19,8 @@ internal fun Simulation.toSurrogate() =
         status = status.name,
         organization = organization.toSurrogate(),
         scenario = scenario.toSurrogate(),
+        decisions = decisions.map { it.toSurrogate() },
+        history = history.map { it.toSurrogate() },
     )
 
 internal fun SimulationSurrogate.toDomain() =
@@ -29,6 +31,8 @@ internal fun SimulationSurrogate.toDomain() =
         status = SimulationStatus.valueOf(status),
         organization = organization.toDomain(),
         scenario = scenario.toDomain(),
+        decisions = decisions.map { it.toDomain() },
+        history = history.map { it.toDomain() },
     )
 
 private fun Organization.toSurrogate() =
