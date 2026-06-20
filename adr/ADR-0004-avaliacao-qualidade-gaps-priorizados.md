@@ -75,21 +75,23 @@ do projeto (correção, manutenção, operação, evolução). A revisão 4 adic
 *Governança de Mudanças Evolutivas* e redistribuiu levemente os pesos das demais dimensões
 (–1pp nas dimensões com peso ≥ 9%), resultando na revisão do score geral para **7.8**.
 
-| Dimensão                              | Nota | Peso | Contribuição |
-|---------------------------------------|------|------|--------------|
-| Clean Architecture                    | 9.0  | 12%  | 1.08         |
-| Domain-Driven Design (DDD)            | 8.0  | 12%  | 0.96         |
-| Modularidade & Evoluibilidade         | 7.5  |  9%  | 0.68         |
-| SOLID Principles                      | 9.0  |  8%  | 0.72         |
-| Testes & Qualidade                    | 8.0  | 12%  | 0.96         |
-| Kotlin Quality Pipeline               | 9.0  |  8%  | 0.72         |
-| Observabilidade                       | 7.0  |  8%  | 0.56         |
-| Prontidão para Produção               | 5.5  |  8%  | 0.44         |
-| Governança de Mudanças Evolutivas     | 5.5  |  8%  | 0.44         |
-| OpenAPI                               | 7.5  |  5%  | 0.38         |
-| Design de Banco de Dados              | 8.0  |  5%  | 0.40         |
-| Tratamento de Erros                   | 9.0  |  5%  | 0.45         |
-| **Total**                             |      | 100% | **7.79**     |
+| Dimensão                              | Nota Original | Nota Atual | Peso | Contribuição |
+|---------------------------------------|---------------|------------|------|--------------|
+| Clean Architecture                    | 9.0           | 9.5        | 12%  | 1.14         |
+| Domain-Driven Design (DDD)            | 8.0           | 8.5        | 12%  | 1.02         |
+| Modularidade & Evoluibilidade         | 7.5           | 8.5        |  9%  | 0.77         |
+| SOLID Principles                      | 9.0           | 9.0        |  8%  | 0.72         |
+| Testes & Qualidade                    | 8.0           | 9.0        | 12%  | 1.08         |
+| Kotlin Quality Pipeline               | 9.0           | 9.5        |  8%  | 0.76         |
+| Observabilidade                       | 7.0           | 9.0        |  8%  | 0.72         |
+| Prontidão para Produção               | 5.5           | 8.5        |  8%  | 0.68         |
+| Governança de Mudanças Evolutivas     | 5.5           | 9.0        |  8%  | 0.72         |
+| OpenAPI                               | 7.5           | 8.5        |  5%  | 0.43         |
+| Design de Banco de Dados              | 8.0           | 9.0        |  5%  | 0.45         |
+| Tratamento de Erros                   | 9.0           | 9.5        |  5%  | 0.48         |
+| **Total**                             | **7.79**      | **8.97**   | 100% | **8.97**     |
+
+> **Revisão Jun/2026:** scores atualizados após execução de todos os gaps P1–P4 + P4+ + Circular Dependency Control. Meta: atingir 9.5/10 com Ciclo P5.
 
 ---
 
@@ -386,6 +388,7 @@ Ciclo Operações  (P2):  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-
 Ciclo Domínio    (P3):  GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K  ✅ CONCLUÍDO
 Ciclo Excelência (P4):  GAP-T → GAP-X → GAP-N → GAP-L → [GAP-R: descartado, build 16s < 2min] → GAP-M  ✅ CONCLUÍDO
 Ciclo Excelência (P4+): GAP-Y  ✅ CONCLUÍDO
+Ciclo P5 (HTTP + OpenAPI + DDD): GAP-AG → GAP-AH → GAP-AI → GAP-AK → GAP-AM → GAP-AJ → GAP-AL
 ```
 
 > **Protocolo de execução (skill `evolutionary-change`):** cada gap deve ser executado em
@@ -421,6 +424,10 @@ Cada ADR abaixo é uma sessão LLM independente — seguindo o protocolo 1-gap-p
 | ADR-0011  | GAP-K | Contract Tests com Pact                  | GAP-G concluído      | ✅ Aceita  |
 | ADR-0012  | GAP-R | Domain API Build Module (usecases-api/)  | build time > 2min    | Descartada (condição não atingida — build 16s < 2min) |
 | ADR-0013  | GAP-M | Schema Boundaries e JSON blob no DB      | PRs #87–#91 (Step)   | ✅ Aceita  |
+| ADR-0019  | GAP-AG/AH/AI | HTTP Security Hardening (CORS + payload + headers) | — | Pendente |
+| ADR-0020  | GAP-AJ | Circuit Breaker para DB (resilience4j)  | —                    | Pendente  |
+| ADR-0021  | GAP-AK/AM | OpenAPI Completeness + Context Map     | —                    | Pendente  |
+| ADR-0022  | GAP-AL | API Versioning Strategy (v1/v2)         | —                    | Pendente  |
 
 > **Como usar esta tabela:** antes de executar qualquer gap `E`, abra uma sessão LLM
 > dedicada para escrever a ADR correspondente. Só após a ADR estar merged inicie a
@@ -506,6 +513,15 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-AE** — Screaming Architecture: dividir `domain/model/` flat (27 classes) em 3 sub-pacotes de intenção (`kanban/`, `organization/`, `simulation/`). Extension functions `toRef()` migradas para métodos de instância eliminando ciclo `root ↔ kanban/` → PR #171
 - [x] `[N]` **skill** — circular-dependency-control: detecção, classificação e eliminação de dependências circulares em 3 níveis (classe, pacote, módulo Gradle). Skill adicionada em `.claude/skills/circular-dependency-control/` → PR #172
 - [x] `[N]` **GAP-AF** — Eliminar ciclo `organization ↔ simulation`: `Scenario` era portador de estado de execução (`decisions`, `history`) importando de `simulation/`. Migração para `Simulation` como agregado de execução (pattern 3 — Extract Shared Type). Dependência passa a ser unidirecional `simulation → organization` → PR #173
+
+**Ciclo P5 — HTTP Security + OpenAPI + DDD (auditoria Jun/2026 — dimensões abaixo de 9.0):**
+- [ ] `[N→ADR-0019]` **GAP-AG** — CORS plugin Ktor com origens explícitas via `CORS_ALLOWED_ORIGINS` (sem `anyHost()`). Novo `plugins/Cors.kt`.
+- [ ] `[N→ADR-0019]` **GAP-AH** — Payload size limit: `maxContentLength` configurável via `MAX_REQUEST_BODY_SIZE` (default 1MB). Proteção contra DoS acidental.
+- [ ] `[N→ADR-0019]` **GAP-AI** — Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`. Novo `plugins/SecurityHeaders.kt`.
+- [ ] `[N→ADR-0021]` **GAP-AK** — OpenAPI: adicionar exemplos de request/response body completos em `POST /simulations` e `POST /simulations/{id}/run` via DSL `ktor-openapi`.
+- [ ] `[N→ADR-0021]` **GAP-AM** — Context Map: enriquecer `docs/context-map.md` com diagrama Mermaid `graph LR` dos 3 BCs (Kanban Management, Simulation, Analytics) e relações (Customer-Supplier, ACL).
+- [ ] `[E→ADR-0020]` **GAP-AJ** — Circuit breaker para DB: resilience4j `CircuitBreakerDataSource` decorando `HikariDataSource`. Fallback: `DomainError.ServiceUnavailable`. Métricas exportadas via Micrometer.
+- [ ] `[E→ADR-0022]` **GAP-AL** — API versioning strategy: formalizar URL-based versioning (`/api/v1`, `/api/v2`), ciclo de vida de 12 meses por versão, spec OpenAPI separada por versão.
 
 ---
 
