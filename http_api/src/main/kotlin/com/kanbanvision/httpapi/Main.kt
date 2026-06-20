@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi
 
 import com.kanbanvision.httpapi.di.AppModule
 import com.kanbanvision.httpapi.plugins.configureAuthentication
+import com.kanbanvision.httpapi.plugins.configureCors
 import com.kanbanvision.httpapi.plugins.configureMetrics
 import com.kanbanvision.httpapi.plugins.configureObservability
 import com.kanbanvision.httpapi.plugins.configureOpenApi
@@ -51,6 +52,7 @@ fun Application.module() {
     configureSerialization()
     configureStatusPages()
     configureRateLimit()
+    configureCors()
     configureAuthentication()
     configureRouting()
     configureDevAuthRoutes()

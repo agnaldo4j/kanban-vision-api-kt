@@ -30,3 +30,7 @@ data:
   OTEL_LOGS_EXPORTER: "none"
   OTEL_METRICS_EXPORTER: "none"
   OTEL_TRACES_EXPORTER: "none"
+  # CORS — defina as origens permitidas no ambiente de produção (URL completa com scheme).
+  # Exemplo: "https://app.example.com,https://admin.example.com"
+  # Vazio = nenhuma origem cross-origin permitida (seguro por padrão).
+  CORS_ALLOWED_ORIGINS: ""
