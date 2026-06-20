@@ -26,7 +26,7 @@ existir em três níveis, cada um com impacto diferente:
 
 | Nível | Exemplo | Impacto |
 |---|---|---|
-| **Classe** | `Board` importa `Step`; `Step` importa `Board` | Compilação falha ou inicialização infinita |
+| **Classe** | `Board` importa `Step`; `Step` importa `Board` | Alto acoplamento; inicialização recursiva em DI (StackOverflowError no Koin); testes inviáveis em isolamento |
 | **Pacote** | `model/kanban/` importa de `model/` raiz; raiz importa de `kanban/` | Package-level coupling — mudanças em cascata |
 | **Módulo Gradle** | `:usecases` depende de `:sql_persistence`; `:sql_persistence` depende de `:usecases` | Build falha — ciclo de compilação inquebrável |
 
@@ -58,11 +58,13 @@ class StepService(val boardService: BoardService)
 // Resultado: StackOverflowError ou NullPointerException na inicialização do Koin
 ```
 
-### 4. Vazamento de Memória (GC baseado em contagem de referências)
+### 4. Vazamento de Memória (apenas em GC por contagem de referências)
 
-Objetos mutuamente referenciados não são liberados por coletores baseados em
-contagem de referências — cada objeto mantém a contagem do outro acima de zero
-mesmo quando ambos são inacessíveis do resto do programa.
+> **Nota JVM**: este problema **não se aplica ao Kotlin/JVM**. O JVM usa GC por
+> tracing (mark-and-sweep, G1, ZGC) que detecta ciclos de referência normalmente.
+> O problema é real em runtimes com reference counting — CPython, Swift ARC, Rust
+> (sem `Weak<T>`): cada objeto mantém a contagem do outro acima de zero mesmo
+> quando ambos são inacessíveis, impedindo a desalocação.
 
 ### 5. Testabilidade Quebrada
 
@@ -117,7 +119,9 @@ data class StepRef(val id: String)  { init { require(id.isNotBlank()) } }
 
 // domain/model/kanban/Board.kt — method pertence ao dono dos dados
 import com.kanbanvision.domain.model.BoardRef  // sub importa root (sentido único ✅)
-fun toRef(): BoardRef = BoardRef(id = id)      // sem extension function cruzada
+data class Board(val id: String, val name: String) {
+    fun toRef(): BoardRef = BoardRef(id = id)  // método de instância — sem import cruzado
+}
 ```
 
 ---
@@ -307,21 +311,32 @@ que conhece ambos e orquestra a interação.
 class BoardService(val notifier: NotificationService) // Board → Notification
 class NotificationService(val boardService: BoardService) // Notification → Board
 
-// ✅ Mediador: EventBus que nenhum dos dois conhece diretamente
+// ✅ Mediador: DomainEventPublisher desacopla produtor de consumidor
 interface DomainEventPublisher {
     fun publish(event: DomainEvent)
 }
 
+// BoardService publica eventos — não conhece quem consome
 class BoardService(val publisher: DomainEventPublisher) {
     fun createBoard(name: String): Board {
         val board = Board.create(name)
-        publisher.publish(BoardCreatedEvent(board.id))  // publica — não chama NotificationService
+        publisher.publish(BoardCreatedEvent(board.id))
         return board
     }
 }
 
-class NotificationService(val publisher: DomainEventPublisher) {
-    init { publisher.subscribe<BoardCreatedEvent> { sendNotification(it) } }
+// NotificationService reage a eventos — não conhece BoardService
+class NotificationService {
+    fun onBoardCreated(event: BoardCreatedEvent) { sendNotification(event) }
+}
+
+// DI (AppModule) é o único ponto que conhece ambos — orquestra o despacho
+class CompositeDomainEventPublisher(
+    private val notifier: NotificationService,
+) : DomainEventPublisher {
+    override fun publish(event: DomainEvent) {
+        if (event is BoardCreatedEvent) notifier.onBoardCreated(event)
+    }
 }
 // BoardService e NotificationService não se conhecem ✅
 ```
@@ -392,9 +407,9 @@ class MetricsCollector : SimulationListener {
 ### Hierarquia de Dependência — Jamais Inverter
 
 ```
-http_api → usecases → domain          ← módulos Gradle
-             ↓
-        sql_persistence → domain
+http_api        → usecases → domain   ← módulos Gradle
+sql_persistence → usecases            ← persistence depende dos ports de usecases
+sql_persistence → domain              ← persistence depende do domínio
 
 domain/model/                          ← pacotes internos ao domain
     kanban/     → model/ (root)
@@ -430,8 +445,12 @@ style:
       - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
         reason: 'Repositórios JDBC só podem ser usados em wiring de DI (AppModule)'
       # Candidatos para ADR futura:
+      # ⚠️ ATENÇÃO: ForbiddenImport bane o padrão em TODO o projeto, não apenas num pacote.
+      # O exemplo abaixo quebraria usecases/, http_api/, sql_persistence/ e testes que
+      # legitimamente importam tipos de simulation/. Para restrição por pacote, considere
+      # uma custom Detekt rule ou ArchUnit (https://www.archunit.org/).
       # - value: 'com.kanbanvision.domain.model.simulation.*'
-      #   reason: 'simulation/ não pode ser importado por organization/ (ciclo transitivo)'
+      #   reason: 'NÃO USAR — escopo muito amplo; prefira ArchUnit para ciclos entre pacotes'
 ```
 
 > Para adicionar novas regras ForbiddenImport: abrir ADR. `detekt.yml` é imutável por política.
@@ -475,7 +494,7 @@ style:
 
 ### Avaliação de Impacto
 
-- [ ] O ciclo é direto (compilação falha ou inicialização infinita)?
+- [ ] O ciclo é direto (alto acoplamento; risco de inicialização recursiva em DI)?
 - [ ] O ciclo é de pacote (mudanças em cascata, coupling alto)?
 - [ ] O ciclo é transitivo e documentado como trade-off consciente?
 - [ ] O ciclo impede teste unitário de alguma das partes envolvidas?
@@ -509,12 +528,14 @@ fun Board.toSimulation(): Simulation = ...  // qual pacote "dona" essa função?
 ### Anti-Padrão 2 — Companion Object como Fábrica de Ciclos
 
 ```kotlin
-// ❌ Companion com factory que importa outro domínio
+// ❌ Companion com factory que depende de outro contexto — cria ciclo se Scenario também importar Simulation
 // simulation/Simulation.kt
-companion object {
-    fun fromScenario(scenario: Scenario): Simulation {
-        import com.kanbanvision.domain.model.organization.Scenario // simulation → organization
-        // Se Scenario.kt também importar Simulation → ciclo
+import com.kanbanvision.domain.model.organization.Scenario // simulation → organization (topo do arquivo)
+
+data class Simulation(...) {
+    companion object {
+        fun fromScenario(scenario: Scenario): Simulation = Simulation(...)
+        // Se Scenario.kt também importar Simulation → ciclo bidirecional organization ↔ simulation
     }
 }
 ```
