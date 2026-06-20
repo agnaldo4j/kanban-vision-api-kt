@@ -32,5 +32,12 @@ fun Application.configureStatusPages() {
                 DomainErrorResponse(error = "Too Many Requests", requestId = requestId),
             )
         }
+        status(HttpStatusCode.PayloadTooLarge) { call, _ ->
+            val requestId = call.attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
+            call.respond(
+                HttpStatusCode.PayloadTooLarge,
+                DomainErrorResponse(error = "Request body too large", requestId = requestId),
+            )
+        }
     }
 }

@@ -34,3 +34,6 @@ data:
   # Exemplo: "https://app.example.com,https://admin.example.com"
   # Vazio = nenhuma origem cross-origin permitida (seguro por padrão).
   CORS_ALLOWED_ORIGINS: ""
+  # MAX_REQUEST_BODY_SIZE — payload size limit em bytes. Aumentar somente se endpoints
+  # receberem payloads JSON maiores em produção.
+  MAX_REQUEST_BODY_SIZE: "1048576"
