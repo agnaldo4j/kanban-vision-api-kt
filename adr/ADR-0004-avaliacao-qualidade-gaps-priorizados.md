@@ -518,7 +518,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 **Ciclo P5 — HTTP Security + OpenAPI + DDD (auditoria Jun/2026 — dimensões abaixo de 9.0):**
 - [x] `[N→ADR-0019]` **GAP-AG** — CORS plugin Ktor com origens explícitas via `CORS_ALLOWED_ORIGINS` (sem `anyHost()`). Novo `plugins/Cors.kt`.
 - [x] `[N→ADR-0019]` **GAP-AH** — Payload size limit: `maxContentLength` configurável via `MAX_REQUEST_BODY_SIZE` (default 1MB). Proteção contra DoS acidental.
-- [ ] `[N→ADR-0019]` **GAP-AI** — Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`. Novo `plugins/SecurityHeaders.kt`.
+- [x] `[N→ADR-0019]` **GAP-AI** — Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`. Novo `plugins/SecurityHeaders.kt`.
 - [ ] `[N→ADR-0021]` **GAP-AK** — OpenAPI: adicionar exemplos de request/response body completos em `POST /simulations` e `POST /simulations/{id}/run` via DSL `ktor-openapi`.
 - [ ] `[N→ADR-0021]` **GAP-AM** — Context Map: enriquecer `docs/context-map.md` com diagrama Mermaid `graph LR` dos 3 BCs (Kanban Management, Simulation, Analytics) e relações (Customer-Supplier, ACL).
 - [ ] `[E→ADR-0020]` **GAP-AJ** — Circuit breaker para DB: resilience4j `CircuitBreakerDataSource` decorando `HikariDataSource`. Fallback: `DomainError.ServiceUnavailable`. Métricas exportadas via Micrometer.
