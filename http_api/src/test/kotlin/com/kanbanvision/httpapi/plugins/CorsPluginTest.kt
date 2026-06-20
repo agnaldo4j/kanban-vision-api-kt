@@ -13,6 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class CorsPluginTest {
     @Test
@@ -107,9 +108,10 @@ class CorsPluginTest {
                 }
             assertEquals(HttpStatusCode.OK, response.status)
             val exposed = response.headers[HttpHeaders.AccessControlExposeHeaders].orEmpty()
-            assert(exposed.contains("X-Request-ID", ignoreCase = true)) {
-                "Expected X-Request-ID in Access-Control-Expose-Headers but got: '$exposed'"
-            }
+            assertTrue(
+                exposed.contains("X-Request-ID", ignoreCase = true),
+                "Expected X-Request-ID in Access-Control-Expose-Headers but got: '$exposed'",
+            )
         }
 
     @Test
