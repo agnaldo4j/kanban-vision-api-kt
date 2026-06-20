@@ -516,7 +516,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N]` **GAP-AF** — Eliminar ciclo `organization ↔ simulation`: `Scenario` era portador de estado de execução (`decisions`, `history`) importando de `simulation/`. Migração para `Simulation` como agregado de execução (pattern 3 — Extract Shared Type). Dependência passa a ser unidirecional `simulation → organization` → PR #173
 
 **Ciclo P5 — HTTP Security + OpenAPI + DDD (auditoria Jun/2026 — dimensões abaixo de 9.0):**
-- [ ] `[N→ADR-0019]` **GAP-AG** — CORS plugin Ktor com origens explícitas via `CORS_ALLOWED_ORIGINS` (sem `anyHost()`). Novo `plugins/Cors.kt`.
+- [x] `[N→ADR-0019]` **GAP-AG** — CORS plugin Ktor com origens explícitas via `CORS_ALLOWED_ORIGINS` (sem `anyHost()`). Novo `plugins/Cors.kt`.
 - [ ] `[N→ADR-0019]` **GAP-AH** — Payload size limit: `maxContentLength` configurável via `MAX_REQUEST_BODY_SIZE` (default 1MB). Proteção contra DoS acidental.
 - [ ] `[N→ADR-0019]` **GAP-AI** — Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`. Novo `plugins/SecurityHeaders.kt`.
 - [ ] `[N→ADR-0021]` **GAP-AK** — OpenAPI: adicionar exemplos de request/response body completos em `POST /simulations` e `POST /simulations/{id}/run` via DSL `ktor-openapi`.
