@@ -50,19 +50,19 @@ class ScenarioSimulationLifecycleBehaviorTest {
     }
 
     @Test
-    fun `given scenario when appending decision and snapshot then history grows consistently`() {
-        val scenario = scenario()
+    fun `given simulation when appending decision and snapshot then history grows consistently`() {
+        val sim = simulation()
         val decision = Decision.MoveItem(cardId = "card-1")
         val snapshot =
             DailySnapshot(
-                simulation = SimulationRef("sim-1"),
-                scenario = ScenarioRef(scenario.id),
+                simulation = SimulationRef(sim.id),
+                scenario = ScenarioRef(sim.scenario.id),
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.5),
                 movements = listOf(Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(1), reason = "manual")),
             )
 
-        val updated = scenario.appendDecision(decision).appendSnapshot(snapshot)
+        val updated = sim.appendDecision(decision).appendSnapshot(snapshot)
 
         assertEquals(1, updated.decisions.size)
         assertEquals(1, updated.history.size)

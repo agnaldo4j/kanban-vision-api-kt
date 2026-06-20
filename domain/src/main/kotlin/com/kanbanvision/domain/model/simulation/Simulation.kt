@@ -14,6 +14,8 @@ data class Simulation(
     val status: SimulationStatus,
     val organization: Organization,
     val scenario: Scenario,
+    val decisions: List<Decision> = emptyList(),
+    val history: List<DailySnapshot> = emptyList(),
     override val audit: Audit = Audit(),
 ) : Domain {
     init {
@@ -45,4 +47,8 @@ data class Simulation(
     fun withStatus(newStatus: SimulationStatus): Simulation = copy(status = newStatus)
 
     fun advanceDay(): Simulation = copy(currentDay = SimulationDay(currentDay.value + 1))
+
+    fun appendDecision(decision: Decision): Simulation = copy(decisions = decisions + decision)
+
+    fun appendSnapshot(snapshot: DailySnapshot): Simulation = copy(history = history + snapshot)
 }

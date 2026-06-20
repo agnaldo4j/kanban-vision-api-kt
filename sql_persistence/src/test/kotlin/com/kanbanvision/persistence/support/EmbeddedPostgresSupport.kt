@@ -145,7 +145,7 @@ internal object PersistenceFixtures {
         organizationId: String = "20000000-0000-0000-0000-000000000001",
     ): Simulation {
         val worker = sampleWorker()
-        val scenario = sampleScenario(worker, simulationId)
+        val scenario = sampleScenario(worker)
         val organization = sampleOrganization(organizationId, worker)
         return Simulation(
             id = simulationId,
@@ -154,6 +154,8 @@ internal object PersistenceFixtures {
             status = SimulationStatus.RUNNING,
             organization = organization,
             scenario = scenario,
+            decisions = listOf(scenarioDecision()),
+            history = listOf(snapshot(simulationId = simulationId)),
         )
     }
 
@@ -171,20 +173,14 @@ internal object PersistenceFixtures {
         )
     }
 
-    private fun sampleScenario(
-        worker: Worker,
-        simulationId: String,
-    ): Scenario {
+    private fun sampleScenario(worker: Worker): Scenario {
         val board = scenarioBoard(worker)
         val scenarioRules = scenarioRules()
-        val decision = scenarioDecision()
         return Scenario(
             id = "a0000000-0000-0000-0000-000000000001",
             name = "Scenario 1",
             rules = scenarioRules,
             board = board,
-            decisions = listOf(decision),
-            history = listOf(snapshot(simulationId = simulationId)),
         )
     }
 

@@ -18,8 +18,6 @@ internal fun Scenario.toSurrogate() =
         name = name,
         rules = rules.toSurrogate(),
         board = board.toSurrogate(),
-        decisions = decisions.map { it.toSurrogate() },
-        history = history.map { it.toSurrogate() },
     )
 
 internal fun ScenarioSurrogate.toDomain() =
@@ -28,8 +26,6 @@ internal fun ScenarioSurrogate.toDomain() =
         name = name,
         rules = rules.toDomain(),
         board = board.toDomain(),
-        decisions = decisions.map { it.toDomain() },
-        history = history.map { it.toDomain() },
     )
 
 private fun ScenarioRules.toSurrogate() =

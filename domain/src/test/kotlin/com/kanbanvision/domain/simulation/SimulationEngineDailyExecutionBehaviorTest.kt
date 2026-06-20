@@ -29,7 +29,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val result = SimulationEngine.runDay(simulation = simulation, decisions = emptyList(), seed = 10L)
 
         assertEquals(simulation.currentDay.value + 1, result.simulation.currentDay.value)
-        assertEquals(1, result.simulation.scenario.history.size)
+        assertEquals(1, result.simulation.history.size)
         assertEquals(simulation.id, result.snapshot.simulation.id)
     }
 

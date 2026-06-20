@@ -134,8 +134,6 @@ internal data class ScenarioSurrogate(
     val name: String,
     val rules: ScenarioRulesSurrogate,
     val board: BoardSurrogate,
-    val decisions: List<DecisionSurrogate>,
-    val history: List<DailySnapshotSurrogate>,
 )
 
 @Serializable
@@ -146,6 +144,8 @@ internal data class SimulationSurrogate(
     val status: String,
     val organization: OrganizationSurrogate,
     val scenario: ScenarioSurrogate,
+    val decisions: List<DecisionSurrogate>,
+    val history: List<DailySnapshotSurrogate>,
 )
 
 internal object SimulationSerializer {
