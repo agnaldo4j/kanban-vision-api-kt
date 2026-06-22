@@ -96,7 +96,7 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.63.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.34")
-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     implementation("org.codehaus.janino:janino:3.1.12")
 
     testImplementation("io.ktor:ktor-server-test-host-jvm:3.5.0")
