@@ -13,29 +13,54 @@ import com.kanbanvision.usecases.simulation.CfdResult
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
+internal const val EXAMPLE_ORGANIZATION_ID = "550e8400-e29b-41d4-a716-446655440000"
+internal const val EXAMPLE_SIMULATION_ID = "550e8400-e29b-41d4-a716-446655440001"
+
 @Serializable
 data class CreateSimulationRequest(
     val organizationId: String,
     val wipLimit: Int,
     val teamSize: Int,
     val seedValue: Long = 0L,
-)
+) {
+    companion object {
+        val example =
+            CreateSimulationRequest(
+                organizationId = EXAMPLE_ORGANIZATION_ID,
+                wipLimit = 5,
+                teamSize = 4,
+                seedValue = 12345L,
+            )
+    }
+}
 
 @Serializable
 data class DecisionRequest(
     val type: String,
     val payload: Map<String, String> = emptyMap(),
-)
+) {
+    companion object {
+        val example = DecisionRequest(type = "MOVE_ITEM", payload = mapOf("cardId" to "card-1"))
+    }
+}
 
 @Serializable
 data class RunDayRequest(
     val decisions: List<DecisionRequest> = emptyList(),
-)
+) {
+    companion object {
+        val example = RunDayRequest(decisions = listOf(DecisionRequest.example))
+    }
+}
 
 @Serializable
 data class SimulationCreatedResponse(
     val simulationId: String,
-)
+) {
+    companion object {
+        val example = SimulationCreatedResponse(simulationId = EXAMPLE_SIMULATION_ID)
+    }
+}
 
 @Serializable
 data class SimulationStateResponse(
@@ -43,7 +68,11 @@ data class SimulationStateResponse(
     val wipLimit: Int,
     val teamSize: Int,
     val itemCount: Int,
-)
+) {
+    companion object {
+        val example = SimulationStateResponse(currentDay = 3, wipLimit = 5, teamSize = 4, itemCount = 7)
+    }
+}
 
 @Serializable
 data class SimulationResponse(
@@ -53,7 +82,19 @@ data class SimulationResponse(
     val teamSize: Int,
     val seedValue: Long,
     val state: SimulationStateResponse,
-)
+) {
+    companion object {
+        val example =
+            SimulationResponse(
+                simulationId = EXAMPLE_SIMULATION_ID,
+                organizationId = EXAMPLE_ORGANIZATION_ID,
+                wipLimit = 5,
+                teamSize = 4,
+                seedValue = 12345L,
+                state = SimulationStateResponse.example,
+            )
+    }
+}
 
 @Serializable
 data class FlowMetricsResponse(
@@ -61,7 +102,11 @@ data class FlowMetricsResponse(
     val wipCount: Int,
     val blockedCount: Int,
     val avgAgingDays: Double,
-)
+) {
+    companion object {
+        val example = FlowMetricsResponse(throughput = 2, wipCount = 4, blockedCount = 1, avgAgingDays = 2.5)
+    }
+}
 
 @Serializable
 data class MovementResponse(
@@ -69,7 +114,17 @@ data class MovementResponse(
     val cardId: String,
     val day: Int,
     val reason: String,
-)
+) {
+    companion object {
+        val example =
+            MovementResponse(
+                type = "MOVED",
+                cardId = "card-1",
+                day = 3,
+                reason = "puxado para a próxima etapa",
+            )
+    }
+}
 
 @Serializable
 data class DailySnapshotResponse(
@@ -77,7 +132,17 @@ data class DailySnapshotResponse(
     val day: Int,
     val metrics: FlowMetricsResponse,
     val movements: List<MovementResponse>,
-)
+) {
+    companion object {
+        val example =
+            DailySnapshotResponse(
+                simulationId = EXAMPLE_SIMULATION_ID,
+                day = 3,
+                metrics = FlowMetricsResponse.example,
+                movements = listOf(MovementResponse.example),
+            )
+    }
+}
 
 internal fun DailySnapshot.toResponse() =
     DailySnapshotResponse(
@@ -107,7 +172,17 @@ data class SimulationSummaryResponse(
     val name: String,
     val status: String,
     val currentDay: Int,
-)
+) {
+    companion object {
+        val example =
+            SimulationSummaryResponse(
+                id = EXAMPLE_SIMULATION_ID,
+                name = "Simulação Time Alpha",
+                status = "RUNNING",
+                currentDay = 3,
+            )
+    }
+}
 
 @Serializable
 data class SimulationListResponse(
@@ -115,7 +190,17 @@ data class SimulationListResponse(
     val page: Int,
     val size: Int,
     val total: Long,
-)
+) {
+    companion object {
+        val example =
+            SimulationListResponse(
+                data = listOf(SimulationSummaryResponse.example),
+                page = 1,
+                size = 20,
+                total = 1L,
+            )
+    }
+}
 
 @Serializable
 data class DayMetricsResponse(
@@ -124,13 +209,29 @@ data class DayMetricsResponse(
     val wipCount: Int,
     val blockedCount: Int,
     val avgAgingDays: Double,
-)
+) {
+    companion object {
+        val example = DayMetricsResponse(day = 1, throughput = 1, wipCount = 3, blockedCount = 0, avgAgingDays = 1.0)
+    }
+}
 
 @Serializable
 data class SimulationDaysResponse(
     val simulationId: String,
     val days: List<DayMetricsResponse>,
-)
+) {
+    companion object {
+        val example =
+            SimulationDaysResponse(
+                simulationId = EXAMPLE_SIMULATION_ID,
+                days =
+                    listOf(
+                        DayMetricsResponse.example,
+                        DayMetricsResponse(day = 2, throughput = 2, wipCount = 4, blockedCount = 1, avgAgingDays = 1.5),
+                    ),
+            )
+    }
+}
 
 @Serializable
 data class CfdDataPointResponse(
@@ -138,13 +239,29 @@ data class CfdDataPointResponse(
     val throughputCumulative: Int,
     val wipCount: Int,
     val blockedCount: Int,
-)
+) {
+    companion object {
+        val example = CfdDataPointResponse(day = 1, throughputCumulative = 1, wipCount = 3, blockedCount = 0)
+    }
+}
 
 @Serializable
 data class SimulationCfdResponse(
     val simulationId: String,
     val series: List<CfdDataPointResponse>,
-)
+) {
+    companion object {
+        val example =
+            SimulationCfdResponse(
+                simulationId = EXAMPLE_SIMULATION_ID,
+                series =
+                    listOf(
+                        CfdDataPointResponse.example,
+                        CfdDataPointResponse(day = 2, throughputCumulative = 3, wipCount = 4, blockedCount = 1),
+                    ),
+            )
+    }
+}
 
 internal fun Page<Simulation>.toListResponse() =
     SimulationListResponse(

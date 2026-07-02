@@ -519,7 +519,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N→ADR-0019]` **GAP-AG** — CORS plugin Ktor com origens explícitas via `CORS_ALLOWED_ORIGINS` (sem `anyHost()`). Novo `plugins/Cors.kt`.
 - [x] `[N→ADR-0019]` **GAP-AH** — Payload size limit: `maxContentLength` configurável via `MAX_REQUEST_BODY_SIZE` (default 1MB). Proteção contra DoS acidental.
 - [x] `[N→ADR-0019]` **GAP-AI** — Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`. Novo `plugins/SecurityHeaders.kt`.
-- [ ] `[N→ADR-0021]` **GAP-AK** — OpenAPI: adicionar exemplos de request/response body completos em `POST /simulations` e `POST /simulations/{id}/run` via DSL `ktor-openapi`.
+- [x] `[N→ADR-0021]` **GAP-AK** — OpenAPI: exemplos de request/response body completos nos 7 endpoints de simulação via DSL `ktor-openapi` (companion `example` nos DTOs + `example("default")` nas rotas) + `OpenApiSpecTest` validando `/api.json`.
 - [ ] `[N→ADR-0021]` **GAP-AM** — Context Map: enriquecer `docs/context-map.md` com diagrama Mermaid `graph LR` dos 3 BCs (Kanban Management, Simulation, Analytics) e relações (Customer-Supplier, ACL).
 - [ ] `[E→ADR-0020]` **GAP-AJ** — Circuit breaker para DB: resilience4j `CircuitBreakerDataSource` decorando `HikariDataSource`. Fallback: `DomainError.ServiceUnavailable`. Métricas exportadas via Micrometer.
 - [ ] `[E→ADR-0022]` **GAP-AL** — API versioning strategy: formalizar URL-based versioning (`/api/v1`, `/api/v2`), ciclo de vida de 12 meses por versão, spec OpenAPI separada por versão.
