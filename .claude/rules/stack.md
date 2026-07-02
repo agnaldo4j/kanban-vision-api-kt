@@ -17,7 +17,7 @@
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit Jupiter 6.1.1 + MockK 1.14.11 |
-| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.15.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
+| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 1.23.8 (jvmTarget pinned to 22 — Detekt max) |
 | Formatting | KtLint 1.5.0 |
@@ -25,7 +25,7 @@
 | Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
 | Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.14.0 (API 1.63.0) |
-| Java | Java 25 LTS (Gradle 8.14.5+; Foojay resolver auto-provisions toolchain) |
+| Java | Java 25 LTS (Gradle 9.6.1 wrapper; Foojay resolver auto-provisions toolchain) |
 | Kotlin | 2.4.0 |
 
 ## CI/CD — GitHub Actions (`.github/workflows/ci.yml`)
