@@ -11,8 +11,9 @@ updates:
       - "dependencies"
     groups:
       # Minor e patch agrupados em um único PR semanal.
-      # Ktor fica fora do grupo: upgrade exige coordenação com Kotlin
-      # (histórico: PRs #118/#127) e deve ser revisado individualmente.
+      # Ktor fica fora deste grupo e tem grupo próprio: os artefatos io.ktor:*
+      # precisam subir em lockstep, e upgrades maiores exigem coordenação com
+      # Kotlin (histórico: PRs #118/#127) — 1 PR dedicado facilita a revisão.
       gradle-minor-patch:
         applies-to: version-updates
         update-types:
@@ -20,6 +21,12 @@ updates:
           - "patch"
         exclude-patterns:
           - "io.ktor:*"
+          - "io.ktor.plugin*"
+      ktor:
+        applies-to: version-updates
+        patterns:
+          - "io.ktor:*"
+          - "io.ktor.plugin*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
