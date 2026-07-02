@@ -6,11 +6,24 @@
 |-----------|------------------------------|
 | Status    | Aceita                       |
 | Data      | 2026-06-20                   |
-| Execução  | —                            |
+| Execução  | 2026-07-02 — implementada em 2 PRs |
 | Autores   | @agnaldo4j                   |
-| Branch    | —                            |
-| PR        | —                            |
+| Branch    | `feat/gap-aj-db-circuit-breaker` (PR1) · `feat/gap-aj-health-metrics` (PR2) |
+| PR        | #208 (breaker + 503) · #209 (health + métricas) |
 | Supersede | —                            |
+
+### Desvios registrados na execução
+
+| Previsto na ADR | Implementado | Motivo |
+|---|---|---|
+| `DomainError` em `usecases/.../errors/` | `domain/errors/DomainError.kt` | Localização real do sealed class |
+| Mapeamento 503 em `StatusPages.kt` | `adapters/EitherRespond.kt` | O `when` exaustivo de `DomainError` vive ali; StatusPages só trata exceptions |
+| `HealthCheckUseCase` | Composição em `plugins/Routing.kt` (`!DbCircuitBreaker.isOpen() && DatabaseFactory.isReady()`) | Classe não existe; readiness é uma closure passada a `healthRoutes` |
+| Wiring em `AppModule.kt` | `DatabaseFactory` + `DbCircuitBreaker` (objects) | Repositórios não recebem DataSource via Koin; `dbQuery` é função top-level |
+| Registro nas 2 camadas | Registro só em `dbQuery`; `CircuitBreakerDataSource` é gate puro por estado | Registrar 2× (retries do Exposed × camadas) abria o circuito com ~2 operações; gate não disputa permits de HALF_OPEN |
+| `resilience4j-kotlin` | Omitido | Nenhum ponto de suspensão dentro do breaker (`executeSupplier` bloqueante em `Dispatchers.IO`) |
+| Config sem transição automática OPEN→HALF_OPEN | `automaticTransitionFromOpenToHalfOpenEnabled(true)` | Com o pod fora do load balancer (readiness 503), nenhum tráfego atravessa o breaker — sem a transição automática o circuito ficaria OPEN para sempre após a recuperação do banco (review Codex no PR #209) |
+| 1 PR único | 2 PRs sequenciais | Limite J-Curve de 400 linhas por PR |
 
 ---
 

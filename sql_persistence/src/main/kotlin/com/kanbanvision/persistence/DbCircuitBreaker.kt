@@ -35,6 +35,14 @@ object DbCircuitBreaker {
 
     fun reset() = circuitBreaker.reset()
 
+    /**
+     * Transição manual para FORCED_OPEN (kill-switch). Encapsula o tipo resilience4j,
+     * que não está no classpath dos módulos consumidores. Reverta com [reset].
+     */
+    fun forceOpen() {
+        circuitBreaker.transitionToForcedOpenState()
+    }
+
     fun bindMetrics(meterRegistry: MeterRegistry) {
         TaggedCircuitBreakerMetrics.ofCircuitBreakerRegistry(registry).bindTo(meterRegistry)
     }
@@ -49,6 +57,10 @@ object DbCircuitBreaker {
             .slowCallRateThreshold(SLOW_CALL_RATE_THRESHOLD_PCT)
             .slowCallDurationThreshold(Duration.ofSeconds(SLOW_CALL_DURATION_SECS))
             .waitDurationInOpenState(Duration.ofSeconds(WAIT_IN_OPEN_STATE_SECS))
+            // Sem isto o pod sai do load balancer, nenhum tráfego atravessa o breaker e
+            // OPEN nunca vira HALF_OPEN — o circuito ficaria aberto para sempre após a
+            // recuperação do banco. FORCED_OPEN (kill-switch) não é afetado.
+            .automaticTransitionFromOpenToHalfOpenEnabled(true)
             .permittedNumberOfCallsInHalfOpenState(PERMITTED_CALLS_IN_HALF_OPEN)
             .recordExceptions(SQLException::class.java, SQLTimeoutException::class.java)
             // Rejeição do gate (CircuitBreakerDataSource) não é sucesso nem falha do banco.
