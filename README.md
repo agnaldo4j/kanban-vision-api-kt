@@ -8,10 +8,10 @@
 [![Gradle](https://img.shields.io/badge/gradle-8.14.5-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![Java](https://img.shields.io/badge/java-25%20LTS-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![Arrow](https://img.shields.io/badge/arrow--kt-2.2.3-E91E63)](https://arrow-kt.io/)
-[![Koin](https://img.shields.io/badge/koin-4.1.1-F88900)](https://insert-koin.io/)
+[![Koin](https://img.shields.io/badge/koin-4.2.2-F88900)](https://insert-koin.io/)
 [![Kotest Property](https://img.shields.io/badge/kotest-property--based%20testing-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
 [![PITest](https://img.shields.io/badge/pitest-mutation%20testing-CC0000)](https://pitest.org/)
-[![OpenTelemetry](https://img.shields.io/badge/opentelemetry-1.47.0-425CC7?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
+[![OpenTelemetry](https://img.shields.io/badge/opentelemetry-1.63.0-425CC7?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-manifests-326CE5?logo=kubernetes&logoColor=white)](k8s/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/agnaldo4j/kanban-vision-api-kt/pkgs/container/kanban-vision-api-kt)
 
