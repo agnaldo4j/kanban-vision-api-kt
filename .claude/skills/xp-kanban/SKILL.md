@@ -283,7 +283,7 @@ APRENDER (Feedback + Evolve Experimentally)
 
 ## 5. Aplicação ao Ciclo de Gaps deste Projeto
 
-O ciclo de execução de gaps do ADR-0004 **é uma implementação concreta** dos princípios
+O ciclo de execução de gaps do board #6 **é uma implementação concreta** dos princípios
 XP + Kanban:
 
 | Conceito | XP | Kanban | Como aparece nos gaps |
@@ -295,7 +295,7 @@ XP + Kanban:
 | Refactoring | Red → Green → Refactor | Kaizen: melhoria contínua | Skill `/refactoring` + Detekt zero violations |
 | Collective ownership | Qualquer dev pode tocar o código | Políticas explícitas e compartilhadas | Convention plugin em `buildSrc/` — regras visíveis |
 | Simple design | YAGNI + 4 regras do design simples | Evite over-engineering | ADR requerida antes de mudanças estruturais |
-| Planning game | Prioridade por valor × esforço | Kanban board de prioridade | Tabela de prioridades no ADR-0004 |
+| Planning game | Prioridade por valor × esforço | Kanban board de prioridade | Ordem da coluna Todo no board #6 |
 
 ---
 
@@ -353,7 +353,7 @@ mutation {
   }) { projectV2Item { id } }
 }'
 
-# 4. Marcar gap [x] no ADR-0004
+# 4. Board #6 é a única fonte de progresso — nunca registrar progresso em ADRs (ADR-0023)
 # 5. Atualizar memory/project_adr_progress.md
 # 6. Encerrar a sessão
 ```
@@ -407,5 +407,5 @@ mutation {
 - Skill: [definition-of-done](../definition-of-done/SKILL.md)
 - Skill: [refactoring](../refactoring/SKILL.md)
 - Skill: [testing-and-observability](../testing-and-observability/SKILL.md)
-- ADR-0004: `adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`
+- ADR-0023: `adr/ADR-0023-politica-adrs-imutabilidade-madr.md` (política de ADRs e separação de camadas)
 - Políticas explícitas: `docs/politicas-explicitas.md`

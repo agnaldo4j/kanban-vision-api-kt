@@ -281,6 +281,15 @@ Toda entrega deve passar no pipeline completo:
 **Regra**: o status da ADR deve ser atualizado no mesmo PR que concluir a implementação.
 Uma ADR com status `Proposta` após o merge indica processo incompleto.
 
+**Imutabilidade (ADR-0023)**: uma ADR `Aceita` nunca tem seu conteúdo editado. Mudança de
+decisão = nova ADR que a supersede; a antiga recebe apenas a linha de status
+`Supersedida pela ADR-XXXX`. Progresso, backlog, scores e ordem de execução NUNCA vivem em
+ADRs — planejamento fica no board #6 e medição em `docs/quality/` + CI. ADRs novas usam o
+template **MADR 4.0** (front-matter `status/date/decision-makers`; Context and Problem
+Statement; Decision Drivers; Considered Options; Decision Outcome; **Confirmation** — o
+gate/fitness function que verifica a decisão; Consequences). Ver
+`adr/ADR-0023-politica-adrs-imutabilidade-madr.md`.
+
 ---
 
 ## 5. Como Ligar ADR ao PR
@@ -451,6 +460,8 @@ para Opção B será emitida com benchmark comparativo.
 | **Sem número sequencial** | `adr/analytics.md`, `adr/nova-rota.md` | Sempre `ADR-NNNN-slug.md` — número é imutável |
 | **ADR supersedida sem referência** | ADR antiga não menciona a nova | Adicionar `Supersede: ADR-NNNN` na ADR antiga e nova |
 | **Múltiplas decisões em uma ADR** | "ADR sobre analytics E autenticação E cache" | Uma decisão por ADR — se estão acopladas, documente explicitamente |
+| **ADR como backlog/status report** | Checkboxes de progresso, scores, ordem de execução editados a cada entrega (caso ADR-0004) | Planejamento no board #6; medição em `docs/quality/` + CI; ADR imutável referencia por link |
+| **ADR aceita editada** | Conteúdo alterado após aceite — histórico do porquê se perde | Nova ADR que supersede; a antiga só ganha a linha de status |
 
 ---
 

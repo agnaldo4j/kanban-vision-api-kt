@@ -1,10 +1,14 @@
 # ADR-0004 — Avaliação de Qualidade do Projeto: Nota, Gaps e Prioridades
 
+> **Status: Supersedida pela [ADR-0023](ADR-0023-politica-adrs-imutabilidade-madr.md)** (2026-07-02).
+> Este documento congela como registro histórico dos ciclos P1–P5. Backlog e progresso vivem no
+> [GitHub Project #6](https://github.com/users/agnaldo4j/projects/6); medição de qualidade em `docs/quality/`.
+
 ## Cabeçalho
 
 | Campo     | Valor                                                        |
 |-----------|--------------------------------------------------------------|
-| Status    | Aceita                                                       |
+| Status    | Supersedida pela ADR-0023                                    |
 | Data      | 2026-03-16                                                   |
 | Autores   | @agnaldo4j                                                   |
 | Branch    | —                                                            |
