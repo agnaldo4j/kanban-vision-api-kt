@@ -21,6 +21,7 @@ fun Application.configureCors(allowedOrigins: Set<String> = loadCorsOrigins()) {
         allowHeader(HttpHeaders.ContentType)
         allowHeader("X-Request-ID")
         exposeHeader("X-Request-ID")
+        exposeHeader(API_VERSION_HEADER)
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)

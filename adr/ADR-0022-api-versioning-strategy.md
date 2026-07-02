@@ -6,11 +6,18 @@
 |-----------|------------------------------|
 | Status    | Aceita                       |
 | Data      | 2026-06-20                   |
-| Execução  | —                            |
+| Execução  | 2026-07-02                   |
 | Autores   | @agnaldo4j                   |
-| Branch    | —                            |
-| PR        | —                            |
+| Branch    | `feat/gap-al-api-versioning` |
+| PR        | #210                         |
 | Supersede | —                            |
+
+### Desvios registrados na execução
+
+| Previsto na ADR | Implementado | Motivo |
+|---|---|---|
+| `Routing.kt` — tornar `route("/api/v1")` explícito | Nenhuma mudança | Já estava explícito desde o GAP-J |
+| `servers { url = "/api/v1" }` | `server { url = "/" }` com description referenciando `/api/v1` | Os paths da spec já incluem o prefixo `/api/v1`; usar o prefixo no server duplicaria o caminho no "Try it out" do Swagger |
 
 ---
 

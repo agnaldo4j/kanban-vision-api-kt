@@ -6,8 +6,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -89,5 +91,21 @@ internal class OpenApiSpecTest {
         withSpec { spec ->
             assertNotNull(spec.at("paths", SIMULATIONS_PATH, "post", "responses", "201"))
             assertNull(spec.responseExamples(SIMULATIONS_PATH, "post", "202"))
+        }
+
+    @Test
+    fun `spec declares a server entry referencing the versioning policy`() =
+        withSpec { spec ->
+            val servers = spec["servers"] as? JsonArray
+            assertNotNull(servers, "spec must declare a servers block (ADR-0022)")
+            assertTrue(
+                servers!!.any {
+                    it.jsonObject["description"]
+                        ?.jsonPrimitive
+                        ?.content
+                        ?.contains("/api/v1") == true
+                },
+                "server description must reference the /api/v1 versioning",
+            )
         }
 }
