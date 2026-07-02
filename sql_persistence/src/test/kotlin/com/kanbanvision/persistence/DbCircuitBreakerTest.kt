@@ -42,7 +42,7 @@ class DbCircuitBreakerTest {
         DbCircuitBreaker.reset()
         assertFalse(DbCircuitBreaker.isOpen())
 
-        DbCircuitBreaker.circuitBreaker.transitionToForcedOpenState()
+        DbCircuitBreaker.forceOpen()
         assertTrue(DbCircuitBreaker.isOpen())
     }
 

@@ -35,6 +35,14 @@ object DbCircuitBreaker {
 
     fun reset() = circuitBreaker.reset()
 
+    /**
+     * Transição manual para FORCED_OPEN (kill-switch). Encapsula o tipo resilience4j,
+     * que não está no classpath dos módulos consumidores. Reverta com [reset].
+     */
+    fun forceOpen() {
+        circuitBreaker.transitionToForcedOpenState()
+    }
+
     fun bindMetrics(meterRegistry: MeterRegistry) {
         TaggedCircuitBreakerMetrics.ofCircuitBreakerRegistry(registry).bindTo(meterRegistry)
     }

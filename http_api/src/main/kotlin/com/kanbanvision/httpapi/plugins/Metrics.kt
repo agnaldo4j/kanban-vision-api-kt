@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi.plugins
 
+import com.kanbanvision.persistence.DbCircuitBreaker
 import io.ktor.http.ContentType
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -17,6 +18,7 @@ fun Application.configureMetrics() {
     install(MicrometerMetrics) {
         this.registry = registry
     }
+    DbCircuitBreaker.bindMetrics(registry)
     routing {
         get("/metrics") {
             call.respondText(registry.scrape(), PROMETHEUS_CONTENT_TYPE)

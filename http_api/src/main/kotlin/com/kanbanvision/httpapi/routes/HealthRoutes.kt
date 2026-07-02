@@ -63,7 +63,8 @@ private fun healthReadySpec(): RouteConfig.() -> Unit =
                 body<HealthResponse>()
             }
             code(HttpStatusCode.ServiceUnavailable) {
-                description = "Banco de dados indisponível."
+                description =
+                    "Banco de dados indisponível ou circuit breaker aberto — o pod sai do load balancer sem reiniciar."
                 body<HealthResponse>()
             }
         }

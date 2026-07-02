@@ -6,6 +6,7 @@ import com.kanbanvision.httpapi.TEST_JWT_REALM
 import com.kanbanvision.httpapi.TEST_JWT_SECRET
 import com.kanbanvision.httpapi.routes.SimulationApiMocks
 import com.kanbanvision.persistence.DatabaseFactory
+import com.kanbanvision.persistence.DbCircuitBreaker
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
@@ -48,6 +49,24 @@ class RoutingPluginTest {
             val ready = client.get("/health/ready")
 
             assertEquals(HttpStatusCode.ServiceUnavailable, ready.status)
+        }
+
+    @Test
+    fun `given open circuit breaker when health readiness is checked then endpoint responds service unavailable`() =
+        testApplication {
+            DbCircuitBreaker.forceOpen()
+            try {
+                application {
+                    installRoutingDependencies(SimulationApiMocks())
+                    configureRouting()
+                }
+
+                val ready = client.get("/health/ready")
+
+                assertEquals(HttpStatusCode.ServiceUnavailable, ready.status)
+            } finally {
+                DbCircuitBreaker.reset()
+            }
         }
 
     private fun Application.installRoutingDependencies(mocks: SimulationApiMocks) {
