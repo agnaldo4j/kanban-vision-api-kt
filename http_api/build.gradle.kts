@@ -69,14 +69,14 @@ dependencies {
 
     implementation("io.arrow-kt:arrow-core:2.2.3")
 
-    implementation("io.ktor:ktor-server-core-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-netty-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-auth-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-status-pages-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-call-logging-jvm:3.5.0")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.5.0")
+    implementation("io.ktor:ktor-server-core-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-netty-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-auth-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-auth-jwt-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-status-pages-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-call-logging-jvm:3.5.1")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.5.1")
 
     implementation("io.insert-koin:koin-core:4.2.2")
     implementation("io.insert-koin:koin-ktor:4.2.2")
@@ -85,9 +85,9 @@ dependencies {
     implementation("io.github.smiley4:ktor-openapi:5.7.0")
     implementation("io.github.smiley4:ktor-swagger-ui:5.7.0")
 
-    implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-cors-jvm:3.5.0")
-    implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.0")
+    implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-cors-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.1")
     implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
 
     // OpenTelemetry API — spans manuais somente em http_api (agente v2.14.0 empacota API v1.47.0)
@@ -99,8 +99,8 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     implementation("org.codehaus.janino:janino:3.1.12")
 
-    testImplementation("io.ktor:ktor-server-test-host-jvm:3.5.0")
-    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.0")
+    testImplementation("io.ktor:ktor-server-test-host-jvm:3.5.1")
+    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.1")
     testImplementation("io.insert-koin:koin-test-junit5:4.2.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.0")
