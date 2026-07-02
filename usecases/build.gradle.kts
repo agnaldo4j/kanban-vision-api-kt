@@ -28,12 +28,12 @@ dependencies {
     api(project(":domain"))
 
     api("io.arrow-kt:arrow-core:2.2.3")
-    implementation("org.slf4j:slf4j-api:2.0.16")
+    implementation("org.slf4j:slf4j-api:2.0.18")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.0")
-    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.kotest:kotest-property:5.9.1")
 }
