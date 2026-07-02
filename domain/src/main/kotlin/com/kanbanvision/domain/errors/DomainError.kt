@@ -48,4 +48,9 @@ sealed class DomainError {
             require(day >= 1) { "DayAlreadyExecuted day must be at least 1" }
         }
     }
+
+    data class ServiceUnavailable(
+        val service: String,
+        val reason: String,
+    ) : DomainError()
 }

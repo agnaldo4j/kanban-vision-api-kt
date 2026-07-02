@@ -4,6 +4,7 @@ plugins {
 }
 
 val exposedVersion = "1.3.1"
+val resilience4jVersion = "2.3.0"
 
 dependencies {
     implementation(project(":domain"))
@@ -11,6 +12,9 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("com.zaxxer:HikariCP:7.1.0")
+    implementation("io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion")
+    implementation("io.github.resilience4j:resilience4j-micrometer:$resilience4jVersion")
+    implementation("io.micrometer:micrometer-core:1.17.0")
     implementation("org.postgresql:postgresql:42.7.12")
     implementation("org.flywaydb:flyway-core:12.10.0")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:12.10.0")

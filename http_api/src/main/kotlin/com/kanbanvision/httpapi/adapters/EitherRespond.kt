@@ -24,6 +24,11 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
             respond(HttpStatusCode.BadRequest, DomainErrorResponse(error = error.reason, requestId = requestId))
         is DomainError.DayAlreadyExecuted ->
             respond(HttpStatusCode.Conflict, DomainErrorResponse(error = "Day ${error.day} was already executed", requestId = requestId))
+        is DomainError.ServiceUnavailable ->
+            respond(
+                HttpStatusCode.ServiceUnavailable,
+                DomainErrorResponse(error = "Service temporarily unavailable", requestId = requestId),
+            )
     }
 }
 

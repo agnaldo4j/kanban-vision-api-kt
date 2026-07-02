@@ -61,4 +61,37 @@ class PersistenceSupportTest {
                 dbQuery(log) { throw CancellationException("cancelled") }
             }
         }
+
+    @Test
+    fun `given open circuit when dbQuery runs then service unavailable is returned without executing block`() =
+        runBlocking {
+            EmbeddedPostgresSupport.ensureStarted()
+            EmbeddedPostgresSupport.refreshDataSource()
+            DbCircuitBreaker.circuitBreaker.transitionToOpenState()
+            try {
+                var executed = false
+
+                val error = dbQuery(log) { executed = true }.leftOrNull()
+
+                assertIs<DomainError.ServiceUnavailable>(error)
+                assertEquals("database", error.service)
+                assertEquals("circuit breaker open", error.reason)
+                assertEquals(false, executed)
+            } finally {
+                DbCircuitBreaker.reset()
+            }
+        }
+
+    @Test
+    fun `given circuit closed again after reset when dbQuery runs then queries succeed`() =
+        runBlocking {
+            EmbeddedPostgresSupport.ensureStarted()
+            EmbeddedPostgresSupport.refreshDataSource()
+            DbCircuitBreaker.circuitBreaker.transitionToOpenState()
+            DbCircuitBreaker.reset()
+
+            val result = dbQuery(log) { 7 }.getOrElse { error("unexpected left: $it") }
+
+            assertEquals(7, result)
+        }
 }
