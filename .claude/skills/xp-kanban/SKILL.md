@@ -354,8 +354,7 @@ mutation {
 }'
 
 # 4. Board #6 é a única fonte de progresso — nunca registrar progresso em ADRs (ADR-0023)
-# 5. Atualizar memory/project_adr_progress.md
-# 6. Encerrar a sessão
+# 5. Encerrar a sessão
 ```
 
 ### 6.3 IDs de Referência — GitHub Project

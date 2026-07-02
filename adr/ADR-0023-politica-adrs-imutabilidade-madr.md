@@ -69,8 +69,8 @@ Opção 1. A partir desta ADR:
 
 ## Confirmation
 
-- `git log --follow adr/ADR-*.md` de ADRs `accepted` não deve mostrar commits além da criação e
-  da eventual linha de supersessão — verificável em code review.
+- Por arquivo: `git log --oneline -- adr/ADR-NNNN-<slug>.md` de uma ADR `accepted` não deve
+  mostrar commits além da criação e da eventual linha de supersessão — verificável em code review.
 - Nenhum arquivo em `adr/` contém checkboxes de progresso (`grep -rn "\- \[ \]\|\- \[x\]" adr/`
   retorna apenas ocorrências históricas nas ADRs ≤ 0022, congeladas).
 - O fechamento de gap no processo (`.claude/rules/workflow.md`) referencia apenas o board #6.

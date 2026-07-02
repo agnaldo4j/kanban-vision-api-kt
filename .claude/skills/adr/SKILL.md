@@ -75,177 +75,72 @@ adr/ADR-NNNN-slug-descritivo.md
 
 ---
 
-## 3. Template ADR Completo
+## 3. Template MADR 4.0 (obrigatório para ADRs novas — ADR-0023)
 
-Copie este template ao criar uma nova ADR. Todos os campos marcados com `*` são obrigatórios.
+Copie este template ao criar uma nova ADR. Formato: [MADR 4.0](https://adr.github.io/madr/).
+Todos os campos marcados com `*` são obrigatórios.
 
 ```markdown
+---
+status: proposed            # proposed | accepted | rejected | deprecated | superseded by ADR-XXXX
+date: YYYY-MM-DD
+decision-makers: "@handle"
+# supersedes: ADR-XXXX      # somente se substituir outra ADR (adicionar a linha de status na antiga)
+---
+
 # ADR-NNNN — Título Descritivo da Decisão *
 
-## Cabeçalho
+## Context and Problem Statement *
 
-| Campo        | Valor                                      |
-|--------------|--------------------------------------------|
-| Status *     | Proposta / Aceita / Supersedida / Rejeitada / Descontinuada |
-| Data *       | YYYY-MM-DD                                 |
-| Autores *    | @handle                                    |
-| Branch *     | feat/adr-NNNN-slug                         |
-| PR           | (preencher após abrir o PR)                |
-| Supersede    | (ADR-XXXX se substituir outra ADR)         |
+> O problema ou necessidade que exige uma decisão explícita agora: qual parte do sistema é
+> afetada, quais requisitos/restrições existem. Termine com a pergunta a ser decidida.
 
----
+## Decision Drivers
 
-## Contexto e Motivação *
+- Força 1 — ex.: manter o domínio livre de dependências de framework
+- Força 2 — ex.: não quebrar a API v1 (additive-only)
 
-> Descreva o problema ou necessidade que levou a esta decisão.
-> Inclua: qual parte do sistema é afetada, quais requisitos ou restrições existem,
-> e por que uma decisão explícita é necessária agora.
+## Considered Options *
 
----
+1. Opção A — descrição em uma frase
+2. Opção B — descrição em uma frase
 
-## Forças (Decision Drivers) *
+## Decision Outcome *
 
-- [ ] Força 1 — ex: manter o domínio livre de dependências de framework
-- [ ] Força 2 — ex: garantir cobertura de testes ≥ 90%
-- [ ] Força 3 — ex: evitar quebra de API para clientes existentes
+**Escolhida: Opção X**, porque [justificativa objetiva ancorada nos drivers, 2–4 frases].
 
----
+### Confirmation
 
-## Opções Consideradas *
+> Como a conformidade com esta decisão será verificada — de preferência um gate/fitness
+> function de CI (Detekt rule, teste Konsist, quality gate, assertion na spec). Se não for
+> automatizável, descreva a verificação em code review.
 
-- **Opção A**: Nome curto — descrição em uma frase
-- **Opção B**: Nome curto — descrição em uma frase
-- **Opção C**: Nome curto — descrição em uma frase (se aplicável)
+## Consequences *
 
----
+- Bom: consequência positiva 1
+- Ruim: trade-off 1 (e como será mitigado)
 
-## Decisão *
+## Pros and Cons of the Options
 
-> **Escolhemos [Opção X]** porque [justificativa clara e objetiva em 2–4 frases].
-> Esta opção satisfaz as forças [lista as forças atendidas] sem comprometer [lista o que não é comprometido].
+### Opção A
+- Bom: …
+- Ruim: …
 
----
+### Opção B
+- Bom: …
+- Ruim: …
 
-## Análise das Opções
+## More Information
 
-### Opção A — Nome
-
-**Prós:**
-- Pro 1
-- Pro 2
-
-**Contras:**
-- Contra 1
-- Contra 2
-
-### Opção B — Nome
-
-**Prós:**
-- Pro 1
-- Pro 2
-
-**Contras:**
-- Contra 1
-- Contra 2
-
-### Opção C — Nome (se aplicável)
-
-**Prós:**
-- Pro 1
-
-**Contras:**
-- Contra 1
-
----
-
-## Consequências *
-
-**Positivas:**
-- Consequência positiva 1
-- Consequência positiva 2
-
-**Negativas / Trade-offs:**
-- Trade-off 1 (e como será mitigado)
-- Trade-off 2
-
-**Neutras:**
-- Impacto neutro 1
-
----
-
-## Plano de Implementação *
-
-> Tarefas verificáveis. Cada item deve ser entregável de forma independente ou em sequência clara.
-
-- [ ] Tarefa 1 — ex: criar interface `ScenarioAnalyticsRepository` em `usecases/repositories/`
-- [ ] Tarefa 2 — ex: implementar `JdbcScenarioAnalyticsRepository` em `sql_persistence/`
-- [ ] Tarefa 3 — ex: criar `GetScenarioAnalyticsUseCase` com `GetScenarioAnalyticsQuery`
-- [ ] Tarefa 4 — ex: criar `ScenarioAnalyticsRoutes` com spec OpenAPI completa
-- [ ] Tarefa 5 — ex: escrever testes unitários e de integração (cobertura ≥ 90%)
-- [ ] Tarefa 6 — ex: executar `./gradlew testAll` — build verde
-- [ ] Tarefa 7 — ex: atualizar diagramas C4 no README (skill c4-model)
-
----
-
-## Garantias de Qualidade *
-
-### DOD — Definition of Done
-
-Antes de marcar o PR como pronto, confirmar cada item do skill `definition-of-done`:
-
-- [ ] **1. Contrato e Rastreabilidade**: ticket ↔ branch ↔ PR ↔ build rastreáveis
-- [ ] **2. Testes Técnicos**: unit tests (given–when–then, sucesso e erro), integration tests para cada boundary
-- [ ] **3. Versionamento e Compatibilidade**: mudanças de API documentadas, OpenAPI atualizado
-- [ ] **4. Segurança e Compliance**: sem secrets no código, PII protegido
-- [ ] **5. CI/CD**: `./gradlew testAll` verde no CI, sem testes flaky
-- [ ] **6. Observabilidade**: logs estruturados com MDC, métricas nos golden signals
-- [ ] **7. Performance e Confiabilidade**: limites funcionais definidos, circuit breakers se aplicável
-- [ ] **8. Deploy Seguro**: rollback documentado, health checks válidos
-- [ ] **9. Documentação**: README / runbook atualizado, comunicação publicada
-
-### Qualidade de Código
-
-Toda entrega deve passar no pipeline completo:
-
-| Ferramenta | Requisito | Ação se falhar |
-|---|---|---|
-| Detekt | zero violações (`warningsAsErrors = true`) | Refatorar — nunca suprimir sem justificativa |
-| KtLint | zero erros de formatação | `./gradlew ktlintFormat` antes do commit |
-| JaCoCo | ≥ 90% de cobertura de instruções por módulo | Escrever o teste faltante — nunca baixar o threshold |
-| `@Suppress` | somente com comentário justificando | Sem justificativa = PR rejeitado |
-
-> ⛔ **REGRA ABSOLUTA**: nenhum arquivo de configuração de qualidade será editado
-> (`detekt.yml`, `.editorconfig`, `build.gradle.kts`, `gradle.properties`, convention plugin).
-> Se o build falha, corrija o código. Veja skill `kotlin-quality-pipeline`.
-
-### Manutenibilidade SOLID
-
-- [ ] **SRP** — cada classe tem uma única razão para mudar
-- [ ] **OCP** — extensível via interfaces/abstrações, não via modificação de código existente
-- [ ] **LSP** — implementações são substituíveis por suas interfaces sem quebrar o sistema
-- [ ] **ISP** — interfaces são coesas e focadas; nenhum cliente implementa métodos que não usa
-- [ ] **DIP** — módulos de alto nível dependem de abstrações, não de implementações concretas
-
-### Aderência à Arquitetura
-
-- [ ] **Dependency Rule**: dependências de código-fonte apontam apenas para dentro (`domain ← usecases ← adapters`)
-- [ ] **Ports-and-Adapters**: interfaces (ports) definidas em `usecases/repositories/`, implementações em `sql_persistence/`
-- [ ] **CQS**: cada caso de uso aceita exatamente um `Command` (modifica) ou `Query` (lê), nunca primitivos avulsos
-- [ ] **Either para erros**: erros de domínio modelados como `Either<DomainError, T>` via Arrow-kt
-- [ ] **Domain puro**: zero imports de framework em `domain/` após a entrega
-- [ ] **DTOs nas boundaries**: nenhum objeto de framework (`ApplicationCall`, `ResultSet`) cruza para dentro do domínio
-
----
-
-## Referências
-
-- Skill: [definition-of-done](..definition-of-done/SKILL.md)
-- Skill: [clean-architecture](../clean-architecture/SKILL.md)
-- Skill: [kotlin-quality-pipeline](../kotlin-quality-pipeline/SKILL.md)
-- Skill: [solid-principles](../solid-principles/SKILL.md)
-- ADR anterior relacionada: ADR-XXXX (se aplicável)
-- Issue / ticket: (link)
+- Branch: `feat/adr-NNNN-slug` · PR: (link após abrir)
+- Item no board #6: (link) — o plano de implementação vive lá, não aqui
+- Referências: skills, ADRs relacionadas, literatura
 ```
+
+**O que NÃO vai na ADR (ADR-0023):** plano de implementação com checkboxes, checklists de
+DoD/SOLID/arquitetura, scores e status de progresso. O plano vive no item do board #6 e no PR;
+a qualidade é verificada pelos gates do CI e pelos skills `definition-of-done` /
+`kotlin-quality-pipeline` no PR de implementação — a seção *Confirmation* apenas aponta o gate.
 
 ---
 
@@ -270,20 +165,23 @@ Toda entrega deve passar no pipeline completo:
 
 ### Ciclo de vida do Status
 
-| Status | Significado | Quem define |
+| Status (canônico MADR) | Significado | Quem define |
 |---|---|---|
-| **Proposta** | ADR escrita, aguardando revisão do time | Autor |
-| **Aceita** | Decisão aprovada, implementação autorizada | Revisor após aprovação |
-| **Supersedida** | Substituída por ADR mais recente (referenciar nova ADR) | Autor da nova ADR |
-| **Rejeitada** | Avaliada e descartada (registrar motivo) | Revisor |
-| **Descontinuada** | Era válida, mas o contexto mudou (sem substituto imediato) | Time |
+| **proposed** | ADR escrita, aguardando revisão | Autor |
+| **accepted** | Decisão aprovada, implementação autorizada | Revisor após aprovação |
+| **superseded by ADR-XXXX** | Substituída por ADR mais recente (com link) | Autor da nova ADR |
+| **rejected** | Avaliada e descartada (registrar motivo) | Revisor |
+| **deprecated** | Era válida, mas o contexto mudou (sem substituto imediato) | Time |
+
+> ADRs legadas (≤ 0022) mantêm os termos em português (`Aceita`, `Supersedida...`) — não converter.
+> Para automação/grep, os termos canônicos acima valem para toda ADR nova.
 
 **Regra**: o status da ADR deve ser atualizado no mesmo PR que concluir a implementação.
 Uma ADR com status `Proposta` após o merge indica processo incompleto.
 
-**Imutabilidade (ADR-0023)**: uma ADR `Aceita` nunca tem seu conteúdo editado. Mudança de
+**Imutabilidade (ADR-0023)**: uma ADR `accepted` nunca tem seu conteúdo editado. Mudança de
 decisão = nova ADR que a supersede; a antiga recebe apenas a linha de status
-`Supersedida pela ADR-XXXX`. Progresso, backlog, scores e ordem de execução NUNCA vivem em
+`superseded by ADR-XXXX`. Progresso, backlog, scores e ordem de execução NUNCA vivem em
 ADRs — planejamento fica no board #6 e medição em `docs/quality/` + CI. ADRs novas usam o
 template **MADR 4.0** (front-matter `status/date/decision-makers`; Context and Problem
 Statement; Decision Drivers; Considered Options; Decision Outcome; **Confirmation** — o
@@ -454,11 +352,11 @@ para Opção B será emitida com benchmark comparativo.
 | **ADR como changelog** | Descreve o que foi feito, não por que foi decidido | Foco no problema e nas alternativas rejeitadas |
 | **Uma opção avaliada** | Sem alternativas, não é uma decisão — é uma especificação | Mínimo 2 opções com prós/contras reais |
 | **Justificativa vaga** | "Escolhemos X porque é melhor/mais simples/recomendado" | Justificativa baseada em forças concretas e trade-offs |
-| **Plano sem tarefas** | Plano de implementação com itens não verificáveis | Cada item deve ser um entregável concreto com `- [ ]` |
-| **Garantias ignoradas** | Seção de qualidade em branco ou copiada sem reflexão | Cada item confirmado explicitamente ou marcado N/A com justificativa |
-| **Status nunca atualizado** | ADR permanece como `Proposta` após o merge | Atualizar status para `Aceita` no PR de implementação |
+| **Plano dentro da ADR** | Checkboxes de implementação embutidos tornam a ADR mutável | Plano vive no item do board #6 e no PR; ADR aponta o gate na seção *Confirmation* |
+| **Confirmation vazia** | Decisão sem forma de verificar conformidade | Apontar gate/fitness function de CI, ou descrever a verificação de review |
+| **Status nunca atualizado** | ADR permanece como `proposed` após o merge | Atualizar status para `accepted` no PR de implementação |
 | **Sem número sequencial** | `adr/analytics.md`, `adr/nova-rota.md` | Sempre `ADR-NNNN-slug.md` — número é imutável |
-| **ADR supersedida sem referência** | ADR antiga não menciona a nova | Adicionar `Supersede: ADR-NNNN` na ADR antiga e nova |
+| **ADR supersedida sem referência** | ADR antiga não menciona a nova | Linha `superseded by ADR-NNNN` na antiga; `supersedes: ADR-NNNN` no front-matter da nova |
 | **Múltiplas decisões em uma ADR** | "ADR sobre analytics E autenticação E cache" | Uma decisão por ADR — se estão acopladas, documente explicitamente |
 | **ADR como backlog/status report** | Checkboxes de progresso, scores, ordem de execução editados a cada entrega (caso ADR-0004) | Planejamento no board #6; medição em `docs/quality/` + CI; ADR imutável referencia por link |
 | **ADR aceita editada** | Conteúdo alterado após aceite — histórico do porquê se perde | Nova ADR que supersede; a antiga só ganha a linha de status |
