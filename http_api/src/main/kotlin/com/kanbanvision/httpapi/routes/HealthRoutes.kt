@@ -56,7 +56,9 @@ private fun healthReadySpec(): RouteConfig.() -> Unit =
         operationId = "getHealthReady"
         summary = "Readiness probe"
         tags("health")
-        description = "Verifica se a aplicação está pronta para receber tráfego, incluindo conexão com o banco de dados."
+        description =
+            "Verifica se a aplicação está pronta para receber tráfego. Com o circuit breaker do banco aberto " +
+            "responde 503 imediatamente, sem tentar conexão; caso contrário valida a conexão com o banco de dados."
         response {
             code(HttpStatusCode.OK) {
                 description = "Aplicação pronta para receber tráfego."

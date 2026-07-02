@@ -22,6 +22,7 @@
 | Wiring em `AppModule.kt` | `DatabaseFactory` + `DbCircuitBreaker` (objects) | Repositórios não recebem DataSource via Koin; `dbQuery` é função top-level |
 | Registro nas 2 camadas | Registro só em `dbQuery`; `CircuitBreakerDataSource` é gate puro por estado | Registrar 2× (retries do Exposed × camadas) abria o circuito com ~2 operações; gate não disputa permits de HALF_OPEN |
 | `resilience4j-kotlin` | Omitido | Nenhum ponto de suspensão dentro do breaker (`executeSupplier` bloqueante em `Dispatchers.IO`) |
+| Config sem transição automática OPEN→HALF_OPEN | `automaticTransitionFromOpenToHalfOpenEnabled(true)` | Com o pod fora do load balancer (readiness 503), nenhum tráfego atravessa o breaker — sem a transição automática o circuito ficaria OPEN para sempre após a recuperação do banco (review Codex no PR #209) |
 | 1 PR único | 2 PRs sequenciais | Limite J-Curve de 400 linhas por PR |
 
 ---

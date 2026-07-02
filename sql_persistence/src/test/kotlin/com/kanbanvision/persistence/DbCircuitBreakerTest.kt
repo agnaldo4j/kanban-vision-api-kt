@@ -28,6 +28,7 @@ class DbCircuitBreakerTest {
         assertEquals(80f, config.slowCallRateThreshold)
         assertEquals(Duration.ofSeconds(5), config.slowCallDurationThreshold)
         assertEquals(3, config.permittedNumberOfCallsInHalfOpenState)
+        assertTrue(config.isAutomaticTransitionFromOpenToHalfOpenEnabled)
         assertEquals("database", DbCircuitBreaker.circuitBreaker.name)
     }
 
