@@ -8,15 +8,15 @@
 | Authentication | JWT Bearer (`ktor-server-auth-jwt`) |
 | Rate Limiting | `ktor-server-rate-limit` (100 req/min per IP) |
 | Serialization | kotlinx.serialization |
-| DI | Koin 4.1.1 |
+| DI | Koin 4.2.2 |
 | JDBC | Raw JDBC + HikariCP 7.0.2 |
-| DB Migrations | Flyway 10.21.0 |
-| Production DB | PostgreSQL 42.7.5 |
+| DB Migrations | Flyway 12.9.0 |
+| Production DB | PostgreSQL 42.7.11 |
 | Test DB | Embedded PostgreSQL (zonky) |
 | Metrics | Micrometer + Prometheus (`/metrics`) |
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
-| Testing | JUnit Jupiter 6.0.3 + MockK 1.14.9 |
+| Testing | JUnit Jupiter 6.1.0 + MockK 1.14.9 |
 | Mutation testing | PITest core 1.25.3 / Gradle plugin 1.15.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 1.23.8 (jvmTarget pinned to 22 — Detekt max) |
@@ -24,7 +24,7 @@
 | Coverage | JaCoCo (≥ 96% per module) |
 | Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
-| Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.14.0 (API 1.47.0) |
+| Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.14.0 (API 1.63.0) |
 | Java | Java 25 LTS (Gradle 8.14.5+; Foojay resolver auto-provisions toolchain) |
 | Kotlin | 2.4.0 |
 

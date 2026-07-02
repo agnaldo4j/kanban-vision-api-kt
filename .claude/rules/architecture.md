@@ -45,7 +45,7 @@ DAO  ❌ — mutable entity objects violate the immutability rule
 ### Modules (add to `sql_persistence/build.gradle.kts`)
 
 ```kotlin
-val exposedVersion = "1.1.1"
+val exposedVersion = "1.3.0"
 implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
 implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 ```
