@@ -520,7 +520,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N→ADR-0019]` **GAP-AH** — Payload size limit: `maxContentLength` configurável via `MAX_REQUEST_BODY_SIZE` (default 1MB). Proteção contra DoS acidental.
 - [x] `[N→ADR-0019]` **GAP-AI** — Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`. Novo `plugins/SecurityHeaders.kt`.
 - [x] `[N→ADR-0021]` **GAP-AK** — OpenAPI: exemplos de request/response body completos nos 7 endpoints de simulação via DSL `ktor-openapi` (companion `example` nos DTOs + `example("default")` nas rotas) + `OpenApiSpecTest` validando `/api.json`.
-- [ ] `[N→ADR-0021]` **GAP-AM** — Context Map: enriquecer `docs/context-map.md` com diagrama Mermaid `graph LR` dos 3 BCs (Kanban Management, Simulation, Analytics) e relações (Customer-Supplier, ACL).
+- [x] `[N→ADR-0021]` **GAP-AM** — Context Map: `docs/context-map.md` com diagrama Mermaid `graph LR` dos 3 BCs + 2 candidatos e relações (Customer-Supplier, ACL, Open Host Service), substituindo o ASCII-art; nomes reconciliados com o código (`Card`, pacotes pós GAP-AE/AF).
 - [ ] `[E→ADR-0020]` **GAP-AJ** — Circuit breaker para DB: resilience4j `CircuitBreakerDataSource` decorando `HikariDataSource`. Fallback: `DomainError.ServiceUnavailable`. Métricas exportadas via Micrometer.
 - [ ] `[E→ADR-0022]` **GAP-AL** — API versioning strategy: formalizar URL-based versioning (`/api/v1`, `/api/v2`), ciclo de vida de 12 meses por versão, spec OpenAPI separada por versão.
 

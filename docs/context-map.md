@@ -6,52 +6,25 @@
 
 ## Visão Geral
 
+```mermaid
+graph LR
+    subgraph EST["Bounded Contexts Estabelecidos"]
+        KM["Kanban Management BC<br/>Board · Step · Card · Organization<br/>domain/model/kanban · domain/model/organization<br/>CP1 — Visualize"]
+        SIM["Simulation BC<br/>Simulation · Scenario · SimulationEngine · DailySnapshot<br/>domain/model/simulation · domain/simulation<br/>CP3 — Manage Flow"]
+        ANA["Analytics BC (lógico)<br/>FlowMetrics · CFD · séries temporais<br/>usecases (queries) · rotas GET /api/v1/simulations<br/>CP5 — Feedback Loops"]
+    end
+    subgraph FUT["Candidatos a Extração Futura"]
+        FOR["Forecasting BC<br/>Lead time P50/P85/P95 · Monte Carlo<br/>(Reinertsen)"]
+        POL["Policy BC<br/>ServiceClass · PolicySet · WIP policies<br/>(Burrows — 4 classes de serviço)"]
+    end
+    KM -->|"Customer-Supplier<br/>(estrutura Board/Step/Card)"| SIM
+    SIM -->|"Customer-Supplier (atual)<br/>ACL planejada no lado Analytics"| ANA
+    ANA -.->|"Customer-Supplier (futuro)"| FOR
+    POL -.->|"Open Host Service (futuro)"| SIM
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                          SHARED KERNEL                               │
-│  domain/ — Board, Step, Card, Organization, ServiceClass,            │
-│            DomainError, Audit, *Ref, SimulationDay                   │
-└───────────┬────────────────────────────┬─────────────────────────────┘
-            │                            │
-            ▼                            ▼
-┌───────────────────────┐    ┌───────────────────────────┐
-│   Kanban Management   │    │     Simulation Engine      │
-│                       │◄───│                           │
-│  Board, Step, Card    │    │  Scenario, SimulationEngine│
-│  Organization, Tribe  │    │  Decision, PolicySet       │
-│  Squad, Worker        │    │  DailySnapshot             │
-└───────────────────────┘    └─────────────┬─────────────┘
-                                           │
-                                     ACL (planejado)
-                                           │
-                                           ▼
-                             ┌─────────────────────────┐
-                             │        Analytics         │
-                             │                         │
-                             │  FlowMetrics, CFD        │
-                             │  GET /api/v1/simulations │
-                             │  GET /api/v1/simulations/│
-                             │    {id}/days · cfd       │
-                             └─────────────┬───────────┘
-                                           │
-                              Customer-Supplier (futuro)
-                                           │
-                                           ▼
-                             ┌─────────────────────────┐
-                             │       Forecasting        │
-                             │    (candidato futuro)    │
-                             │  Lead Time Distribution  │
-                             │  Throughput Prediction   │
-                             │  Monte Carlo Simulation  │
-                             └─────────────────────────┘
 
-┌──────────────────────────────────────────────────────┐
-│             Policy Engine (candidato futuro)         │
-│    Open Host Service → consumido por Simulation      │
-│  Escalation, classes de serviço, automação de        │
-│  decisões, políticas explícitas (Burrows §4)         │
-└──────────────────────────────────────────────────────┘
-```
+> Setas sólidas = relações atuais no monólito modular; setas tracejadas = relações planejadas/futuras.
+> Os três BCs estabelecidos compartilham o **Shared Kernel** (`domain/` — entidades, VOs, `DomainError`), detalhado na tabela de [Padrões de Integração](#padrões-de-integração).
 
 ---
 
@@ -59,7 +32,7 @@
 
 ### 1. Kanban Management
 
-**Pacote:** `domain/src/main/kotlin/com/kanbanvision/domain/model/`
+**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/kanban/` + `domain/model/organization/`
 
 **Aggregate Roots:** `Board`, `Organization`
 
@@ -84,7 +57,7 @@
 
 ### 2. Simulation Engine
 
-**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/simulation/` + `domain/model/Simulation.kt`, `Scenario.kt`, `ScenarioRules.kt`
+**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/simulation/` (entidades) + `domain/simulation/SimulationEngine.kt` (Domain Service); `Scenario`, `ScenarioRules` e `PolicySet` vivem em `domain/model/organization/`
 
 **Aggregate Roots:** `Simulation`, `Scenario`
 
