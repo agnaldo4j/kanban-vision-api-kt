@@ -21,7 +21,7 @@
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 1.23.8 (jvmTarget pinned to 22 — Detekt max) |
 | Formatting | KtLint 1.5.0 |
-| Coverage | JaCoCo (≥ 96% per module) |
+| Coverage | JaCoCo (≥ 97% per module) |
 | Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
 | Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.14.0 (API 1.63.0) |
