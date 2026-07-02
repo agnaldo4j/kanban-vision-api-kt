@@ -22,6 +22,10 @@ fun Application.configureOpenApi() {
                 name = "Kanban Vision"
             }
         }
+        server {
+            url = "/"
+            description = "Servidor atual — rotas de negócio versionadas sob /api/v1 (ADR-0022; política em docs/api-versioning.md)."
+        }
         tags {
             tag("boards") { description = "Gerenciamento de quadros Kanban" }
             tag("steps") { description = "Etapas dentro de um quadro" }

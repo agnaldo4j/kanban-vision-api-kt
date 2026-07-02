@@ -522,7 +522,7 @@ dimensão Modularidade preparam esse caminho sem antecipar complexidade desneces
 - [x] `[N→ADR-0021]` **GAP-AK** — OpenAPI: exemplos de request/response body completos nos 7 endpoints de simulação via DSL `ktor-openapi` (companion `example` nos DTOs + `example("default")` nas rotas) + `OpenApiSpecTest` validando `/api.json`.
 - [x] `[N→ADR-0021]` **GAP-AM** — Context Map: `docs/context-map.md` com diagrama Mermaid `graph LR` dos 3 BCs + 2 candidatos e relações (Customer-Supplier, ACL, Open Host Service), substituindo o ASCII-art; nomes reconciliados com o código (`Card`, pacotes pós GAP-AE/AF).
 - [x] `[E→ADR-0020]` **GAP-AJ** — Circuit breaker para DB: resilience4j `DbCircuitBreaker` (registro em `dbQuery`) + `CircuitBreakerDataSource` (gate no checkout). Fallback `DomainError.ServiceUnavailable` (503), `/health/ready` sensível ao circuito, métricas `resilience4j_circuitbreaker_*` via Micrometer. PRs #208 + #209; desvios documentados na ADR-0020.
-- [ ] `[E→ADR-0022]` **GAP-AL** — API versioning strategy: formalizar URL-based versioning (`/api/v1`, `/api/v2`), ciclo de vida de 12 meses por versão, spec OpenAPI separada por versão.
+- [x] `[E→ADR-0022]` **GAP-AL** — API versioning strategy: política formal em `docs/api-versioning.md` (additive-only em v1, ciclo de vida 12 meses, remoção com aviso de 90 dias), header `API-Version: 1.0` em todas as respostas (`VersioningHeaders.kt`), `server` block na spec OpenAPI. v2/spec separada/headers de deprecação ficam para a ADR que introduzir a v2. **Ciclo P5 concluído.**
 
 ---
 

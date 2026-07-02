@@ -12,6 +12,7 @@ import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSecurityHeaders
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
+import com.kanbanvision.httpapi.plugins.configureVersioningHeaders
 import com.kanbanvision.httpapi.routes.authRoutes
 import com.kanbanvision.persistence.DatabaseConfig
 import com.kanbanvision.persistence.DatabaseFactory
@@ -54,6 +55,7 @@ fun Application.module() {
     configureSerialization()
     configureStatusPages()
     configureSecurityHeaders()
+    configureVersioningHeaders()
     configureRequestLimits()
     configureRateLimit()
     configureCors()
