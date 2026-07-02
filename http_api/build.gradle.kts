@@ -95,7 +95,7 @@ dependencies {
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.63.0")
 
-    implementation("ch.qos.logback:logback-classic:1.5.34")
+    implementation("ch.qos.logback:logback-classic:1.5.37")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     implementation("org.codehaus.janino:janino:3.1.12")
 
@@ -103,13 +103,13 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.0")
     testImplementation("io.insert-koin:koin-test-junit5:4.2.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.0")
-    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("com.h2database:h2:2.4.240")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.kotest:kotest-property:5.9.1")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
-    testImplementation("au.com.dius.pact.consumer:junit5:4.7.2")
-    testImplementation("au.com.dius.pact.provider:junit5:4.7.2")
+    testImplementation("au.com.dius.pact.consumer:junit5:4.7.3")
+    testImplementation("au.com.dius.pact.provider:junit5:4.7.3")
 }
