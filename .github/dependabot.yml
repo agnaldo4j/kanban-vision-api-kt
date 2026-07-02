@@ -21,10 +21,12 @@ updates:
           - "patch"
         exclude-patterns:
           - "io.ktor:*"
+          - "io.ktor.plugin*"
       ktor:
         applies-to: version-updates
         patterns:
           - "io.ktor:*"
+          - "io.ktor.plugin*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
