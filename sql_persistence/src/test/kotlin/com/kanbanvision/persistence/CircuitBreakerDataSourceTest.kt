@@ -54,6 +54,20 @@ class CircuitBreakerDataSourceTest {
         assertFailsWith<CallNotPermittedException> { dataSource.connection }
         assertFailsWith<CallNotPermittedException> { dataSource.getConnection("user", "pass") }
         verify(exactly = 0) { delegate.connection }
+        verify(exactly = 0) { delegate.getConnection(any(), any()) }
+    }
+
+    @Test
+    fun `given half open circuit when getting connection then checkout is delegated so probes reach the database`() {
+        val connection = mockk<Connection>()
+        val delegate = mockk<DataSource> { every { this@mockk.connection } returns connection }
+        val circuitBreaker = testCircuitBreaker()
+        val dataSource = CircuitBreakerDataSource(delegate, circuitBreaker)
+        circuitBreaker.transitionToOpenState()
+        circuitBreaker.transitionToHalfOpenState()
+
+        // O gate não disputa os permits limitados de HALF_OPEN — quem os controla é a camada dbQuery.
+        assertSame(connection, dataSource.connection)
     }
 
     @Test

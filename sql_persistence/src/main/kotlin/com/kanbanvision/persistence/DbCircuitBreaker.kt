@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
@@ -50,5 +51,7 @@ object DbCircuitBreaker {
             .waitDurationInOpenState(Duration.ofSeconds(WAIT_IN_OPEN_STATE_SECS))
             .permittedNumberOfCallsInHalfOpenState(PERMITTED_CALLS_IN_HALF_OPEN)
             .recordExceptions(SQLException::class.java, SQLTimeoutException::class.java)
+            // Rejeição do gate (CircuitBreakerDataSource) não é sucesso nem falha do banco.
+            .ignoreExceptions(CallNotPermittedException::class.java)
             .build()
 }

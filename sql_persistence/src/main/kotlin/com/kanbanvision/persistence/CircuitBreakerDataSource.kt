@@ -10,10 +10,11 @@ import javax.sql.DataSource
  * `getConnection` falha imediatamente com `CallNotPermittedException` em vez de aguardar o
  * timeout do pool.
  *
- * O decorator é um gate puro — não registra sucesso/falha nem consome permits de HALF_OPEN.
- * Quem registra os resultados no breaker é a camada de `dbQuery` (`PersistenceSupport`), o
- * ponto único por onde passa todo acesso dos repositórios; registrar aqui também contaria a
- * mesma falha várias vezes (retries do Exposed × camadas) e abriria o circuito cedo demais.
+ * O decorator é um gate puro por estado — não registra sucesso/falha nem toca na API de
+ * permits. Em HALF_OPEN o checkout passa direto: os probes são limitados pela camada de
+ * `dbQuery` (`PersistenceSupport`), que já adquiriu o permit, e precisam alcançar o banco
+ * para validar a recuperação; disputar permits aqui rejeitaria probes legítimos. Registrar
+ * aqui também contaria a mesma falha várias vezes (retries do Exposed × camadas).
  */
 class CircuitBreakerDataSource(
     private val delegate: DataSource,
@@ -33,9 +34,9 @@ class CircuitBreakerDataSource(
     }
 
     private fun rejectWhenOpen() {
-        if (!circuitBreaker.tryAcquirePermission()) {
+        val state = circuitBreaker.state
+        if (state == CircuitBreaker.State.OPEN || state == CircuitBreaker.State.FORCED_OPEN) {
             throw CallNotPermittedException.createCallNotPermittedException(circuitBreaker)
         }
-        circuitBreaker.releasePermission()
     }
 }
