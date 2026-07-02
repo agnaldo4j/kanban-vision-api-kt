@@ -16,7 +16,7 @@ dependencies {
 
 pitest {
     // PITest 1.25.3 uses ASM 9.9.1 which supports Java 25 class files (major version 69).
-    // The Gradle plugin (1.15.0) is pinned but pitestVersion overrides the core JAR used.
+    // The Gradle plugin (1.19.0) is pinned but pitestVersion overrides the core JAR used.
     pitestVersion.set("1.25.3")
     junit5PluginVersion.set("1.2.3")
     targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
