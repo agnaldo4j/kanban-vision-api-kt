@@ -11,7 +11,7 @@
 | DI | Koin 4.2.2 |
 | JDBC | Raw JDBC + HikariCP 7.1.0 |
 | DB Migrations | Flyway 12.10.0 |
-| Production DB | PostgreSQL 42.7.12 |
+| Production DB | PostgreSQL (JDBC driver `org.postgresql:postgresql` 42.7.12) |
 | Test DB | Embedded PostgreSQL (zonky) |
 | Metrics | Micrometer + Prometheus (`/metrics`) |
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
