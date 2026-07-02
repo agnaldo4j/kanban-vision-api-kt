@@ -5,7 +5,7 @@
 
 [![Kotlin](https://img.shields.io/badge/kotlin-2.4.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Ktor](https://img.shields.io/badge/ktor-3.5.1-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
-[![Gradle](https://img.shields.io/badge/gradle-8.14.5-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
+[![Gradle](https://img.shields.io/badge/gradle-9.6.1-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![Java](https://img.shields.io/badge/java-25%20LTS-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![Arrow](https://img.shields.io/badge/arrow--kt-2.2.3-E91E63)](https://arrow-kt.io/)
 [![Koin](https://img.shields.io/badge/koin-4.2.2-F88900)](https://insert-koin.io/)
