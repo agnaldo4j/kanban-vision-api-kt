@@ -4,19 +4,19 @@
 
 | Concern | Library |
 |---|---|
-| HTTP | Ktor 3.5.0 (Netty engine) |
+| HTTP | Ktor 3.5.1 (Netty engine) |
 | Authentication | JWT Bearer (`ktor-server-auth-jwt`) |
 | Rate Limiting | `ktor-server-rate-limit` (100 req/min per IP) |
 | Serialization | kotlinx.serialization |
 | DI | Koin 4.2.2 |
-| JDBC | Raw JDBC + HikariCP 7.0.2 |
-| DB Migrations | Flyway 12.9.0 |
-| Production DB | PostgreSQL 42.7.11 |
+| JDBC | Raw JDBC + HikariCP 7.1.0 |
+| DB Migrations | Flyway 12.10.0 |
+| Production DB | PostgreSQL 42.7.12 |
 | Test DB | Embedded PostgreSQL (zonky) |
 | Metrics | Micrometer + Prometheus (`/metrics`) |
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
-| Testing | JUnit Jupiter 6.1.0 + MockK 1.14.9 |
+| Testing | JUnit Jupiter 6.1.1 + MockK 1.14.11 |
 | Mutation testing | PITest core 1.25.3 / Gradle plugin 1.15.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 1.23.8 (jvmTarget pinned to 22 — Detekt max) |
