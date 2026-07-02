@@ -46,8 +46,9 @@ Rotas de infraestrutura não pertencem ao contrato de negócio e não são versi
 
 1. **Ativa** — v1 é a versão corrente; recebe mudanças additive-only.
 2. **Deprecada** — no lançamento da v2, a v1 entra em deprecação e passa a emitir os headers
-   `Deprecation: true`, `Sunset: <data RFC 8594>` e `Link: <...>; rel="successor-version"`
-   (serão adicionados ao plugin `VersioningHeaders` quando a v2 existir).
+   `Deprecation: true`, `Sunset: <HTTP-date, ex.: Sun, 01 Nov 2026 00:00:00 GMT>` (RFC 8594)
+   e `Link: <...>; rel="successor-version"` (serão adicionados ao plugin `VersioningHeaders`
+   quando a v2 existir).
 3. **Suporte** — a v1 permanece funcional por **12 meses** após o lançamento da v2 (correções de
    segurança e bugs críticos; sem features novas).
 4. **Remoção** — anunciada com **90 dias** de antecedência via changelog e header `Sunset`.

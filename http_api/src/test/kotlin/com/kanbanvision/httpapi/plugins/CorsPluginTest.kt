@@ -112,6 +112,10 @@ class CorsPluginTest {
                 exposed.contains("X-Request-ID", ignoreCase = true),
                 "Expected X-Request-ID in Access-Control-Expose-Headers but got: '$exposed'",
             )
+            assertTrue(
+                exposed.contains(API_VERSION_HEADER, ignoreCase = true),
+                "Expected $API_VERSION_HEADER in Access-Control-Expose-Headers but got: '$exposed'",
+            )
         }
 
     @Test

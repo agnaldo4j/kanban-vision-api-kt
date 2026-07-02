@@ -6,8 +6,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -96,7 +96,7 @@ internal class OpenApiSpecTest {
     @Test
     fun `spec declares a server entry referencing the versioning policy`() =
         withSpec { spec ->
-            val servers = spec["servers"]?.jsonArray
+            val servers = spec["servers"] as? JsonArray
             assertNotNull(servers, "spec must declare a servers block (ADR-0022)")
             assertTrue(
                 servers!!.any {
