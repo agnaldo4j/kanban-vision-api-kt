@@ -14,8 +14,12 @@ JWT_DEV_MODE=true ./gradlew :http_api:run                # run (dev mode)
 ./gradlew ktlintFormat                                   # auto-fix formatting
 ```
 
-> **Gradle daemon: Java 21.** Kotlin 2.4.0 bundled IntelliJ library fails on Java 25 daemon.
-> Use `.sdkmanrc` (`sdk env`) or `export JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
+> **Gradle daemon: Java 21.** Detekt 1.23.8's embedded Kotlin compiler fails on a Java 25 daemon
+> (all `detekt` tasks abort with `> 25.0.3`); Kotlin 2.4.0 compilation itself works on Java 25
+> with Gradle 9.6.1. Verified 2026-07-02.
+> Use `.sdkmanrc` (`sdk env`) to select Java 21 — the JDK 21 lives in SDKMAN, not in the macOS
+> JVM registry. Do NOT use `/usr/libexec/java_home -v 21`: it silently falls back to Corretto 17
+> (only Corretto 17 and 8 are registered there).
 > **Compilation + runtime target: Java 25 LTS.** Foojay toolchain resolver auto-provisions JDK 25.
 > Gradle 9.6.1 (wrapper).
 
