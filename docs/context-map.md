@@ -32,7 +32,7 @@ graph LR
 
 ### 1. Kanban Management
 
-**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/kanban/` + `domain/model/organization/`
+**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/kanban/` + `domain/src/main/kotlin/com/kanbanvision/domain/model/organization/`
 
 **Aggregate Roots:** `Board`, `Organization`
 
@@ -57,7 +57,7 @@ graph LR
 
 ### 2. Simulation Engine
 
-**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/simulation/` (entidades) + `domain/simulation/SimulationEngine.kt` (Domain Service); `Scenario`, `ScenarioRules` e `PolicySet` vivem em `domain/model/organization/`
+**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/simulation/` (entidades) + `domain/src/main/kotlin/com/kanbanvision/domain/simulation/SimulationEngine.kt` (Domain Service); `Scenario`, `ScenarioRules` e `PolicySet` vivem em `domain/src/main/kotlin/com/kanbanvision/domain/model/organization/`
 
 **Aggregate Roots:** `Simulation`, `Scenario`
 
@@ -107,6 +107,7 @@ graph LR
 | `domain/` → todos os módulos | **Shared Kernel** | Atual | Entidades, VOs e `DomainError` compartilhados — mudanças requerem coordenação entre módulos |
 | `http_api` → `usecases` | **Customer-Supplier** | Atual | `http_api` (customer) consome use cases (supplier) via interfaces CQS — supplier define o contrato |
 | `sql_persistence` → `domain` | **Conformist** | Atual | Persistence aceita o modelo de domínio sem tradução — tabelas Exposed espelham entidades |
+| `Simulation` → `Analytics` | **Customer-Supplier** | Atual | Simulation (supplier) fornece `DailySnapshot`/`FlowMetrics` que as queries de Analytics consomem diretamente no monólito |
 | `Analytics` → `Simulation` | **ACL** | Planejado | Analytics deve consumir `DailySnapshot` via Anti-Corruption Layer para isolar seu modelo de leitura do modelo de execução |
 | `Simulation` → `Policy Engine` | **Open Host Service** | Futuro | Policy Engine expõe protocolo estável para que Simulation resolva decisões automaticamente |
 | `Forecasting` → `Analytics` | **Customer-Supplier** | Futuro | Forecasting consome dados agregados de Analytics via contrato versionado |
