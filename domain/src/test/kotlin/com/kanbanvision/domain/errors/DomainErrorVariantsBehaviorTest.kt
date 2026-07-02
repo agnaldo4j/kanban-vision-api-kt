@@ -15,6 +15,7 @@ class DomainErrorVariantsBehaviorTest {
         val simulation = DomainError.SimulationNotFound(id = "sim-1")
         val persistence = DomainError.PersistenceError(message = "db")
         val invalidDecision = DomainError.InvalidDecision(reason = "invalid")
+        val serviceUnavailable = DomainError.ServiceUnavailable(service = "database", reason = "circuit breaker open")
 
         assertIs<DomainError.BoardNotFound>(board)
         assertEquals("b-1", board.id)
@@ -24,6 +25,8 @@ class DomainErrorVariantsBehaviorTest {
         assertEquals("sim-1", simulation.id)
         assertEquals("db", persistence.message)
         assertEquals("invalid", invalidDecision.reason)
+        assertEquals("database", serviceUnavailable.service)
+        assertEquals("circuit breaker open", serviceUnavailable.reason)
     }
 
     @Test
