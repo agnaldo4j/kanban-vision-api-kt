@@ -37,8 +37,8 @@ gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
   projectId: "PVT_kwHNWUfOAUhH_w" itemId: "<ID>"
   fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"
   value: { singleSelectOptionId: "ca259842" }}) { projectV2Item { id } }}'
-
-# Mark gap [x] in ADR-0004 + update memory/project_adr_progress.md + close session
+# Board #6 is the ONLY source of truth for progress (ADR-0023).
+# Never record progress in ADRs — accepted ADRs are immutable.
 ```
 
 **WIP limit: 1** — never more than one item in Doing.
@@ -74,18 +74,5 @@ gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
 | `./gradlew testAll` | Green before opening PR |
 | PR size | ≤ 400 changed lines |
 
-**Execution order:**
-```
-P1 Hardening:   GAP-B → GAP-C → GAP-A                              ✅ done
-P2 Operations:  GAP-F → GAP-D → GAP-E → GAP-G → GAP-V → GAP-U     ✅ done
-P3 Domain:      GAP-W → GAP-O → GAP-P → GAP-Q → GAP-S → GAP-I → GAP-J → GAP-H → GAP-K  ✅ done
-P4 Excellence:  GAP-T → GAP-X → GAP-N → GAP-L → GAP-R → GAP-M                          ✅ done
-```
-
-> **GAP-J re-escopo (2026-03-23):** Analytics API — `GET /simulations` paginado,
-> `GET /simulations/{id}/days` série temporal, `GET /simulations/{id}/cfd` dados CFD.
-> Derivado de *The Principles of Product Development Flow* (Reinertsen) via vault Obsidian.
->
-> **GAP-X novo (2026-03-23):** `ServiceClass` incompleto — adicionar `DATE_DRIVEN` e
-> `INTANGIBLE`. Burrows (Kanban From the Inside) define 4 classes de serviço; o domínio
-> atual implementa apenas EXPEDITE e STANDARD.
+**Execution order:** the board #6 Todo column IS the execution order (top = next).
+Never duplicate ordering or progress in this file or in ADRs (ADR-0023).

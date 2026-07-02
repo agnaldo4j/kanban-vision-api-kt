@@ -109,10 +109,11 @@ Para **LLMs**, o J-curve existe em contexto: uma refatoração grande esgota o c
 
 ---
 
-## 5. Estratégia de execução para os gaps do ADR-0004
+## 5. Estratégia de execução para gaps de qualidade
 
-Os 20 gaps do ADR-0004 são classificados por impacto evolutivo. Esta classificação é
-a fonte canônica — a coluna `Tipo` das tabelas do ADR-0004 é derivada daqui.
+Todo gap de qualidade é classificado por impacto evolutivo. Esta classificação é
+a fonte canônica — o tipo `[N]/[M]/[E]` registrado nos itens do board #6 é derivado daqui
+(política em `docs/politicas-explicitas.md` §5, decisão na ADR-0023).
 
 ### Normativas `[N]` — execute diretamente, 1 por sessão LLM
 ```
@@ -162,7 +163,7 @@ A principal causa de degradação de qualidade em sessões longas de LLM é o **
 ### Protocolo: 1 gap por sessão
 
 ```
-1. ANTES de iniciar: leia CLAUDE.md + ADR-0004 + os 2-3 arquivos alvo
+1. ANTES de iniciar: leia CLAUDE.md + o item do gap no board #6 (e sua ADR, se [E]) + os 2-3 arquivos alvo
 2. EXECUTE apenas o gap planejado (normativo de preferência)
 3. VALIDE localmente: ./gradlew testAll
 4. CRIE PR focado (título: "feat(gap-X): descrição do gap")
@@ -248,7 +249,7 @@ Antes de iniciar qualquer mudança, responda:
     → Se tocar mais de 3 arquivos de camadas distintas: dividir em PRs menores
 
 [ ] A ordem de dependências foi respeitada?
-    → Ver Ciclos de execução do ADR-0004
+    → Ver a coluna Todo do board #6 (topo = próximo)
 
 [ ] O contexto da sessão LLM está fresco?
     → CLAUDE.md e arquivos alvo foram relidos no início da sessão?
@@ -274,4 +275,5 @@ Antes de iniciar qualquer mudança, responda:
 - Skill: [adr](.claude/skills/adr/SKILL.md)
 - Skill: [refactoring](.claude/skills/refactoring/SKILL.md)
 - Skill: [definition-of-done](.claude/skills/definition-of-done/SKILL.md)
-- ADR-0004 — Avaliação de Qualidade: Gaps e Prioridades
+- ADR-0023 — Política de ADRs (imutabilidade + separação decisão/planejamento/medição)
+- GitHub Project #6 — backlog e progresso de gaps

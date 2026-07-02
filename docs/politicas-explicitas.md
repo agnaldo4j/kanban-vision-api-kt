@@ -64,9 +64,10 @@ APÓS MERGE DO PR:
   2. git branch -d feat/gap-X-slug
   3. git push origin --delete feat/gap-X-slug (se necessário)
   4. Mover card no GitHub Project: Doing → Done (via gh api graphql)
-  5. Marcar gap [x] no ADR-0004
-  6. Atualizar memory/project_adr_progress.md com PR número e SHA
-  7. Encerrar a sessão LLM
+  5. Encerrar a sessão LLM
+
+O board #6 é a ÚNICA fonte de verdade de progresso (ADR-0023).
+Nunca registrar progresso em ADRs — elas são imutáveis após aceitas.
 ```
 
 ---
@@ -93,13 +94,24 @@ Nenhum PR pode ser mergeado se qualquer uma delas for violada.
 
 ## 5. Políticas de ADR
 
+> Fonte: [ADR-0023](../adr/ADR-0023-politica-adrs-imutabilidade-madr.md) — imutabilidade + MADR 4.0.
+
 | Tipo de gap | Política |
 |---|---|
 | `[N]` Normativo | Execute diretamente. Sem ADR obrigatória. |
 | `[M]` Médio | 1 sessão de design + 1 PR focado. ADR recomendada se novo conceito. |
-| `[E]` Estrutural | ADR com status `Aceita` **antes de qualquer código**. Sem ADR = fica no Backlog. |
+| `[E]` Estrutural | ADR com status `accepted` **antes de qualquer código**. Sem ADR = fica no Backlog. |
 
 **ADR-first**: nenhum gap `[E]` pode entrar em Todo sem ADR aprovada.
+
+**Regras de forma e ciclo de vida (ADR-0023):**
+
+- **Imutabilidade**: ADR aceita nunca é editada; mudança de decisão = nova ADR que supersede
+  (a antiga só ganha a linha `superseded by ADR-XXXX`).
+- **Uma decisão por ADR**, ~1 página; só decisões arquiteturalmente significativas.
+- **Template MADR 4.0** para ADRs novas, com seção *Confirmation* apontando o gate que verifica a decisão.
+- **Separação de camadas**: decisão em `adr/` · planejamento no board #6 · medição no CI + `docs/quality/`.
+  ADR referencia essas camadas por link, nunca as contém (sem checkboxes, scores ou ordem de execução).
 
 ---
 

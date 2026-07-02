@@ -1,10 +1,12 @@
 # ADR-0004 — Avaliação de Qualidade do Projeto: Nota, Gaps e Prioridades
 
+> **Status: Supersedida pela [ADR-0023](ADR-0023-politica-adrs-imutabilidade-madr.md)** (2026-07-02).
+
 ## Cabeçalho
 
 | Campo     | Valor                                                        |
 |-----------|--------------------------------------------------------------|
-| Status    | Aceita                                                       |
+| Status    | Supersedida pela ADR-0023                                    |
 | Data      | 2026-03-16                                                   |
 | Autores   | @agnaldo4j                                                   |
 | Branch    | —                                                            |
