@@ -67,15 +67,7 @@ private fun createSimulationSpec(): RouteConfig.() -> Unit =
             body<CreateSimulationRequest> {
                 description = "Configuração da simulação: organização, WIP limit, tamanho do time e semente aleatória."
                 required = true
-                example("padrão") {
-                    value =
-                        CreateSimulationRequest(
-                            organizationId = "550e8400-e29b-41d4-a716-446655440000",
-                            wipLimit = 5,
-                            teamSize = 4,
-                            seedValue = 12345L,
-                        )
-                }
+                example("padrão") { value = CreateSimulationRequest.example }
             }
         }
         applyCreateSimulationResponses()
@@ -85,7 +77,9 @@ private fun RouteConfig.applyCreateSimulationResponses() {
     response {
         code(HttpStatusCode.Created) {
             description = "Simulação criada com sucesso."
-            body<SimulationCreatedResponse>()
+            body<SimulationCreatedResponse> {
+                example("default") { value = SimulationCreatedResponse.example }
+            }
             header<String>("X-Request-ID") {
                 description = "Correlation ID para rastreamento de logs."
             }
@@ -129,7 +123,9 @@ private fun RouteConfig.applyGetSimulationResponses() {
     response {
         code(HttpStatusCode.OK) {
             description = "Simulação encontrada."
-            body<SimulationResponse>()
+            body<SimulationResponse> {
+                example("default") { value = SimulationResponse.example }
+            }
             header<String>("X-Request-ID") {
                 description = "Correlation ID para rastreamento de logs."
             }
@@ -164,15 +160,7 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
                 description = "Lista de decisões a aplicar no dia corrente."
                 required = true
                 example("sem decisões") { value = RunDayRequest(decisions = emptyList()) }
-                example("mover item") {
-                    value =
-                        RunDayRequest(
-                            decisions =
-                                listOf(
-                                    DecisionRequest(type = "MOVE_ITEM", payload = mapOf("cardId" to "card-1")),
-                                ),
-                        )
-                }
+                example("mover item") { value = RunDayRequest.example }
             }
         }
         applyRunDayResponses()
@@ -182,7 +170,7 @@ private fun RouteConfig.applyRunDayResponses() {
     response {
         code(HttpStatusCode.OK) {
             description = "Dia executado com sucesso. Retorna o snapshot do dia."
-            body<DailySnapshotResponse>()
+            body<DailySnapshotResponse> { example("default") { value = DailySnapshotResponse.example } }
             header<String>("X-Request-ID") { description = "Correlation ID para rastreamento de logs." }
         }
         code(HttpStatusCode.Conflict) {
@@ -234,7 +222,9 @@ private fun RouteConfig.applyGetDailySnapshotResponses() {
     response {
         code(HttpStatusCode.OK) {
             description = "Snapshot encontrado."
-            body<DailySnapshotResponse>()
+            body<DailySnapshotResponse> {
+                example("default") { value = DailySnapshotResponse.example }
+            }
             header<String>("X-Request-ID") {
                 description = "Correlation ID para rastreamento de logs."
             }

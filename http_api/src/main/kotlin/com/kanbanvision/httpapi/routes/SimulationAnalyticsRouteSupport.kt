@@ -50,7 +50,9 @@ private fun RouteConfig.applyListSimulationsResponses() {
     response {
         code(HttpStatusCode.OK) {
             description = "Lista de simulações retornada com sucesso."
-            body<SimulationListResponse>()
+            body<SimulationListResponse> {
+                example("default") { value = SimulationListResponse.example }
+            }
             header<String>("X-Request-ID") {
                 description = "Correlation ID para rastreamento de logs."
             }
@@ -106,7 +108,9 @@ private fun RouteConfig.applySimulationDaysResponses() {
     response {
         code(HttpStatusCode.OK) {
             description = "Série temporal de métricas retornada com sucesso."
-            body<SimulationDaysResponse>()
+            body<SimulationDaysResponse> {
+                example("default") { value = SimulationDaysResponse.example }
+            }
             header<String>("X-Request-ID") {
                 description = "Correlation ID para rastreamento de logs."
             }
@@ -128,7 +132,9 @@ private fun RouteConfig.applySimulationCfdResponses() {
     response {
         code(HttpStatusCode.OK) {
             description = "Dados CFD retornados com sucesso."
-            body<SimulationCfdResponse>()
+            body<SimulationCfdResponse> {
+                example("default") { value = SimulationCfdResponse.example }
+            }
             header<String>("X-Request-ID") {
                 description = "Correlation ID para rastreamento de logs."
             }
