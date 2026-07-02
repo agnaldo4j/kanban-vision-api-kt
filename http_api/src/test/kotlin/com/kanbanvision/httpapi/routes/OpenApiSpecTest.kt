@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -51,11 +52,11 @@ internal class OpenApiSpecTest {
     fun `spec exposes request body examples for POST simulations and POST run`() =
         withSpec { spec ->
             val createExamples = spec.requestExamples(SIMULATIONS_PATH, "post")
-            assertNotNull(createExamples, "POST /simulations request body must declare examples")
+            assertNotNull(createExamples, "POST $SIMULATIONS_PATH request body must declare examples")
             assertTrue(createExamples!!.containsKey("padrão"))
 
             val runExamples = spec.requestExamples("$SIMULATION_BY_ID_PATH/run", "post")
-            assertNotNull(runExamples, "POST /simulations/{id}/run request body must declare examples")
+            assertNotNull(runExamples, "POST $SIMULATION_BY_ID_PATH/run request body must declare examples")
             assertTrue(runExamples!!.containsKey("sem decisões"))
             assertTrue(runExamples.containsKey("mover item"))
         }
@@ -87,6 +88,6 @@ internal class OpenApiSpecTest {
     fun `spec does not declare response examples for undocumented status codes`() =
         withSpec { spec ->
             assertNotNull(spec.at("paths", SIMULATIONS_PATH, "post", "responses", "201"))
-            assertEquals(null, spec.responseExamples(SIMULATIONS_PATH, "post", "202"))
+            assertNull(spec.responseExamples(SIMULATIONS_PATH, "post", "202"))
         }
 }

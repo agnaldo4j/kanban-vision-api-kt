@@ -121,7 +121,7 @@ data class MovementResponse(
                 type = "MOVED",
                 cardId = "card-1",
                 day = 3,
-                reason = "pulled to next step",
+                reason = "puxado para a próxima etapa",
             )
     }
 }
