@@ -101,7 +101,7 @@ jobs:
             echo '## PITest Mutation Report'
             # module|display threshold|target — thresholds mirror the gradle gates
             for spec in \
-              'domain|35|com.kanbanvision.domain.simulation.*' \
+              'domain|58|com.kanbanvision.domain.simulation.*' \
               'usecases|55|com.kanbanvision.usecases.*'; do
               module=${spec%%|*}; rest=${spec#*|}
               threshold=${rest%%|*}; target=${rest#*|}
