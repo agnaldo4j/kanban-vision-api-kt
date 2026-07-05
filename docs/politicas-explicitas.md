@@ -83,6 +83,9 @@ Nenhum PR pode ser mergeado se qualquer uma delas for violada.
 | Detekt violations | 0 (`warningsAsErrors = true`) | CI — bloqueia merge |
 | KtLint formatting | 0 erros | CI — bloqueia merge |
 | `./gradlew testAll` | verde | CI — bloqueia merge |
+| PITest mutation score | domain ≥ 58% · usecases ≥ 55% | CI — bloqueia merge |
+| Fitness functions de arquitetura (Konsist) | 8/8 verdes (ADR-0026) | CI — via `testAll` |
+| SCA supply chain (osv-scanner sobre SBOM) | 0 CVEs não tratadas; exceção só com `reason` no `osv-scanner.toml` (ADR-0025) | CI — job `supply-chain` bloqueia a imagem |
 | Tamanho de PR | ≤ 400 linhas alteradas | Heurística — acima, dividir |
 | WIP (itens em Doing) | máximo 1 | Política de pull |
 | Gaps por sessão LLM | máximo 1 | Protocolo de sessão |
