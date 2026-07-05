@@ -6,27 +6,27 @@ complexity:
   active: true
   CyclomaticComplexMethod:
     active: true
-    threshold: 10
+    allowedComplexity: 10
   CognitiveComplexMethod:
     active: true
-    threshold: 15
+    allowedComplexity: 15
   LongMethod:
     active: true
-    threshold: 30
+    allowedLines: 30
   LongParameterList:
     active: true
-    functionThreshold: 5
-    constructorThreshold: 6
+    allowedFunctionParameters: 5
+    allowedConstructorParameters: 6
   TooManyFunctions:
     active: true
-    thresholdInFiles: 15
-    thresholdInClasses: 11
+    allowedFunctionsPerFile: 15
+    allowedFunctionsPerClass: 11
   LargeClass:
     active: true
-    threshold: 200
+    allowedLines: 200
   NestedBlockDepth:
     active: true
-    threshold: 4
+    allowedDepth: 4
 
 naming:
   active: true
@@ -56,7 +56,7 @@ style:
     ignoreCompanionObjectPropertyDeclaration: true
   WildcardImport:
     active: true
-  UnusedImports:
+  UnusedImport:
     active: true
   ReturnCount:
     active: true
@@ -66,13 +66,17 @@ style:
     max: 2
   ForbiddenImport:
     active: true
-    imports:
+    forbiddenImports:
       - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
         reason: 'Import Jdbc*Repository only in AppModule.kt (DI wiring). Depend on repository interfaces from usecases/repositories/ instead.'
     excludes: ['**/di/AppModule.kt']
   ForbiddenComment:
     active: true
-    comments: ['FIXME:', 'HACK:']
+    comments:
+      - value: 'FIXME:'
+        reason: 'Forbidden FIXME todo marker in comment — fix the problem before merging.'
+      - value: 'HACK:'
+        reason: 'Forbidden HACK marker in comment — refactor properly instead of working around.'
   MaxLineLength:
     active: true
     maxLineLength: 140

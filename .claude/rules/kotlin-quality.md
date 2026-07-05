@@ -12,7 +12,7 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 
 | Tool | Config | Key thresholds |
 |---|---|---|
-| Detekt 1.23.7 | `config/detekt/detekt.yml` — `warningsAsErrors = true` | Cyclomatic complexity 10, max line 140, max functions/class 15, max lines/class 200 |
+| Detekt 2.0.0-alpha.5 | `config/detekt/detekt.yml` — `warningsAsErrors = true` | Cyclomatic complexity 10, max line 140, max functions/class 15, max lines/class 200 |
 | KtLint 1.5.0 | Kotlin official style | `./gradlew ktlintFormat` auto-fixes |
 | JaCoCo | 95% minimum instruction coverage per module | Build fails if not met |
 
