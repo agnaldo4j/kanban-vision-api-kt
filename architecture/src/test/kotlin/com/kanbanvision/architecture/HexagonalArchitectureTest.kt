@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Test
 
 /**
  * Fitness function da Dependency Rule (ADR-0026, arquitetura hexagonal):
- * http_api -> usecases -> domain; sql_persistence -> domain + usecases.
- * A direção única das dependências também garante ausência de ciclos entre camadas.
+ * http_api -> usecases -> domain; sql_persistence -> domain + usecases;
+ * http_api -> sql_persistence somente para wiring de DI (o Detekt ForbiddenImport
+ * restringe imports Jdbc*/Exposed* ao AppModule). A direção única das dependências
+ * também garante ausência de ciclos entre camadas.
  */
 class HexagonalArchitectureTest {
     private val domain = Layer("Domain", "com.kanbanvision.domain..")
@@ -36,6 +38,15 @@ class HexagonalArchitectureTest {
         Konsist.scopeFromProduction().assertArchitecture {
             persistence.dependsOn(domain, useCases)
             persistence.doesNotDependOn(httpApi)
+        }
+    }
+
+    @Test
+    fun `httpApi e a camada mais externa - pode depender das internas e ninguem depende dela`() {
+        Konsist.scopeFromProduction().assertArchitecture {
+            // persistence permitida apenas para wiring de DI (AppModule) —
+            // granularidade de classe é garantida pelo Detekt ForbiddenImport.
+            httpApi.dependsOn(domain, useCases, persistence)
         }
     }
 }
