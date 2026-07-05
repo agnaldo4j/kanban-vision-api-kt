@@ -81,7 +81,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Run PITest mutation testing
-        run: ./gradlew :domain:pitest
+        run: ./gradlew pitestAll
 
       - name: Upload PITest mutation reports
         if: always()
@@ -98,12 +98,21 @@ jobs:
         run: |
           {
             echo 'body<<PITEST_REPORT'
-            echo '## PITest Mutation Report — `domain`'
-            echo ''
-            xml="domain/build/reports/pitest/mutations.xml"
-            if [ ! -f "$xml" ]; then
-              echo '⚠️ Mutation report not found — PITest may have failed or was skipped.'
-            else
+            echo '## PITest Mutation Report'
+            # module|display threshold|target — thresholds mirror the gradle gates
+            for spec in \
+              'domain|58|com.kanbanvision.domain.simulation.*' \
+              'usecases|55|com.kanbanvision.usecases.*'; do
+              module=${spec%%|*}; rest=${spec#*|}
+              threshold=${rest%%|*}; target=${rest#*|}
+              echo ''
+              printf '### `%s`\n' "$module"
+              echo ''
+              xml="${module}/build/reports/pitest/mutations.xml"
+              if [ ! -f "$xml" ]; then
+                echo '⚠️ Mutation report not found — PITest may have failed or was skipped.'
+                continue
+              fi
               total=$({ grep -c '<mutation ' "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
               killed=$({ grep -c "status='KILLED'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
               survived=$({ grep -c "status='SURVIVED'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
@@ -111,8 +120,8 @@ jobs:
               timed_out=$({ grep -c "status='TIMED_OUT'" "$xml" 2>/dev/null || true; } | tr -d '[:space:]')
               total=${total:-0}; killed=${killed:-0}; survived=${survived:-0}
               no_coverage=${no_coverage:-0}; timed_out=${timed_out:-0}
-              if [ "$total" -gt 0 ]; then score=$((killed * 100 / total)); else score=0; fi
-              threshold=35
+              # Score na semântica do PITest (gate do Gradle): timeouts contam como kill.
+              if [ "$total" -gt 0 ]; then score=$(((killed + timed_out) * 100 / total)); else score=0; fi
               echo '| Metric | Value |'
               echo '|--------|-------|'
               printf '| Mutantes totais | %d |\n' "$total"
@@ -127,8 +136,8 @@ jobs:
                 printf '**Mutation score: %d%% ❌** (threshold: %d%%)\n' "$score" "$threshold"
               fi
               echo ''
-              echo '> Target: `com.kanbanvision.domain.simulation.*` · Mutators: `STRONGER`'
-            fi
+              printf '> Target: `%s` · Mutators: `STRONGER`\n' "$target"
+            done
             echo 'PITEST_REPORT'
           } >> "$GITHUB_OUTPUT"
 

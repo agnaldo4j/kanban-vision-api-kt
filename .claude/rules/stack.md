@@ -17,7 +17,7 @@
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit Jupiter 6.1.1 + MockK 1.14.11 |
-| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
+| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER mutators; `domain/` SimulationEngine gate 58%, `usecases/` gate 55%) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | SBOM | CycloneDX Gradle plugin 3.2.4 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
@@ -35,7 +35,7 @@
 **Job `quality`** — every PR and push to `main`:
 1. Setup Java 25 (Temurin)
 2. `./gradlew testAll` — Detekt + KtLint + tests + JaCoCo gate
-3. `./gradlew :domain:pitest` — PITest mutation testing (mandatory in CI; locally opt-in since not in `check`)
+3. `./gradlew pitestAll` — PITest mutation testing, `domain` + `usecases` (mandatory in CI; locally opt-in since not in `check`)
 4. Upload artifacts (14 days): test reports, Detekt, JaCoCo, PITest HTML
 5. Post PR comments: Detekt summary + JaCoCo coverage diff
 6. Upload coverage to Codecov
