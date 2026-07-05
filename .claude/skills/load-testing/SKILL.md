@@ -57,7 +57,7 @@ Cada iteração = **um cliente distinto**: token dev → `POST /api/v1/simulatio
 | `exec.test.abort()` se o token falhar | Fail fast — métricas de 401 são lixo |
 | `simulationId` só parseado em sucesso; falha em run day encerra a iteração | Resposta de erro pode não ser JSON; 404/500 derivados contaminariam o p95 por endpoint |
 | PROFILE inválido falha no init | Spread de `undefined` daria erro obscuro |
-| Checks de **invariantes de negócio** (days==5, snapshot.day==1, list contém o id criado) | O k6 valida o contrato fim-a-fim sob carga — regras profundas (WIP, Burrows, determinismo por seed) ficam no domain + PITest |
+| Checks de **invariantes de negócio** — `days` == DAYS_TO_RUN, `snapshot.day` == dia pedido, `cfd.series` consistente, list da org não-vazio (PR #231; parse protegido — corpo inválido FALHA o check, não lança) | O k6 valida o contrato fim-a-fim sob carga — regras profundas (WIP, Burrows, determinismo por seed) ficam no domain + PITest. "List contém o id criado" foi descartado de propósito: flaky com 20 VUs criando em paralelo |
 
 ## 4. Interpretando resultados
 
