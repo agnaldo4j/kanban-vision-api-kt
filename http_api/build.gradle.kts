@@ -71,7 +71,11 @@ dependencies {
             because("GHSA-j3rv-43j4-c7qm, GHSA-rmj7-2vxq-3g9f e outras corrigidas em 2.21.4")
         }
         implementation("org.mozilla:rhino:1.7.15.1") {
-            because("GHSA-3w8q-xq97-5j7x corrigida em 1.7.14.1; 1.7.15.1 é a menor versão disponível >= fix")
+            because(
+                "GHSA-3w8q-xq97-5j7x: ranges afetados [0,1.7.14.1), [1.7.15,1.7.15.1) e [1.8.0,1.8.1); " +
+                    "1.7.14.1 não foi publicada no Maven Central e 1.7.15/1.8.0 são vulneráveis — " +
+                    "1.7.15.1 é a menor versão não vulnerável disponível",
+            )
         }
     }
 
