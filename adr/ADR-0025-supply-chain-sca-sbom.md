@@ -75,7 +75,7 @@ não tratada. Exceções são auditáveis por grep em `osv-scanner.toml` (cada e
 
 ## More Information
 
-- Branch: `feat/adr-0025-supply-chain-sca-sbom` · PR: (link após abrir)
+- Branch: `feat/adr-0025-supply-chain-sca-sbom` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/216
 - Item no board #6: GAP-AO [M] — Supply chain: SCA + SBOM no CI (ciclo P6) — o plano de implementação vive lá e no PR de implementação, não aqui.
 - Referências: `docs/quality/audit-2026-07.md` · `.claude/rules/security.md` (DoD §4) ·
   [CycloneDX Gradle plugin](https://github.com/CycloneDX/cyclonedx-gradle-plugin) ·
