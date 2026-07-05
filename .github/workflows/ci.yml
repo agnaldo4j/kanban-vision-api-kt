@@ -101,7 +101,7 @@ jobs:
             echo '## PITest Mutation Report'
             # module|display threshold|target — thresholds mirror the gradle gates
             for spec in \
-              'domain|58|com.kanbanvision.domain.simulation.*' \
+              'domain|65|com.kanbanvision.domain.simulation.*' \
               'usecases|55|com.kanbanvision.usecases.*'; do
               module=${spec%%|*}; rest=${spec#*|}
               threshold=${rest%%|*}; target=${rest#*|}
@@ -305,8 +305,8 @@ jobs:
             ${{ github.workspace }}/http_api/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           title: JaCoCo Coverage Report
-          min-coverage-overall: 90
-          min-coverage-changed-files: 80
+          min-coverage-overall: 97
+          min-coverage-changed-files: 97
           update-comment: true
 
   supply-chain:
@@ -450,9 +450,50 @@ jobs:
         with:
           context: .
           push: false
+          load: true # imagem no daemon local — o smoke test abaixo executa o container
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
+
+      - name: Smoke test the image (run + /health/ready)
+        if: github.event_name == 'pull_request'
+        # O CI construía a imagem mas nunca a EXECUTAVA — classe de bug que acumulou
+        # 5 falhas de runtime invisíveis até o GAP-AR (PR #225). Este gate sobe o
+        # container contra um postgres efêmero e exige readiness (boot + Flyway + DB).
+        run: |
+          IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -1)
+          docker network create smoke
+          docker run -d --name smoke-pg --network smoke \
+            -e POSTGRES_DB=kanbanvision -e POSTGRES_USER=kanban -e POSTGRES_PASSWORD=kanban \
+            postgres:16-alpine
+          PG_READY=0
+          for i in $(seq 1 30); do
+            docker exec smoke-pg pg_isready -U kanban >/dev/null 2>&1 && { PG_READY=1; break; }
+            sleep 2
+          done
+          if [ "$PG_READY" -ne 1 ]; then
+            echo "Postgres não ficou pronto em 60s — logs:" >&2
+            docker logs smoke-pg >&2 || true
+            exit 1
+          fi
+          docker run -d --name smoke-app --network smoke -p 8080:8080 \
+            -e DATABASE_URL=jdbc:postgresql://smoke-pg:5432/kanbanvision \
+            -e DATABASE_USER=kanban -e DATABASE_PASSWORD=kanban \
+            -e OTEL_TRACES_EXPORTER=none -e OTEL_METRICS_EXPORTER=none -e OTEL_LOGS_EXPORTER=none \
+            "$IMAGE"
+          for i in $(seq 1 40); do
+            curl -sf http://localhost:8080/health/ready >/dev/null 2>&1 && { echo "SMOKE OK"; exit 0; }
+            sleep 3
+          done
+          echo "Smoke test FAILED — app logs:" >&2
+          docker logs smoke-app >&2 || true
+          exit 1
+
+      - name: Smoke test teardown
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          docker rm -f smoke-app smoke-pg 2>/dev/null || true
+          docker network rm smoke 2>/dev/null || true
 
       - name: Build and push (main / tag)
         if: github.event_name != 'pull_request'
