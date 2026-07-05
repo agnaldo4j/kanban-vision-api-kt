@@ -12,9 +12,9 @@
 [![Kotest Property](https://img.shields.io/badge/kotest-property--based%20testing-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
 [![PITest](https://img.shields.io/badge/pitest-mutation%20testing-CC0000)](https://pitest.org/)
 [![Detekt](https://img.shields.io/badge/detekt-2.0.0--alpha.5-9146FF)](https://detekt.dev/)
-[![Konsist](https://img.shields.io/badge/konsist-architecture%20fitness-4B9E4B)](https://docs.konsist.lemonappdev.com/)
-[![SBOM](https://img.shields.io/badge/SBOM-CycloneDX-FF6D00)](https://cyclonedx.org/)
-[![SCA](https://img.shields.io/badge/SCA-osv--scanner-4285F4)](https://google.github.io/osv-scanner/)
+[![Konsist](https://img.shields.io/badge/konsist-architecture%20fitness-4B9E4B)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions)
+[![SBOM](https://img.shields.io/badge/SBOM-CycloneDX-FF6D00)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain)
+[![SCA](https://img.shields.io/badge/SCA-osv--scanner-4285F4)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain)
 [![OpenTelemetry](https://img.shields.io/badge/opentelemetry-1.63.0-425CC7?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-manifests-326CE5?logo=kubernetes&logoColor=white)](k8s/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/agnaldo4j/kanban-vision-api-kt/pkgs/container/kanban-vision-api-kt)
@@ -73,6 +73,8 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel Agent, structured logs |
 | [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Docker, Kubernetes manifests, CI/CD, env vars |
 | [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (9.4/10), gap roadmap |
+| [Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) | CycloneDX SBOM, osv-scanner CVE gate, exception policy, red-gate runbook |
+| [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions) | Konsist rules enforcing the hexagonal architecture in CI |
 
 ---
 
