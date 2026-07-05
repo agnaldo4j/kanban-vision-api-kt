@@ -57,9 +57,12 @@ Opção 1. O projeto adota:
    compromisso de upgrade. O rollback é trivial (repinar `1.23.8` e restaurar o yml anterior).
    Bugs de regra introduzidos pelo alpha são tratados como ajuste de código ou upgrade de alpha,
    nunca como afrouxamento de config.
-2. **Daemon Gradle em Java 25** — `.sdkmanrc`, CI (`setup-java`) e comentários de
-   `gradle.properties`/`CLAUDE.md` atualizados; remoção do pin `jvmTarget = "22"` do convention
-   plugin. Um único JDK para daemon, toolchain e runtime.
+2. **Daemon Gradle em Java 25 em todos os lugares onde o Gradle roda** — local (`.sdkmanrc`),
+   CI (`setup-java`) e o estágio `build` do `Dockerfile` (hoje `eclipse-temurin:21-jdk-alpine`
+   com estágio auxiliar `jdk25` para o toolchain; passa a construir diretamente em JDK 25,
+   eliminando o estágio auxiliar se redundante); comentários de `gradle.properties`/`CLAUDE.md`
+   atualizados; remoção do pin `jvmTarget = "22"` do convention plugin. Um único JDK para
+   daemon, toolchain, imagem de build e runtime.
 3. **Configuration cache habilitado** (`org.gradle.configuration-cache=true` em
    `gradle.properties`). Se algum plugin do build se mostrar incompatível (candidatos: ktlint-gradle,
    gradle-pitest-plugin, plugin Ktor), a incompatibilidade é documentada e a flag é mantida com a
@@ -71,6 +74,8 @@ Opção 1. O projeto adota:
 
 - `./gradlew testAll` verde com daemon em Java 25 (local via `.sdkmanrc` repinado para Java 25;
   CI com `setup-java` 25).
+- Estágio `build` do `Dockerfile` baseado em JDK 25 (nenhum `FROM eclipse-temurin:21*` restante)
+  e job `build` do CI verde construindo a imagem.
 - `./gradlew testAll --warning-mode all` sem a deprecation `ReportingExtension.file` (e nenhuma
   outra deprecation originada do Detekt).
 - `gradle.properties` contém `org.gradle.configuration-cache=true`; segunda invocação consecutiva
