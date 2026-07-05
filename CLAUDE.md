@@ -64,6 +64,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/definition-of-done` | Verify DoD before marking any task complete |
 | `/microservices-modular-monolith` | Evaluate module boundaries, plan extraction |
 | `/opentelemetry` | JSON logs, Prometheus metrics, OTel Agent, Grafana stack |
+| `/load-testing` | k6 load tests — baseline p95, perfis, thresholds e workflow manual (ADR-0027) |
 | `/local-and-production-environment` | Dockerfile, docker-compose, Kubernetes manifests |
 | `/evolutionary-change` | Plan incremental changes, J-Curve, 1-gap-per-session protocol |
 | `/xp-kanban` | XP + Kanban practices — **includes Board Protocol** (pull/push GitHub Project) |
