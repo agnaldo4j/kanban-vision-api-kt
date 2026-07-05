@@ -1,9 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Edit(buildSrc/**)",
-      "Edit(gradle.properties)",
-      "Edit(config/detekt/detekt.yml)",
       "Bash(./gradlew *)",
       "Bash(git status)",
       "Bash(git diff *)",
