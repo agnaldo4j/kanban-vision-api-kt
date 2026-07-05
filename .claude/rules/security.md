@@ -198,7 +198,7 @@ grep -rn 'import java\.io\.ObjectInputStream\|import java\.security\.MessageDige
 
 A seção **4. Security and Compliance** do DoD exige, para cada entrega:
 
-- [ ] Security scans: Detekt (SAST) + OWASP Dependency Check (SCA) — zero violações.
+- [ ] Security scans: Detekt (SAST) + osv-scanner sobre o SBOM CycloneDX (SCA, job `supply-chain` — ADR-0025) — zero violações.
 - [ ] Nenhum segredo em código, histórico git ou logs.
 - [ ] Autenticação e autorização verificadas por testes de integração.
 - [ ] Runbook de incidente atualizado se a feature tem risco de segurança.

@@ -1,0 +1,11 @@
+# Exceções do gate de SCA (ADR-0025).
+# Toda entrada exige `reason` com justificativa, data e critério de remoção.
+# Nunca desligar o gate: exceção sem reason é rejeitada em code review.
+
+[[IgnoredVulns]]
+id = "GHSA-5jmj-h7xm-6q6v"
+reason = """2026-07-05: jackson-databind 2.21.4 (constraint em http_api) ainda é vulnerável;
+o fix (2.21.5 / 2.22.1) não foi publicado no Maven Central. Medium 5.3 — mass assignment via
+@JsonFormat case-insensitive + @JsonIgnoreProperties; a aplicação usa kotlinx.serialization
+(jackson é transitiva de java-jwt/swagger-parser), padrão não alcançável. Remover quando o
+Dependabot puxar jackson-databind >= 2.21.5."""

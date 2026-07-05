@@ -243,10 +243,52 @@ jobs:
           min-coverage-changed-files: 80
           update-comment: true
 
+  supply-chain:
+    name: Supply Chain (SBOM + SCA)
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java 25 (Gradle daemon)
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Generate SBOM (CycloneDX)
+        run: ./gradlew cyclonedxBom
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbom-cyclonedx
+          path: build/reports/cyclonedx/
+          retention-days: 14
+
+      - name: Scan SBOM for known vulnerabilities (osv-scanner)
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
+        with:
+          # Gate bloqueante (ADR-0025): exit code != 0 em CVE conhecida falha o job.
+          # Exceções somente via osv-scanner.toml com reason documentada.
+          scan-args: |-
+            --config=osv-scanner.toml
+            -L
+            build/reports/cyclonedx/bom.json
+
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [quality, supply-chain]
 
     permissions:
       contents: read
