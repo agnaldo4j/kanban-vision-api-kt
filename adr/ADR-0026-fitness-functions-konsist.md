@@ -72,7 +72,7 @@ auditável lendo `architecture/src/test/kotlin/` como documentação executável
 
 ## More Information
 
-- Branch: `feat/adr-0026-fitness-functions-konsist` · PR: (link após abrir)
+- Branch: `feat/adr-0026-fitness-functions-konsist` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/220
 - Item no board #6: [GAP-AQ [M] — Fitness functions de arquitetura (Konsist)](https://github.com/users/agnaldo4j/projects/6) (ciclo P6) — plano de implementação vive lá e no PR 2/2, não aqui.
 - Referências: `docs/quality/audit-2026-07.md` · `.claude/rules/architecture.md` (Dependency Rule) ·
   [Konsist](https://docs.konsist.lemonappdev.com/) · skill `/clean-architecture` ·
