@@ -28,6 +28,9 @@ COPY domain/build.gradle.kts domain/build.gradle.kts
 COPY usecases/build.gradle.kts usecases/build.gradle.kts
 COPY sql_persistence/build.gradle.kts sql_persistence/build.gradle.kts
 COPY http_api/build.gradle.kts http_api/build.gradle.kts
+# Módulo test-only (ADR-0026): sem src na imagem, mas o settings.gradle.kts o inclui —
+# a fase de configuração do Gradle exige que o diretório do projeto exista.
+COPY architecture/build.gradle.kts architecture/build.gradle.kts
 COPY config config
 
 # Remove local JDK path override — the container's JAVA_HOME is used instead

@@ -159,6 +159,64 @@ jobs:
           body: ${{ steps.pitest-report.outputs.body }}
           edit-mode: replace
 
+      - name: Generate architecture fitness report
+        id: architecture-report
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          {
+            echo 'body<<ARCHITECTURE_REPORT'
+            echo '## Architecture Fitness Report'
+            echo ''
+            dir="architecture/build/test-results/test"
+            if ! ls "$dir"/TEST-*.xml >/dev/null 2>&1; then
+              echo '⚠️ Fitness function results not found — :architecture:test may have failed to run.'
+            else
+              echo '| Fitness function | Suite | Status |'
+              echo '|------------------|-------|--------|'
+              total=0; passed=0
+              for xml in "$dir"/TEST-*.xml; do
+                suite=$(basename "$xml" .xml | sed 's/^TEST-com\.kanbanvision\.architecture\.//')
+                while IFS= read -r line; do
+                  name=$(printf '%s' "$line" | sed -E 's/.*<testcase name="([^"]*)".*/\1/; s/\(\)$//')
+                  total=$((total + 1))
+                  # testcase self-closing ("/>") = pass; aberto = contém <failure>/<error>
+                  case "$line" in
+                    */\>) status='✅'; passed=$((passed + 1)) ;;
+                    *) status='❌' ;;
+                  esac
+                  printf '| %s | `%s` | %s |\n' "$name" "$suite" "$status"
+                done < <(grep '<testcase ' "$xml")
+              done
+              echo ''
+              if [ "$passed" -eq "$total" ]; then
+                printf '**%d/%d fitness functions ✅**\n' "$passed" "$total"
+              else
+                printf '**%d/%d fitness functions ✅ — %d violação(ões) de arquitetura ❌**\n' "$passed" "$total" "$((total - passed))"
+              fi
+              echo ''
+              echo '> Konsist (ADR-0026): Dependency Rule hexagonal · pureza do domain · placement dos ports'
+            fi
+            echo 'ARCHITECTURE_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing architecture fitness comment
+        id: find-architecture
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Architecture Fitness Report'
+
+      - name: Post architecture fitness report on PR
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find-architecture.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.architecture-report.outputs.body }}
+          edit-mode: replace
+
       - name: Test results report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: EnricoMi/publish-unit-test-result-action@v2
