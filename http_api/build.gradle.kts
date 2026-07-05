@@ -14,6 +14,17 @@ ktor {
     }
 }
 
+// O fat JAR perdia META-INF/services duplicados: no shadow 9 o duplicatesStrategy
+// EXCLUDE (default) descarta duplicados ANTES dos transformers rodarem (KTOR-8987) —
+// o Flyway 12 ficava só com o service file do driver PostgreSQL e quebrava em
+// runtime com NPE no PluginRegister. INCLUDE entrega os duplicados ao
+// ServiceFileTransformer, que concatena (descoberto no baseline do GAP-AR;
+// testes não pegam porque rodam do classpath, não do fat JAR).
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
+}
+
 val jacocoExcludes =
     listOf(
         "com/kanbanvision/httpapi/MainKt.class",
@@ -105,14 +116,15 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.1")
     implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
 
-    // OpenTelemetry API — spans manuais somente em http_api (agente v2.14.0 empacota API v1.47.0)
+    // OpenTelemetry API — spans manuais somente em http_api (agente v2.29.0 no Dockerfile)
     implementation("io.opentelemetry:opentelemetry-api:1.63.0")
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.63.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.37")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-    implementation("org.codehaus.janino:janino:3.1.12")
+    // janino removido: existia só para o <if> condicional do logback.xml,
+    // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
 
     testImplementation("io.ktor:ktor-server-test-host-jvm:3.5.1")
     testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.1")

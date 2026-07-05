@@ -17,14 +17,19 @@ import com.kanbanvision.usecases.simulation.GetSimulationDaysUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationUseCase
 import com.kanbanvision.usecases.simulation.ListSimulationsUseCase
 import com.kanbanvision.usecases.simulation.RunDayUseCase
+import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 object AppModule {
     val koinModule =
         module {
-            single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+            // bind MeterRegistry: o Koin não resolve por subtipo — sem o binding da
+            // interface, o wiring do publisher quebrava em produção com
+            // NoDefinitionFoundException (testes não pegam: mockam o port).
+            single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) } bind MeterRegistry::class
             single<EventPublisherPort> { MicrometerEventPublisher(get()) }
 
             single<OrganizationRepository> { JdbcOrganizationRepository() }

@@ -3,10 +3,13 @@
 # ── Stage 0: download OTel Java Agent ────────────────────────────────────────
 FROM alpine:3.19 AS otel-agent
 
+# v2.29.0: agente >= 2.2x é exigido pelo logback 1.5.3x — o 2.14.0 crashava o app
+# com NoSuchFieldError (__opentelemetryVirtualField em LoggingEvent) ao instrumentar
+# o classloader secundário do Ktor. Descoberto no GAP-AR (baseline de carga).
 RUN apk add --no-cache curl && \
     curl -fsSL -o /opentelemetry-javaagent.jar \
-    "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.14.0/opentelemetry-javaagent.jar" && \
-    echo "16f8e28fa1ddcd56ed85bf633bd1d1fbc78ea7c4cc50e8c5726b2a319f5058c8  /opentelemetry-javaagent.jar" | sha256sum -c -
+    "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.29.0/opentelemetry-javaagent.jar" && \
+    echo "546531ca690a8603d2923b6db26bbda35c6409327b1e610430ae33c2f8f68050  /opentelemetry-javaagent.jar" | sha256sum -c -
 
 # ── Stage 1: build ────────────────────────────────────────────────────────────
 FROM eclipse-temurin:25-jdk-alpine AS build
