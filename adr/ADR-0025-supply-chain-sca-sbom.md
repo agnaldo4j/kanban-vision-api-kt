@@ -12,7 +12,7 @@ O projeto não tem hoje nenhum scan de vulnerabilidades conhecidas (SCA) nem ger
 SBOM — o DoD §4 (Security and Compliance) exige SCA e a auditoria `docs/quality/audit-2026-07.md`
 apontou o gap (GAP-AO, dimensão Security). O Dependabot mantém as dependências atualizadas,
 mas não bloqueia um PR que introduza (ou conviva com) uma CVE conhecida, e não produz um
-inventário auditável do que a imagem publicada em `ghcr.io` contém.
+inventário auditável das dependências JVM que a aplicação publicada em `ghcr.io` embarca.
 
 Restrição relevante: o osv-scanner não resolve dependências Gradle sem lockfile ou
 verification-metadata — e o projeto não usa nenhum dos dois. Qual ferramenta de SCA + SBOM
@@ -24,7 +24,7 @@ adotar no CI, e com qual comportamento de gate?
 - SBOM como artefato auditável de cada build (rastreabilidade de supply chain).
 - CI rápido: o pipeline de qualidade hoje roda em poucos minutos; o scan não pode dominá-lo.
 - Zero novos secrets a gerenciar, se possível.
-- Fail closed (security.md): erro ou vulnerabilidade → build vermelho; exceções sempre explícitas.
+- Fail closed (`.claude/rules/security.md`): erro ou vulnerabilidade → build vermelho; exceções sempre explícitas.
 
 ## Considered Options
 
@@ -46,8 +46,12 @@ exceções só via `osv-scanner.toml` com `reason` documentada — nunca desliga
 Job `supply-chain` em `.github/workflows/ci.yml`: gera o SBOM (`cyclonedxBom`), publica-o
 como artifact e roda o osv-scanner contra ele; o job `build` (imagem Docker) passa a
 depender de `quality` **e** `supply-chain` — nenhuma imagem é publicada com CVE conhecida
-não tratada. Exceções são auditáveis por grep em `osv-scanner.toml` (cada entrada exige
-`reason`). Verificação em review: PR que adicionar ignore sem justificativa é rejeitado.
+não tratada **nas dependências JVM resolvidas pelo Gradle**. O escopo desta decisão é o
+grafo de dependências da aplicação; camadas da imagem (base Alpine/Temurin) e o
+`opentelemetry-javaagent.jar` baixado no build ficam fora do gate — scan de imagem
+(ex.: Trivy/Grype) é dívida consciente para gap futuro. Exceções são auditáveis por grep
+em `osv-scanner.toml` (cada entrada exige `reason`). Verificação em review: PR que
+adicionar ignore sem justificativa é rejeitado.
 
 ## Consequences
 
@@ -58,6 +62,9 @@ não tratada. Exceções são auditáveis por grep em `osv-scanner.toml` (cada e
   exceção temporária documentada enquanto o upgrade não chega.
 - Ruim: cobertura OSV.dev para o ecossistema Maven difere da NVD em casos raros;
   mitigação: os Dependabot alerts do GitHub (GHSA) seguem ativos como segunda fonte.
+- Ruim: o gate não cobre camadas da imagem Docker nem o agente OTel baixado no build;
+  mitigação: escopo declarado explicitamente na Confirmation e scan de imagem registrado
+  como dívida consciente para gap futuro.
 
 ## Pros and Cons of the Options
 
@@ -76,7 +83,7 @@ não tratada. Exceções são auditáveis por grep em `osv-scanner.toml` (cada e
 ## More Information
 
 - Branch: `feat/adr-0025-supply-chain-sca-sbom` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/216
-- Item no board #6: GAP-AO [M] — Supply chain: SCA + SBOM no CI (ciclo P6) — o plano de implementação vive lá e no PR de implementação, não aqui.
+- Item no board #6: [GAP-AO [M] — Supply chain: SCA + SBOM no CI](https://github.com/users/agnaldo4j/projects/6) (ciclo P6) — o plano de implementação vive lá e no PR de implementação, não aqui.
 - Referências: `docs/quality/audit-2026-07.md` · `.claude/rules/security.md` (DoD §4) ·
   [CycloneDX Gradle plugin](https://github.com/CycloneDX/cyclonedx-gradle-plugin) ·
   [osv-scanner](https://google.github.io/osv-scanner/) · ADR-0023 (política de ADRs) · ADR-0024 (build no qual o job se apoia).
