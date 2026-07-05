@@ -38,7 +38,11 @@ const PROFILES = {
   },
 };
 
-const profile = PROFILES[__ENV.PROFILE || 'smoke'];
+const profileName = __ENV.PROFILE || 'smoke';
+const profile = PROFILES[profileName];
+if (!profile) {
+  throw new Error(`PROFILE inválido: '${profileName}' — use ${Object.keys(PROFILES).join(' | ')}`);
+}
 
 export const options = {
   ...profile,
@@ -65,6 +69,10 @@ export function setup() {
     { headers: JSON_HEADERS },
   );
   check(tokenRes, { 'auth token issued': (r) => r.status === 200 });
+  if (tokenRes.status !== 200) {
+    // Fail fast: sem token válido toda métrica seria de 401 — aborta com causa clara.
+    exec.test.abort(`POST /auth/token respondeu ${tokenRes.status} — stack está de pé com JWT_DEV_MODE=true e organização seedada?`);
+  }
   return { token: tokenRes.json('token'), organizationId };
 }
 
@@ -94,8 +102,9 @@ export default function (data) {
       }),
       { headers: auth, tags: { endpoint: 'create' } },
     );
-    check(res, { 'simulation created': (r) => r.status === 201 || r.status === 200 });
-    simulationId = res.json('simulationId');
+    const created = check(res, { 'simulation created': (r) => r.status === 201 || r.status === 200 });
+    // Só parseia em sucesso: erro pode vir sem corpo JSON e abortaria o teste inteiro.
+    simulationId = created ? res.json('simulationId') : undefined;
   });
 
   if (!simulationId) return;
