@@ -131,51 +131,67 @@ export default function (data) {
   // Invariantes de NEGÓCIO da jornada (não só status codes): validam o contrato
   // fim-a-fim sob carga. Regras profundas (WIP limit, ordenação Burrows,
   // determinismo por seed) vivem no domain + PITest — não duplicar aqui.
+  // Parse protegido: corpo inválido/contrato quebrado deve FALHAR o check,
+  // nunca lançar exceção (exceção aborta a iteração e mascara o invariante).
+  const safeJson = (r) => {
+    try {
+      return r.json();
+    } catch (_) {
+      return undefined;
+    }
+  };
+
   group('query results', () => {
     const days = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/days`, {
       headers: auth,
       tags: { endpoint: 'days' },
     });
+    const daysBody = safeJson(days);
     check(days, {
       'days listed': (r) => r.status === 200,
       [`days tem exatamente ${DAYS_TO_RUN} dias apos ${DAYS_TO_RUN} runs`]: (r) =>
-        r.status === 200 && r.json('days').length === DAYS_TO_RUN,
+        r.status === 200 && Array.isArray(daysBody && daysBody.days) && daysBody.days.length === DAYS_TO_RUN,
       'days pertence a simulacao criada': (r) =>
-        r.status === 200 && r.json('simulationId') === simulationId,
+        r.status === 200 && daysBody !== undefined && daysBody.simulationId === simulationId,
     });
 
     const snapshot = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/days/1/snapshot`, {
       headers: auth,
       tags: { endpoint: 'snapshot' },
     });
+    const snapshotBody = safeJson(snapshot);
     check(snapshot, {
       'snapshot returned': (r) => r.status === 200,
-      'snapshot responde o dia pedido (day == 1)': (r) => r.status === 200 && r.json('day') === 1,
+      'snapshot responde o dia pedido (day == 1)': (r) =>
+        r.status === 200 && snapshotBody !== undefined && snapshotBody.day === 1,
       'snapshot pertence a simulacao criada': (r) =>
-        r.status === 200 && r.json('simulationId') === simulationId,
+        r.status === 200 && snapshotBody !== undefined && snapshotBody.simulationId === simulationId,
     });
 
     const cfd = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/cfd`, {
       headers: auth,
       tags: { endpoint: 'cfd' },
     });
+    const cfdBody = safeJson(cfd);
     check(cfd, {
       'cfd returned': (r) => r.status === 200,
       [`cfd tem serie consistente com os ${DAYS_TO_RUN} dias`]: (r) =>
-        r.status === 200 && r.json('series').length === DAYS_TO_RUN,
+        r.status === 200 && Array.isArray(cfdBody && cfdBody.series) && cfdBody.series.length === DAYS_TO_RUN,
     });
 
     const list = http.get(`${BASE_URL}/api/v1/simulations?organizationId=${data.organizationId}`, {
       headers: auth,
       tags: { endpoint: 'list' },
     });
+    const listBody = safeJson(list);
     check(list, {
       'simulations listed': (r) => r.status === 200,
       // Estável sob concorrência (paginado): a org tem pelo menos a simulação
       // desta iteração e a página vem populada. "Contém o id criado" seria
       // flaky com 20 VUs criando em paralelo.
       'list da organizacao nao esta vazio': (r) =>
-        r.status === 200 && r.json('total') >= 1 && r.json('data').length > 0,
+        r.status === 200 && listBody !== undefined && listBody.total >= 1 &&
+        Array.isArray(listBody.data) && listBody.data.length > 0,
     });
   });
 }
