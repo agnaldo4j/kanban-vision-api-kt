@@ -20,12 +20,17 @@ dependencies {
 // Correção de cache (ADR-0026): o Konsist lê as fontes dos demais módulos em runtime,
 // invisíveis aos inputs que o Gradle rastreia para esta task — sem isto, um PR que só
 // muda domain/ reutilizaria um resultado verde stale do build cache e o gate não veria
-// a violação. Declarar os src/main analisados como inputs invalida o cache corretamente.
+// a violação. src/main (scopeFromProduction) E src/test (scopeFromTest — regra de
+// nomenclatura de testes) são declarados como inputs.
 tasks.test {
     listOf("domain", "usecases", "sql_persistence", "http_api").forEach { module ->
         inputs
             .dir(rootDir.resolve("$module/src/main/kotlin"))
             .withPropertyName("analyzedSources_$module")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs
+            .dir(rootDir.resolve("$module/src/test/kotlin"))
+            .withPropertyName("analyzedTestSources_$module")
             .withPathSensitivity(PathSensitivity.RELATIVE)
     }
 }

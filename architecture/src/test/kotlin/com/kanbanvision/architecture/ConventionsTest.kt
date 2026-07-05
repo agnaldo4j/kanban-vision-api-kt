@@ -58,11 +58,13 @@ class ConventionsTest {
     fun `funcoes de teste tem nomes descritivos com backtick`() {
         // Convenção de testing.md: nomes descritivos (`execute saves entity...`).
         // Nome com espaço só é válido em backtick — a regra cobre as duas coisas.
+        // O projeto usa kotlin.test.Test (74 arquivos) E org.junit.jupiter.api.Test (8);
         // @TestTemplate (Pact) fica fora de propósito: é método de infraestrutura.
+        val testAnnotations = setOf("org.junit.jupiter.api.Test", "kotlin.test.Test")
         Konsist
             .scopeFromTest()
             .functions()
-            .filter { fn -> fn.annotations.any { it.fullyQualifiedName == "org.junit.jupiter.api.Test" } }
+            .filter { fn -> fn.annotations.any { it.fullyQualifiedName in testAnnotations } }
             .assertTrue { it.name.contains(" ") }
     }
 }
