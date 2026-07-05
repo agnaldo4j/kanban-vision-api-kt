@@ -302,7 +302,7 @@ implementation(project(":sql_persistence"))
 // ✅ Exponha apenas o necessário via api() — oculte o resto com implementation()
 // Em sql_persistence/build.gradle.kts:
 api(project(":domain"))          // quem depende de sql_persistence vê domain
-implementation("com.zaxxer:HikariCP:6.3.0")  // HikariCP NÃO vaza para fora
+implementation("com.zaxxer:HikariCP:7.1.0")  // HikariCP NÃO vaza para fora
 ```
 
 ### Como Verificar no Código

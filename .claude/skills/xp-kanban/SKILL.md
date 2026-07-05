@@ -82,7 +82,7 @@ e **continuous process** (processo contínuo).
 | Prática | Definição | Aplicação neste projeto |
 |---|---|---|
 | **Continuous Integration (CI)** | Integre e valide várias vezes ao dia. | GitHub Actions em todo PR: `./gradlew testAll`. |
-| **Refactoring** | Melhore o design sem alterar o comportamento externo. | Skill `/refactoring` + Detekt + cobertura JaCoCo ≥ 95%. |
+| **Refactoring** | Melhore o design sem alterar o comportamento externo. | Skill `/refactoring` + Detekt + cobertura JaCoCo ≥ 97%. |
 | **Small Releases** | Entregue valor em incrementos pequenos e frequentes. | Um gap por PR; branch curta; merge rápido. |
 | **Collective Code Ownership** | Qualquer pessoa pode melhorar qualquer código. | Arquitetura hexagonal com módulos claros facilita isso. |
 | **Coding Standards** | Todo o time escreve no mesmo estilo. | KtLint + convention plugin centralizados em `buildSrc/`. |

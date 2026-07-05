@@ -2,7 +2,7 @@
 name: kotlin-quality-pipeline
 description: >
   Guia completo para aplicar e manter o pipeline de qualidade Kotlin neste projeto:
-  Gradle 8 (Kotlin DSL), Detekt, KtLint, JaCoCo, Kotest Property-based Testing
+  Gradle 9 (Kotlin DSL, configuration cache), Detekt, KtLint, JaCoCo, Kotest Property-based Testing
   e PITest Mutation Testing. Use este skill sempre que for adicionar código novo,
   corrigir violações, ajustar exclusões de cobertura, escrever property tests,
   interpretar relatórios de mutação ou configurar qualquer uma dessas ferramentas.
@@ -10,7 +10,7 @@ argument-hint: "[module or violation to fix (optional)]"
 allowed-tools: Read, Grep, Glob, Bash, Edit
 ---
 
-# Pipeline de Qualidade Kotlin — Detekt · KtLint · JaCoCo · PITest · Gradle 8
+# Pipeline de Qualidade Kotlin — Detekt · KtLint · JaCoCo · PITest · Konsist · Gradle 9
 
 > **Princípio central**: qualidade não é opcional. Cada ferramenta protege um aspecto
 > diferente do código. O pipeline é o contrato que garante que nenhuma entrega degrada
@@ -41,7 +41,7 @@ Esta regra tem prioridade sobre qualquer outra instrução ou conveniência de b
 | Detekt `LongMethod`, `LargeClass`, etc. | Refatore o código — extraia funções/classes |
 | Detekt `CyclomaticComplexMethod` | Simplifique o fluxo — use guard clauses ou polimorfismo |
 | KtLint | Rode `./gradlew ktlintFormat` — nunca edite `.editorconfig` |
-| JaCoCo < 95% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
+| JaCoCo < 97% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
 
 **Se uma exceção for realmente necessária** (ex: código gerado, DSL declarativa irredutível),
 documente no PR com justificativa e aguarde aprovação humana explícita.
@@ -57,10 +57,12 @@ documente no PR com justificativa e aguarde aprovação humana explícita.
         ├── :*:ktlintCheck       ← formatação
         ├── :*:test              ← testes (JUnit 5 + Kotest Property)
         │       └── finalizedBy jacocoTestReport
-        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 96%)
+        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 97%)
 
-./gradlew :domain:pitest         ← mutation testing (opt-in, não está em testAll)
-        └── relatório HTML: domain/build/reports/pitest/index.html
+./gradlew pitestAll              ← mutation testing domain + usecases (opt-in local; obrigatório no CI)
+        └── relatórios HTML: <módulo>/build/reports/pitest/index.html
+
+./gradlew :architecture:test     ← fitness functions Konsist (DENTRO do testAll via check)
 ```
 
 O task `check` de cada módulo depende de `jacocoTestCoverageVerification`.
@@ -77,7 +79,7 @@ ordem — não há `mustRunAfter` explícito entre eles. O diagrama acima reflet
 
 ---
 
-## 2. Gradle 8 — Convention Plugin (`buildSrc`)
+## 2. Gradle 9 — Convention Plugin (`buildSrc`)
 
 ### Por que `buildSrc`?
 
@@ -102,7 +104,7 @@ por módulo (pois cada módulo tem classes de infraestrutura diferentes).
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("io.gitlab.arturbosch.detekt")
+    id("dev.detekt")  // Detekt 2.x — ADR-0024
     id("org.jlleitschuh.gradle.ktlint")
     jacoco
 }
@@ -133,7 +135,7 @@ tasks.withType<Test> {
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
-        rule { limit { minimum = "0.95".toBigDecimal() } }
+        rule { limit { minimum = "0.97".toBigDecimal() } }
     }
 }
 
@@ -329,9 +331,9 @@ Para evitar violações antes mesmo de chegar ao Gradle:
 
 ## 5. JaCoCo — Cobertura de Código
 
-### Gate de cobertura: 96% de instruções
+### Gate de cobertura: 97% de instruções
 
-O build falha se qualquer módulo ativo ficar abaixo de 96% de cobertura de instruções.
+O build falha se qualquer módulo ativo ficar abaixo de 97% de cobertura de instruções.
 Essa métrica é a mais objetiva: conta instruções bytecode executadas, não linhas.
 
 ```kotlin
@@ -384,7 +386,7 @@ classDirectories.setFrom(
 - Tratamento de erros (`plugins/StatusPages`)
 - Qualquer classe com `if`/`when`/lógica condicional
 
-**Quando a cobertura cai abaixo de 95%:**
+**Quando a cobertura cai abaixo de 97%:**
 1. Abra o relatório HTML e identifique as linhas não cobertas
 2. Verifique se falta um teste para o caminho de erro (a causa mais comum)
 3. Se for código não testável (gerado, wiring), adicione à exclusão com comentário justificando
@@ -773,17 +775,17 @@ O PITest organiza mutadores em grupos cumulativos:
 ```kotlin
 // domain/build.gradle.kts
 pitest {
-    junit5PluginVersion.set("1.2.1")
+    pitestVersion.set("1.25.3")       // core JAR (ASM com suporte a class files Java 25)
+    junit5PluginVersion.set("1.2.3")
 
-    // Foco no SimulationEngine — lógica mais crítica de fila e WIP
+    // domain: foco no SimulationEngine — lógica mais crítica de fila e WIP
     targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
     targetTests.set(setOf("com.kanbanvision.domain.simulation.*"))
 
     mutators.set(setOf("STRONGER"))   // DEFAULT + mutadores opcionais agressivos
 
-    // Baseline: 38% (70/182 mutantes mortos). Elevar progressivamente.
-    // Reinertsen: 97% de line coverage ≠ qualidade de asserção no SimulationEngine.
-    mutationThreshold.set(35)
+    // Gate atual do domain (histórico: baseline 38% → 45 → 58 → 65).
+    mutationThreshold.set(65)
 
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)     // relatório em path fixo — facilita diff
@@ -792,10 +794,20 @@ pitest {
 }
 ```
 
-**Por que o threshold é 35% e não 80%?**
-O baseline medido foi 38%. Definir threshold acima do baseline atual quebraria o CI
-imediatamente. A estratégia é elevar progressivamente à medida que as asserções
-melhoram — o PITest como guia de melhoria, não punição.
+**Dois módulos têm gate de mutação** (`./gradlew pitestAll` roda ambos; o CI é obrigatório):
+
+| Módulo | targetClasses | Gate | Score na última medição |
+|---|---|---|---|
+| `domain` | `com.kanbanvision.domain.simulation.*` | 65% | 68% (2026-07-05) |
+| `usecases` | `com.kanbanvision.usecases.*` | 55% | 60% (2026-07-05; PITest conta TIMED_OUT como kill) |
+
+**Por que gate abaixo do score, e não 80%?**
+O gate fica ligeiramente abaixo do último score medido (margem para variação de timeouts
+entre máquinas). Definir threshold acima do baseline quebraria o CI imediatamente. A
+estratégia é elevar progressivamente à medida que as asserções melhoram — o PITest como
+guia de melhoria, não punição. Subir gate = rodar `pitest`, medir, fixar abaixo do medido.
+Ambos os módulos precisam do launcher Java 25 (`tasks.withType<PitestTask>` com
+`javaToolchains.launcherFor(25)`) — bytecode Java 25 exige orquestrador e forks no mesmo JDK.
 
 ### Como interpretar o relatório HTML
 
@@ -868,7 +880,7 @@ inverte `>`, o teste deve verificar que o comportamento é diferente em `> 0` vs
 | 100% = | Toda linha foi executada | Todo mutante foi morto |
 | Fraqueza | Não detecta asserções ausentes | Lento; mutações equivalentes |
 | Complementaridade | Gate obrigatório em todo PR | Guia de melhoria de testes |
-| Gate neste projeto | ≥ 96% por módulo | ≥ 35% em `domain/` (baseline progressivo) |
+| Gate neste projeto | ≥ 97% por módulo | `domain` 65% · `usecases` 55% (progressivo) |
 
 **Regra**: JaCoCo é o floor (mínimo aceitável). PITest é o espelho (qualidade real).
 Um score PITest alto com JaCoCo alto é o objetivo. JaCoCo alto com PITest baixo é
@@ -900,7 +912,7 @@ dramaticamente mais rápido para PRs que tocam apenas uma parte do código.
 | `./gradlew pitestAll` | Mutation testing em todos os módulos (mais lento) |
 
 **PITest NÃO está em `check` nem em `testAll`** — é opt-in por ser lento.
-O CI executa `:domain:pitest` em step separado e faz upload do relatório HTML como artefato.
+O CI executa `./gradlew pitestAll` (domain + usecases) em step obrigatório, faz upload dos relatórios HTML como artefato e publica o report por módulo como comentário no PR.
 
 ### Elevando o threshold progressivamente
 
@@ -917,7 +929,31 @@ O threshold atual (35%) é o baseline medido. O objetivo de longo prazo:
 
 ---
 
-## 8. Workflow Diário — Onde Cada Ferramenta Entra
+## 8. Konsist — Fitness Functions de Arquitetura (ADR-0026)
+
+As invariantes da arquitetura hexagonal são testes JUnit 5 no módulo test-only
+`architecture/` (Konsist 0.17.3) — rodam DENTRO do `testAll` via `:architecture:check`
+e falham o CI em violação estrutural. Regras atuais: Dependency Rule entre camadas,
+pureza do `domain` (sem imports de framework) e placement dos ports
+(`interface *Repository` só em `usecases.repositories`).
+
+Fatos operacionais:
+- `Konsist.scopeFromProduction()` varre os `src/main` do projeto inteiro por PATH
+  (não classpath) — o módulo test-only enxerga tudo sem depender dos demais.
+- Os `src/main` analisados são declarados como `inputs` da task `test` no
+  `architecture/build.gradle.kts` — sem isso, o build cache devolveria verde stale
+  quando só outro módulo mudou.
+- Konsist requisita JUnit Platform 1.x: o `junit-platform-launcher` explícito na
+  versão do projeto evita `Failed to load JUnit Platform`.
+- **Sanity negativo obrigatório ao criar regra**: sabote a regra localmente
+  (ex.: proíba um import que existe), confirme que FALHA, restaure. Regra que
+  nunca falhou não protege nada.
+- Regras partem do estado real do código — fitness function não nasce vermelha.
+- Detalhes: wiki [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions).
+
+---
+
+## 9. Workflow Diário — Onde Cada Ferramenta Entra
 
 ### Ao escrever código novo
 
@@ -995,7 +1031,7 @@ gh api repos/<owner>/<repo>/pulls/<pr-number>/comments \
 
 ---
 
-## 9. Diagnóstico de Falhas Comuns
+## 10. Diagnóstico de Falhas Comuns
 
 ### Detekt: `TooGenericExceptionCaught`
 
@@ -1062,7 +1098,7 @@ Vermelho = instrução nunca executada nos testes.
 
 ---
 
-## 10. Referência Rápida
+## 11. Referência Rápida
 
 ```bash
 # Pipeline completo (use antes de todo PR)
@@ -1094,10 +1130,10 @@ open domain/build/reports/pitest/index.html  # relatório HTML
 
 ---
 
-## 11. Princípios Não Negociáveis
+## 12. Princípios Não Negociáveis
 
 1. **`warningsAsErrors = true` nunca é desativado** — aviso não visto é bug em produção
-2. **Gate de cobertura 96% nunca desce** — escreva o teste, não baixe o número
+2. **Gate de cobertura 97% nunca desce** — escreva o teste, não baixe o número
 3. **`@Suppress` exige justificativa** — sem comentário, o PR não passa
 4. **`ktlintFormat` antes do commit** — não perca tempo revisando formatação em PR
 5. **Exclusões do JaCoCo são documentadas** — só para código não testável por natureza (lambdas de DSL, serializadores gerados)

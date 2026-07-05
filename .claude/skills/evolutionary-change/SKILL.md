@@ -33,7 +33,7 @@ Adaptado de Roxane de la Sablonnière, *Frontiers in Social Psychology* (2017):
 
 | Estado | Definição original | Equivalente no projeto |
 |---|---|---|
-| **Stability** | Condições dentro de limites conhecidos; o sistema está adaptado | Pipeline verde, cobertura 95%, zero violações Detekt — sistema saudável |
+| **Stability** | Condições dentro de limites conhecidos; o sistema está adaptado | Pipeline verde, cobertura 97%, zero violações Detekt — sistema saudável |
 | **Inertia** | Equilíbrio aparente escondendo um problema crescente | Dívida técnica acumulando silenciosamente; ex.: `SimulationEngine` como `object` sem interface — funciona, mas bloqueia evolução |
 | **Incremental** | Pequenas mudanças normativas que evoluem o sistema sem crise | PRs focados de 1-3 arquivos; um gap por vez; refatoração Strangler Fig |
 | **Dramatic** | Mudança estrutural que invoca crise | Reescritas completas; migração de framework em um único PR; reorganização de todos os pacotes de uma vez |
@@ -62,7 +62,7 @@ Capacidade
               Safety   Patience
 ```
 
-- **Safety**: quão fundo pode cair antes de alguém ser punido (build quebra? cobertura cai abaixo de 95%? CI vermelho?)
+- **Safety**: quão fundo pode cair antes de alguém ser punido (build quebra? cobertura cai abaixo de 97%? CI vermelho?)
 - **Patience**: quanto tempo até a liderança cancelar a iniciativa
 
 Para **LLMs**, o J-curve existe em contexto: uma refatoração grande esgota o contexto da sessão, causando inconsistências no código gerado. A solução é a mesma: muitos J-curves pequenos em vez de um grande.
@@ -71,7 +71,7 @@ Para **LLMs**, o J-curve existe em contexto: uma refatoração grande esgota o c
 
 | Medida | Limite de Safety | Notas |
 |---|---|---|
-| Cobertura JaCoCo | ≥ 95% (gate automático) | CI bloqueia merge se cair |
+| Cobertura JaCoCo | ≥ 97% (gate automático) | CI bloqueia merge se cair |
 | Detekt violations | 0 com `warningsAsErrors=true` | CI bloqueia merge |
 | Build verde | Obrigatório em todo PR | `./gradlew testAll` |
 | PR size | ≤ 400 linhas alteradas por PR | Heurística — acima disso revisar atentamente |
