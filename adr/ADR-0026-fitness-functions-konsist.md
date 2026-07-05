@@ -47,6 +47,13 @@ em `persistence.repositories`). O módulo entra no `testAll` automaticamente via
 violação das fitness functions falha o gate obrigatório de PR. A cobertura das regras é
 auditável lendo `architecture/src/test/kotlin/` como documentação executável da arquitetura.
 
+**Correção de cache (requisito)**: o Konsist lê as fontes dos demais módulos em runtime,
+fora dos inputs que o Gradle conhece para `:architecture:test` — com build cache ativo, um
+PR que só muda `domain/` reutilizaria um resultado verde stale. O módulo DEVE declarar os
+diretórios de fontes analisados (`<módulo>/src/main/kotlin`) como `inputs` da task `test`,
+preservando o cache quando nada mudou e invalidando-o quando qualquer fonte de produção
+mudar (preferível a `outputs.upToDateWhen { false }`, que desligaria o cache por completo).
+
 ## Consequences
 
 - Bom: a Dependency Rule deixa de depender de revisão humana; violação estrutural quebra o CI.
