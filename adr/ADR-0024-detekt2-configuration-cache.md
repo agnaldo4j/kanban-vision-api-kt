@@ -25,7 +25,8 @@ linha Detekt 1.x está morta (último release: 1.23.8, fev/2025, contra Kotlin 2
 ## Decision Drivers
 
 - Eliminar a deprecation Gradle 10 antes que vire erro de build.
-- Alinhar daemon, toolchain e análise estática em Java 25 (um único JDK; fim do `.sdkmanrc` em 21).
+- Alinhar daemon, toolchain e análise estática em Java 25 (um único JDK; fim do pin do
+  `.sdkmanrc` em Java 21 — o arquivo passa a apontar para Java 25).
 - Compatibilidade com o stack atual: Kotlin 2.4.0 + Gradle 9.6.1 + JDK 25 — o Detekt 1.23.8 foi
   construído contra Kotlin 2.0.21 e a ADR-0016 já registrava o risco de falha de análise com KGP 2.4.
 - Reduzir tempo de build local/CI (configuration cache; o plugin Detekt 2.x declara compatibilidade).
@@ -49,8 +50,9 @@ Opção 1. O projeto adota:
 
 1. **Detekt `2.0.0-alpha.5`** (novo plugin id/coordenadas `dev.detekt`), migrando
    `config/detekt/detekt.yml` para o schema 2.x **com semântica idêntica** de regras e thresholds.
-   Adotar uma versão alpha é aceitável aqui porque: o alpha.5 (jun/2026) é construído exatamente
-   contra Kotlin 2.4.0, Gradle 9.5.x e JDK 25 — o stack do projeto; a linha 1.x não recebe mais
+   Adotar uma versão alpha é aceitável aqui porque: o alpha.5 (jun/2026) é construído contra
+   Kotlin 2.4.0, Gradle 9.5.1 e JDK 25 — alinhado ao stack do projeto (Kotlin 2.4.0,
+   Gradle 9.6.1, JDK 25); a linha 1.x não recebe mais
    releases; e a ADR-0016 já havia aceitado `2.0.0-alpha.3` como fallback documentado, com
    compromisso de upgrade. O rollback é trivial (repinar `1.23.8` e restaurar o yml anterior).
    Bugs de regra introduzidos pelo alpha são tratados como ajuste de código ou upgrade de alpha,
@@ -67,7 +69,8 @@ Opção 1. O projeto adota:
 
 ## Confirmation
 
-- `./gradlew testAll` verde com daemon em Java 25 (local via `.sdkmanrc`; CI com `setup-java` 25).
+- `./gradlew testAll` verde com daemon em Java 25 (local via `.sdkmanrc` repinado para Java 25;
+  CI com `setup-java` 25).
 - `./gradlew testAll --warning-mode all` sem a deprecation `ReportingExtension.file` (e nenhuma
   outra deprecation originada do Detekt).
 - `gradle.properties` contém `org.gradle.configuration-cache=true`; segunda invocação consecutiva
