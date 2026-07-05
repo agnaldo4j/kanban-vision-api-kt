@@ -9,4 +9,5 @@ include(
     ":usecases",
     ":sql_persistence",
     ":http_api",
+    ":architecture",
 )

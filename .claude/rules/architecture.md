@@ -8,6 +8,9 @@ sql_persistence → usecases
 http_api → sql_persistence   (wiring only, via Koin DI)
 ```
 
+> **Enforced by Konsist** (ADR-0026): the Dependency Rule, domain purity and ports placement
+> are fitness functions in `architecture/src/test/kotlin/` — they run in `testAll` and fail CI.
+
 ## Modules
 
 - **domain** — Pure Kotlin. Zero framework dependencies. `Board` is the Aggregate Root for Board Management: `Board.addColumn(name)` enforces column name uniqueness per board; `Board.addCard(column, title, description)` validates the column belongs to the board. Contains board entities (`Board`, `Card`, `Column`), simulation entities, value objects (`BoardId`, `CardId`, `ColumnId`, `TenantId`, `ScenarioId`, `WorkItemId`).
