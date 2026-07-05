@@ -44,6 +44,7 @@
 1. `./gradlew cyclonedxBom` — aggregate SBOM (runtimeClasspath of all modules) at `build/reports/cyclonedx/bom.json`
 2. Upload SBOM artifact (14 days)
 3. osv-scanner scans the SBOM against OSV.dev — **fails the job on any known CVE**; documented exceptions only via `osv-scanner.toml`
+4. Post PR comment: Supply Chain Report (component count, active exceptions, findings table)
 
 **Job `build`** — runs after `quality` + `supply-chain`:
 

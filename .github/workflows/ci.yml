@@ -249,6 +249,7 @@ jobs:
 
     permissions:
       contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -280,10 +281,67 @@ jobs:
         with:
           # Gate bloqueante (ADR-0025): exit code != 0 em CVE conhecida falha o job.
           # Exceções somente via osv-scanner.toml com reason documentada.
+          # --output preserva o exit code; o markdown vira comentário no PR.
           scan-args: |-
             --config=osv-scanner.toml
+            --format
+            markdown
+            --output
+            osv-report.md
             -L
             build/reports/cyclonedx/bom.json
+
+      - name: Generate supply chain report
+        id: supply-chain-report
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          {
+            echo 'body<<SUPPLY_CHAIN_REPORT'
+            echo '## Supply Chain Report — SBOM + SCA'
+            echo ''
+            bom="build/reports/cyclonedx/bom.json"
+            if [ -f "$bom" ]; then
+              components=$(jq '.components | length' "$bom" 2>/dev/null || echo 0)
+            else
+              components=0
+            fi
+            ignores=$({ grep -c '^\[\[IgnoredVulns\]\]' osv-scanner.toml 2>/dev/null || true; } | tr -d '[:space:]')
+            echo '| Metric | Value |'
+            echo '|--------|-------|'
+            printf '| Componentes no SBOM (runtimeClasspath) | %s |\n' "$components"
+            printf '| Exceções ativas (`osv-scanner.toml`) | %s |\n' "${ignores:-0}"
+            echo ''
+            if [ ! -f osv-report.md ]; then
+              echo '⚠️ Scan report not found — osv-scanner may have failed before producing output.'
+            elif grep -q 'No issues found' osv-report.md; then
+              echo '✅ **No known vulnerabilities** (base OSV.dev)'
+            else
+              echo '❌ **Vulnerabilidades conhecidas encontradas** — gate bloqueante (ADR-0025):'
+              echo ''
+              cat osv-report.md
+            fi
+            echo ''
+            echo '> SBOM: artifact `sbom-cyclonedx` · Scanner: osv-scanner v2.3.8 · Gate: ADR-0025'
+            echo 'SUPPLY_CHAIN_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing supply chain comment
+        id: find-supply-chain
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Supply Chain Report'
+
+      - name: Post supply chain report on PR
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find-supply-chain.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.supply-chain-report.outputs.body }}
+          edit-mode: replace
 
   build:
     name: Build & Push Image
