@@ -89,10 +89,14 @@ RUN ./gradlew :http_api:buildFatJar --no-daemon -x test -x detekt -x ktlintCheck
 # ─────────────────────────────── Estágio 2: Runtime ──────────────────────────────
 FROM eclipse-temurin:25-jre AS runtime
 
-# Versão fixada do OTel Java Agent — nunca use "latest" para builds reproduzíveis
-ARG OTEL_AGENT_VERSION=2.29.0
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_AGENT_VERSION}/opentelemetry-javaagent.jar \
-    /opt/opentelemetry-javaagent.jar
+# OTel Java Agent: versão fixada E sha256 verificado (padrão do Dockerfile real —
+# stage dedicado no topo do arquivo; nunca ADD sem checksum: supply chain/ADR-0025)
+# FROM alpine:3.19 AS otel-agent
+#   RUN apk add --no-cache curl && \
+#       curl -fsSL -o /opentelemetry-javaagent.jar \
+#       "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.29.0/opentelemetry-javaagent.jar" && \
+#       echo "<sha256 da release>  /opentelemetry-javaagent.jar" | sha256sum -c -
+COPY --from=otel-agent /opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
 
 # Usuário não-root (segurança)
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
@@ -137,8 +141,8 @@ config/detekt/
 # Build da imagem
 docker build -t kanban-vision-api:local .
 
-# Build com versão do OTel Agent específica
-docker build --build-arg OTEL_AGENT_VERSION=2.29.0 -t kanban-vision-api:1.0.0 .
+# Bump do OTel Agent: editar versão E sha256 no stage otel-agent do Dockerfile
+# (obter o hash da release em github.com/open-telemetry/opentelemetry-java-instrumentation)
 
 # Executar container isolado
 docker run --rm -p 8080:8080 \

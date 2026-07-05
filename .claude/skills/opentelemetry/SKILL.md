@@ -448,10 +448,12 @@ OTEL_LOGS_EXPORTER=none     # desabilitar se usando logstash-logback-encoder
 # http_api/Dockerfile
 FROM eclipse-temurin:25-jre AS runtime
 
-# Download do agente (fixar versão para builds reproduzíveis)
-ARG OTEL_AGENT_VERSION=2.29.0
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_AGENT_VERSION}/opentelemetry-javaagent.jar \
-    /opt/opentelemetry-javaagent.jar
+# Download do agente com VERIFICAÇÃO sha256 (padrão do Dockerfile real na raiz —
+# stage dedicado; nunca ADD sem checksum: supply chain, ver skill owasp/ADR-0025)
+# FROM alpine:3.19 AS otel-agent
+#   RUN curl -fsSL -o /opentelemetry-javaagent.jar "https://github.com/open-telemetry/...\/v2.29.0/opentelemetry-javaagent.jar" && \
+#       echo "<sha256 da release>  /opentelemetry-javaagent.jar" | sha256sum -c -
+COPY --from=otel-agent /opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
 
 WORKDIR /app
 COPY build/libs/kanban-vision-api.jar app.jar
