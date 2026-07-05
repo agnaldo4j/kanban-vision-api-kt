@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test
  * Fitness function da Dependency Rule (ADR-0026, arquitetura hexagonal):
  * http_api -> usecases -> domain; sql_persistence -> domain + usecases;
  * http_api -> sql_persistence somente para wiring de DI (o Detekt ForbiddenImport
- * restringe imports Jdbc*/Exposed* ao AppModule). A direção única das dependências
- * também garante ausência de ciclos entre camadas.
+ * restringe imports de repositórios concretos ao AppModule). A direção única das
+ * dependências também garante ausência de ciclos entre camadas.
  */
 class HexagonalArchitectureTest {
     private val domain = Layer("Domain", "com.kanbanvision.domain..")
