@@ -109,6 +109,7 @@ export default function (data) {
 
   if (!simulationId) return;
 
+  let allDaysOk = true;
   group('run days', () => {
     for (let day = 0; day < DAYS_TO_RUN; day++) {
       const res = http.post(
@@ -116,9 +117,16 @@ export default function (data) {
         JSON.stringify({ decisions: [] }),
         { headers: auth, tags: { endpoint: 'run_day' } },
       );
-      check(res, { 'day executed': (r) => r.status === 200 });
+      if (!check(res, { 'day executed': (r) => r.status === 200 })) {
+        allDaysOk = false;
+        break;
+      }
     }
   });
+
+  // Dia falhou → queries produziriam 404/500 e contaminariam o p95 por endpoint;
+  // a falha já foi registrada no check — encerra a iteração.
+  if (!allDaysOk) return;
 
   group('query results', () => {
     const days = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/days`, {

@@ -21,7 +21,7 @@
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 — módulo test-only `architecture/` (ADR-0026); roda no `testAll` |
-| Load testing | k6 2.0 — scripts em `load/`, baseline p95 em `docs/quality/` (ADR-0027); workflow manual, nunca gate de PR |
+| Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, nunca gate de PR |
 | SBOM | CycloneDX Gradle plugin 3.2.4 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
 | SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
