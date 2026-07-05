@@ -217,11 +217,10 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: >-
-            domain/build/reports/jacoco/test/jacocoTestReport.xml,
-            usecases/build/reports/jacoco/test/jacocoTestReport.xml,
-            sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
-            http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          # Linha única: o bloco YAML ">-" junta linhas com espaço e o action
+          # separa por vírgula — paths com espaço inicial não são encontrados
+          # (só o domain subia; usecases/sql_persistence/http_api eram ignorados).
+          files: domain/build/reports/jacoco/test/jacocoTestReport.xml,usecases/build/reports/jacoco/test/jacocoTestReport.xml,sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,http_api/build/reports/jacoco/test/jacocoTestReport.xml
           disable_search: true
           codecov_yml_path: ./codecov.yml
           flags: unittests
