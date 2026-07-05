@@ -11,6 +11,10 @@
 [![Koin](https://img.shields.io/badge/koin-4.2.2-F88900)](https://insert-koin.io/)
 [![Kotest Property](https://img.shields.io/badge/kotest-property--based%20testing-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
 [![PITest](https://img.shields.io/badge/pitest-mutation%20testing-CC0000)](https://pitest.org/)
+[![Detekt](https://img.shields.io/badge/detekt-2.0.0--alpha.5-9146FF)](https://detekt.dev/)
+[![Konsist](https://img.shields.io/badge/konsist-architecture%20fitness-4B9E4B)](https://docs.konsist.lemonappdev.com/)
+[![SBOM](https://img.shields.io/badge/SBOM-CycloneDX-FF6D00)](https://cyclonedx.org/)
+[![SCA](https://img.shields.io/badge/SCA-osv--scanner-4285F4)](https://google.github.io/osv-scanner/)
 [![OpenTelemetry](https://img.shields.io/badge/opentelemetry-1.63.0-425CC7?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-manifests-326CE5?logo=kubernetes&logoColor=white)](k8s/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/agnaldo4j/kanban-vision-api-kt/pkgs/container/kanban-vision-api-kt)
@@ -28,7 +32,8 @@
 - **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
 - **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces
-- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 97% + PITest mutation testing enforced on every PR
+- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 97% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
+- **Supply chain security** — CycloneDX SBOM + osv-scanner CVE gate blocking every image build
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
 
 ---
