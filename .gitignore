@@ -11,3 +11,4 @@ local.properties
 .env
 k8s/secrets.env
 training/
+.kotlin/

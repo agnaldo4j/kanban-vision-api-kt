@@ -39,8 +39,9 @@ class RateLimitForwardedForTest {
                 }
             }
             startApplication()
-            assertNotNull(caught)
-            assertTrue(caught!!.message!!.contains("positive"))
+            val exception = assertNotNull(caught)
+            val message = assertNotNull(exception.message)
+            assertTrue(message.contains("positive"))
         }
 
     @Test

@@ -54,7 +54,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
-> Java 21 required for local Gradle builds. See [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
+> Java 25 (LTS) is the single JDK for daemon, build and runtime (ADR-0024). See [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
 
 ---
 

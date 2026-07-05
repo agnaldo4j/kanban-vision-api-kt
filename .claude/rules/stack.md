@@ -19,7 +19,7 @@
 | Testing | JUnit Jupiter 6.1.1 + MockK 1.14.11 |
 | Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER mutators, `domain/` SimulationEngine focus) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
-| Static analysis | Detekt 1.23.8 (jvmTarget pinned to 22 — Detekt max) |
+| Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 97% per module) |
 | Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |

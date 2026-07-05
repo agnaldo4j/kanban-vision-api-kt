@@ -1,6 +1,6 @@
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("io.gitlab.arturbosch.detekt")
+    id("dev.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     jacoco
 }
@@ -23,11 +23,10 @@ detekt {
     buildUponDefaultConfig = true
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    // Detekt 1.23.8 supports JVM targets up to 22; pin explicitly so it doesn't
-    // inherit the toolchain version (25) which Detekt doesn't yet recognize.
-    jvmTarget = "22"
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
     reports {
+        // checkstyle is the renamed "xml" report from Detekt 1.x — CI parses it
+        checkstyle.required.set(true)
         sarif.required.set(true)
     }
 }
