@@ -128,29 +128,54 @@ export default function (data) {
   // a falha já foi registrada no check — encerra a iteração.
   if (!allDaysOk) return;
 
+  // Invariantes de NEGÓCIO da jornada (não só status codes): validam o contrato
+  // fim-a-fim sob carga. Regras profundas (WIP limit, ordenação Burrows,
+  // determinismo por seed) vivem no domain + PITest — não duplicar aqui.
   group('query results', () => {
     const days = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/days`, {
       headers: auth,
       tags: { endpoint: 'days' },
     });
-    check(days, { 'days listed': (r) => r.status === 200 });
+    check(days, {
+      'days listed': (r) => r.status === 200,
+      [`days tem exatamente ${DAYS_TO_RUN} dias apos ${DAYS_TO_RUN} runs`]: (r) =>
+        r.status === 200 && r.json('days').length === DAYS_TO_RUN,
+      'days pertence a simulacao criada': (r) =>
+        r.status === 200 && r.json('simulationId') === simulationId,
+    });
 
     const snapshot = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/days/1/snapshot`, {
       headers: auth,
       tags: { endpoint: 'snapshot' },
     });
-    check(snapshot, { 'snapshot returned': (r) => r.status === 200 });
+    check(snapshot, {
+      'snapshot returned': (r) => r.status === 200,
+      'snapshot responde o dia pedido (day == 1)': (r) => r.status === 200 && r.json('day') === 1,
+      'snapshot pertence a simulacao criada': (r) =>
+        r.status === 200 && r.json('simulationId') === simulationId,
+    });
 
     const cfd = http.get(`${BASE_URL}/api/v1/simulations/${simulationId}/cfd`, {
       headers: auth,
       tags: { endpoint: 'cfd' },
     });
-    check(cfd, { 'cfd returned': (r) => r.status === 200 });
+    check(cfd, {
+      'cfd returned': (r) => r.status === 200,
+      [`cfd tem serie consistente com os ${DAYS_TO_RUN} dias`]: (r) =>
+        r.status === 200 && r.json('series').length === DAYS_TO_RUN,
+    });
 
     const list = http.get(`${BASE_URL}/api/v1/simulations?organizationId=${data.organizationId}`, {
       headers: auth,
       tags: { endpoint: 'list' },
     });
-    check(list, { 'simulations listed': (r) => r.status === 200 });
+    check(list, {
+      'simulations listed': (r) => r.status === 200,
+      // Estável sob concorrência (paginado): a org tem pelo menos a simulação
+      // desta iteração e a página vem populada. "Contém o id criado" seria
+      // flaky com 20 VUs criando em paralelo.
+      'list da organizacao nao esta vazio': (r) =>
+        r.status === 200 && r.json('total') >= 1 && r.json('data').length > 0,
+    });
   });
 }
