@@ -15,6 +15,7 @@
 [![Konsist](https://img.shields.io/badge/konsist-architecture%20fitness-4B9E4B)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions)
 [![SBOM](https://img.shields.io/badge/SBOM-CycloneDX-FF6D00)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain)
 [![SCA](https://img.shields.io/badge/SCA-osv--scanner-4285F4)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain)
+[![k6](https://img.shields.io/badge/k6-load%20testing-7D64FF)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing)
 [![OpenTelemetry](https://img.shields.io/badge/opentelemetry-1.63.0-425CC7?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-manifests-326CE5?logo=kubernetes&logoColor=white)](k8s/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/agnaldo4j/kanban-vision-api-kt/pkgs/container/kanban-vision-api-kt)
@@ -75,6 +76,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (9.4/10), gap roadmap |
 | [Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) | CycloneDX SBOM, osv-scanner CVE gate, exception policy, red-gate runbook |
 | [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions) | Konsist rules enforcing the hexagonal architecture in CI |
+| [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) | k6 journey, profiles, p95 baseline (1,644 req/s) and manual workflow |
 
 ---
 
