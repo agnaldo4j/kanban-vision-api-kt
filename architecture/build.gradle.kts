@@ -14,3 +14,16 @@ dependencies {
     // versão do projeto evita classpath misto que impede o Gradle de iniciar o runner.
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.1")
 }
+
+// Correção de cache (ADR-0026): o Konsist lê as fontes dos demais módulos em runtime,
+// invisíveis aos inputs que o Gradle rastreia para esta task — sem isto, um PR que só
+// muda domain/ reutilizaria um resultado verde stale do build cache e o gate não veria
+// a violação. Declarar os src/main analisados como inputs invalida o cache corretamente.
+tasks.test {
+    listOf("domain", "usecases", "sql_persistence", "http_api").forEach { module ->
+        inputs
+            .dir(rootDir.resolve("$module/src/main/kotlin"))
+            .withPropertyName("analyzedSources_$module")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+}
