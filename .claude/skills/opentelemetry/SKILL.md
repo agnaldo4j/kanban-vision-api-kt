@@ -1,11 +1,10 @@
 ---
 name: opentelemetry
 description: >
-  Implemente e evolua a observabilidade deste projeto com OpenTelemetry, Prometheus e
+  Evolua e depure a observabilidade deste projeto com OpenTelemetry, Prometheus e
   Grafana. Use este skill ao adicionar métricas, traces, logs estruturados, health checks
-  com dependências, ou ao configurar o stack local de observabilidade. Cobre o caminho
-  incremental desde o estado atual (MDC + logs de texto) até observabilidade completa
-  (logs JSON → métricas Prometheus → traces distribuídos → alertas Grafana).
+  com dependências, ou ao operar o stack local de observabilidade (já implementado:
+  logs JSON via LOG_FORMAT, /metrics Prometheus, traces OTel→Tempo, alertas Grafana).
 argument-hint: "[observability concern, e.g.: traces, metrics, logs (optional)]"
 allowed-tools: Read, Grep, Glob, Bash
 ---
@@ -23,26 +22,23 @@ allowed-tools: Read, Grep, Glob, Bash
 
 ---
 
-## Estado Atual do Projeto vs. Objetivo
+## Estado Atual do Projeto
 
-### Hoje
+O stack completo está **implementado** (ciclos P1–P2; GAP-B/D/F/O/U concluídos):
 
 ```
-Observability.kt
-  ├── RequestIdPlugin  → gera/propaga X-Request-ID
-  └── CallLogging      → loga método, path, status com MDC (requestId)
-
-logback.xml
-  └── Appender STDOUT  → texto: "%d{HH:mm:ss} [%thread] %-5level [rid=%X{requestId}] - %msg%n"
+Observability.kt      → RequestIdPlugin (X-Request-ID) + CallLogging com MDC
+logback.xml           → <include> seleciona logback-{text,json}.xml por LOG_FORMAT
+/metrics              → Micrometer + Prometheus (job quality do compose)
+OTel Java Agent 2.29.0 → traces via OTLP gRPC → Grafana Tempo (traceId/spanId no MDC)
+/health /health/live /health/ready → readiness verifica o banco
+Alertas               → Prometheus rules + Grafana (GAP-U)
 ```
 
-**O que falta:**
-- Logs em JSON estruturado (GAP-F) — texto livre impossibilita agregação em Loki/CloudWatch
-- Endpoint `/metrics` com métricas de aplicação (GAP-D)
-- Distributed tracing com `trace_id` / `span_id` correlacionados nos logs (GAP-O)
-- Health check com verificação real de dependências (GAP-B)
+Este skill serve para **evoluir e depurar** essa observabilidade — não para instalá-la
+do zero. O modelo de camadas abaixo continua sendo o mapa conceitual:
 
-### Objetivo: Observabilidade em Quatro Camadas
+### Observabilidade em Quatro Camadas
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -182,24 +178,18 @@ implementation("net.logstash.logback:logstash-logback-encoder:8.0")
         </encoder>
     </appender>
 
-    <!-- Seleciona appender via variável de ambiente LOG_FORMAT=json -->
-    <if condition='property("LOG_FORMAT").equals("json")'>
-        <then>
-            <root level="INFO">
-                <appender-ref ref="STDOUT_JSON"/>
-            </root>
-        </then>
-        <else>
-            <root level="INFO">
-                <appender-ref ref="STDOUT_TEXT"/>
-            </root>
-        </else>
-    </if>
+    <!-- ⚠️ PITFALL: logback 1.5.x REMOVEU o <if>/Janino. Um condicional aqui é
+         ignorado EM SILÊNCIO e nenhum root logger é configurado (aplicação muda —
+         bug real corrigido no PR #225). A seleção por LOG_FORMAT usa <include>: -->
+    <include resource="logback-${LOG_FORMAT:-text}.xml"/>
 
     <logger name="io.ktor" level="INFO"/>
     <logger name="com.kanbanvision" level="DEBUG"/>
 </configuration>
 ```
+
+Cada arquivo incluído (`logback-text.xml` / `logback-json.xml`) é um `<included>` com o
+appender e o `<root>` correspondentes — ver `http_api/src/main/resources/`.
 
 ### Resultado no formato JSON
 
@@ -234,7 +224,7 @@ registry. É o bridge perfeito para este stack.
 
 ```kotlin
 // http_api/build.gradle.kts
-implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.1.2")
+implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.1")
 implementation("io.micrometer:micrometer-registry-prometheus:1.14.4")
 implementation("io.micrometer:micrometer-core:1.14.4")
 ```
@@ -458,10 +448,12 @@ OTEL_LOGS_EXPORTER=none     # desabilitar se usando logstash-logback-encoder
 # http_api/Dockerfile
 FROM eclipse-temurin:25-jre AS runtime
 
-# Download do agente (fixar versão para builds reproduzíveis)
-ARG OTEL_AGENT_VERSION=2.12.0
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_AGENT_VERSION}/opentelemetry-javaagent.jar \
-    /opt/opentelemetry-javaagent.jar
+# Download do agente com VERIFICAÇÃO sha256 (padrão do Dockerfile real na raiz —
+# stage dedicado; nunca ADD sem checksum: supply chain, ver skill owasp/ADR-0025)
+# FROM alpine:3.19 AS otel-agent
+#   RUN curl -fsSL -o /opentelemetry-javaagent.jar "https://github.com/open-telemetry/...\/v2.29.0/opentelemetry-javaagent.jar" && \
+#       echo "<sha256 da release>  /opentelemetry-javaagent.jar" | sha256sum -c -
+COPY --from=otel-agent /opentelemetry-javaagent.jar /opt/opentelemetry-javaagent.jar
 
 WORKDIR /app
 COPY build/libs/kanban-vision-api.jar app.jar
@@ -481,7 +473,7 @@ adicione spans manuais:
 
 ```kotlin
 // Dependência adicional para instrumentação manual
-// implementation("io.opentelemetry:opentelemetry-api:1.47.0")
+// implementation("io.opentelemetry:opentelemetry-api:1.63.0")
 
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.StatusCode
@@ -810,9 +802,10 @@ groups:
 
 ---
 
-## XI. Caminho de Implementação Incremental
+## XI. Caminho de Implementação Incremental (REGISTRO HISTÓRICO — tudo concluído)
 
-Cada passo entrega valor imediato e é independente dos seguintes.
+Os passos abaixo foram executados nos ciclos P1–P2 (GAP-B/D/F/O/U ✅). O registro fica
+como referência do racional e para replicar o caminho em outros serviços.
 
 ```
 Passo 1 — Logs JSON (GAP-F)

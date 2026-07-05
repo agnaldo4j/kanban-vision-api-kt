@@ -31,7 +31,7 @@ o build está falhando por violação de alguma ferramenta.
 |---|---|---|
 | `config/detekt/detekt.yml` | Detekt | Thresholds, regras ativas, padrões de nomenclatura |
 | `.editorconfig` | KtLint / editores | Estilo de código, tamanho de linha, ordenação de imports |
-| `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` | Convention plugin | JaCoCo gate (90%), JUnit platform, versões de ferramentas |
+| `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` | Convention plugin | JaCoCo gate (97%), JUnit platform, versões de ferramentas |
 | `**/build.gradle.kts` | Gradle | Exclusões de JaCoCo por módulo, dependências de teste |
 | `gradle.properties` | Gradle | Versão do Java, flags da JVM |
 
@@ -49,7 +49,7 @@ Build falhou por Detekt / KtLint / JaCoCo?
 
 **Nunca:**
 - Aumentar um threshold (`LongMethod`, `CyclomaticComplexMethod`, `LargeClass`, etc.)
-- Baixar o gate de cobertura (mínimo 90% é fixo)
+- Baixar o gate de cobertura (mínimo 97% é fixo)
 - Adicionar exclusões no JaCoCo sem aprovação explícita do time
 - Desativar uma regra do Detekt
 - Adicionar `@Suppress` sem justificativa documentada no código
@@ -99,7 +99,7 @@ Três camadas de teste, cada uma com responsabilidade distinta:
 
 ### Versão em uso
 
-O projeto usa **JUnit 5.11.4** (`junit-jupiter`).
+O projeto usa **JUnit Jupiter 6.1.1** (`junit-jupiter`).
 Documentação: https://junit.org/junit5/docs/current/user-guide/
 
 ### Imports corretos
@@ -463,6 +463,13 @@ coEvery { repo.findById(any()) } returns ...
 ## 5. SLF4J — Logging
 
 Referência: https://www.slf4j.org/manual.html
+
+> **Configuração do logback (http_api)**: `logback.xml` seleciona o formato via
+> `<include resource="logback-${LOG_FORMAT:-text}.xml"/>` — `logback-json.xml` (produção,
+> Logstash encoder) ou `logback-text.xml` (dev). ⚠️ O logback 1.5.x **removeu** o
+> `<if>`/Janino: um condicional é ignorado em silêncio e a aplicação fica SEM root logger
+> (muda). Nunca reintroduzir `<if>` — bug real corrigido no PR #225.
+> Load testing (k6) tem skill próprio: `/load-testing`.
 
 ### Como obter um logger
 

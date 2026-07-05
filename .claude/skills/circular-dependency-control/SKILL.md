@@ -441,16 +441,13 @@ proteger fronteiras de módulo:
 style:
   ForbiddenImport:
     active: true
-    imports:
+    forbiddenImports:   # schema do Detekt 2.x (dev.detekt) — antes era 'imports:'
       - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
         reason: 'Repositórios JDBC só podem ser usados em wiring de DI (AppModule)'
-      # Candidatos para ADR futura:
       # ⚠️ ATENÇÃO: ForbiddenImport bane o padrão em TODO o projeto, não apenas num pacote.
-      # O exemplo abaixo quebraria usecases/, http_api/, sql_persistence/ e testes que
-      # legitimamente importam tipos de simulation/. Para restrição por pacote, considere
-      # uma custom Detekt rule ou ArchUnit (https://www.archunit.org/).
-      # - value: 'com.kanbanvision.domain.model.simulation.*'
-      #   reason: 'NÃO USAR — escopo muito amplo; prefira ArchUnit para ciclos entre pacotes'
+      # Para restrição por camada/pacote, use as fitness functions Konsist do módulo
+      # architecture/ (ADR-0026) — é o mecanismo do projeto para regras de dependência
+      # entre camadas (ver skill kotlin-quality-pipeline §8).
 ```
 
 > Para adicionar novas regras ForbiddenImport: abrir ADR. `detekt.yml` é imutável por política.

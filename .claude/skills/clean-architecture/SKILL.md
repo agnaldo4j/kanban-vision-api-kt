@@ -163,7 +163,7 @@ formato conveniente para os agentes externos (UI, banco, filas).
 **O que pertence aqui:**
 - Controllers HTTP (recebem request, constroem Command, chamam UseCase)
 - Presenters (transformam resultado do UseCase em formato de resposta)
-- Repositórios JDBC/JPA (implementam as interfaces definidas nos UseCases)
+- Repositórios Exposed DSL (implementam as interfaces definidas nos UseCases)
 - Todo SQL fica **restrito a esta camada** — nenhum código interno conhece SQL
 
 **Neste projeto:**
@@ -208,7 +208,7 @@ de terceiros. Pouco código original — principalmente integração e configura
 ```
 http_api/plugins/    ← Ktor: configuração de plugins (Serialization, Routing, etc.)
 http_api/di/         ← Koin: wiring de dependências
-sql_persistence/     ← HikariCP + JDBC + PostgreSQL
+sql_persistence/     ← HikariCP + Exposed DSL + PostgreSQL
 ```
 
 O `AppModule` do Koin é o único lugar onde `JdbcBoardRepository` é vinculado à

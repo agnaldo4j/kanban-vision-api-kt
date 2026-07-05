@@ -47,7 +47,7 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 | Categoria | Exemplos concretos |
 |---|---|
 | Bug fix sem mudança de comportamento | Corrigir validação, fix de NPE |
-| Atualização de versão patch | `ktor 3.1.2 → 3.1.3` |
+| Atualização de versão patch | `ktor 3.5.1 → 3.5.2` |
 | Documentação pura | Atualizar README, corrigir docstring |
 | Refatoração trivial | Renomear variável local, extrair constante |
 
@@ -384,7 +384,7 @@ Use antes de marcar o PR como pronto para revisão.
 
 ### Garantias
 
-- [ ] `./gradlew testAll` verde (Detekt + KtLint + testes + JaCoCo ≥ 90%)
+- [ ] `./gradlew testAll` verde (Detekt + KtLint + testes + JaCoCo ≥ 97%)
 - [ ] Todos os itens do DOD confirmados ou marcados N/A com justificativa
 - [ ] Dependency Rule verificada: nenhum import de framework em `domain/` ou `usecases/`
 - [ ] Diagramas C4 atualizados se um novo módulo, rota ou caso de uso foi adicionado

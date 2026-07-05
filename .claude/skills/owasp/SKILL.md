@@ -15,7 +15,7 @@ allowed-tools: Read, Grep, Glob, Bash
 > Referência oficial: https://owasp.org/Top10/2025/
 >
 > Este skill aplica os 10 riscos mais críticos de segurança ao stack deste projeto:
-> **Kotlin + Ktor 3.1 + JWT + Exposed ORM + PostgreSQL + Flyway + Koin + Arrow-kt**
+> **Kotlin + Ktor 3.5 + JWT + Exposed ORM + PostgreSQL + Flyway + Koin + Arrow-kt**
 
 ---
 
@@ -178,43 +178,40 @@ if (System.getenv("ENABLE_SWAGGER") == "true") {
 
 **Risco:** Ataques de alto impacto (SolarWinds, Log4Shell, Shai-Hulud worm npm 2025).
 
-### Ações Preventivas para Este Projeto
+### Gate IMPLEMENTADO neste projeto (ADR-0025 — não é opcional)
+
+O CI tem o job `supply-chain` (paralelo ao quality; o `build` da imagem exige ambos):
+
+1. `./gradlew cyclonedxBom` — SBOM CycloneDX agregado do `runtimeClasspath` de todos os
+   módulos em `build/reports/cyclonedx/bom.json` (plugin `org.cyclonedx.bom` na raiz);
+2. osv-scanner v2 escaneia o SBOM contra a base OSV.dev — **gate bloqueante**
+   (CVE conhecida = job vermelho = imagem não publicada);
+3. Comentário **Supply Chain Report** em cada PR (componentes, exceções, findings).
 
 ```bash
-# Escanear dependências com vulnerabilidades conhecidas (CVE/NVD)
-./gradlew dependencyCheckAnalyze          # OWASP Dependency Check (adicionar se necessário)
-
-# Verificar versões desatualizadas
-./gradlew dependencyUpdates               # ben-manes/gradle-versions-plugin
-
-# Verificar integridade de artefatos (já feito pelo Gradle com checksums)
-./gradlew --write-verification-metadata sha256
+# Rodar localmente
+./gradlew cyclonedxBom
+osv-scanner scan source --config=osv-scanner.toml -L build/reports/cyclonedx/bom.json
 ```
 
-### Configuração Recomendada
+**Política de exceções** (`osv-scanner.toml`): fail closed — exceção NUNCA desliga o
+gate; cada entrada exige `id`, `reason` com justificativa, data e critério objetivo de
+remoção. Atenção aos ranges do advisory (consultar `api.osv.dev/v1/vulns/<GHSA>` — versões
+podem ser reintroduzidas). CVE com fix publicado → preferir upgrade via `constraints {}`
+no módulo com `because("GHSA-...")`.
 
-```kotlin
-// build.gradle.kts (root) — adicionar se não existir
-plugins {
-    id("org.owasp.dependencycheck") version "10.0.4"
-}
-
-dependencyCheck {
-    failBuildOnCVSS = 7.0f              // falha em vulnerabilidades HIGH+
-    format = "HTML"
-    outputDirectory = "build/reports/dependency-check"
-    suppressionFile = "config/dependency-check-suppressions.xml"
-}
-```
+**Escopo declarado (Confirmation da ADR-0025):** o gate cobre as dependências JVM do
+Gradle. Camadas da imagem Docker e o agente OTel baixado no build ficam fora — scan de
+imagem (Trivy/Grype) é dívida consciente para gap futuro.
 
 ### Checklist A03
 
 - [ ] Todas as versões de dependências são declaradas explicitamente (sem `+` ou ranges).
-- [ ] `gradle/verification-metadata.xml` com checksums SHA-256 atualizado.
-- [ ] CI executa scan de vulnerabilidades (OWASP Dependency Check ou Snyk).
-- [ ] Dependências transitivas monitoradas (não só diretas).
-- [ ] Base Docker usa digest fixo (não `latest`): `eclipse-temurin:25-jre@sha256:...`.
-- [ ] Nenhuma dependência de fonte não-oficial ou não verificada.
+- [ ] Job `supply-chain` verde — nenhuma CVE não tratada no SBOM.
+- [ ] Exceção nova no `osv-scanner.toml` tem `reason` + critério de remoção (senão: rejeitar em review).
+- [ ] Dependências transitivas cobertas (o SBOM inclui o grafo completo do runtimeClasspath).
+- [ ] OTel agent no Dockerfile com sha256 verificado (já é o padrão — manter ao fazer bump).
+- [ ] Dependabot semanal ativo (grupos: minor/patch + Ktor em lockstep).
 
 ---
 
@@ -757,8 +754,9 @@ fun Raise<DomainError>.executeWithRollback(operation: () -> Unit) =
 # Detekt (análise estática já no CI)
 ./gradlew detekt
 
-# OWASP Dependency Check (adicionar ao build.gradle.kts se necessário)
-./gradlew dependencyCheckAnalyze
+# SCA — SBOM + osv-scanner (gate real do CI, ADR-0025)
+./gradlew cyclonedxBom
+osv-scanner scan source --config=osv-scanner.toml -L build/reports/cyclonedx/bom.json
 
 # Verificar segredos no código
 git log --all -p | grep -iE "(password|secret|apikey|token)\s*=" | head -20

@@ -101,13 +101,13 @@ automaticamente no JAR de recursos do módulo.
 ```kotlin
 dependencies {
     // Flyway core (API e runner)
-    implementation("org.flywaydb:flyway-core:10.23.0")
+    implementation("org.flywaydb:flyway-core:12.10.0")
     // PostgreSQL support — obrigatório a partir do Flyway 10
-    runtimeOnly("org.flywaydb:flyway-database-postgresql:10.23.0")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:12.10.0")
 
     // manter HikariCP e postgres driver já existentes
-    implementation("com.zaxxer:HikariCP:6.3.0")
-    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("com.zaxxer:HikariCP:7.1.0")
+    implementation("org.postgresql:postgresql:42.7.12")
 }
 ```
 
