@@ -466,10 +466,16 @@ jobs:
           docker run -d --name smoke-pg --network smoke \
             -e POSTGRES_DB=kanbanvision -e POSTGRES_USER=kanban -e POSTGRES_PASSWORD=kanban \
             postgres:16-alpine
+          PG_READY=0
           for i in $(seq 1 30); do
-            docker exec smoke-pg pg_isready -U kanban >/dev/null 2>&1 && break
+            docker exec smoke-pg pg_isready -U kanban >/dev/null 2>&1 && { PG_READY=1; break; }
             sleep 2
           done
+          if [ "$PG_READY" -ne 1 ]; then
+            echo "Postgres não ficou pronto em 60s — logs:" >&2
+            docker logs smoke-pg >&2 || true
+            exit 1
+          fi
           docker run -d --name smoke-app --network smoke -p 8080:8080 \
             -e DATABASE_URL=jdbc:postgresql://smoke-pg:5432/kanbanvision \
             -e DATABASE_USER=kanban -e DATABASE_PASSWORD=kanban \
