@@ -22,10 +22,11 @@ pitest {
     targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
     targetTests.set(setOf("com.kanbanvision.domain.simulation.*"))
     mutators.set(setOf("STRONGER"))
-    // Baseline: 38% (70/182 killed). Round 2: 54% (98/182). Round 3: 63% (114/182).
-    // Surviving mutants concentrated in null-safety guards (hard to kill) and
-    // calculateMetrics lambda bytecode coverage gaps.
-    mutationThreshold.set(58)
+    // Baseline: 38% (70/182). Round 2: 54%. Round 3: 63%. ADR-0018: 68% (129/188).
+    // Gate em 65 (2026-07-05, review de gates): 3pp abaixo do score medido — margem
+    // para variação entre máquinas. Surviving mutants concentrados em null-safety
+    // guards e lambdas de calculateMetrics.
+    mutationThreshold.set(65)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)
