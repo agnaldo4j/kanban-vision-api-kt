@@ -25,7 +25,10 @@ object AppModule {
     val koinModule =
         module {
             single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
-            single<EventPublisherPort> { MicrometerEventPublisher(get()) }
+            // get() tipado: o publisher declara MeterRegistry (interface) e o Koin
+            // não resolve por subtipo — sem isto o wiring de produção quebra com
+            // NoDefinitionFoundException (testes não pegam: mockam o port).
+            single<EventPublisherPort> { MicrometerEventPublisher(get<PrometheusMeterRegistry>()) }
 
             single<OrganizationRepository> { JdbcOrganizationRepository() }
             single<SimulationRepository> { JdbcSimulationRepository() }

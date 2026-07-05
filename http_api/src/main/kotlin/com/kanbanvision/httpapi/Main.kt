@@ -18,27 +18,17 @@ import com.kanbanvision.persistence.DatabaseConfig
 import com.kanbanvision.persistence.DatabaseFactory
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
-private const val SHUTDOWN_GRACE_PERIOD_MS = 1_000L
-private const val SHUTDOWN_TIMEOUT_MS = 5_000L
-
-fun main() {
-    val server = embeddedServer(Netty, module = Application::module)
-    Runtime.getRuntime().addShutdownHook(
-        Thread {
-            server.stop(
-                gracePeriodMillis = SHUTDOWN_GRACE_PERIOD_MS,
-                timeoutMillis = SHUTDOWN_TIMEOUT_MS,
-            )
-        },
-    )
-    server.start(wait = true)
-}
+// EngineMain carrega o application.conf do classpath (database.*, jwt.*,
+// ktor.application.modules) e faz graceful shutdown via ktor.deployment.shutdown* —
+// o embeddedServer programático usado antes NÃO lia o conf e quebrava o fat JAR em
+// runtime ("Property database.url not found"; descoberto no baseline do GAP-AR).
+fun main(args: Array<String>) =
+    io.ktor.server.netty.EngineMain
+        .main(args)
 
 fun Application.module() {
     install(Koin) {
