@@ -31,12 +31,23 @@ class PortsPlacementTest {
 
     @Test
     fun `implementacoes de Repository implementam um port`() {
+        // O parent precisa ser um port REAL (interface em usecases.repositories) —
+        // nome terminado em Repository não basta: aceitaria superclasse concreta.
+        val portNames =
+            Konsist
+                .scopeFromProduction()
+                .interfaces()
+                .withNameEndingWith("Repository")
+                .filter { it.resideInPackage("com.kanbanvision.usecases.repositories") }
+                .map { it.name }
+                .toSet()
+
         Konsist
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("Repository")
             .assertTrue { clazz ->
-                clazz.parents().any { parent -> parent.name.endsWith("Repository") }
+                clazz.parents().any { parent -> parent.name in portNames }
             }
     }
 }
