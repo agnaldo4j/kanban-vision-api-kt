@@ -71,7 +71,7 @@ altere thresholds sem nova medição documentada é rejeitado.
 
 ## More Information
 
-- Branch: `feat/adr-0027-load-tests-k6` · PR: (link após abrir)
+- Branch: `feat/adr-0027-load-tests-k6` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/224
 - Item no board #6: [GAP-AR [M] — Testes de carga + baseline p95](https://github.com/users/agnaldo4j/projects/6) (ciclo P6) — plano de implementação vive lá e no PR 2/2.
 - Referências: `docs/quality/audit-2026-07.md` · [k6](https://grafana.com/docs/k6/latest/) ·
   [Observability (wiki)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) ·
