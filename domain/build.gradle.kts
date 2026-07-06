@@ -27,7 +27,8 @@ pitest {
     // remanescentes são ruído estrutural: guards sombreados por validação redundante
     // (mutantes equivalentes) e bridges sintéticos de default args do Kotlin
     // (linhas além do fim do arquivo). Gate 78 = 4pp de margem.
-    // Histórico do escopo simulation-only: 38 → 54 → 63 → 68 → 69.
+    // Histórico de SCORE no escopo simulation-only: 38 → 54 → 63 → 68 → 69
+    // (gates correspondentes: 35 → 45 → 58 → 65; ver skill kotlin-quality-pipeline).
     mutationThreshold.set(78)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
