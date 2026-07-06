@@ -104,7 +104,7 @@ jobs:
               'domain|65|com.kanbanvision.domain.simulation.*' \
               'usecases|55|com.kanbanvision.usecases.*' \
               'sql_persistence|65|com.kanbanvision.persistence.*' \
-              'http_api|35|com.kanbanvision.httpapi.*'; do
+              'http_api|45|com.kanbanvision.httpapi.{plugins,adapters,events}.*'; do
               module=${spec%%|*}; rest=${spec#*|}
               threshold=${rest%%|*}; target=${rest#*|}
               echo ''

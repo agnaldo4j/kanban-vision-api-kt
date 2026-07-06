@@ -9,14 +9,24 @@ pitest {
     // PITest 1.25.3 uses ASM 9.9.1 which supports Java 25 class files (major version 69).
     pitestVersion.set("1.25.3")
     junit5PluginVersion.set("1.2.3")
-    targetClasses.set(setOf("com.kanbanvision.httpapi.*"))
+    // Escopo = lógica destilada (plugins/adapters/events), espírito do recorte do
+    // domain (só simulation). Rotas ficam FORA por decisão de custo medida: são 74%
+    // dos mutantes (1078/1462) e a fábrica de hangs — mutar respond deixa o test
+    // client esperando até o timeout do PITest (62 TIMED_OUT; o runner do CI passou
+    // de 24min e o job foi cancelado). Rotas seguem cobertas por JaCoCo 97% +
+    // testApplication + Pact; mutação de rotas = dívida consciente para gap futuro.
+    targetClasses.set(
+        setOf(
+            "com.kanbanvision.httpapi.plugins.*",
+            "com.kanbanvision.httpapi.adapters.*",
+            "com.kanbanvision.httpapi.events.*",
+        ),
+    )
     targetTests.set(setOf("com.kanbanvision.httpapi.*"))
     mutators.set(setOf("STRONGER"))
-    // Baseline GAP-AS (2026-07-05): 38% (607/1581; 77 timeouts). Score baixo e
-    // honesto: DTOs/serialização geram bytecode não assertado (as exclusões do
-    // JaCoCo não se aplicam ao PITest). Gate 35 = mesmo ponto de partida do
-    // domain (38→35); subida gradual em gaps futuros.
-    mutationThreshold.set(35)
+    // Baseline GAP-AS (2026-07-05, escopo plugins/adapters/events): 50% (192/384,
+    // 54s local). Gate 45 = 5pp de margem. Subida gradual em gaps futuros.
+    mutationThreshold.set(45)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)

@@ -801,7 +801,7 @@ pitest {
 | `domain` | `com.kanbanvision.domain.simulation.*` | 65% | 69% (2026-07-05) |
 | `usecases` | `com.kanbanvision.usecases.*` | 55% | 60% (2026-07-05; PITest conta TIMED_OUT como kill) |
 | `sql_persistence` | `com.kanbanvision.persistence.*` | 65% | 70% (2026-07-05; suíte embedded-postgres) |
-| `http_api` | `com.kanbanvision.httpapi.*` | 35% | 38% (2026-07-05; DTOs/serialização geram bytecode não assertado) |
+| `http_api` | `httpapi.{plugins,adapters,events}.*` | 45% | 50% (2026-07-05; rotas fora — hangs de respond sob mutação; dívida consciente) |
 
 **Por que gate abaixo do score, e não 80%?**
 O gate fica ligeiramente abaixo do último score medido (margem para variação de timeouts
