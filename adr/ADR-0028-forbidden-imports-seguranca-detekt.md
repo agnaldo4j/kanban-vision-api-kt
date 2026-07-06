@@ -44,20 +44,33 @@ todos os módulos — a regra entra sem quebrar código existente.
 **Escolhida: Opção 1 (ForbiddenImport no Detekt)**, porque o Detekt roda em todo `testAll` e no
 CI com `warningsAsErrors: true` (falha o build no import, antes de qualquer teste), a entrada
 carrega um `reason` exibido no ponto exato da violação (ensina a alternativa), e a regra
-`ForbiddenImport` já está ativa com a entrada `Jdbc*` — custo marginal zero de infraestrutura.
+`ForbiddenImport` já está ativa — custo marginal zero de infraestrutura.
+
+**Restrição de implementação (apontada em review)**: o `excludes` do Detekt é *rule-level* —
+manter `excludes: ['**/di/AppModule.kt']` (necessário à entrada `Jdbc*`) isentaria o AppModule
+TAMBÉM dos imports de segurança, e imports não aceitam `@Suppress` em Kotlin. Portanto a
+implementação deve: (a) deixar `ForbiddenImport` **sem `excludes`**, contendo apenas entradas
+válidas para 100% do código (as duas de segurança); (b) **migrar a regra `Jdbc*`-só-no-AppModule
+para uma fitness function Konsist** no módulo `architecture/` — semanticamente é regra de
+arquitetura (wiring de DI), não SAST, e o Konsist expressa a exceção por arquivo sem abrir furo.
 
 ### Confirmation
 
-O próprio gate: Detekt com `warningsAsErrors: true` em `testAll` e no job `quality` do CI.
+O próprio gate: Detekt com `warningsAsErrors: true` em `testAll` e no job `quality` do CI —
+sem `excludes` na regra (cobertura de 100% dos arquivos, AppModule incluído). A regra `Jdbc*`
+passa a ser verificada por fitness function Konsist em `architecture/` (roda no `testAll`/CI).
 Validação negativa registrada no PR de implementação: adicionar `import java.io.ObjectInputStream`
-temporário → `./gradlew detekt` FALHA com a mensagem do `reason` → remover.
+temporário (inclusive em AppModule) → `./gradlew detekt` FALHA com a mensagem do `reason` →
+remover; e violação temporária de `Jdbc*` fora do AppModule → Konsist FALHA → remover.
 
 ## Consequences
 
 - Bom: dois vetores OWASP (A08 e crypto fraca) passam de recomendação para gate bloqueante.
 - Bom: o `reason` da regra documenta a alternativa correta no momento do erro.
-- Ruim: uso legítimo futuro (ex.: `MessageDigest` para checksum não-criptográfico de cache)
-  exigirá `@Suppress("ForbiddenImport")` com justificativa em comentário — fricção intencional.
+- Ruim: uso legítimo futuro de `MessageDigest` (ex.: checksum não-criptográfico) exigirá nova
+  ADR — imports não aceitam `@Suppress`, e o file-level suppress abriria furo; fricção intencional.
+- Neutro: a regra `Jdbc*` muda de ferramenta (Detekt → Konsist) sem mudar de força — ambas
+  falham o `testAll`/CI; o Konsist expressa a exceção do AppModule sem isentar as demais entradas.
 
 ## Pros and Cons of the Options
 
@@ -72,6 +85,8 @@ temporário → `./gradlew detekt` FALHA com a mensagem do `reason` → remover.
 - Bom: expressividade programática (poderia diferenciar contextos de uso).
 - Ruim: roda apenas na fase de teste do `testAll` (mais tarde que o Detekt); mensagem de assert
   menos direta; o módulo é desenhado para fitness functions de arquitetura, não SAST.
+- Nota: rejeitada como gate DE SEGURANÇA, mas adotada para a regra arquitetural `Jdbc*`
+  (ver Restrição de implementação) — cada ferramenta no seu domínio.
 
 ### Opção 3 — Somente documentação + review
 
@@ -81,6 +96,6 @@ temporário → `./gradlew detekt` FALHA com a mensagem do `reason` → remover.
 ## More Information
 
 - Branch: `feat/adr-0028-detekt-security-imports` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/235
-- Item no board #6: GAP-AV — o plano de implementação vive lá, não aqui
+- Item no board #6: [GAP-AV](https://github.com/users/agnaldo4j/projects/6) — o plano de implementação vive lá, não aqui
 - Referências: `.claude/rules/security.md` (recomendação original), ADR-0023 (imutabilidade de
   configs), skill `/owasp` (A08), regra `ForbiddenImport` existente (`detekt.yml:67`)
