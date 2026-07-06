@@ -65,11 +65,15 @@ style:
     active: true
     max: 2
   ForbiddenImport:
+    # ADR-0028: sem 'excludes' — rule-level excludes isentaria arquivos de TODAS as
+    # entradas. Só entradas válidas para 100% do código; a regra Jdbc*-só-no-AppModule
+    # migrou para Konsist (architecture/ConventionsTest).
     active: true
     forbiddenImports:
-      - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
-        reason: 'Import Jdbc*Repository only in AppModule.kt (DI wiring). Depend on repository interfaces from usecases/repositories/ instead.'
-    excludes: ['**/di/AppModule.kt']
+      - value: 'java.io.ObjectInputStream'
+        reason: 'RCE via desserialização nativa (OWASP A08). Use kotlinx.serialization (ADR-0028).'
+      - value: 'java.security.MessageDigest'
+        reason: 'Crypto de baixo nível. Hash de senha: Argon2/BCrypt via lib; integridade: API de alto nível (ADR-0028).'
   ForbiddenComment:
     active: true
     comments:

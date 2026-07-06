@@ -27,7 +27,7 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 - **Ports-and-adapters**: interfaces in `usecases/repositories/`; implementations in `sql_persistence/repositories/`. Routes call use cases, never repositories.
 - **CQS**: `CreateBoardUseCase` ← `CreateBoardCommand`; `GetBoardUseCase` ← `GetBoardQuery`.
 - **Error handling**: `Either<DomainError, T>` via Arrow-kt. `either { ensure(...) {} }` + `zipOrAccumulate` for multi-field validation. Routes use `.fold(ifLeft = { respondWithDomainError(it) }, ifRight = { ... })`.
-- **ForbiddenImport**: Detekt rule prevents `Jdbc*Repository` imports outside `AppModule`.
+- **Repositórios concretos só no AppModule**: fitness function Konsist (`architecture/ConventionsTest`) bloqueia `Jdbc*`/`Exposed*` fora do wiring de DI (migrada do Detekt — ADR-0028). O `ForbiddenImport` do Detekt cobre imports de segurança (`ObjectInputStream`, `MessageDigest`).
 - **Package root**: `com.kanbanvision`
 
 ## Exposed ORM (sql_persistence only)
@@ -194,7 +194,7 @@ transaction {
 | Wrap in `either {}` | All repository methods return `Either<DomainError, T>` |
 | Map outside chain | `ResultRow.toDomain()` is a pure extension function |
 | Shared HikariCP | One `DataSource` shared between Exposed and any raw JDBC |
-| ForbiddenImport | `Exposed*Repository` imports restricted to `AppModule` (same as `Jdbc*`) |
+| Konsist (ConventionsTest) | `Jdbc*`/`Exposed*Repository` imports restricted to `AppModule` (ADR-0028) |
 
 ---
 

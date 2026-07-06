@@ -150,26 +150,21 @@ catch({ accessService.check(userId) }) { e: Exception ->
 O projeto usa Detekt com `warningsAsErrors: true`. A regra `ForbiddenImport` atualmente aplicada:
 
 ```yaml
-# config/detekt/detekt.yml (arquivo imutável por política — não editar diretamente)
+# config/detekt/detekt.yml (arquivo imutável por política — mudanças só via ADR)
 style:
   ForbiddenImport:
-    active: true
-    imports:
-      - value: 'com.kanbanvision.persistence.repositories.Jdbc*'
-        reason: 'Repositórios JDBC só podem ser usados em wiring de DI (AppModule)'
-```
-
-As entradas abaixo são **recomendadas** para adição futura via ADR — ainda não estão no `detekt.yml`:
-
-```yaml
-# Recomendado (abrir ADR para aplicar):
+    active: true      # sem excludes — cobertura de 100% dos arquivos (ADR-0028)
+    forbiddenImports:
       - value: 'java.io.ObjectInputStream'
-        reason: 'Use kotlinx.serialization instead — ObjectInputStream enables RCE via deserialization'
+        reason: 'RCE via desserialização nativa (OWASP A08). Use kotlinx.serialization (ADR-0028).'
       - value: 'java.security.MessageDigest'
-        reason: 'Weak crypto — use SHA-256+ for hashing, Argon2 for passwords'
+        reason: 'Crypto de baixo nível. Hash de senha: Argon2/BCrypt via lib; integridade: API de alto nível (ADR-0028).'
 ```
 
-> **Nota**: Para adicionar novas regras Detekt de segurança, abra uma ADR — `config/detekt/detekt.yml` é imutável por política.
+> **ADR-0028**: a regra `Jdbc*`-só-no-AppModule migrou para fitness function Konsist
+> (`architecture/ConventionsTest`) — o `excludes` do Detekt é rule-level e isentaria o
+> AppModule também dos imports de segurança. Para novas regras Detekt de segurança,
+> abra uma ADR — `config/detekt/detekt.yml` é imutável por política.
 
 ---
 

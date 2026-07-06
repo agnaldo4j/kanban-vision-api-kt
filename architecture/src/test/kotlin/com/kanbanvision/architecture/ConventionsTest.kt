@@ -13,10 +13,28 @@ import org.junit.jupiter.api.Test
  */
 class ConventionsTest {
     @Test
+    fun `repositorios concretos so sao importados no AppModule`() {
+        // ADR-0028: regra migrada do ForbiddenImport do Detekt — o excludes do
+        // Detekt é rule-level e isentaria o AppModule também dos imports de
+        // segurança. Konsist expressa a exceção por arquivo sem abrir esse furo.
+        // Cobre Jdbc* e Exposed* (intenção já documentada em architecture.md).
+        Konsist
+            .scopeFromProduction()
+            .files
+            .filter { !it.path.endsWith("di/AppModule.kt") }
+            .assertFalse { file ->
+                file.imports.any {
+                    it.name.startsWith("com.kanbanvision.persistence.repositories.Jdbc") ||
+                        it.name.startsWith("com.kanbanvision.persistence.repositories.Exposed")
+                }
+            }
+    }
+
+    @Test
     fun `rotas nao importam a camada de persistencia`() {
-        // Complementa o ForbiddenImport do Detekt (que cobre Jdbc*) com a camada
-        // inteira: rotas falam com use cases, nunca com persistence.* — a única
-        // exceção de wiring é o AppModule (pacote di, fora de routes).
+        // Complementa a regra acima com a camada inteira: rotas falam com use
+        // cases, nunca com persistence.* — a única exceção de wiring é o
+        // AppModule (pacote di, fora de routes).
         Konsist
             .scopeFromProduction("http_api")
             .files
