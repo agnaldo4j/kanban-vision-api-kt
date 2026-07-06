@@ -80,7 +80,7 @@ temporário → `./gradlew detekt` FALHA com a mensagem do `reason` → remover.
 
 ## More Information
 
-- Branch: `feat/adr-0028-detekt-security-imports` · PR: (link após abrir)
+- Branch: `feat/adr-0028-detekt-security-imports` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/235
 - Item no board #6: GAP-AV — o plano de implementação vive lá, não aqui
 - Referências: `.claude/rules/security.md` (recomendação original), ADR-0023 (imutabilidade de
   configs), skill `/owasp` (A08), regra `ForbiddenImport` existente (`detekt.yml:67`)
