@@ -19,7 +19,10 @@ suspend fun ApplicationCall.requiredPathParam(
     message: String,
 ): String? {
     val value = parameters[name]
-    if (value == null) respondWithDomainError(DomainError.ValidationError(message))
+    if (value == null) {
+        respondWithDomainError(DomainError.ValidationError(message))
+        return null
+    }
     return value
 }
 

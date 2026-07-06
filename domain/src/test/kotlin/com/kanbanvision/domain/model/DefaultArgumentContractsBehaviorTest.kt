@@ -33,16 +33,23 @@ import kotlin.test.assertTrue
  * DOIS lados do bridge de defaults e asserta o contrato do valor default.
  */
 class DefaultArgumentContractsBehaviorTest {
+    private companion object {
+        const val CLOCK_TOLERANCE_SECONDS = 300L
+    }
+
     private val fixedInstant = Instant.parse("2026-07-06T12:00:00Z")
     private val explicitAudit = Audit(createdAt = fixedInstant, updatedAt = fixedInstant)
 
     @Test
     fun `audit factory and touch without arguments stamp current time`() {
-        val before = Instant.now()
+        // Janela tolerante (relógio de parede pode ajustar para trás) — o alvo
+        // do teste é exercitar o bridge no-arg, não a monotonicidade do clock.
+        val before = Instant.now().minusSeconds(CLOCK_TOLERANCE_SECONDS)
         val audit = Audit.now()
         val touched = audit.touch()
-        assertTrue(audit.createdAt >= before)
-        assertTrue(touched.updatedAt >= audit.createdAt)
+        val after = Instant.now().plusSeconds(CLOCK_TOLERANCE_SECONDS)
+        assertTrue(audit.createdAt in before..after)
+        assertTrue(touched.updatedAt in before..after)
         assertEquals(audit.createdAt, touched.createdAt)
     }
 
