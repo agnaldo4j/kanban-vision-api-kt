@@ -101,7 +101,7 @@ jobs:
             echo '## PITest Mutation Report'
             # module|display threshold|target — thresholds mirror the gradle gates
             for spec in \
-              'domain|65|com.kanbanvision.domain.simulation.*' \
+              'domain|78|com.kanbanvision.domain.*' \
               'usecases|55|com.kanbanvision.usecases.*' \
               'sql_persistence|65|com.kanbanvision.persistence.*' \
               'http_api|45|com.kanbanvision.httpapi.{plugins,adapters,events}.*'; do
