@@ -778,14 +778,14 @@ pitest {
     pitestVersion.set("1.25.3")       // core JAR (ASM com suporte a class files Java 25)
     junit5PluginVersion.set("1.2.3")
 
-    // domain: foco no SimulationEngine — lógica mais crítica de fila e WIP
-    targetClasses.set(setOf("com.kanbanvision.domain.simulation.*"))
-    targetTests.set(setOf("com.kanbanvision.domain.simulation.*"))
+    // domain: módulo inteiro (GAP-AT) — model + errors + events + engine
+    targetClasses.set(setOf("com.kanbanvision.domain.*"))
+    targetTests.set(setOf("com.kanbanvision.domain.*"))
 
     mutators.set(setOf("STRONGER"))   // DEFAULT + mutadores opcionais agressivos
 
-    // Gate atual do domain (histórico: baseline 38% → 45 → 58 → 65).
-    mutationThreshold.set(65)
+    // Gate atual do domain (histórico: 38 → 45 → 58 → 65 → 78 com escopo ampliado).
+    mutationThreshold.set(78)
 
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)     // relatório em path fixo — facilita diff
@@ -798,7 +798,7 @@ pitest {
 
 | Módulo | targetClasses | Gate | Score na última medição |
 |---|---|---|---|
-| `domain` | `com.kanbanvision.domain.simulation.*` | 65% | 69% (2026-07-05) |
+| `domain` | `com.kanbanvision.domain.*` (módulo inteiro) | 78% | 82% (2026-07-06; survivors = guards sombreados + bridges de default args) |
 | `usecases` | `com.kanbanvision.usecases.*` | 55% | 60% (2026-07-05; PITest conta TIMED_OUT como kill) |
 | `sql_persistence` | `com.kanbanvision.persistence.*` | 65% | 70% (2026-07-05; suíte embedded-postgres) |
 | `http_api` | `httpapi.{plugins,adapters,events}.*` | 45% | 50% (2026-07-05; rotas fora — hangs de respond sob mutação; dívida consciente) |
