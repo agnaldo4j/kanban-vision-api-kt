@@ -2,6 +2,42 @@ plugins {
     id("kanban.kotlin-common")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("io.ktor.plugin")
+    id("info.solidsoft.pitest")
+}
+
+pitest {
+    // PITest 1.25.3 uses ASM 9.9.1 which supports Java 25 class files (major version 69).
+    pitestVersion.set("1.25.3")
+    junit5PluginVersion.set("1.2.3")
+    // Escopo = lógica destilada (plugins/adapters/events), espírito do recorte do
+    // domain (só simulation). Rotas ficam FORA por decisão de custo medida: são 74%
+    // dos mutantes (1078/1462) e a fábrica de hangs — mutar respond deixa o test
+    // client esperando até o timeout do PITest (62 TIMED_OUT; o runner do CI passou
+    // de 24min e o job foi cancelado). Rotas seguem cobertas por JaCoCo 97% +
+    // testApplication + Pact; mutação de rotas = dívida consciente para gap futuro.
+    targetClasses.set(
+        setOf(
+            "com.kanbanvision.httpapi.plugins.*",
+            "com.kanbanvision.httpapi.adapters.*",
+            "com.kanbanvision.httpapi.events.*",
+        ),
+    )
+    targetTests.set(setOf("com.kanbanvision.httpapi.*"))
+    mutators.set(setOf("STRONGER"))
+    // Baseline GAP-AS (2026-07-05, escopo plugins/adapters/events): 50% (192/384,
+    // 54s local). Gate 45 = 5pp de margem. Subida gradual em gaps futuros.
+    mutationThreshold.set(45)
+    outputFormats.set(setOf("XML", "HTML"))
+    timestampedReports.set(false)
+    failWhenNoMutations.set(true)
+    threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
+}
+
+// PitestTask extends JavaExec: bytecode Java 25 exige orquestrador e forks no mesmo JDK.
+tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) },
+    )
 }
 
 application {

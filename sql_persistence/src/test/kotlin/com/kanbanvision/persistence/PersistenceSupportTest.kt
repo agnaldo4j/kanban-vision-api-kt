@@ -53,7 +53,7 @@ class PersistenceSupportTest {
 
     @Test
     fun `given cancellation exception when dbQuery runs then it is rethrown not wrapped`() =
-        runBlocking {
+        runBlocking<Unit> {
             EmbeddedPostgresSupport.ensureStarted()
             EmbeddedPostgresSupport.refreshDataSource()
 

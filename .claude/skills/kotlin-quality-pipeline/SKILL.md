@@ -794,12 +794,14 @@ pitest {
 }
 ```
 
-**Dois módulos têm gate de mutação** (`./gradlew pitestAll` roda ambos; o CI é obrigatório):
+**Os quatro módulos têm gate de mutação** (`./gradlew pitestAll` roda os quatro; o CI é obrigatório):
 
 | Módulo | targetClasses | Gate | Score na última medição |
 |---|---|---|---|
-| `domain` | `com.kanbanvision.domain.simulation.*` | 65% | 68% (2026-07-05) |
+| `domain` | `com.kanbanvision.domain.simulation.*` | 65% | 69% (2026-07-05) |
 | `usecases` | `com.kanbanvision.usecases.*` | 55% | 60% (2026-07-05; PITest conta TIMED_OUT como kill) |
+| `sql_persistence` | `com.kanbanvision.persistence.*` | 65% | 70% (2026-07-05; suíte embedded-postgres) |
+| `http_api` | `httpapi.{plugins,adapters,events}.*` | 45% | 50% (2026-07-05; rotas fora — hangs de respond sob mutação; dívida consciente) |
 
 **Por que gate abaixo do score, e não 80%?**
 O gate fica ligeiramente abaixo do último score medido (margem para variação de timeouts

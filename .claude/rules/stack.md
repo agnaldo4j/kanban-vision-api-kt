@@ -17,7 +17,7 @@
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit Jupiter 6.1.1 + MockK 1.14.11 |
-| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER mutators; `domain/` SimulationEngine gate 58%, `usecases/` gate 55%) |
+| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER; gates: `domain` 65% · `usecases` 55% · `sql_persistence` 65% · `http_api` 45% (plugins/adapters/events)) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 — módulo test-only `architecture/` (ADR-0026); roda no `testAll` |

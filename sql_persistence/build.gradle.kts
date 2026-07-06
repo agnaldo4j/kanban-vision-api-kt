@@ -1,6 +1,44 @@
 plugins {
     id("kanban.kotlin-common")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("info.solidsoft.pitest")
+}
+
+pitest {
+    // PITest 1.25.3 uses ASM 9.9.1 which supports Java 25 class files (major version 69).
+    pitestVersion.set("1.25.3")
+    junit5PluginVersion.set("1.2.3")
+    targetClasses.set(setOf("com.kanbanvision.persistence.*"))
+    targetTests.set(setOf("com.kanbanvision.persistence.*"))
+    mutators.set(setOf("STRONGER"))
+    // Baseline GAP-AS (2026-07-05): 71% (545/767 após reviver os 4 testes que o
+    // JUnit pulava — PITest conta TIMED_OUT/RUN_ERROR como kill). Gate 65 = margem
+    // para variância do embedded postgres. Subida gradual em gaps futuros (GAP-AU).
+    mutationThreshold.set(65)
+    outputFormats.set(setOf("XML", "HTML"))
+    timestampedReports.set(false)
+    failWhenNoMutations.set(true)
+    threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
+}
+
+// PitestTask extends JavaExec: bytecode Java 25 exige orquestrador e forks no mesmo JDK.
+tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) },
+    )
+    finalizedBy("cleanupEmbeddedPostgres")
+}
+
+// O PITest mata minions por timeout SEM deixar o zonky desligar o postgres embedded:
+// um único run vazava ~32 processos + segmentos SysV — e o SHMMNI default do macOS
+// é 32, então o run SEGUINTE falhava com "could not create shared memory segment".
+// TERM força o shutdown gracioso do postgres, que libera o segmento junto.
+// pkill invocado DIRETO (sem shell): não existe processo intermediário cuja cmdline
+// contenha o padrão (pkill nunca se auto-mata), e não há dependência de bash.
+tasks.register<Exec>("cleanupEmbeddedPostgres") {
+    onlyIf { !System.getProperty("os.name").lowercase().contains("windows") }
+    commandLine("pkill", "-TERM", "-f", "embedded-pg/PG-")
+    isIgnoreExitValue = true // exit 1 = nenhum processo órfão — estado desejado
 }
 
 val exposedVersion = "1.3.1"
