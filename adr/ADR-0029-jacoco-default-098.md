@@ -74,11 +74,12 @@ Validação negativa registrada no PR: desabilitar temporariamente um teste novo
 
 - Bom: o gate volta a exercer pressão real — regressões de cobertura em domain/http_api falham
   o build em vez de consumir folga silenciosamente.
-- Bom: APIs hoje sem teste (Audit) ganham testes comportamentais como pré-requisito.
-- Ruim: PRs futuros em domain/http_api têm menos folga (~0.5-0.7pp) — fricção intencional; código
-  novo nasce coberto ou o build quebra.
-- Nota: as ~73 instruções defensivas inalcançáveis do http_api consomem parte do orçamento de 2%
-  permanentemente; se um dia forem removidas/refatoradas, a folga volta.
+- Bom: paths de default args hoje sem teste (`Audit.now()`/`touch()` sem argumento) ganham testes
+  comportamentais, e o http_api perde 6 blocos de código morto duplicado (DRY) como pré-requisito.
+- Ruim: PRs futuros em domain/http_api têm menos folga — fricção intencional; código novo nasce
+  coberto ou o build quebra.
+- Nota: resta 1 ponto de guard inalcançável (o central) + artefatos de branch do `use {}` inline
+  no orçamento de 2% — ordens de grandeza menor que as ~98 instruções atuais.
 
 ## Pros and Cons of the Options
 
@@ -98,7 +99,7 @@ Validação negativa registrada no PR: desabilitar temporariamente um teste novo
 ### Opção 3 — Manter 0.97
 
 - Bom: zero esforço.
-- Ruim: desperdiça o ganho já conquistado; Audit segue sem teste até alguém notar por acaso.
+- Ruim: desperdiça o ganho já conquistado; os paths de default args e a duplicação morta ficam até alguém notar por acaso.
 
 ## More Information
 
