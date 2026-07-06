@@ -17,12 +17,19 @@ gate mais alto forçaria a cobrir — não por código difícil de testar:
 |---|---|---|
 | usecases | 100% | — |
 | sql_persistence | 99.29% | — |
-| domain | 97.86% | `Audit.now()`/`touch()` **sem nenhum teste**; bridges de default args de construtores/factories |
-| http_api | 97.33% | `day` não-inteiro e `size` inválido sem teste; ~73 instruções de guards defensivos inalcançáveis (path param ausente — o Ktor responde 404 antes do handler) |
+| domain | 97.86% | Paths de **default args** nunca exercitados: `Audit.now()`/`touch()` **sem argumento** (as variantes com argumento têm teste), construtor de `Card` sem `remainingXxx`, `addCard` sem `description` etc. — cobríveis por teste |
+| http_api | 97.33% | ~98 instruções em **6 cópias do guard inalcançável** `parameters[x] ?: return respondWithDomainError(...)` (o Ktor responde 404 antes do handler quando o path param falta) + ~25 de artefatos de branch do `use {}` inline. `day` não-inteiro e handlers de sucesso **já têm teste** — praticamente nada é cobrível por teste novo |
 
-Cobrindo apenas o alcançável, domain chega a ~98.7% e http_api a ~98.4% — **0.98 fecha sem
-nenhuma exclusão JaCoCo nova e sem tocar código de produção**. `buildSrc/**` é protegido por
-política (ADR-0023): a mudança do threshold exige decisão registrada antes da edição.
+> Nota de revisão: a primeira versão desta ADR atribuía o gap do http_api a testes faltantes
+> (`day`/`size` inválidos) — o review apontou que esses testes já existem, e a re-medição linha a
+> linha confirmou: o gap real é o guard defensivo **duplicado 6 vezes**, inalcançável em todas.
+
+Com isso, o caminho para 0.98 muda por módulo: no domain, **testes** dos paths de default args
+(~98.5% alcançável); no http_api, **eliminar a duplicação inalcançável** — centralizar a extração
+de path params obrigatórios (um único ponto com o guard, ex.: helper ou `getOrFail` + StatusPages),
+o que remove ~90 instruções mortas do denominador e leva o módulo a ~99% **sem exclusão JaCoCo
+nova**. O código de produção melhora (DRY) em vez de ganhar exclusões. `buildSrc/**` é protegido
+por política (ADR-0023): a mudança do threshold exige decisão registrada antes da edição.
 
 **Pergunta a decidir**: subir o default para 0.98, criar thresholds por módulo, ou manter 0.97?
 
@@ -47,12 +54,14 @@ projeto sempre teve, os quatro módulos comportam 0.98 depois de cobrir o alcan�
 captura o ganho de cobertura já disponível em vez de deixá-lo evaporar em regressões dentro da
 folga.
 
-**Pré-requisito de implementação (mesmo PR do bump)**: cobrir o alcançável de domain e http_api
-ANTES da subida — `Audit.now()`/`touch()`, defaults de construtores/factories, `day` não-inteiro,
-`size` inválido. Guards defensivos inalcançáveis ficam descobertos e cabem no orçamento de 2% —
-**nenhuma exclusão JaCoCo nova**. Atenção: módulos que sobrescrevem a rule localmente (http_api,
-sql_persistence) precisam do mesmo bump em seus `build.gradle.kts`, senão o override em 0.97
-vira o gate efetivo.
+**Pré-requisitos de implementação (mesmo PR do bump)**:
+1. domain: testes dos paths de default args (`Audit.now()`/`touch()` sem argumento, `Card` sem
+   `remainingXxx`, `addCard` sem `description`, defaults de `Simulation`/`Board`/`Step`/`Worker`).
+2. http_api: **refatoração DRY** — extração centralizada de path params obrigatórios substituindo
+   as 6 cópias do guard inalcançável (mecanismo exato é detalhe do PR de implementação; contrato
+   de erro HTTP preservado). **Nenhuma exclusão JaCoCo nova.**
+3. Módulos que sobrescrevem a rule localmente (http_api, sql_persistence) recebem o mesmo bump em
+   seus `build.gradle.kts`, senão o override em 0.97 vira o gate efetivo.
 
 ### Confirmation
 
