@@ -32,6 +32,8 @@ import kotlin.test.Test
  * Request DTOs sobrevivem a round-trip kotlinx.serialization.
  */
 class DtoMappingPropertyTest {
+    // Mesma configuração dos demais testes de rota (ex.: SimulationDtosAndErrorsTest).
+    private val json = Json { ignoreUnknownKeys = true }
     private val arbName = Arb.of("Simulação \"β\"", "Órg & Cia", "a\\b/c", "日本語", "x", "Wörk 100%")
     private val decisionTypes = listOf("MOVE_ITEM", "BLOCK_ITEM", "UNBLOCK_ITEM", "ADD_ITEM")
 
@@ -83,6 +85,8 @@ class DtoMappingPropertyTest {
                     r.teamSize == sim.scenario.rules.teamSize &&
                     r.seedValue == sim.scenario.rules.seedValue &&
                     r.state.currentDay == sim.currentDay.value &&
+                    r.state.wipLimit == sim.scenario.rules.policySet.wipLimit &&
+                    r.state.teamSize == sim.scenario.rules.teamSize &&
                     r.state.itemCount ==
                     sim.scenario.board.steps
                         .sumOf { it.cards.size }
@@ -153,7 +157,7 @@ class DtoMappingPropertyTest {
                     )
                 },
             ) { req ->
-                Json.decodeFromString<CreateSimulationRequest>(Json.encodeToString(CreateSimulationRequest.serializer(), req)) == req
+                json.decodeFromString<CreateSimulationRequest>(json.encodeToString(CreateSimulationRequest.serializer(), req)) == req
             }
         }
     }
@@ -179,7 +183,7 @@ class DtoMappingPropertyTest {
                     )
                 },
             ) { req ->
-                Json.decodeFromString<RunDayRequest>(Json.encodeToString(RunDayRequest.serializer(), req)) == req
+                json.decodeFromString<RunDayRequest>(json.encodeToString(RunDayRequest.serializer(), req)) == req
             }
         }
     }
