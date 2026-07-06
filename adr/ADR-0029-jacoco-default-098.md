@@ -93,7 +93,7 @@ Validação negativa registrada no PR: desabilitar temporariamente um teste novo
 
 ## More Information
 
-- Branch: `feat/adr-0029-jacoco-098` · PR: (preencher após abrir)
+- Branch: `feat/adr-0029-jacoco-098` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/237
 - Item no board #6: [GAP-AW](https://github.com/users/agnaldo4j/projects/6) — o plano de implementação vive lá, não aqui
 - Referências: ADR-0023 (imutabilidade de configs), ADR-0028 (fluxo 2-PRs para arquivo protegido),
   medição em `docs/quality/` e relatórios JaCoCo do CI
