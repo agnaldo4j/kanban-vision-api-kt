@@ -102,7 +102,9 @@ jobs:
             # module|display threshold|target — thresholds mirror the gradle gates
             for spec in \
               'domain|65|com.kanbanvision.domain.simulation.*' \
-              'usecases|55|com.kanbanvision.usecases.*'; do
+              'usecases|55|com.kanbanvision.usecases.*' \
+              'sql_persistence|65|com.kanbanvision.persistence.*' \
+              'http_api|35|com.kanbanvision.httpapi.*'; do
               module=${spec%%|*}; rest=${spec#*|}
               threshold=${rest%%|*}; target=${rest#*|}
               echo ''

@@ -19,7 +19,7 @@ tasks.register("testAll") {
 }
 
 tasks.register("pitestAll") {
-    description = "Runs PITest mutation testing (domain: SimulationEngine focus; usecases: all use cases)"
+    description = "Runs PITest mutation testing on all modules (domain, usecases, sql_persistence, http_api)"
     group = "verification"
-    dependsOn(":domain:pitest", ":usecases:pitest")
+    dependsOn(":domain:pitest", ":usecases:pitest", ":sql_persistence:pitest", ":http_api:pitest")
 }

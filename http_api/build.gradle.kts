@@ -2,6 +2,32 @@ plugins {
     id("kanban.kotlin-common")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("io.ktor.plugin")
+    id("info.solidsoft.pitest")
+}
+
+pitest {
+    // PITest 1.25.3 uses ASM 9.9.1 which supports Java 25 class files (major version 69).
+    pitestVersion.set("1.25.3")
+    junit5PluginVersion.set("1.2.3")
+    targetClasses.set(setOf("com.kanbanvision.httpapi.*"))
+    targetTests.set(setOf("com.kanbanvision.httpapi.*"))
+    mutators.set(setOf("STRONGER"))
+    // Baseline GAP-AS (2026-07-05): 38% (607/1581; 77 timeouts). Score baixo e
+    // honesto: DTOs/serialização geram bytecode não assertado (as exclusões do
+    // JaCoCo não se aplicam ao PITest). Gate 35 = mesmo ponto de partida do
+    // domain (38→35); subida gradual em gaps futuros.
+    mutationThreshold.set(35)
+    outputFormats.set(setOf("XML", "HTML"))
+    timestampedReports.set(false)
+    failWhenNoMutations.set(true)
+    threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
+}
+
+// PitestTask extends JavaExec: bytecode Java 25 exige orquestrador e forks no mesmo JDK.
+tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) },
+    )
 }
 
 application {

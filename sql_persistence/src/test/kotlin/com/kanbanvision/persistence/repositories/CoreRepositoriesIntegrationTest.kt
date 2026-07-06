@@ -67,7 +67,7 @@ class CoreRepositoriesIntegrationTest {
 
     @Test
     fun `given missing board id when finding by id then repository returns board not found domain error`() =
-        runBlocking {
+        runBlocking<Unit> {
             val result = boardRepository.findById("01000000-0000-0000-0000-000000009999")
             assertIs<DomainError.BoardNotFound>(result.leftOrNull())
         }
@@ -130,7 +130,7 @@ class CoreRepositoriesIntegrationTest {
 
     @Test
     fun `given missing step id when finding by id then repository returns step not found domain error`() =
-        runBlocking {
+        runBlocking<Unit> {
             val result = stepRepository.findById("02000000-0000-0000-0000-000000009999")
             assertIs<DomainError.StepNotFound>(result.leftOrNull())
         }
@@ -181,7 +181,7 @@ class CoreRepositoriesIntegrationTest {
 
     @Test
     fun `given missing card id when finding and updating then repository returns card not found domain error`() =
-        runBlocking {
+        runBlocking<Unit> {
             val byId = cardRepository.findById("03000000-0000-0000-0000-000000009999")
             val updated = cardRepository.updateCard("03000000-0000-0000-0000-000000009999") { it.copy(title = "noop") }
 
