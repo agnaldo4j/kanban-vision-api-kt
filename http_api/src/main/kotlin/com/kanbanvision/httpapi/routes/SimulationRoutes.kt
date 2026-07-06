@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.httpapi.adapters.requiredPathParam
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -268,9 +269,7 @@ private suspend fun ApplicationCall.handleCreateSimulation(createSimulation: Cre
 }
 
 private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimulationUseCase) {
-    val simulationId =
-        parameters["simulationId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
+    val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     MDC.putCloseable("simulationId", simulationId).use {
         getSimulation.execute(GetSimulationQuery(simulationId = simulationId)).fold(
             ifLeft = { error -> respondWithDomainError(error) },
@@ -280,9 +279,7 @@ private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimula
 }
 
 private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
-    val simulationId =
-        parameters["simulationId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
+    val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     MDC.putCloseable("simulationId", simulationId).use {
         val request = receive<RunDayRequest>()
         val decisions = mutableListOf<Decision>()
@@ -306,12 +303,8 @@ private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
 }
 
 private suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: GetDailySnapshotUseCase) {
-    val simulationId =
-        parameters["simulationId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
-    val dayStr =
-        parameters["day"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing day"))
+    val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
+    val dayStr = requiredPathParam("day", "Missing day") ?: return
     val day =
         dayStr.toIntOrNull()
             ?: return respondWithDomainError(DomainError.ValidationError("Day must be an integer"))

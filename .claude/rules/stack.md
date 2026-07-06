@@ -25,7 +25,7 @@
 | SBOM | CycloneDX Gradle plugin 3.2.4 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
 | SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
-| Coverage | JaCoCo (≥ 97% per module) |
+| Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
 | Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
 | Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.29.0 (API 1.63.0) |

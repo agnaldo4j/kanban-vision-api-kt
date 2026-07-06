@@ -307,8 +307,8 @@ jobs:
             ${{ github.workspace }}/http_api/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           title: JaCoCo Coverage Report
-          min-coverage-overall: 97
-          min-coverage-changed-files: 97
+          min-coverage-overall: 98
+          min-coverage-changed-files: 98
           update-comment: true
 
   supply-chain:
