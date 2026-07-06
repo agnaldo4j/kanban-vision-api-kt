@@ -8,6 +8,24 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 
+/**
+ * Extrai um path parameter obrigatório respondendo 400 quando ausente.
+ * O caminho nulo é defensivo: o Ktor só invoca o handler quando o segmento
+ * casou (ausência vira 404 no roteamento) — centralizar aqui elimina as 6
+ * cópias de guard inalcançável que existiam nos handlers (ADR-0029).
+ */
+suspend fun ApplicationCall.requiredPathParam(
+    name: String,
+    message: String,
+): String? {
+    val value = parameters[name]
+    if (value == null) {
+        respondWithDomainError(DomainError.ValidationError(message))
+        return null
+    }
+    return value
+}
+
 suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
     val requestId = attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
     return when (error) {

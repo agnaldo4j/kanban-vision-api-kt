@@ -1,6 +1,7 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.httpapi.adapters.requiredPathParam
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
@@ -179,9 +180,7 @@ internal suspend fun ApplicationCall.handleListSimulations(listSimulations: List
 }
 
 internal suspend fun ApplicationCall.handleGetSimulationDays(getSimulationDays: GetSimulationDaysUseCase) {
-    val simulationId =
-        parameters["simulationId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
+    val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     MDC.putCloseable("simulationId", simulationId).use {
         getSimulationDays.execute(GetSimulationDaysQuery(simulationId = simulationId)).fold(
             ifLeft = { error -> respondWithDomainError(error) },
@@ -191,9 +190,7 @@ internal suspend fun ApplicationCall.handleGetSimulationDays(getSimulationDays: 
 }
 
 internal suspend fun ApplicationCall.handleGetSimulationCfd(getSimulationCfd: GetSimulationCfdUseCase) {
-    val simulationId =
-        parameters["simulationId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing simulation id"))
+    val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     MDC.putCloseable("simulationId", simulationId).use {
         getSimulationCfd.execute(GetSimulationCfdQuery(simulationId = simulationId)).fold(
             ifLeft = { error -> respondWithDomainError(error) },

@@ -68,7 +68,7 @@ gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
 
 | Measure | Limit |
 |---------|-------|
-| JaCoCo coverage | ≥ 97% per module |
+| JaCoCo coverage | ≥ 98% per module |
 | Detekt violations | 0 (`warningsAsErrors: true`) |
 | KtLint | 0 errors |
 | `./gradlew testAll` | Green before opening PR |

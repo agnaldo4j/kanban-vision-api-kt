@@ -36,4 +36,4 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
 
 ## Coverage
 
-JaCoCo gate: ≥ 95% instruction coverage per module. If coverage drops, write the missing test — never lower the threshold.
+JaCoCo gate: ≥ 98% instruction coverage per module (ADR-0029). If coverage drops, write the missing test — never lower the threshold.
