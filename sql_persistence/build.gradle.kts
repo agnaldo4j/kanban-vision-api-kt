@@ -42,7 +42,7 @@ tasks.register<Exec>("cleanupEmbeddedPostgres") {
 }
 
 val exposedVersion = "1.3.1"
-val resilience4jVersion = "2.3.0"
+val resilience4jVersion = "2.4.0"
 
 dependencies {
     implementation(project(":domain"))

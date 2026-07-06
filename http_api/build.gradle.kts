@@ -114,10 +114,10 @@ dependencies {
     constraints {
         // Transitivas de java-jwt/ktor-openapi com CVE conhecida — gate de SCA (ADR-0025).
         // Remover cada constraint quando a dependência direta passar a puxar versão >= fix.
-        implementation("com.fasterxml.jackson.core:jackson-databind:2.21.4") {
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.22.0") {
             because("GHSA-j3rv-43j4-c7qm, GHSA-rmj7-2vxq-3g9f e outras corrigidas em 2.21.4")
         }
-        implementation("org.mozilla:rhino:1.7.15.1") {
+        implementation("org.mozilla:rhino:1.9.1") {
             because(
                 "GHSA-3w8q-xq97-5j7x: ranges afetados [0,1.7.14.1), [1.7.15,1.7.15.1) e [1.8.0,1.8.1); " +
                     "1.7.14.1 não foi publicada no Maven Central e 1.7.15/1.8.0 são vulneráveis — " +
