@@ -11,9 +11,9 @@ pitest {
     targetClasses.set(setOf("com.kanbanvision.persistence.*"))
     targetTests.set(setOf("com.kanbanvision.persistence.*"))
     mutators.set(setOf("STRONGER"))
-    // Baseline GAP-AS (2026-07-05): 70% (536/767 — PITest conta TIMED_OUT/RUN_ERROR
-    // como kill; 20 timeouts, 2.6%). Gate 65 = 5pp de margem para variância do
-    // embedded postgres. Subida gradual em gaps futuros (GAP-AU alimenta).
+    // Baseline GAP-AS (2026-07-05): 71% (545/767 após reviver os 4 testes que o
+    // JUnit pulava — PITest conta TIMED_OUT/RUN_ERROR como kill). Gate 65 = margem
+    // para variância do embedded postgres. Subida gradual em gaps futuros (GAP-AU).
     mutationThreshold.set(65)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
@@ -33,8 +33,12 @@ tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
 // um único run vazava ~32 processos + segmentos SysV — e o SHMMNI default do macOS
 // é 32, então o run SEGUINTE falhava com "could not create shared memory segment".
 // TERM força o shutdown gracioso do postgres, que libera o segmento junto.
+// pkill invocado DIRETO (sem shell): não existe processo intermediário cuja cmdline
+// contenha o padrão (pkill nunca se auto-mata), e não há dependência de bash.
 tasks.register<Exec>("cleanupEmbeddedPostgres") {
-    commandLine("bash", "-c", "pkill -TERM -f 'embedded-pg/PG-' 2>/dev/null; exit 0")
+    onlyIf { !System.getProperty("os.name").lowercase().contains("windows") }
+    commandLine("pkill", "-TERM", "-f", "embedded-pg/PG-")
+    isIgnoreExitValue = true // exit 1 = nenhum processo órfão — estado desejado
 }
 
 val exposedVersion = "1.3.1"

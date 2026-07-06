@@ -794,7 +794,7 @@ pitest {
 }
 ```
 
-**Os quatro módulos têm gate de mutação** (`./gradlew pitestAll` roda ambos; o CI é obrigatório):
+**Os quatro módulos têm gate de mutação** (`./gradlew pitestAll` roda os quatro; o CI é obrigatório):
 
 | Módulo | targetClasses | Gate | Score na última medição |
 |---|---|---|---|
