@@ -71,7 +71,8 @@ native-image --version               # confirmar o componente AOT presente
 
 **Fase 2 — Native Image (meta)** · gap maior, com pré-requisito duro:
 - **Pré-requisito**: migrar observabilidade para longe do javaagent (OTel SDK/Micrometer em
-  build time) — supersede parte da ADR-0009 e **exige nova ADR antes** (ADR-0023).
+  build time) — supersede parte da ADR-0009 e **exige nova ADR antes**, conforme a política de
+  imutabilidade da ADR-0023.
 - Plugin `org.graalvm.buildtools.native` em `:http_api`, reachability metadata (seções 5-6),
   estágio de build com `native-image`, `ENTRYPOINT` vira o binário — sem `java`, sem javaagent.
 - Verificação: smoke exercitando TODAS as rotas + baseline k6 comparativo.
@@ -89,7 +90,7 @@ native-image --version               # confirmar o componente AOT presente
 | kotlinx.serialization | Favorável (serializers em compile time); atenção a polimorfismo aberto/serializers dinâmicos |
 | PostgreSQL JDBC + HikariCP | Carga via `Class.forName` — reflect-config; metadata comunitária em grande parte disponível |
 | Flyway | Migrations `.sql` precisam entrar via resource-config |
-| Arrow-kt | Funções puras/inline, baixo risco; confirmar se Optics usar reflection |
+| Arrow-kt | Funções puras/inline, baixo risco; confirmar se Optics usa reflection |
 
 ## 6. Reachability metadata
 
