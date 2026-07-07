@@ -14,7 +14,7 @@ coluna desta tabela, não contra o documento anterior (política ADR-0027: mesmo
 | SO | macOS 27.0 · Docker 29.6.1 (Desktop) |
 | Stack | `docker compose` completo (app + PostgreSQL 16 + Tempo + Prometheus + Grafana), OTel agent 2.29.0 ativo |
 | App A (controle) | fat JAR, `eclipse-temurin:25-jre-alpine`, LOG_FORMAT=json |
-| App B (Fase 1) | fat JAR, `container-registry.oracle.com/graalvm/jdk:25` (Oracle GraalVM 25.0.3+9.1, Graal JIT), LOG_FORMAT=json |
+| App B (Fase 1) | fat JAR, `container-registry.oracle.com/graalvm/jdk:25` (Graal JIT), LOG_FORMAT=json — build resolvido pela tag **na sessão de medição**: Oracle GraalVM 25.0.3+9.1 (`java -version`); a tag `:25` flutua por patch |
 | Ferramenta | k6 v2.1.0, script `load/simulation-journey.js`, perfil `baseline` |
 | Data | 2026-07-07 |
 
@@ -55,6 +55,12 @@ Perfil `baseline`: ramp 0→5 VUs (30s) → 5→20 (1m) → 20 constantes (2m) �
   promessa da Fase 2 (Native Image), não do modo JIT.
 - **Trade-offs**: imagem 820 MB vs 297 MB (JDK completo Oracle Linux vs JRE alpine) e +10,8% de
   memória sob pico. Aceitos na Fase 1; a Fase 2 (Native Image) inverte drasticamente ambos.
+- **Memória vs limits do k8s (512Mi)**: as medições de memória foram feitas **sem cgroup limit**
+  (Docker Desktop, sem `--memory`) — o heap cresce livre e o número não mapeia 1:1 para o pod.
+  Sob o limit de 512Mi do Deployment, a JVM auto-dimensiona o heap pelo cgroup
+  (`MaxRAMPercentage`), comportamento idêntico nos dois runtimes — o Temurin sem limite também
+  chegou a 464,9 MiB. O orçamento de memória do pod é questão pré-existente do rollout, não desta
+  troca; monitorar `container_memory_working_set_bytes` no primeiro deploy da Fase 1.
 - O healthcheck do compose (`wget` dentro do container) e o smoke da jornada (100% checks)
   passam na base nova; `useradd` uid 1000 preservado para o `securityContext` do k8s.
 
