@@ -48,15 +48,18 @@ política de mudança evolutiva (gaps pequenos e reversíveis, board #6)?
 neste ciclo: a Fase 1 (GraalVM JDK no estágio runtime do Dockerfile) vira um gap de baixo risco,
 e a Fase 2 (Native Image) só entra quando seus pré-requisitos — observabilidade sem javaagent e
 reachability metadata do stack — forem resolvidos em gaps próprios. **Nenhuma mudança de build
-nesta entrega.** O guia operacional (modos, distribuições, fases, metadata, pitfalls) vive na
-skill `/graalvm` (`.claude/skills/graalvm/SKILL.md`).
+nesta entrega.** O guia operacional (modos, distribuições, fases, metadata, pitfalls) viverá na
+skill `/graalvm` (`.claude/skills/graalvm/SKILL.md`), **entregue no PR 2/2 do GAP-AX** — este
+PR (1/2) contém apenas esta ADR.
 
 ### Confirmation
 
-Existência de `.claude/skills/graalvm/SKILL.md` + linha na tabela Skills do `CLAUDE.md`;
-`./gradlew testAll` e CI verdes (o diff não toca build — é a prova de que nada mudou de runtime).
-Os gaps futuros de Fase 1/2 terão confirmações executáveis próprias: smoke da imagem + baseline
-k6 comparativo (formato da ADR-0027).
+- **Neste PR (1/2)**: diff só de docs e `./gradlew testAll`/CI verdes — a prova de que nada
+  mudou de runtime.
+- **Ao final do GAP-AX (PR 2/2)**: existência de `.claude/skills/graalvm/SKILL.md` + linha
+  `/graalvm` na tabela Skills do `CLAUDE.md`.
+- **Gaps futuros de Fase 1/2**: confirmações executáveis próprias — smoke da imagem + baseline
+  k6 comparativo (formato da ADR-0027).
 
 ## Consequences
 
