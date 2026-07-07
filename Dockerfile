@@ -48,9 +48,15 @@ COPY http_api/src http_api/src
 RUN ./gradlew :http_api:buildFatJar --no-daemon -q
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
-FROM eclipse-temurin:25-jre-alpine AS runtime
+# Oracle GraalVM JDK (Graal JIT) — Fase 1 da ADR-0030. Base Oracle Linux slim
+# (glibc): shadow-utils fornece useradd/groupadd; wget atende o healthcheck do
+# docker-compose, que roda dentro do container.
+FROM container-registry.oracle.com/graalvm/jdk:25 AS runtime
 
-RUN addgroup -g 1000 -S appgroup && adduser -u 1000 -S appuser -G appgroup
+RUN microdnf install -y shadow-utils wget && \
+    microdnf clean all && \
+    groupadd -g 1000 appgroup && \
+    useradd -u 1000 -g appgroup -M -s /usr/sbin/nologin appuser
 
 WORKDIR /app
 
