@@ -51,24 +51,32 @@ qual estratégia de migração de banco e qual rollback?
 
 1. Status quo — fat JAR + GraalVM JIT (Fase 1 permanente).
 2. Convivência de imagens — nativa como `latest` + tag `-jvm` de fallback por alguns ciclos.
-3. **Substituição completa** — Dockerfile produz só a imagem nativa; rollback = revert.
-4. Segundo binário nativo dedicado à migração (variação da questão de migrations).
+3. Substituição completa com migrations **apenas** no startup (Job k8s removido).
+4. **Substituição completa preservando o Job de migração** — o Job k8s passa a executar um
+   segundo binário nativo compilado do `MigrationMainKt`.
 
 ## Decision Outcome
 
-**Escolhida: Opção 3 (substituição completa)**, com as seguintes decisões integradas:
+**Escolhida: Opção 4 (substituição completa preservando o Job de migração)**, com as
+seguintes decisões integradas:
 
-- **Pipeline**: o binário é compilado num estágio Docker com a imagem oficial
+- **Pipeline**: os binários são compilados num estágio Docker com a imagem oficial
   `container-registry.oracle.com/graalvm/native-image:25` (via `:http_api:nativeCompile`,
   capacidade do GAP-BA); o estágio de runtime passa a uma base glibc mínima, mantendo
   uid/gid 1000 (securityContext do k8s) e o healthcheck do compose atendido (wget na imagem
   ou healthcheck ajustado — detalhe do PR de implementação).
-- **Migrations no startup do app**: o binário roda Flyway no boot (chave `FLYWAY_ENABLED`
-  mantida); o lock nativo do Flyway elimina corrida entre réplicas; o Job k8s
-  `09-migration-job.yml` é **removido**.
+- **Migrations**: no startup do app (chave `FLYWAY_ENABLED` mantida) para o caso comum das
+  migrações aditivas, **e** o Job k8s `09-migration-job.yml` **permanece** para o
+  procedimento em duas fases da ADR-0013 (migrações que mudam tipo de coluna, como a V2
+  TEXT→JSONB): o comando do Job passa de `java -cp app.jar MigrationMainKt` para um
+  **segundo binário nativo** (`graalvmNative` binaries) do mesmo `MigrationMainKt`.
+  Nota de revisão: a primeira versão desta ADR removia o Job apoiada no lock do Flyway —
+  o review apontou que o lock só serializa réplicas migrando; ele **não** protege pods
+  antigos escrevendo num schema incompatível. A garantia de ordem pré-rollout é do Job.
 - **Pré-condições de merge da implementação**: Gap 1 resolvido e comprovado (banco virgem
-  migra no native — teste com volume zerado); Gap 2 resolvido OU aceito explicitamente com
-  evidência e card de follow-up (traces JDBC e span manual continuam funcionais).
+  migra no native — teste com volume zerado, cobrindo o app E o binário de migração); Gap 2
+  resolvido OU aceito explicitamente com evidência e card de follow-up (traces JDBC e span
+  manual continuam funcionais).
 - **Metadata versionada** em `http_api/src/main/resources/META-INF/native-image/…`, com a
   exceção de tamanho justificada no PR (JSON gerado por ferramenta, não código revisável).
 - **Rollback**: revert do(s) PR(s) de implementação — o pipeline JVM (`buildFatJar`)
@@ -86,7 +94,9 @@ qual estratégia de migração de banco e qual rollback?
 ## Consequences
 
 - Bom: startup, memória e superfície de ataque — os ganhos que motivaram o roadmap inteiro.
-- Bom: um único pipeline de imagem; uma peça a menos no k8s (Job de migração).
+- Bom: um único pipeline de imagem; o contrato operacional de migração (ADR-0013) preservado.
+- Ruim: um segundo binário para manter (`kanban-vision-migrate` ou similar) — custo pequeno
+  e localizado no bloco `graalvmNative`/Dockerfile.
 - Ruim: job `build` do CI mais lento e pesado (~2min extras e ~7 GB de RSS de compilação no
   runner) — monitorar; quick build mode (`-Ob`) é opção se doer.
 - Ruim: debugging/profiling limitado no native (JFR/heap dump parciais) — diagnóstico local
@@ -110,16 +120,18 @@ qual estratégia de migração de banco e qual rollback?
 - Ruim: dobra o tempo de build do CI e mantém dois pipelines vivos indefinidamente — a
   história mostra que o fallback "temporário" nunca é removido.
 
-### Opção 3 — Substituição completa
+### Opção 3 — Substituição completa sem o Job (migrations só no startup)
 
-- Bom: um pipeline; reversível por revert barato; `buildFatJar` segue disponível no Gradle.
-- Ruim: rollback exige um PR (minutos, não segundos) — aceitável para este projeto.
+- Bom: um pipeline; uma peça a menos no k8s.
+- Ruim: **elimina o único caminho documentado de migração pré-rollout** (ADR-0013) — em
+  migrações de tipo, pods antigos falhariam escrita durante o RollingUpdate sem nenhuma
+  garantia de ordem. Rejeitada pelo review desta ADR.
 
-### Opção 4 — Segundo binário para migração
+### Opção 4 — Substituição completa preservando o Job (binário de migração)
 
-- Bom: preserva a separação migração/app do Job k8s.
-- Ruim: artefato e complexidade de build extras sem ganho real — o lock do Flyway já
-  resolve a concorrência que justificava o Job.
+- Bom: um pipeline de imagem; contrato ADR-0013 intacto; reversível por revert barato;
+  `buildFatJar` segue disponível no Gradle.
+- Ruim: segundo binário a manter; rollback exige um PR (minutos, não segundos) — aceitável.
 
 ## More Information
 
@@ -127,4 +139,5 @@ qual estratégia de migração de banco e qual rollback?
 - Item no board #6: [GAP-BB](https://github.com/users/agnaldo4j/projects/6) — o fatiamento
   da implementação vive lá, não aqui (ADR-0023)
 - Referências: ADR-0030 (estratégia e fases), ADR-0031 (observabilidade sem javaagent),
-  PR #247 (relatório do experimento GAP-BA), skill `/graalvm` (§4-§7), ADR-0027 (medição)
+  ADR-0013 (procedimento de migração em duas fases que o Job preserva), PR #247 (relatório
+  do experimento GAP-BA), skill `/graalvm` (§4-§7), ADR-0027 (medição)
