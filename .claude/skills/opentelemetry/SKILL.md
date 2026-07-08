@@ -415,6 +415,25 @@ fun Route.healthRoutes() {
 > `docs/quality/performance-baseline-2026-07-otel-sdk.md` (+10% throughput, −52% memória
 > sob pico). O conteúdo abaixo permanece como registro histórico da era do agente.
 
+### Leak de contexto entre requests no binário nativo (GAP-BC — resolvido com flag)
+
+O `SuspendFunctionGun` do Ktor deixa o `ThreadContextElement` do OTel sem
+`restoreThreadContext` pareado quando o handler suspende com dispatcher externo — a
+thread do event loop Netty fica presa ao contexto do request anterior, o Instrumenter
+suprime spans SERVER e requests encadeiam num mesmo trace (KTOR-9431;
+opentelemetry-java-instrumentation#16430).
+
+- **JVM**: resolvido pelo fix do Ktor 3.4.3 (contido na 3.5.1). Safety net permanente:
+  `TelemetryContextIsolationTest` (test host sequencial + Netty real com 512 requests
+  concorrentes).
+- **Binário nativo**: o leak persiste mesmo com o fix — mitigação validada:
+  `-Dio.ktor.internal.disable.sfg=true` no `ENTRYPOINT` do Dockerfile (troca o SFG pelo
+  `DebugPipelineContext`). Isolamento 100%, rotas nomeadas, sem regressão de throughput.
+  Evidência completa: `docs/quality/otel-context-leak-native-2026-07.md`.
+- **Ao depurar traces**: suspeite deste leak se vir traces gigantes multi-request ou
+  spans JDBC como raiz (SERVER suprimido). Reavaliar a flag a cada release do Ktor
+  3.x / instrumentation 2.x.
+
 ### Estratégia: Java Agent (zero-code) — HISTÓRICO
 
 O **OpenTelemetry Java Agent** instrumenta automaticamente o Ktor (Netty), JDBC,

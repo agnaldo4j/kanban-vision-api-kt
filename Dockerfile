@@ -67,4 +67,11 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/kanban-vision-api", "-Djava.io.tmpdir=/tmp"]
+# disable.sfg (GAP-BC): no binário nativo o SuspendFunctionGun do Ktor retém o contexto
+# OTel do request anterior na thread do event loop — spans SERVER são suprimidos e requests
+# encadeiam num mesmo trace (na JVM o fix KTOR-9431 do Ktor 3.4.3 resolveu; no nativo não).
+# Com a flag, o pipeline usa DebugPipelineContext: isolamento por request validado no
+# docker local (5000/5000 traces com 1 span SERVER, rotas nomeadas, throughput preservado)
+# — evidência em docs/quality/otel-context-leak-native-2026-07.md. Reavaliar a cada
+# release do Ktor 3.x/opentelemetry-java-instrumentation 2.x.
+ENTRYPOINT ["/app/kanban-vision-api", "-Djava.io.tmpdir=/tmp", "-Dio.ktor.internal.disable.sfg=true"]
