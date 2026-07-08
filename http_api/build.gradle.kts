@@ -3,6 +3,25 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("io.ktor.plugin")
     id("info.solidsoft.pitest")
+    id("org.graalvm.buildtools.native")
+}
+
+// Capacidade EXPERIMENTAL opt-in do GAP-BA (ADR-0030 Fase 2): nativeCompile/nativeRun
+// exigem GRAALVM_HOME apontando para um GraalVM local (SDKMAN — skill /graalvm §3) e
+// NUNCA entram em check/testAll/CI. Produção segue fat JAR + GraalVM JIT (Fase 1).
+graalvmNative {
+    // Sem nativeTest: o plugin o religaria ao check, contaminando testAll/CI.
+    testSupport.set(false)
+    // Foojay não provisiona GraalVM — o toolchain nativo vem de GRAALVM_HOME (opt-in).
+    toolchainDetection.set(false)
+    metadataRepository {
+        enabled.set(true)
+    }
+    binaries {
+        named("main") {
+            imageName.set("kanban-vision-api")
+        }
+    }
 }
 
 pitest {
