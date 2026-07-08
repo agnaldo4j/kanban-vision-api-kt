@@ -33,8 +33,8 @@
 - **Organization-scoped** — boards and scenarios are isolated per organization
 - **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
-- **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces
-- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 97% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
+- **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces; GraalVM Native Image in production (9x faster startup, −79% memory — ADR-0032)
+- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 98% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
 - **Supply chain security** — CycloneDX SBOM + osv-scanner CVE gate blocking every image build
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
 
