@@ -82,5 +82,56 @@ class DatabaseFactoryTest {
             )
 
         assertTrue(config.poolSize == 10)
+        assertTrue(config.migrationsLocation == "classpath:db/migration")
     }
+
+    @Test
+    fun `given filesystem migrations location when initializing a fresh database then flyway migrates from the custom path`() {
+        EmbeddedPostgresSupport.ensureStarted()
+        val freshDbUrl = createFreshDatabase("flyway_fs_location_test")
+
+        try {
+            DatabaseFactory.init(
+                DatabaseConfig(
+                    url = freshDbUrl,
+                    driver = "org.postgresql.Driver",
+                    user = "postgres",
+                    password = "postgres",
+                    poolSize = 2,
+                    // Contrato do Native Image (ADR-0032): a imagem seta FLYWAY_LOCATIONS
+                    // com filesystem: porque o ClassPathScanner não lê resources do binário.
+                    migrationsLocation = "filesystem:src/main/resources/db/migration",
+                ),
+            )
+
+            // Banco criado vazio nesta execução: as linhas do histórico SÓ podem ter vindo
+            // da location filesystem customizada.
+            val applied = countSuccessfulMigrations()
+            assertTrue(applied >= 2, "expected V1+V2 applied from filesystem location, got $applied")
+        } finally {
+            EmbeddedPostgresSupport.refreshDataSource()
+        }
+    }
+
+    private fun createFreshDatabase(name: String): String {
+        val baseUrl = DatabaseFactory.dataSource.jdbcUrl
+        DatabaseFactory.dataSource.connection.use { conn ->
+            conn.autoCommit = true
+            conn.createStatement().use { st ->
+                st.execute("DROP DATABASE IF EXISTS $name")
+                st.execute("CREATE DATABASE $name")
+            }
+        }
+        return baseUrl.replace(Regex("/postgres(\\?|$)"), "/$name$1")
+    }
+
+    private fun countSuccessfulMigrations(): Int =
+        DatabaseFactory.dataSource.connection.use { conn ->
+            conn.createStatement().use { st ->
+                st.executeQuery("SELECT count(*) FROM flyway_schema_history WHERE success").use { rs ->
+                    rs.next()
+                    rs.getInt(1)
+                }
+            }
+        }
 }

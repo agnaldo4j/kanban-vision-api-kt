@@ -9,6 +9,19 @@ plugins {
 // Classpath mínimo do binário nativo de migração (ADR-0032): só persistência + logging.
 val migrationRuntime: Configuration by configurations.creating
 
+// Resources do binário de migração SEM a reachability metadata do app (review do PR):
+// a metadata gerada pelo agent registra tipos Ktor/Swagger/Netty que não existem no
+// classpath enxuto da migração — o builder do native-image não deve nem parseá-la.
+// A metadata MANUAL (http_api-manual) permanece: registra o reflection do HikariConfig
+// e os resources de logging, necessários aos DOIS binários.
+val migrationResources =
+    tasks.register<Sync>("migrationResources") {
+        from(sourceSets.main.get().resources) {
+            exclude("META-INF/native-image/com.kanbanvision/http_api/**")
+        }
+        into(layout.buildDirectory.dir("migration-resources"))
+    }
+
 // Native Image de produção (ADR-0032): o Dockerfile compila os dois binários no estágio
 // de build. Local: exige GRAALVM_HOME apontando para um GraalVM (SDKMAN — skill /graalvm §3).
 // As tasks nativas NUNCA entram em check/testAll (testes e gates seguem na JVM Temurin).
@@ -32,7 +45,13 @@ graalvmNative {
         create("migration") {
             imageName.set("kanban-vision-migrate")
             mainClass.set("com.kanbanvision.httpapi.MigrationMainKt")
-            classpath(sourceSets.main.get().output, configurations["migrationRuntime"])
+            classpath(
+                sourceSets.main
+                    .get()
+                    .output.classesDirs,
+                migrationResources,
+                configurations["migrationRuntime"],
+            )
             // O static init do Flyway monta URLs https (links de docs) — no binário main
             // o protocolo vem habilitado pela metadata do exporter OTLP.
             buildArgs.add("--enable-url-protocols=https")
