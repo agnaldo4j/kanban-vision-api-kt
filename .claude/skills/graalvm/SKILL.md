@@ -92,7 +92,7 @@ native-image --version               # confirmar o componente AOT presente
 |---|---|
 | OTel javaagent 2.x | **Incompatível** — bloqueador da Fase 2; substituir por instrumentação em build time |
 | Koin 4.x | DSL `module {}` é lambda-based (favorável); validar usos de `KClass`/reflection na versão em uso |
-| Netty (engine Ktor) | Reflection e `Unsafe` internos; metadata existe no repositório da comunidade — validar combinação Ktor/Netty; alternativa: engine CIO |
+| Netty (engine Ktor) | Reflection e `Unsafe` internos; metadata existe no repositório da comunidade — validar combinação Ktor/Netty; alternativa: engine CIO. **No nativo o SFG do Ktor vaza contexto OTel entre requests mesmo com o fix KTOR-9431** — exige `-Dio.ktor.internal.disable.sfg=true` no ENTRYPOINT (GAP-BC, `docs/quality/otel-context-leak-native-2026-07.md`) |
 | kotlinx.serialization | Favorável (serializers em compile time); atenção a polimorfismo aberto/serializers dinâmicos |
 | PostgreSQL JDBC + HikariCP | Carga via `Class.forName` — reflect-config; metadata comunitária em grande parte disponível |
 | Flyway | Migrations `.sql` precisam entrar via resource-config |

@@ -23,11 +23,12 @@ internal const val OTEL_JDBC_DRIVER = "io.opentelemetry.instrumentation.jdbc.Ope
 
 fun Application.configureTelemetry(openTelemetry: OpenTelemetrySdk? = autoConfiguredSdk(resolvedTracesExporter())): OpenTelemetrySdk? {
     if (openTelemetry == null) return null
-    // Limitação conhecida no binário nativo (GAP-BB, card de follow-up): o event loop
-    // retém o contexto OTel entre requests e o Instrumenter suprime novos spans SERVER,
-    // encadeando requests num mesmo trace. Mitigar com reset de contexto por call degrada
-    // o nome de rota do span (mecanismo do próprio KtorServerTelemetry) — decisão: manter
-    // o comportamento padrão do plugin e tratar o leak upstream.
+    // Leak de contexto entre requests (GAP-BC, diagnóstico fechado): o SuspendFunctionGun
+    // do Ktor deixa updateThreadContext sem restore pareado (KTOR-9431; otel #16430) e o
+    // Instrumenter suprime novos spans SERVER. Na JVM o fix do Ktor 3.4.3 resolveu (safety
+    // net em TelemetryContextIsolationTest); no binário nativo o leak persiste e a mitigação
+    // é -Dio.ktor.internal.disable.sfg=true no ENTRYPOINT do Dockerfile — validada com
+    // isolamento total e rotas nomeadas (docs/quality/otel-context-leak-native-2026-07.md).
     install(KtorServerTelemetry) {
         setOpenTelemetry(openTelemetry)
     }
