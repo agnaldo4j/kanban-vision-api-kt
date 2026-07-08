@@ -183,7 +183,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.63.0")
-    testImplementation("io.kotest:kotest-property:5.9.1")
+    testImplementation("io.kotest:kotest-property:6.2.1")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
     testImplementation("au.com.dius.pact.consumer:junit5:4.7.3")
     testImplementation("au.com.dius.pact.provider:junit5:4.7.3")
