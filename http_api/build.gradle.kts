@@ -6,13 +6,16 @@ plugins {
     id("org.graalvm.buildtools.native")
 }
 
-// Capacidade EXPERIMENTAL opt-in do GAP-BA (ADR-0030 Fase 2): nativeCompile/nativeRun
-// exigem GRAALVM_HOME apontando para um GraalVM local (SDKMAN — skill /graalvm §3) e
-// NUNCA entram em check/testAll/CI. Produção segue fat JAR + GraalVM JIT (Fase 1).
+// Classpath mínimo do binário nativo de migração (ADR-0032): só persistência + logging.
+val migrationRuntime: Configuration by configurations.creating
+
+// Native Image de produção (ADR-0032): o Dockerfile compila os dois binários no estágio
+// de build. Local: exige GRAALVM_HOME apontando para um GraalVM (SDKMAN — skill /graalvm §3).
+// As tasks nativas NUNCA entram em check/testAll (testes e gates seguem na JVM Temurin).
 graalvmNative {
     // Sem nativeTest: o plugin o religaria ao check, contaminando testAll/CI.
     testSupport.set(false)
-    // Foojay não provisiona GraalVM — o toolchain nativo vem de GRAALVM_HOME (opt-in).
+    // Foojay não provisiona GraalVM — o toolchain nativo vem de GRAALVM_HOME.
     toolchainDetection.set(false)
     metadataRepository {
         enabled.set(true)
@@ -20,6 +23,19 @@ graalvmNative {
     binaries {
         named("main") {
             imageName.set("kanban-vision-api")
+        }
+        // Binário dedicado do Job k8s de migração (ADR-0032): preserva o procedimento
+        // pré-rollout em duas fases da ADR-0013 no mundo nativo. Classpath ENXUTO
+        // (migrationRuntime, não o runtimeClasspath completo): os jars do Netty trazem
+        // native-image.properties próprios que forçam init em build time e capturam um
+        // Logger logback no image heap — sem Netty/Ktor no classpath o problema não existe.
+        create("migration") {
+            imageName.set("kanban-vision-migrate")
+            mainClass.set("com.kanbanvision.httpapi.MigrationMainKt")
+            classpath(sourceSets.main.get().output, configurations["migrationRuntime"])
+            // O static init do Flyway monta URLs https (links de docs) — no binário main
+            // o protocolo vem habilitado pela metadata do exporter OTLP.
+            buildArgs.add("--enable-url-protocols=https")
         }
     }
 }
@@ -147,6 +163,13 @@ dependencies {
 
     implementation(project(":usecases"))
     implementation(project(":sql_persistence"))
+
+    // Binário de migração (ADR-0032): persistência + logback para logs do Job.
+    // O logback.xml referencia o OpenTelemetryAppender — o jar precisa estar presente.
+    migrationRuntime(project(":sql_persistence"))
+    migrationRuntime("ch.qos.logback:logback-classic:1.5.37")
+    migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
+    migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
     implementation("io.arrow-kt:arrow-core:2.2.3")
 

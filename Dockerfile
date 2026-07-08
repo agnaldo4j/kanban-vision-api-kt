@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1
 
-# OTel javaagent removido (ADR-0031): traces agora são instrumentação de biblioteca
-# em build time, dentro do fat JAR — pré-requisito da Fase 2 Native Image (ADR-0030).
+# Native Image em produção (ADR-0032): o binário AOT substitui o fat JAR.
+# Rollback: revert deste arquivo — o pipeline JVM (:http_api:buildFatJar) permanece
+# funcional no Gradle para dev/testes (ADR-0030/0031/0032).
 
-# ── Stage 1: build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:25-jdk-alpine AS build
-# Gradle daemon and toolchain share the image's JDK 25 (ADR-0024) — the
-# jvmToolchain(25) requirement resolves to JAVA_HOME, so Foojay never downloads
-# a (musl-incompatible) JDK inside Alpine.
+# ── Stage 1: build (GraalVM native-image) ─────────────────────────────────────
+# Imagem oficial Oracle GraalVM com o compilador native-image (glibc/Oracle Linux).
+# O daemon e o toolchain do Gradle usam o JDK GraalVM da imagem (mesma lógica da
+# era Temurin: jvmToolchain(25) resolve para o JAVA_HOME do container).
+FROM container-registry.oracle.com/graalvm/native-image:25 AS build
 
 WORKDIR /workspace
 
@@ -32,18 +33,21 @@ COPY config config
 RUN sed -i '/^org\.gradle\.java\.home/d' gradle.properties && \
     chmod +x gradlew && ./gradlew dependencies --no-daemon -q
 
-# Copy sources and build fat JAR
+# Copy sources and compile both native binaries (app + migration Job — ADR-0013/0032).
+# GRAALVM_HOME: o build.gradle.kts usa toolchainDetection=false e resolve o compilador
+# pelo env. --no-configuration-cache: tasks nativas fora do cache de configuração.
 COPY domain/src domain/src
 COPY usecases/src usecases/src
 COPY sql_persistence/src sql_persistence/src
 COPY http_api/src http_api/src
-RUN ./gradlew :http_api:buildFatJar --no-daemon -q
+RUN GRAALVM_HOME="$JAVA_HOME" ./gradlew :http_api:nativeCompile :http_api:nativeMigrationCompile \
+    --no-daemon --no-configuration-cache -q
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
-# Oracle GraalVM JDK (Graal JIT) — Fase 1 da ADR-0030. Base Oracle Linux slim
-# (glibc): shadow-utils fornece useradd/groupadd; wget atende o healthcheck do
-# docker-compose, que roda dentro do container.
-FROM container-registry.oracle.com/graalvm/jdk:25 AS runtime
+# Base glibc mínima (mesma família do estágio de build): shadow-utils fornece
+# useradd/groupadd (uid 1000 = securityContext do k8s); wget atende o healthcheck
+# do docker-compose, que roda dentro do container.
+FROM container-registry.oracle.com/os/oraclelinux:9-slim AS runtime
 
 RUN microdnf install -y shadow-utils wget && \
     microdnf clean all && \
@@ -52,10 +56,15 @@ RUN microdnf install -y shadow-utils wget && \
 
 WORKDIR /app
 
-COPY --from=build /workspace/http_api/build/libs/kanban-vision-api.jar app.jar
+COPY --from=build /workspace/http_api/build/native/nativeCompile/kanban-vision-api /app/kanban-vision-api
+COPY --from=build /workspace/http_api/build/native/nativeMigrationCompile/kanban-vision-migrate /app/kanban-vision-migrate
+# Migrations como ARQUIVOS: o ClassPathScanner do Flyway não lê resources do binário
+# (protocolo "resource" não suportado) — filesystem: dispensa o scanner de classpath.
+COPY --from=build /workspace/sql_persistence/src/main/resources/db/migration /app/db/migration
+ENV FLYWAY_LOCATIONS=filesystem:/app/db/migration
 
 USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Djava.io.tmpdir=/tmp", "-jar", "app.jar"]
+ENTRYPOINT ["/app/kanban-vision-api", "-Djava.io.tmpdir=/tmp"]

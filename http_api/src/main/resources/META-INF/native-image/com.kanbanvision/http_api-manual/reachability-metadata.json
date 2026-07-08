@@ -1,0 +1,13 @@
+{
+  "comment": "Metadata MANUAL (revisável) complementar à gerada pelo tracing agent. HikariConfig.copyStateTo copia a config para o pool invocando getters/setters por reflection — o agent não registra os métodos de forma confiável (GAP-BB).",
+  "reflection": [
+    {
+      "type": "com.zaxxer.hikari.HikariConfig",
+      "allDeclaredMethods": true
+    },
+    {
+      "type": "com.zaxxer.hikari.HikariDataSource",
+      "allDeclaredMethods": true
+    }
+  ]
+}

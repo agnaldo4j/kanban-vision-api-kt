@@ -62,6 +62,12 @@ native-image --version               # confirmar o componente AOT presente
 
 ## 4. Caminho evolutivo em fases (cada fase = card no board #6)
 
+> **STATUS (2026-07-08)**: roadmap CONCLUÍDO — Fase 1 entregue no GAP-AY (ADR-0030) e
+> Fase 2 entregue no GAP-BB (ADR-0032): produção roda os binários nativos (app +
+> migração) compilados no Dockerfile; migrations via `FLYWAY_LOCATIONS=filesystem:`
+> (o ClassPathScanner do Flyway não lê resources do binário). As seções abaixo ficam
+> como referência do processo.
+
 **Fase 1 — GraalVM JDK (JIT) no runtime** · gap pequeno, baixo risco:
 - Trocar apenas o estágio `runtime` do `Dockerfile` (`eclipse-temurin:25-jre-alpine` → imagem
   GraalVM JDK). Atenção: imagens GraalVM oficiais são **glibc** — provável migração de base

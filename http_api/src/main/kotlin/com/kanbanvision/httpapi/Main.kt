@@ -65,13 +65,18 @@ fun Application.module() {
 
 private fun Application.buildDatabaseConfig(): DatabaseConfig {
     val dbConfig = environment.config.config("database")
-    return DatabaseConfig(
-        url = dbConfig.property("url").getString(),
-        driver = dbConfig.property("driver").getString(),
-        user = dbConfig.property("user").getString(),
-        password = dbConfig.property("password").getString(),
-        poolSize = dbConfig.property("poolSize").getString().toInt(),
-    )
+    val base =
+        DatabaseConfig(
+            url = dbConfig.property("url").getString(),
+            driver = dbConfig.property("driver").getString(),
+            user = dbConfig.property("user").getString(),
+            password = dbConfig.property("password").getString(),
+            poolSize = dbConfig.property("poolSize").getString().toInt(),
+        )
+    // Native Image (ADR-0032): a imagem nativa seta FLYWAY_LOCATIONS=filesystem:/app/db/migration
+    // porque o ClassPathScanner do Flyway não lê resources do binário; JVM usa o default.
+    val locations = System.getenv("FLYWAY_LOCATIONS")
+    return if (locations.isNullOrBlank()) base else base.copy(migrationsLocation = locations)
 }
 
 private fun Application.configureDevAuthRoutes() {

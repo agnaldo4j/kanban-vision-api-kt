@@ -26,7 +26,7 @@
 | SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
-| Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
+| Containerisation | Docker multi-stage: GraalVM **Native Image** (binários app + migração — ADR-0032) sobre Oracle Linux 9 slim + docker-compose. Dev/testes seguem JVM (`buildFatJar` disponível) |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
 | Observability | Prometheus 2.54 + Grafana 11.3 + OTel SDK/instrumentação de biblioteca 2.29.0 (API 1.63.0, sem javaagent — ADR-0031) |
 | Java | Java 25 LTS (Gradle 9.6.1 wrapper; Foojay resolver auto-provisions toolchain) |

@@ -23,6 +23,11 @@ internal const val OTEL_JDBC_DRIVER = "io.opentelemetry.instrumentation.jdbc.Ope
 
 fun Application.configureTelemetry(openTelemetry: OpenTelemetrySdk? = autoConfiguredSdk(resolvedTracesExporter())): OpenTelemetrySdk? {
     if (openTelemetry == null) return null
+    // Limitação conhecida no binário nativo (GAP-BB, card de follow-up): o event loop
+    // retém o contexto OTel entre requests e o Instrumenter suprime novos spans SERVER,
+    // encadeando requests num mesmo trace. Mitigar com reset de contexto por call degrada
+    // o nome de rota do span (mecanismo do próprio KtorServerTelemetry) — decisão: manter
+    // o comportamento padrão do plugin e tratar o leak upstream.
     install(KtorServerTelemetry) {
         setOpenTelemetry(openTelemetry)
     }
