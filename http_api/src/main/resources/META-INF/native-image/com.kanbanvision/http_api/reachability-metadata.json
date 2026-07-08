@@ -912,9 +912,6 @@
       "type": "com.zaxxer.hikari.util.ConcurrentBag$IConcurrentBagEntry[]"
     },
     {
-      "type": "io.github.smiley4.ktorswaggerui.ResourceContent"
-    },
-    {
       "type": "io.ktor.http.ContentType"
     },
     {
@@ -3120,21 +3117,6 @@
       "type": "kotlinx.serialization.encoding.CompositeEncoder"
     },
     {
-      "type": "net.logstash.logback.encoder.LogstashEncoder",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": []
-        },
-        {
-          "name": "addIncludeMdcKeyName",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
-    },
-    {
       "type": "org.HdrHistogram.AbstractHistogram"
     },
     {
@@ -3576,9 +3558,6 @@
       "type": "tools.jackson.databind.ser.Serializers[]"
     },
     {
-      "type": "tools.jackson.module.kotlin.KotlinModule"
-    },
-    {
       "type": {
         "proxy": [
           "java.sql.Connection"
@@ -3609,25 +3588,7 @@
       "glob": "META-INF/native/libnetty_transport_native_kqueue_aarch_64.jnilib"
     },
     {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/favicon-16x16.png"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/favicon-32x32.png"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/index.css"
-    },
-    {
       "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/index.html"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/swagger-ui-bundle.js"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/swagger-ui-standalone-preset.js"
-    },
-    {
-      "glob": "META-INF/resources/webjars/swagger-ui/5.32.4/swagger-ui.css"
     },
     {
       "glob": "META-INF/services/ch.qos.logback.classic.spi.Configurator"
@@ -3711,9 +3672,6 @@
       "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
     },
     {
-      "glob": "META-INF/services/tools.jackson.databind.JacksonModule"
-    },
-    {
       "glob": "application.conf"
     },
     {
@@ -3763,9 +3721,6 @@
     },
     {
       "glob": "kotlin/reflect/reflect.kotlin_builtins"
-    },
-    {
-      "glob": "logback-json.xml"
     },
     {
       "glob": "logback-test.xml"
