@@ -71,7 +71,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | [Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) | Hexagonal arch, C4 diagrams, class diagrams (modules/domain) and sequence diagrams |
 | [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) | Local setup, testing, quality gates, troubleshooting |
 | [API Reference](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/API-Reference) | Endpoints, JWT auth, OpenAPI |
-| [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel Agent, structured logs |
+| [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel SDK traces, structured logs |
 | [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Docker, Kubernetes manifests, CI/CD, env vars |
 | [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (9.4/10), gap roadmap |
 | [Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) | CycloneDX SBOM, osv-scanner CVE gate, exception policy, red-gate runbook |

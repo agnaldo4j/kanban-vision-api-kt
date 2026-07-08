@@ -28,7 +28,7 @@
 | Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
 | Containerisation | Docker multi-stage (`eclipse-temurin:25-jre`) + docker-compose |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
-| Observability | Prometheus 2.54 + Grafana 11.3 + OTel Java Agent 2.29.0 (API 1.63.0) |
+| Observability | Prometheus 2.54 + Grafana 11.3 + OTel SDK/instrumentação de biblioteca 2.29.0 (API 1.63.0, sem javaagent — ADR-0031) |
 | Java | Java 25 LTS (Gradle 9.6.1 wrapper; Foojay resolver auto-provisions toolchain) |
 | Kotlin | 2.4.0 |
 

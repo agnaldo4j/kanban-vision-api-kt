@@ -3,12 +3,21 @@
     <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <includeMdcKeyName>requestId</includeMdcKeyName>
-            <includeMdcKeyName>traceId</includeMdcKeyName>
-            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <!-- Chaves reais do MDC OTel: snake_case (trace_id/span_id) — tanto no agente
+                 antigo quanto no OpenTelemetryAppender (ADR-0031). As chaves camelCase
+                 usadas antes nunca eram populadas (campos vazios em silêncio). -->
+            <includeMdcKeyName>trace_id</includeMdcKeyName>
+            <includeMdcKeyName>span_id</includeMdcKeyName>
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <!-- ADR-0031: injeta trace_id/span_id no MDC em build time (substitui o log bridge
+         do javaagent). Wrapper delega ao appender real. -->
+    <appender name="OTEL_JSON" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
         <appender-ref ref="STDOUT_JSON"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="OTEL_JSON"/>
     </root>
 </included>

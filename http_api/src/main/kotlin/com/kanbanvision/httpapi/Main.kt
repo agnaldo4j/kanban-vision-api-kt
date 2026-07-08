@@ -12,7 +12,9 @@ import com.kanbanvision.httpapi.plugins.configureRouting
 import com.kanbanvision.httpapi.plugins.configureSecurityHeaders
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.plugins.configureStatusPages
+import com.kanbanvision.httpapi.plugins.configureTelemetry
 import com.kanbanvision.httpapi.plugins.configureVersioningHeaders
+import com.kanbanvision.httpapi.plugins.instrumentDatabaseConfig
 import com.kanbanvision.httpapi.routes.authRoutes
 import com.kanbanvision.persistence.DatabaseConfig
 import com.kanbanvision.persistence.DatabaseFactory
@@ -36,8 +38,15 @@ fun Application.module() {
         modules(AppModule.koinModule)
     }
 
+    // Telemetria ANTES do pool: o driver JDBC OTel e o withSpan dependem do
+    // GlobalOpenTelemetry já registrado quando a primeira conexão é criada (ADR-0031).
+    val telemetry = configureTelemetry()
+
     val migrationsEnabled = System.getenv("FLYWAY_ENABLED")?.lowercase() != "false"
-    DatabaseFactory.init(buildDatabaseConfig(), migrationsEnabled = migrationsEnabled)
+    DatabaseFactory.init(
+        instrumentDatabaseConfig(buildDatabaseConfig(), telemetryEnabled = telemetry != null),
+        migrationsEnabled = migrationsEnabled,
+    )
 
     configureMetrics()
     configureObservability()
