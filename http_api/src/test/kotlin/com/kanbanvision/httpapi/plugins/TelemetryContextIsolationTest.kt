@@ -22,6 +22,8 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -85,10 +87,12 @@ class TelemetryContextIsolationTest {
             awaitExportedServerSpans(exporter, CONCURRENT_REQUESTS)
             assertServerSpansIsolated(exporter, CONCURRENT_REQUESTS)
         } finally {
-            server.stop(gracePeriodMillis = 500, timeoutMillis = 1000)
+            server.stop(gracePeriodMillis = SERVER_STOP_GRACE_MILLIS, timeoutMillis = SERVER_STOP_TIMEOUT_MILLIS)
         }
     }
 
+    // Timeouts fail-fast em todas as camadas (connect, request e future) — sem eles um
+    // stall de rede/engine penduraria o join() e o teste ficaria preso no CI.
     private fun fireConcurrentRequests(server: EmbeddedServer<*, *>) {
         val port =
             runBlocking {
@@ -97,13 +101,21 @@ class TelemetryContextIsolationTest {
                     .first()
                     .port
             }
-        val client = HttpClient.newHttpClient()
-        val request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:$port/io-hop")).GET().build()
+        val client = HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build()
+        val request =
+            HttpRequest
+                .newBuilder(URI.create("http://127.0.0.1:$port/io-hop"))
+                .timeout(REQUEST_TIMEOUT)
+                .GET()
+                .build()
 
         repeat(CONCURRENT_REQUESTS / CONCURRENCY) {
             (1..CONCURRENCY)
-                .map { client.sendAsync(request, HttpResponse.BodyHandlers.ofString()) }
-                .forEach { response -> assertEquals(200, response.join().statusCode()) }
+                .map {
+                    client
+                        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                        .orTimeout(REQUEST_TIMEOUT.toSeconds(), TimeUnit.SECONDS)
+                }.forEach { response -> assertEquals(200, response.join().statusCode()) }
         }
     }
 
@@ -155,5 +167,8 @@ class TelemetryContextIsolationTest {
         const val CONCURRENCY = 16
         const val EXPORT_TIMEOUT_NANOS = 5_000_000_000L
         const val EXPORT_POLL_MILLIS = 20L
+        const val SERVER_STOP_GRACE_MILLIS = 500L
+        const val SERVER_STOP_TIMEOUT_MILLIS = 1_000L
+        val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(10)
     }
 }
