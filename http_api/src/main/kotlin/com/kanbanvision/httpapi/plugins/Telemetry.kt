@@ -14,16 +14,14 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk
  *
  * Substitui o OTel Java Agent: o SDK é montado via autoconfigure (lê as mesmas envs
  * `OTEL_*` que o agente lia) e a instrumentação HTTP vem do plugin de biblioteca
- * [KtorServerTelemetry]. Quando `OTEL_TRACES_EXPORTER` está ausente ou `none`
- * (default do ConfigMap k8s), nada é instalado e o custo é zero — mesmo
- * comportamento de rodar sem o agente.
+ * [KtorServerTelemetry]. Quando o exporter de traces está ausente ou `none` — via
+ * `-Dotel.traces.exporter` ou `OTEL_TRACES_EXPORTER` (default do ConfigMap k8s) —
+ * nada é instalado e o custo é zero — mesmo comportamento de rodar sem o agente.
  */
 internal const val OTEL_JDBC_URL_PREFIX = "jdbc:otel:"
 internal const val OTEL_JDBC_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver"
 
-fun Application.configureTelemetry(
-    openTelemetry: OpenTelemetrySdk? = autoConfiguredSdk(System.getenv("OTEL_TRACES_EXPORTER")),
-): OpenTelemetrySdk? {
+fun Application.configureTelemetry(openTelemetry: OpenTelemetrySdk? = autoConfiguredSdk(resolvedTracesExporter())): OpenTelemetrySdk? {
     if (openTelemetry == null) return null
     install(KtorServerTelemetry) {
         setOpenTelemetry(openTelemetry)
@@ -35,6 +33,12 @@ fun Application.configureTelemetry(
     monitor.subscribe(ApplicationStopped) { openTelemetry.close() }
     return openTelemetry
 }
+
+/**
+ * Resolve o exporter de traces pelas duas vias padrão do OTel, na ordem de precedência
+ * do autoconfigure: system property (`-Dotel.traces.exporter=...`) antes da env var.
+ */
+internal fun resolvedTracesExporter(): String? = System.getProperty("otel.traces.exporter") ?: System.getenv("OTEL_TRACES_EXPORTER")
 
 /**
  * Monta o SDK via autoconfigure quando há exporter de traces configurado; `null` desliga.

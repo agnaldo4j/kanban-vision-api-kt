@@ -94,6 +94,7 @@ class TelemetryTest {
     fun `given sdk when application stops then sdk is closed`() {
         val exporter = InMemorySpanExporter.create()
         val sdk = inMemorySdk(exporter)
+        var exportedDuringRun = 0
 
         testApplication {
             application {
@@ -101,17 +102,38 @@ class TelemetryTest {
             }
             routing()
             assertEquals(HttpStatusCode.OK, client.get("/ping").status)
+            exportedDuringRun = exporter.finishedSpanItems.size
         }
 
-        // testApplication dispara ApplicationStopped ao encerrar. Se o subscribe de
-        // shutdown NÃO tivesse fechado o SDK, este span tardio seria exportado e a
-        // lista ficaria não-vazia (o /ping acima já provou que spans fluem).
+        assertTrue(exportedDuringRun > 0, "spans should have been exported before shutdown")
+
+        // testApplication dispara ApplicationStopped ao encerrar. Com o SDK fechado,
+        // um span tardio não pode ser exportado — a lista não cresce (assert robusto,
+        // independe de o exporter limpar ou não a lista no shutdown).
+        val sizeAfterStop = exporter.finishedSpanItems.size
         sdk.tracerProvider
             .get("after-stop")
             .spanBuilder("late")
             .startSpan()
             .end()
-        assertTrue(exporter.finishedSpanItems.isEmpty(), "sdk should be closed after ApplicationStopped")
+        assertEquals(sizeAfterStop, exporter.finishedSpanItems.size, "sdk should be closed after ApplicationStopped")
+    }
+
+    @Test
+    fun `given system property when resolving exporter then property takes precedence over env`() {
+        try {
+            System.setProperty("otel.traces.exporter", "otlp")
+            assertEquals("otlp", resolvedTracesExporter())
+        } finally {
+            System.clearProperty("otel.traces.exporter")
+        }
+    }
+
+    @Test
+    fun `given no system property when resolving exporter then env var value is used`() {
+        // Sem property setada, cai na env OTEL_TRACES_EXPORTER — ausente no ambiente
+        // de teste, logo null (telemetria desligada por default).
+        assertNull(resolvedTracesExporter())
     }
 
     private fun io.ktor.server.testing.ApplicationTestBuilder.routing() {
