@@ -1,0 +1,38 @@
+{
+  "comment": "Metadata MANUAL (revisável) complementar à gerada pelo tracing agent, compartilhada pelos DOIS binários (app e migração). Reflection: HikariConfig.copyStateTo/logConfiguration invocam getters por reflection — o agent não registra os métodos de forma confiável. Resources: configuração de logging, necessária ao binário de migração (que exclui a metadata do app do classpath).",
+  "reflection": [
+    {
+      "type": "com.zaxxer.hikari.HikariConfig",
+      "allDeclaredMethods": true
+    },
+    {
+      "type": "com.zaxxer.hikari.HikariDataSource",
+      "allDeclaredMethods": true
+    },
+    {
+      "type": "ch.qos.logback.core.ConsoleAppender",
+      "allDeclaredConstructors": true,
+      "allPublicMethods": true
+    },
+    {
+      "type": "ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+      "allDeclaredConstructors": true,
+      "allPublicMethods": true
+    },
+    {
+      "type": "net.logstash.logback.encoder.LogstashEncoder",
+      "allDeclaredConstructors": true,
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender",
+      "allDeclaredConstructors": true,
+      "allPublicMethods": true
+    }
+  ],
+  "resources": [
+    { "glob": "logback.xml" },
+    { "glob": "logback-text.xml" },
+    { "glob": "logback-json.xml" }
+  ]
+}

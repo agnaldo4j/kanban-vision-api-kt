@@ -14,6 +14,10 @@ data class DatabaseConfig(
     val password: String,
     val poolSize: Int = 10,
     val baselineOnMigrate: Boolean = false,
+    // Native Image (ADR-0032): o ClassPathScanner do Flyway não suporta o protocolo
+    // "resource" do binário — a imagem nativa usa "filesystem:/app/db/migration"
+    // (migrations copiadas como arquivos). Na JVM o default classpath permanece.
+    val migrationsLocation: String = "classpath:db/migration",
 )
 
 object DatabaseFactory {
@@ -70,15 +74,15 @@ object DatabaseFactory {
         DbCircuitBreaker.reset()
         org.jetbrains.exposed.v1.jdbc.Database
             .connect(datasource = CircuitBreakerDataSource(dataSource, DbCircuitBreaker.circuitBreaker))
-        if (migrationsEnabled) runMigrations(config.baselineOnMigrate)
+        if (migrationsEnabled) runMigrations(config)
     }
 
-    private fun runMigrations(baselineOnMigrate: Boolean) {
+    private fun runMigrations(config: DatabaseConfig) {
         Flyway
             .configure()
             .dataSource(dataSource)
-            .locations("classpath:db/migration")
-            .baselineOnMigrate(baselineOnMigrate)
+            .locations(config.migrationsLocation)
+            .baselineOnMigrate(config.baselineOnMigrate)
             .validateOnMigrate(true)
             .load()
             .migrate()

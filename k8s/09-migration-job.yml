@@ -62,16 +62,13 @@ spec:
         - name: migrate
           image: kanban-vision-api:latest
           imagePullPolicy: IfNotPresent
-          # Use -cp instead of -jar to invoke MigrationMainKt, bypassing the
-          # default MainKt entry point. MigrationMainKt reads DATABASE_* env vars
-          # directly, runs Flyway, closes the connection pool, and exits — Ktor
-          # is never started.
+          # Binário nativo dedicado de migração (ADR-0032): compilado do MigrationMainKt,
+          # lê DATABASE_* + FLYWAY_LOCATIONS (ENV da imagem), roda o Flyway, fecha o
+          # pool e sai — Ktor nunca sobe. Substitui o antigo `java -cp app.jar` (não
+          # existe `java` na imagem nativa).
           command:
-            - "java"
+            - "/app/kanban-vision-migrate"
             - "-Djava.io.tmpdir=/tmp"
-            - "-cp"
-            - "/app/app.jar"
-            - "com.kanbanvision.httpapi.MigrationMainKt"
           env:
             - name: DATABASE_URL
               valueFrom:
