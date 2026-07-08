@@ -7,6 +7,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
@@ -117,6 +118,40 @@ class TelemetryTest {
             .startSpan()
             .end()
         assertEquals(sizeAfterStop, exporter.finishedSpanItems.size, "sdk should be closed after ApplicationStopped")
+    }
+
+    @Test
+    fun `given no exporter configured when configuring telemetry with defaults then telemetry is disabled`() =
+        testApplication {
+            // Exercita o default argument real de configureTelemetry(): sem property e
+            // sem env OTEL_TRACES_EXPORTER no ambiente de teste, telemetria desligada.
+            application {
+                assertNull(configureTelemetry())
+            }
+            routing()
+            assertEquals(HttpStatusCode.OK, client.get("/ping").status)
+        }
+
+    @Test
+    fun `given default setAsGlobal when building sdk then global opentelemetry is registered`() {
+        GlobalOpenTelemetry.resetForTest()
+        try {
+            val sdk = autoConfiguredSdk(tracesExporter = "otlp")
+
+            assertNotNull(sdk)
+            sdk.use {
+                // Tracer global real produz span com contexto válido; o noop não.
+                val span =
+                    GlobalOpenTelemetry
+                        .getTracer("coverage-probe")
+                        .spanBuilder("probe")
+                        .startSpan()
+                assertTrue(span.spanContext.isValid, "global tracer should come from the registered sdk")
+                span.end()
+            }
+        } finally {
+            GlobalOpenTelemetry.resetForTest()
+        }
     }
 
     @Test
