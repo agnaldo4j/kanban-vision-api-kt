@@ -7,7 +7,7 @@
 [![Ktor](https://img.shields.io/badge/ktor-3.5.1-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
 [![Gradle](https://img.shields.io/badge/gradle-9.6.1-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![Java](https://img.shields.io/badge/java-25%20LTS-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
-[![GraalVM](https://img.shields.io/badge/graalvm-native--image%20em%20produ%C3%A7%C3%A3o-EE8100)](adr/ADR-0032-native-image-producao.md)
+[![GraalVM](https://img.shields.io/badge/graalvm-native--image%20in%20production-EE8100)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM)
 [![Arrow](https://img.shields.io/badge/arrow--kt-2.2.3-E91E63)](https://arrow-kt.io/)
 [![Koin](https://img.shields.io/badge/koin-4.2.2-F88900)](https://insert-koin.io/)
 [![Kotest Property](https://img.shields.io/badge/kotest--property-6.2.1-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
@@ -82,12 +82,14 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | [Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) | Hexagonal arch, C4 diagrams, class diagrams (modules/domain) and sequence diagrams |
 | [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) | Local setup, testing, quality gates, troubleshooting |
 | [API Reference](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/API-Reference) | Endpoints, JWT auth, OpenAPI |
+| [JVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/JVM) | Java 25 single-JDK model, convention plugin, config cache, fat JAR, JIT |
+| [GraalVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM) | Native Image in production, reachability metadata, AOT trade-offs |
 | [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel SDK traces, structured logs |
-| [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Docker, Kubernetes manifests, CI/CD, env vars |
+| [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Native Docker image, Kubernetes manifests, CI/CD, env vars |
 | [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 18-skill scorecard (9.4/10), gap roadmap |
 | [Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) | CycloneDX SBOM, osv-scanner CVE gate, exception policy, red-gate runbook |
 | [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions) | Konsist rules enforcing the hexagonal architecture in CI |
-| [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) | k6 journey, profiles, p95 baseline (1,644 req/s) and manual workflow |
+| [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) | k6 journey, profiles, and baselines (JVM JIT → GraalVM → Native, ~2,300 req/s in production) |
 
 ---
 
