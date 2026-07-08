@@ -10,7 +10,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
     testImplementation("io.mockk:mockk:1.14.11")
-    testImplementation("io.kotest:kotest-property:5.9.1")
+    testImplementation("io.kotest:kotest-property:6.2.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
 
