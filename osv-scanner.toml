@@ -4,9 +4,12 @@
 
 [[IgnoredVulns]]
 id = "GHSA-5jmj-h7xm-6q6v"
-reason = """2026-07-05: jackson-databind 2.21.4 (constraint em http_api) ainda é vulnerável;
-o fix (2.21.5 / 2.22.1) não foi publicado no Maven Central. Medium 5.3 — mass assignment via
-@JsonFormat case-insensitive + @JsonIgnoreProperties; a aplicação usa kotlinx.serialization
-(jackson é transitiva de java-jwt/swagger-parser), padrão não alcançável. Critério de
-remoção: versão resolvida em 2.21.5+ (linha 2.21.x) ou >= 2.22.1 — ATENÇÃO: 2.22.0 também
-está no range afetado do advisory (>= 2.22.0, < 2.22.1) e NÃO encerra esta exceção."""
+reason = """2026-07-08 (atualiza texto de 2026-07-05): o advisory foi revisado no OSV em
+2026-06-30 e hoje NÃO tem versão corrigida — todos os ranges têm apenas `introduced`
+(2.8.0+, 2.19.0+, 2.22.0+ e 3.1.0+ afetadas), então nenhum bump encerra esta exceção por
+enquanto (o critério anterior ">= 2.22.1" ficou obsoleto: 2.22.1 segue sinalizada).
+Medium 5.3 — mass assignment via @JsonFormat case-insensitive + @JsonIgnoreProperties;
+a aplicação usa kotlinx.serialization (jackson é transitiva de java-jwt/swagger-parser),
+padrão não alcançável. Critério de remoção: OSV publicar evento `fixed` para o advisory
+e a versão resolvida no runtimeClasspath ser >= esse fix (verificar com
+`osv-scanner --config=osv-scanner.toml --sbom=build/reports/cyclonedx/bom.json`)."""

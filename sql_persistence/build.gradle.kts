@@ -42,7 +42,7 @@ tasks.register<Exec>("cleanupEmbeddedPostgres") {
 }
 
 val exposedVersion = "1.3.1"
-val resilience4jVersion = "2.3.0"
+val resilience4jVersion = "2.4.0"
 
 dependencies {
     implementation(project(":domain"))
@@ -53,7 +53,7 @@ dependencies {
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion")
     implementation("io.github.resilience4j:resilience4j-micrometer:$resilience4jVersion")
     implementation("io.micrometer:micrometer-core:1.17.0")
-    implementation("org.postgresql:postgresql:42.7.12")
+    implementation("org.postgresql:postgresql:42.7.13")
     implementation("org.flywaydb:flyway-core:12.10.0")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:12.10.0")
     implementation("ch.qos.logback:logback-classic:1.5.37")
