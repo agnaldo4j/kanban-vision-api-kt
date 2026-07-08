@@ -62,7 +62,14 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
-> **Note:** `--build` compiles the production **GraalVM Native Image** (ADR-0032) — the first build takes several minutes and needs a Docker VM with ≥ 10 GB RAM. For a fast JVM dev loop skip Docker: `JWT_DEV_MODE=true ./gradlew :http_api:run` (or `./gradlew :http_api:buildFatJar`). Dev and tests run on the JVM; only the container image is native.
+> **Note:** `--build` compiles the production **GraalVM Native Image** (ADR-0032) — the first build takes several minutes and needs a Docker VM with ≥ 10 GB RAM. For a fast JVM dev loop (no native build), start only PostgreSQL and run the app on the JVM — it still needs a reachable database, since it runs Flyway migrations and opens a HikariCP pool at startup:
+>
+> ```bash
+> GRAFANA_ADMIN_PASSWORD=admin docker compose up -d postgres
+> JWT_DEV_MODE=true ./gradlew :http_api:run     # connects to localhost:5432; override via DATABASE_URL
+> ```
+>
+> Dev and tests run on the JVM (`./gradlew :http_api:buildFatJar` for a runnable JAR); only the container image is native.
 
 > Java 25 (LTS) is the single JDK for daemon, build and runtime (ADR-0024). See [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
 
