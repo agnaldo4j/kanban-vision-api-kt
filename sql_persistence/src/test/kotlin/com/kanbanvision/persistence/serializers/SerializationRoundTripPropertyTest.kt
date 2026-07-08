@@ -17,11 +17,11 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
-import io.kotest.property.arbitrary.double
 import io.kotest.property.arbitrary.enum
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.long
+import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.arbitrary.of
 import io.kotest.property.arbitrary.string
 import io.kotest.property.forAll
@@ -94,7 +94,9 @@ class SerializationRoundTripPropertyTest {
                         throughput = Arb.int(0..50).bind(),
                         wipCount = Arb.int(0..50).bind(),
                         blockedCount = Arb.int(0..50).bind(),
-                        avgAgingDays = Arb.double(0.0, 90.0).bind(),
+                        // numericDouble: no Kotest 6 os edge cases de Arb.double incluem
+                        // NaN mesmo com range — e NaN >= 0 é false no require do FlowMetrics.
+                        avgAgingDays = Arb.numericDouble(0.0, 90.0).bind(),
                     ),
                 movements =
                     Arb
