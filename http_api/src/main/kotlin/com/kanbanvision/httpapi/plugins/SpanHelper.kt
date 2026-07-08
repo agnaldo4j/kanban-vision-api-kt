@@ -19,9 +19,9 @@ import kotlinx.coroutines.withContext
  * [CancellationException] is re-thrown without being recorded as an error span,
  * since coroutine cancellations are not application errors.
  *
- * When the OTel Java Agent is present the span is exported automatically.
- * When the agent is absent (unit tests, local without agent) the call is a no-op
- * because [GlobalOpenTelemetry] returns a no-op tracer by default.
+ * When the OTel SDK is registered as global by [configureTelemetry] (ADR-0031) the span
+ * is exported. When no SDK is registered (unit tests, `OTEL_TRACES_EXPORTER` unset/none)
+ * the call is a no-op because [GlobalOpenTelemetry] returns a no-op tracer by default.
  *
  * Only use this helper in `http_api/` — never import it from `usecases/` or `domain/`.
  */

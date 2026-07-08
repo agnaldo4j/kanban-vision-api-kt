@@ -1,15 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# ── Stage 0: download OTel Java Agent ────────────────────────────────────────
-FROM alpine:3.19 AS otel-agent
-
-# v2.29.0: agente >= 2.2x é exigido pelo logback 1.5.3x — o 2.14.0 crashava o app
-# com NoSuchFieldError (__opentelemetryVirtualField em LoggingEvent) ao instrumentar
-# o classloader secundário do Ktor. Descoberto no GAP-AR (baseline de carga).
-RUN apk add --no-cache curl && \
-    curl -fsSL -o /opentelemetry-javaagent.jar \
-    "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.29.0/opentelemetry-javaagent.jar" && \
-    echo "546531ca690a8603d2923b6db26bbda35c6409327b1e610430ae33c2f8f68050  /opentelemetry-javaagent.jar" | sha256sum -c -
+# OTel javaagent removido (ADR-0031): traces agora são instrumentação de biblioteca
+# em build time, dentro do fat JAR — pré-requisito da Fase 2 Native Image (ADR-0030).
 
 # ── Stage 1: build ────────────────────────────────────────────────────────────
 FROM eclipse-temurin:25-jdk-alpine AS build
@@ -61,10 +53,9 @@ RUN microdnf install -y shadow-utils wget && \
 WORKDIR /app
 
 COPY --from=build /workspace/http_api/build/libs/kanban-vision-api.jar app.jar
-COPY --from=otel-agent /opentelemetry-javaagent.jar opentelemetry-javaagent.jar
 
 USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Djava.io.tmpdir=/tmp", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.io.tmpdir=/tmp", "-jar", "app.jar"]

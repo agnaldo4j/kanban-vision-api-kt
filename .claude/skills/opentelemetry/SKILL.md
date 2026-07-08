@@ -30,7 +30,7 @@ O stack completo está **implementado** (ciclos P1–P2; GAP-B/D/F/O/U concluíd
 Observability.kt      → RequestIdPlugin (X-Request-ID) + CallLogging com MDC
 logback.xml           → <include> seleciona logback-{text,json}.xml por LOG_FORMAT
 /metrics              → Micrometer + Prometheus (job quality do compose)
-OTel Java Agent 2.29.0 → traces via OTLP gRPC → Grafana Tempo (traceId/spanId no MDC)
+Telemetry.kt (ADR-0031) → OTel SDK autoconfigure + libs (ktor-3.0, jdbc, logback-mdc) → traces OTLP gRPC → Tempo (trace_id/span_id no MDC, snake_case)
 /health /health/live /health/ready → readiness verifica o banco
 Alertas               → Prometheus rules + Grafana (GAP-U)
 ```
@@ -406,7 +406,16 @@ fun Route.healthRoutes() {
 
 ## VI. Camada 3 — Traces com OpenTelemetry Java Agent
 
-### Estratégia: Java Agent (zero-code)
+> **⚠️ SUPERSEDIDO PELA ADR-0031 (2026-07-07)**: o javaagent foi removido — traces agora são
+> instrumentação de biblioteca em build time: `http_api/plugins/Telemetry.kt` (SDK
+> autoconfigure + `KtorServerTelemetry` + `OpenTelemetryDriver.install`) e
+> `OpenTelemetryAppender` nos `logback*.xml` (chaves MDC `trace_id`/`span_id`, snake_case).
+> **Não existe modo híbrido**: rodar o fat JAR atual com `-javaagent` quebra o boot
+> (`DuplicatePluginException: OpenTelemetry`). Medição comparativa em
+> `docs/quality/performance-baseline-2026-07-otel-sdk.md` (+10% throughput, −52% memória
+> sob pico). O conteúdo abaixo permanece como registro histórico da era do agente.
+
+### Estratégia: Java Agent (zero-code) — HISTÓRICO
 
 O **OpenTelemetry Java Agent** instrumenta automaticamente o Ktor (Netty), JDBC,
 HikariCP, Koin e Logback sem alterar o código da aplicação. É o caminho com melhor

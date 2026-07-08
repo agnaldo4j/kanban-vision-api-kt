@@ -2,11 +2,17 @@
     <!-- Text appender: desenvolvimento (default quando LOG_FORMAT != json) -->
     <appender name="STDOUT_TEXT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [rid=%X{requestId}] [tid=%X{traceId}] [sid=%X{spanId}] - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [rid=%X{requestId}] [tid=%X{trace_id}] [sid=%X{span_id}] - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <!-- ADR-0031: injeta trace_id/span_id no MDC em build time (substitui o log bridge
+         do javaagent). Wrapper delega ao appender real. -->
+    <appender name="OTEL_TEXT" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
         <appender-ref ref="STDOUT_TEXT"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="OTEL_TEXT"/>
     </root>
 </included>
