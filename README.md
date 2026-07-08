@@ -23,17 +23,18 @@
 
 # Kanban Vision API
 
-> Organization-scoped Kanban flow simulator via REST API — built with Kotlin, Clean Architecture, Arrow-kt and Ktor.
+> Organization-scoped Kanban flow simulator exposed as a versioned REST API — built with Kotlin, Clean Architecture and Arrow-kt on Ktor, and shipped to production as a GraalVM Native Image.
 
 ---
 
 ## Features
 
-- **Kanban simulation** — model boards, steps and cards; run day-by-day flow simulations
+- **Kanban flow simulation** — model boards, steps, cards and workers (abilities, seniority, WIP limits); run day-by-day simulations with per-day decisions, flow metrics and cumulative flow (CFD)
 - **Organization-scoped** — boards and scenarios are isolated per organization
-- **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
+- **Versioned REST API** — business routes under `/api/v1`, documented with OpenAPI 3 + Swagger UI (ADR-0022)
+- **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule enforced by Konsist
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
-- **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces; GraalVM Native Image in production (9x faster startup, −79% memory — ADR-0032)
+- **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel SDK traces; runs in production as a GraalVM Native Image (≈9× faster startup, −79% memory — ADR-0032) and ships with Kubernetes manifests
 - **Quality gates** — Detekt + KtLint + JaCoCo ≥ 98% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
 - **Supply chain security** — CycloneDX SBOM + osv-scanner CVE gate blocking every image build
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
@@ -60,6 +61,8 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | Swagger UI | http://localhost:8080/swagger |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
+
+> **Note:** `--build` compiles the production **GraalVM Native Image** (ADR-0032) — the first build takes several minutes and needs a Docker VM with ≥ 10 GB RAM. For a fast JVM dev loop skip Docker: `JWT_DEV_MODE=true ./gradlew :http_api:run` (or `./gradlew :http_api:buildFatJar`). Dev and tests run on the JVM; only the container image is native.
 
 > Java 25 (LTS) is the single JDK for daemon, build and runtime (ADR-0024). See [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
 
