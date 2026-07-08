@@ -7,9 +7,10 @@
 [![Ktor](https://img.shields.io/badge/ktor-3.5.1-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
 [![Gradle](https://img.shields.io/badge/gradle-9.6.1-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![Java](https://img.shields.io/badge/java-25%20LTS-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
+[![GraalVM](https://img.shields.io/badge/graalvm-native--image%20em%20produ%C3%A7%C3%A3o-EE8100)](adr/ADR-0032-native-image-producao.md)
 [![Arrow](https://img.shields.io/badge/arrow--kt-2.2.3-E91E63)](https://arrow-kt.io/)
 [![Koin](https://img.shields.io/badge/koin-4.2.2-F88900)](https://insert-koin.io/)
-[![Kotest Property](https://img.shields.io/badge/kotest-property--based%20testing-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
+[![Kotest Property](https://img.shields.io/badge/kotest--property-6.2.1-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
 [![PITest](https://img.shields.io/badge/pitest-mutation%20testing-CC0000)](https://pitest.org/)
 [![Detekt](https://img.shields.io/badge/detekt-2.0.0--alpha.5-9146FF)](https://detekt.dev/)
 [![Konsist](https://img.shields.io/badge/konsist-architecture%20fitness-4B9E4B)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions)
@@ -32,8 +33,8 @@
 - **Organization-scoped** — boards and scenarios are isolated per organization
 - **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
-- **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces
-- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 97% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
+- **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel traces; GraalVM Native Image in production (9x faster startup, −79% memory — ADR-0032)
+- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 98% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
 - **Supply chain security** — CycloneDX SBOM + osv-scanner CVE gate blocking every image build
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
 
