@@ -89,7 +89,7 @@ first_pr, last_pr = rows[-1][0], rows[0][0]
 span_days = (max(merges) - min(merges)).total_seconds() / 86400 if n > 1 else 0.0
 cadence = f"{n / (span_days / 7):.1f} PRs/week" if span_days > 0 else "n/a"
 
-print(f"# Flow metrics — window: last {n} merged PRs (#{last_pr}..#{first_pr})\n")
+print(f"**Window:** last {n} merged PRs (#{last_pr}..#{first_pr})\n")
 print("| Metric | p50 | p85 | max |")
 print("|---|---|---|---|")
 print(f"| PR cycle time (open→merge, h)   | {pct(50,cycle):.1f} | {pct(85,cycle):.1f} | {max(cycle):.1f} |")
