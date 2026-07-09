@@ -1,8 +1,8 @@
 ---
 name: c4-model
 description: >
-  Gera e mantém atualizados os diagramas C4 Model (Context, Container, Component),
-  diagramas de sequência e diagramas de classe do projeto no README.md.
+  Gera e mantém atualizados os diagramas de arquitetura (contexto, container, componente,
+  sequência, classe, ERD) nas páginas do wiki (Architecture*, Operations, Observability, GraalVM).
   Use sempre que uma nova feature, rota, caso de uso, entidade ou módulo for adicionado.
   Referência: https://c4model.com
 argument-hint: "[feature, route or component changed]"
@@ -12,9 +12,20 @@ allowed-tools: Read, Grep, Glob, Edit
 # C4 Model — Diagramas de Arquitetura
 
 Você é um arquiteto de software especialista em C4 Model (Simon Brown).
-Quando esta skill for invocada, você deve **explorar o estado atual do código**
-e **atualizar a seção `## Arquitetura — Diagramas C4` do `README.md`** com
-diagramas Mermaid precisos e fiéis ao código real.
+Quando esta skill for invocada, você deve **explorar o estado atual do código** e
+**atualizar os diagramas nas páginas do wiki** com diagramas Mermaid precisos e fiéis ao código.
+
+> **Localização (atual):** os diagramas vivem no **wiki** (não mais no README — o README apenas
+> linka). O wiki é um clone git separado em `../kanban-vision-api-kt.wiki` (remote `.wiki.git`,
+> mantido manualmente): edite os arquivos `Architecture*.md`, `Operations.md`, `Observability.md`,
+> `GraalVM.md`, e o hub `Diagrams.md`; o mantenedor faz o push. A página `Diagrams` indexa tudo por
+> senioridade.
+>
+> **House style (obrigatório):** Mermaid **`flowchart`/`graph`** para estrutura, `sequenceDiagram`
+> para fluxos, `classDiagram` para o domínio, `erDiagram` para o schema, `stateDiagram-v2` para
+> máquinas de estado. **Não** usar a sintaxe nativa `C4Context/C4Container/C4Component` (o suporte
+> no GitHub é experimental); os templates C4 mais abaixo ficam só como referência conceitual dos
+> níveis. Valide cada diagrama (Mermaid Live ou o MCP Mermaid) antes de commitar.
 
 ---
 
@@ -60,15 +71,18 @@ http_api/src/main/kotlin/com/kanbanvision/httpapi/di/
 sql_persistence/src/main/kotlin/com/kanbanvision/persistence/repositories/
 ```
 
-### Passo 2 — Atualize a seção no README
+### Passo 2 — Atualize a página do wiki correspondente
 
-Localize `## Arquitetura — Diagramas C4` no `README.md` e substitua todo o conteúdo
-com os diagramas atualizados. **Nunca remova a seção — apenas atualize seu conteúdo.**
+Edite a página do wiki mais próxima da mudança (no clone `../kanban-vision-api-kt.wiki`):
+`Architecture.md` (contexto/container/módulos), `Architecture-Domain.md` (classe/estado),
+`Architecture-Usecases.md` / `Architecture-SQL-Persistence.md` (componente/sequência/ERD),
+`Operations.md` (CI/CD, k8s), `Observability.md`, `GraalVM.md`. Mantenha o hub `Diagrams.md`
+apontando para o diagrama. Commit local com mensagem `docs(wiki): …`; o mantenedor faz o push.
 
 ### Passo 3 — Valide visualmente
 
-Após editar o README, confirme que os diagramas Mermaid são sintaticamente válidos
-e refletem com precisão:
+Após editar a página do wiki, confirme que os diagramas Mermaid são sintaticamente válidos
+(valide no Mermaid Live ou pelo MCP Mermaid) e refletem com precisão:
 - Todos os módulos/containers existentes
 - Todos os componentes (rotas, use cases, repositórios) existentes
 - Fluxos de sequência dos happy paths principais
@@ -76,34 +90,25 @@ e refletem com precisão:
 
 ---
 
-## Estrutura da seção no README
+## Onde cada diagrama vive no wiki
 
-A seção deve sempre conter, nesta ordem, dentro de `## Arquitetura — Diagramas C4`:
+Mapa canônico (todos em Mermaid **flowchart** house-style, exceto onde indicado):
 
-```markdown
-## Arquitetura — Diagramas C4
+| Diagrama | Página do wiki |
+|---|---|
+| Contexto do Sistema (nível 1) + Containers (nível 2) + mapa de módulos | `Architecture.md` |
+| Fluxo de request (sequenceDiagram) | `Architecture.md` |
+| Componentes `http_api` | `Architecture-HTTP-API.md` |
+| Classe do domínio (classDiagram) + máquina de estado do Card (stateDiagram-v2) | `Architecture-Domain.md` |
+| Sequência CQS (RunDay) + componentes usecases | `Architecture-Usecases.md` |
+| Componentes de persistência + **ERD** (erDiagram) | `Architecture-SQL-Persistence.md` |
+| Fluxo de Domain Events → métricas + topologia de observabilidade | `Observability.md` |
+| Pipeline CI/CD + topologia k8s | `Operations.md` |
+| Pipeline de build GraalVM | `GraalVM.md` |
+| Índice por senioridade (Júnior/Pleno/Sênior) | `Diagrams.md` (hub) |
 
-### Nível 1 — Contexto do Sistema
-[diagrama C4Context Mermaid]
-
-### Nível 2 — Containers
-[diagrama C4Container Mermaid]
-
-### Nível 3 — Componentes: http_api
-[diagrama C4Component Mermaid]
-
-### Nível 3 — Componentes: domain
-[diagrama C4Component Mermaid]
-
-### Sequência — Board Management
-[diagrama sequenceDiagram Mermaid]
-
-### Sequência — Simulation Engine
-[diagrama sequenceDiagram Mermaid]
-
-### Classes — Domínio
-[diagrama classDiagram Mermaid]
-```
+> **Board Management não está wired** (pós-GAP-BF): não há sequência de Board Management — os fluxos
+> reais são de Simulation (RunDay). Não desenhe componentes/repos que não existem no código.
 
 ---
 
@@ -200,8 +205,8 @@ C4Component
 | Nível 2 com detalhes de componentes | Separar em diagramas distintos por nível |
 | Relações sem rótulo | Sempre descrever a natureza da relação |
 | Diagrama em imagem binária | Sempre Mermaid (renderiza no GitHub) |
-| Seção separada por tipo de diagrama | Todos os diagramas na mesma seção `## Arquitetura — Diagramas C4` |
-| Diagrama desatualizado após nova feature | Atualizar o README junto com cada PR |
+| Sintaxe C4 nativa (`C4Context`…) | Mermaid `flowchart` house-style (render confiável no GitHub) |
+| Diagrama desatualizado após nova feature | Atualizar a página do wiki junto com cada PR |
 
 ---
 
@@ -215,8 +220,9 @@ Atualizar a seção sempre que:
 - Novo sistema externo (fila, cache, serviço) for integrado
 - Um container/componente existente for removido ou renomeado
 
-**Regra:** o PR que adiciona a feature deve incluir a atualização do README com
-o diagrama C4 correspondente. Sem diagrama atualizado, o PR está incompleto.
+**Regra:** o PR que adiciona a feature deve incluir a atualização da página do wiki correspondente
+(via o clone `../kanban-vision-api-kt.wiki`) com o diagrama atualizado. Sem diagrama atualizado, o
+PR está incompleto (o mantenedor faz o push do wiki).
 
 ---
 
