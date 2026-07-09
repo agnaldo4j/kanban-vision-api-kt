@@ -50,9 +50,26 @@ query($owner:String!, $name:String!, $first:Int!) {
 # Distinguish "board unavailable" from a genuine zero — a failed lookup must not
 # masquerade as a WIP-limit-respected signal. Surface a short, token-safe reason
 # so a missing read:project scope is diagnosable from the report itself.
+# Query the board via GraphQL — works with a fine-grained PAT (Projects: read),
+# unlike `gh project item-list`, whose owner-type resolution needs a classic
+# token and otherwise fails with "unknown owner type".
 wip_err_file="$(mktemp)"
-if wip_json="$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" \
-      --format json --limit 200 2>"$wip_err_file")"; then
+if wip_json="$(gh api graphql -f query='
+query($login:String!, $number:Int!) {
+  user(login:$login) {
+    projectV2(number:$number) {
+      items(first:100) {
+        nodes {
+          fieldValueByName(name:"Status") {
+            ... on ProjectV2ItemFieldSingleSelectValue { name }
+          }
+        }
+      }
+    }
+  }
+}' -F login="$OWNER" -F number="$PROJECT_NUMBER" \
+      --jq '{items: [.data.user.projectV2.items.nodes[] | {status: (.fieldValueByName.name // "")}]}' \
+      2>"$wip_err_file")"; then
   wip_ok=1; wip_err=""
 else
   wip_ok=0; wip_json='{"items":[]}'
