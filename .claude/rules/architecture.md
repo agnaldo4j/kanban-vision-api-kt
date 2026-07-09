@@ -8,7 +8,8 @@ sql_persistence → usecases
 http_api → sql_persistence   (wiring only, via Koin DI)
 ```
 
-> **Enforced by Konsist** (ADR-0026): the Dependency Rule, domain purity and ports placement
+> **Enforced by Konsist** (ADR-0026): the Dependency Rule, domain purity, ports placement and the
+> bounded-context boundaries (Kanban Management BC ↛ Simulation BC, per `docs/context-map.md`)
 > are fitness functions in `architecture/src/test/kotlin/` — they run in `testAll` and fail CI.
 
 ## Modules
