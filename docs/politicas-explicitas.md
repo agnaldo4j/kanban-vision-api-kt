@@ -25,7 +25,7 @@ If you are new, read in this order. Each step builds the mental model for the ne
 
 1. **[README](../README.md)** — one-screen overview, tech stack, quick start.
 2. **[Wiki → Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture)** — the C4 view, the five modules, the Dependency Rule.
-3. **Run it locally** — `GRAFANA_ADMIN_PASSWORD=admin docker compose up --build`, open Swagger at `http://localhost:8080/swagger`, and drive one simulation end to end. For a fast JVM loop see the [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
+3. **Run it locally** — `JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build`, then mint a token via `POST /auth/token` (mounted only in dev mode), open Swagger at `http://localhost:8080/swagger`, and drive one simulation end to end. The simulation routes require a JWT, so `JWT_DEV_MODE=true` is what makes the dev token endpoint available. For a fast JVM loop see the [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
 4. **Read one vertical slice** — follow a single request through the layers: a route in `http_api/…/routes/SimulationRoutes.kt` → a use case in `usecases/…/simulation/` → the domain aggregate/service in `domain/…/model/` → a repository in `sql_persistence/…/repositories/`.
 5. **This document** — the policies below, so your first PR fits the flow.
 
