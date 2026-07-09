@@ -216,6 +216,33 @@
       ],
       "title": "Simulation Throughput (days/s)",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "id": 7,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(kanban_card_completed_total[1m])",
+          "legendFormat": "Cards/s",
+          "refId": "A"
+        }
+      ],
+      "title": "Card Completion Throughput (cards/s)",
+      "type": "timeseries"
     }
   ],
   "refresh": "30s",

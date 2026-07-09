@@ -469,6 +469,56 @@ jobs:
           body: ${{ steps.pr-size-report.outputs.body }}
           edit-mode: replace
 
+  flow-metrics:
+    name: Flow Metrics
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Generate flow metrics report
+        id: flow-report
+        env:
+          # Data reads (PR history + board WIP). WIP needs a PAT with read:project;
+          # falls back to GITHUB_TOKEN, in which case flow-metrics.sh degrades the
+          # WIP line to "unavailable" (it still reports cycle/lead/cadence/size).
+          GH_TOKEN: ${{ secrets.FLOW_PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # Rolling engineering-flow snapshot (GAP-BI) — non-blocking signal that
+          # reuses scripts/flow-metrics.sh, the same source as docs/quality/flow-*.md.
+          report="$(bash scripts/flow-metrics.sh 2>&1)" || report="_Flow metrics unavailable for this run._"
+          {
+            echo 'body<<FLOW_REPORT'
+            echo '## Flow Metrics Report'
+            echo ''
+            echo "$report"
+            echo ''
+            echo '> Rolling snapshot over recent merged PRs (non-blocking) — source: `scripts/flow-metrics.sh` (GAP-BI).'
+            echo 'FLOW_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing flow metrics comment
+        id: find-flow
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Flow Metrics Report'
+
+      - name: Post flow metrics report on PR
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find-flow.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.flow-report.outputs.body }}
+          edit-mode: replace
+
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest

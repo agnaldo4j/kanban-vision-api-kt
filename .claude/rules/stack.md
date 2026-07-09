@@ -53,6 +53,11 @@
 2. Exclude committed GraalVM reachability metadata (`**/META-INF/native-image/**`) from the count
 3. Post PR comment: PR Size Report (counted vs 400 threshold) — **non-blocking**, never fails the build (the ≤400-line limit is a heuristic, `politicas §6`)
 
+**Job `flow-metrics`** — every PR (skips forks), parallel to `quality` (GAP-BI):
+1. Run `scripts/flow-metrics.sh` — rolling engineering-flow snapshot (PR cycle/lead time, cadence, PR-size, board WIP) over recent merged PRs
+2. Post PR comment: Flow Metrics Report — **non-blocking** (never fails the build)
+3. WIP line needs a PAT with `read:project` in secret `FLOW_PROJECT_TOKEN`; without it the script degrades WIP to "unavailable" (cycle/lead/cadence/size still reported)
+
 **Job `build`** — runs after `quality` + `supply-chain`:
 
 | Trigger | Action |
