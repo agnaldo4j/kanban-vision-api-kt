@@ -2,35 +2,6 @@ package com.kanbanvision.persistence.tables
 
 import org.jetbrains.exposed.v1.core.Table
 
-internal object BoardsTable : Table("boards") {
-    val id = varchar("id", 36)
-    val name = varchar("name", 255)
-    val createdAt = long("created_at")
-
-    override val primaryKey = PrimaryKey(id)
-}
-
-internal object StepsTable : Table("steps") {
-    val id = varchar("id", 36)
-    val boardId = varchar("board_id", 36).references(BoardsTable.id)
-    val name = varchar("name", 255)
-    val position = integer("position")
-    val requiredAbility = varchar("required_ability", 64)
-
-    override val primaryKey = PrimaryKey(id)
-}
-
-internal object CardsTable : Table("cards") {
-    val id = varchar("id", 36)
-    val stepId = varchar("step_id", 36).references(StepsTable.id)
-    val title = varchar("title", 255)
-    val description = text("description")
-    val position = integer("position")
-    val createdAt = long("created_at")
-
-    override val primaryKey = PrimaryKey(id)
-}
-
 internal object OrganizationsTable : Table("organizations") {
     val id = varchar("id", 36)
     val name = varchar("name", 255)
