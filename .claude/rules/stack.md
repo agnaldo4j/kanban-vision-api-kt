@@ -48,6 +48,11 @@
 3. osv-scanner scans the SBOM against OSV.dev — **fails the job on any known CVE**; documented exceptions only via `osv-scanner.toml`
 4. Post PR comment: Supply Chain Report (component count, active exceptions, findings table)
 
+**Job `pr-size`** — every PR (skips forks), parallel to `quality` (GAP-BH):
+1. Count changed lines (`additions + deletions`) via `gh api .../pulls/{n}/files` — no checkout
+2. Exclude committed GraalVM reachability metadata (`**/META-INF/native-image/**`) from the count
+3. Post PR comment: PR Size Report (counted vs 400 threshold) — **non-blocking**, never fails the build (the ≤400-line limit is a heuristic, `politicas §6`)
+
 **Job `build`** — runs after `quality` + `supply-chain`:
 
 | Trigger | Action |

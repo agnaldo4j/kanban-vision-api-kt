@@ -157,7 +157,7 @@ These are **non-negotiable** and enforced automatically. No PR merges if any is 
 | PITest mutation score | `domain` **≥ 78** · `usecases` **≥ 55** · `sql_persistence` **≥ 65** · `http_api` **≥ 45** | CI (`domain`+`usecases` mandatory) |
 | Architecture fitness functions (Konsist) | all green (ADR-0026) | CI — via `testAll` |
 | Supply-chain SCA (osv-scanner over the SBOM) | 0 untreated CVEs; exceptions only with a `reason` in `osv-scanner.toml` (ADR-0025) | CI — `supply-chain` job blocks the image |
-| PR size | ≤ 400 changed lines | Heuristic — split if larger |
+| PR size | ≤ 400 changed lines (excl. generated reachability metadata) | CI `pr-size` job — **non-blocking** warning comment; split if larger |
 | WIP (items in Doing) | max 1 | Pull policy |
 | Gaps per session | max 1 | Session protocol |
 

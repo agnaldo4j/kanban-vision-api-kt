@@ -411,6 +411,64 @@ jobs:
           body: ${{ steps.supply-chain-report.outputs.body }}
           edit-mode: replace
 
+  pr-size:
+    name: PR Size Soft-Gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Generate PR size report
+        id: pr-size-report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Count changed lines (additions + deletions) via the GitHub API — no checkout needed.
+          # Committed GraalVM reachability metadata is auto-generated and excluded from the count.
+          # Soft-gate (GAP-BH): warn only, never fail the build.
+          gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --jq '.[] | [.filename, (.additions + .deletions)] | @tsv' > files.tsv
+          counted=$(awk -F'\t' '$1 !~ /\/META-INF\/native-image\// {s+=$2} END {print s+0}' files.tsv)
+          excluded=$(awk -F'\t' '$1 ~ /\/META-INF\/native-image\// {s+=$2} END {print s+0}' files.tsv)
+          threshold=400
+          {
+            echo 'body<<PR_SIZE_REPORT'
+            echo '## PR Size Report'
+            echo ''
+            echo '| Metric | Value |'
+            echo '|--------|-------|'
+            printf '| Changed lines (counted) | %d |\n' "$counted"
+            printf '| Excluded (reachability metadata) | %d |\n' "$excluded"
+            printf '| Threshold | %d |\n' "$threshold"
+            echo ''
+            if [ "$counted" -le "$threshold" ]; then
+              echo '✅ Within the 400-line heuristic.'
+            else
+              echo '⚠️ **This PR exceeds the 400-line heuristic — consider splitting.** (non-blocking)'
+            fi
+            echo 'PR_SIZE_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing PR size comment
+        id: find-pr-size
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## PR Size Report'
+
+      - name: Post PR size report on PR
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find-pr-size.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.pr-size-report.outputs.body }}
+          edit-mode: replace
+
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
