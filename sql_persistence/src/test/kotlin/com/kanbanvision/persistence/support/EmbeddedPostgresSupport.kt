@@ -28,23 +28,13 @@ import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.persistence.DatabaseConfig
 import com.kanbanvision.persistence.DatabaseFactory
-import com.kanbanvision.persistence.tables.BoardsTable
 import com.kanbanvision.persistence.tables.OrganizationsTable
 import com.kanbanvision.persistence.tables.SimulationsTable
-import com.kanbanvision.persistence.tables.StepsTable
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 internal object EmbeddedPostgresSupport {
-    data class StepSeed(
-        val id: String,
-        val boardId: String,
-        val name: String = "Step",
-        val position: Int = 0,
-        val requiredAbility: String = AbilityName.DEVELOPER.name,
-    )
-
     data class SimulationSeed(
         val id: String,
         val organizationId: String,
@@ -96,32 +86,6 @@ internal object EmbeddedPostgresSupport {
             OrganizationsTable.insert {
                 it[OrganizationsTable.id] = id
                 it[OrganizationsTable.name] = name
-            }
-        }
-    }
-
-    fun insertBoard(
-        id: String,
-        name: String = "Board",
-        createdAt: Long = 0L,
-    ) {
-        transaction {
-            BoardsTable.insert {
-                it[BoardsTable.id] = id
-                it[BoardsTable.name] = name
-                it[BoardsTable.createdAt] = createdAt
-            }
-        }
-    }
-
-    fun insertStep(seed: StepSeed) {
-        transaction {
-            StepsTable.insert {
-                it[StepsTable.id] = seed.id
-                it[boardId] = seed.boardId
-                it[StepsTable.name] = seed.name
-                it[position] = seed.position
-                it[requiredAbility] = seed.requiredAbility
             }
         }
     }
