@@ -54,6 +54,7 @@ qualities" map — use it to decide what to study or where to contribute.
 | **GraalVM Native Image** | AOT compilation, reachability metadata, the JIT↔AOT trade-off, a native migration binary | `Dockerfile` · [Wiki → GraalVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM) · ADR-0030/0032 |
 | **The JVM toolchain** | One-JDK model (Java 25), a Gradle convention plugin, configuration cache | `buildSrc/` · [Wiki → JVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/JVM) · ADR-0024 |
 | **Performance engineering** | A k6 load journey, an immutable-baseline policy, runtime comparisons | `load/` · `docs/quality/` · [Wiki → Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) · ADR-0027 |
+| **Delivery-flow engineering** | A first engineering-flow signal (PR cycle/lead time, cadence, WIP-limit adherence), refreshed each cycle as an executable **non-blocking** signal — never a PR gate | `scripts/flow-metrics.sh` · `docs/quality/flow-2026-07.md` · GAP-BI |
 | **Decision records & evolutionary change** | MADR ADRs, immutability, one-gap-per-session, J-curve safety | [`adr/`](../adr) · ADR-0023 · `/evolutionary-change` skill |
 
 > **How to read a decision:** every non-trivial choice has an ADR in `adr/` (MADR format). Start
