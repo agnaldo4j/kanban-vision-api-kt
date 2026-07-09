@@ -1,63 +1,44 @@
-# Leak de contexto OTel entre requests no binário nativo — diagnóstico e mitigação (GAP-BC)
+# OTel context leak between requests in the native binary — diagnosis and mitigation (GAP-BC)
 
-**Data**: 2026-07-08 · **Follow-up de**: ADR-0032 / GAP-BB (`docs/quality/performance-baseline-2026-07-native.md`)
-**Versões**: Ktor 3.5.1 · opentelemetry-java-instrumentation 2.29.0-alpha · OTel SDK 1.63.0 · GraalVM 25
+**Date**: 2026-07-08 · **Follow-up of**: ADR-0032 / GAP-BB (`docs/quality/performance-baseline-2026-07-native.md`)
+**Versions**: Ktor 3.5.1 · opentelemetry-java-instrumentation 2.29.0-alpha · OTel SDK 1.63.0 · GraalVM 25
 
-## Sintoma (observado no GAP-BB)
+> *Language note: translated to English on 2026-07-09; the diagnosis, evidence and numbers are unchanged from the original snapshot.*
 
-No binário nativo, sob carga, o event loop do Netty retém o contexto OTel do request
-anterior: o `Instrumenter` do `KtorServerTelemetry` suprime novos spans SERVER
-(suppression por `SpanKind`) e os spans JDBC/manuais dos requests seguintes encadeiam
-num mesmo trace gigante ou nascem como traces sem raiz SERVER.
+## Symptom (observed in GAP-BB)
+
+In the native binary, under load, the Netty event loop retains the previous request's OTel context: `KtorServerTelemetry`'s `Instrumenter` suppresses new SERVER spans (suppression by `SpanKind`) and the JDBC/manual spans of following requests chain into one giant trace or are born as traces with no SERVER root.
 
 ## Root cause (upstream)
 
-O `SuspendFunctionGun` (SFG) do Ktor executa interceptors com uma continuation
-compartilhada; em suspensões com dispatcher externo (`withContext(Dispatchers.IO)`) o
-`ThreadContextElement` do OTel (`Context.asContextElement()`) recebe `updateThreadContext`
-sem o `restoreThreadContext` pareado — a thread do event loop fica presa ao contexto velho.
+Ktor's `SuspendFunctionGun` (SFG) runs interceptors with a shared continuation; on suspensions with an external dispatcher (`withContext(Dispatchers.IO)`), the OTel `ThreadContextElement` (`Context.asContextElement()`) gets `updateThreadContext` without the paired `restoreThreadContext` — the event-loop thread stays bound to the stale context.
 
-- [KTOR-9431](https://youtrack.jetbrains.com/issue/KTOR-9431) — exatamente este bug; **corrigido no Ktor 3.4.3** (PR ktorio/ktor#5503, contido na 3.5.1).
-- [opentelemetry-java-instrumentation#16430](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/16430) — mesmo sintoma; fechado com workarounds; o instrumentation 2.29.0 já embute o paliativo `EmptyInterceptor`.
-- [KTOR-6802](https://youtrack.jetbrains.com/issue/KTOR-6802) — variante com autoreload; ainda aberto.
+- [KTOR-9431](https://youtrack.jetbrains.com/issue/KTOR-9431) — exactly this bug; **fixed in Ktor 3.4.3** (PR ktorio/ktor#5503, contained in 3.5.1).
+- [opentelemetry-java-instrumentation#16430](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/16430) — same symptom; closed with workarounds; instrumentation 2.29.0 already embeds the `EmptyInterceptor` palliative.
+- [KTOR-6802](https://youtrack.jetbrains.com/issue/KTOR-6802) — an autoreload variant; still open.
 
-**Os dois reparos conhecidos já estão nas versões do projeto e o leak ainda assim
-reproduz no binário nativo** — a manifestação é específica de native image (o fix
-KTOR-9431 usa "conditional redispatch" que se comporta diferente no AOT). Na JVM o
-leak NÃO reproduz mais (validado com Netty real + 512 requests concorrentes).
+**The two known fixes are already in the project's versions and the leak still reproduces in the native binary** — the manifestation is native-image specific (the KTOR-9431 fix uses "conditional redispatch" that behaves differently under AOT). On the JVM the leak does NOT reproduce anymore (validated with real Netty + 512 concurrent requests).
 
-## Evidência empírica (docker compose local, jornada k6 smoke, Tempo API)
+## Empirical evidence (local docker compose, k6 smoke journey, Tempo API)
 
-| Cenário | Requests | Traces amostrados | Traces com exatamente 1 span SERVER | Observações |
+| Scenario | Requests | Traces sampled | Traces with exactly 1 SERVER span | Notes |
 |---|---|---|---|---|
-| Nativo, default | 20.791 (0 falhas) | 5.000 | **14 (0,3%)** | 4.986 traces sem raiz SERVER; maior trace: **9.822 spans** |
-| Nativo, `-Dio.ktor.internal.disable.sfg=true` | 22.041 (0 falhas) | 5.000 | **5.000 (100%)** | maior trace: 7 spans; rotas nomeadas (`GET .../{simulationId}/cfd`); throughput smoke 734 vs 692 req/s (≥ baseline) |
-| Nativo, imagem final (flag no ENTRYPOINT) | 14.871 (0 falhas) | 5.000 | **5.000 (100%)** | rebuild com o Dockerfile deste PR; mesmo resultado |
-| JVM (test host sequencial + Netty concorrente) | 24 + 512 | — | 100% | `TelemetryContextIsolationTest` — safety net permanente |
+| Native, default | 20,791 (0 failures) | 5,000 | **14 (0.3%)** | 4,986 traces with no SERVER root; largest trace: **9,822 spans** |
+| Native, `-Dio.ktor.internal.disable.sfg=true` | 22,041 (0 failures) | 5,000 | **5,000 (100%)** | largest trace: 7 spans; route names preserved (`GET .../{simulationId}/cfd`); smoke throughput 734 vs 692 req/s (≥ baseline) |
+| Native, final image (flag in ENTRYPOINT) | 14,871 (0 failures) | 5,000 | **5,000 (100%)** | rebuild with this PR's Dockerfile; same result |
+| JVM (sequential test host + concurrent Netty) | 24 + 512 | — | 100% | `TelemetryContextIsolationTest` — permanent safety net |
 
-Metodologia: `docker compose up --build` (stack completo com Tempo), org seedada,
-`k6 run load/simulation-journey.js` (smoke), análise via `GET /api/search` +
-`GET /api/traces/{id}` do Tempo contando spans `SPAN_KIND_SERVER` por trace.
+Methodology: `docker compose up --build` (full stack with Tempo), seeded org, `k6 run load/simulation-journey.js` (smoke), analysis via Tempo's `GET /api/search` + `GET /api/traces/{id}` counting `SPAN_KIND_SERVER` spans per trace.
 
-## Mitigação aplicada
+## Mitigation applied
 
-`-Dio.ktor.internal.disable.sfg=true` no `ENTRYPOINT` do Dockerfile (runtime nativo).
-A flag troca o SFG pelo `DebugPipelineContext` (caminho coroutines convencional, sem a
-otimização de continuation compartilhada). Sem regressão de latência/throughput no smoke;
-nomes de rota preservados (a mitigação por reset de contexto avaliada no GAP-BB degradava
-o nome — esta não).
+`-Dio.ktor.internal.disable.sfg=true` in the Dockerfile `ENTRYPOINT` (native runtime). The flag swaps the SFG for `DebugPipelineContext` (the conventional coroutines path, without the shared-continuation optimization). No latency/throughput regression in the smoke; route names preserved (the context-reset mitigation evaluated in GAP-BB degraded the name — this one doesn't).
 
-- Produção k8s segue com `OTEL_TRACES_EXPORTER=none` por default (inalterado); com a
-  flag no ENTRYPOINT, ligar traces via patch passa a produzir traces íntegros.
-- Dev/testes na JVM não precisam da flag.
+- k8s production stays on `OTEL_TRACES_EXPORTER=none` by default (unchanged); with the flag in the ENTRYPOINT, enabling traces via a patch now produces intact traces.
+- Dev/tests on the JVM don't need the flag.
 
 ## Follow-ups
 
-- Reavaliar a flag a cada release do Ktor 3.x (procurar fix nativo do SFG) e do
-  opentelemetry-java-instrumentation 2.x.
-- Issue upstream **não** publicada nesta rodada (decisão registrada no card GAP-BC);
-  este arquivo contém o material de repro caso se decida reportar.
-- Achado colateral (fora de escopo, candidato a card): no nativo, o caminho de erro de
-  `POST /auth/token` com payload inválido falha ao serializar `DomainErrorResponse`
-  ("Cannot reflectively read or write field ... $$serializer") — gap de reachability
-  metadata no caminho de erro.
+- Re-evaluate the flag on every Ktor 3.x release (look for a native SFG fix) and on opentelemetry-java-instrumentation 2.x.
+- The upstream issue was **not** filed in this round (decision recorded on the GAP-BC card); this file holds the repro material should reporting be decided.
+- Side finding (out of scope, candidate card): in native, the error path of `POST /auth/token` with an invalid payload fails to serialize `DomainErrorResponse` ("Cannot reflectively read or write field ... $$serializer") — a reachability-metadata gap on the error path.
