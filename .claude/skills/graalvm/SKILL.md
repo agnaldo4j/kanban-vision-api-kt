@@ -129,3 +129,48 @@ java -agentlib:native-image-agent=config-output-dir=http_api/src/main/resources/
   compatibilidade oficial no momento do gap.
 - **Fat JAR e native são pipelines separados**: `mergeServiceFiles()` do fat JAR é irrelevante
   no binário nativo — não misturar os dois nem "aproveitar" configs de um no outro.
+
+## 8. Runtime tuning — memória e GC (produção)
+
+> **Referência, não mandato.** Esta seção documenta *quais* parâmetros existem e *como decidir/
+> validar*. Mudar de fato a config de produção (GC, heap, right-size do container) é uma decisão de
+> requisito não-funcional → exige **ADR nova** (ADR-0023). Nada aqui altera a config por si só.
+
+### Footprint atual (medido — nenhum tuning aplicado hoje)
+
+O binário nativo roda com **defaults do SubstrateVM** (Serial GC), sem `-Xmx`/`--gc`/`-R:MaxHeapSize`.
+Baseline `docs/quality/performance-baseline-2026-07-native.md`: startup **0,12 s**, RSS **73,6 MiB**
+pós-boot → **41,5 MiB** pós-baseline, throughput **−7,1 %** e p95 **+5,7 %** vs o fat JAR JIT. Ou
+seja: memória e startup são o ganho; throughput de pico é o trade-off aceito (ADR-0032).
+
+### Garbage collector (SubstrateVM)
+
+| GC | Como ligar | Quando |
+|---|---|---|
+| **Serial** (default) | — | Single-threaded, overhead mínimo. Ideal para o nosso heap pequeno (~40–82 MiB). É o que roda hoje. |
+| **G1** | build-time `--gc=G1` (**só Oracle GraalVM**) | Mais throughput em heaps maiores — candidato a recuperar parte dos −7 %. Custa imagem maior + mais memória base. **Só adotar com medição k6.** |
+| **Epsilon** | build-time `--gc=epsilon` (no-op) | Cargas curtas/bounded (ex.: o binário de migração). **Nunca** para a API long-running. |
+
+### Heap em runtime
+
+O binário nativo honra, em runtime, as mesmas flags da JVM: `-Xmx`/`-XX:MaxHeapSize` e
+`-XX:MaximumHeapSizePercent=N` (relativo ao cgroup). O SubstrateVM **já lê o limite do cgroup** —
+como o footprint estabiliza em ~40–82 MiB, um `-Xmx` explícito costuma ser **desnecessário**;
+defina só para (a) capar um container muito apertado ou (b) tornar o headroom explícito. `-Xms`/heap
+mínimo não se aplica da mesma forma (não há warm-up de JIT no AOT).
+
+### Flags de build (throughput/tamanho)
+
+`-O2` (default) vs `-Ob` (quick build — só custo de CI, ADR-0032) · `-march=native`/`-march=x86-64-v3`
+(throughput vs portabilidade — o binário passa a ser por CPU-arch) · **PGO** (`--pgo`, só Oracle —
+melhor throughput, exige um profiling run). **Onde ficam:** `http_api/build.gradle.kts`
+(`graalvmNative.buildArgs`) — arquivo **imutável por política**; mexer exige o fluxo de 2 PRs para
+config imutável + ADR.
+
+### Loop de validação (obrigatório antes de cravar qualquer valor)
+
+1. Medir com o **baseline k6** (`/load-testing`, ADR-0027) — comparação **na mesma sessão** (números
+   entre docs diferentes não são comparáveis).
+2. Observar métricas OTel/Micrometer: `jvm_memory_used_bytes`, `jvm_gc_pause_seconds_count`, e
+   `container_memory_working_set_bytes` no pod.
+3. Só então abrir a ADR fixando o parâmetro, com Confirmation amarrada ao baseline.
