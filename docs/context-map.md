@@ -1,94 +1,103 @@
 # Context Map
 
-> Referências: *Kanban from the Inside* (Burrows) · *The Principles of Product Development Flow* (Reinertsen) · [ADR-0004](../adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md)
+> References: *Kanban from the Inside* (Burrows) · *The Principles of Product Development Flow* (Reinertsen) · *Domain-Driven Design* (Evans)
+
+A DDD Context Map for the project: the bounded contexts that exist today inside the modular monolith,
+how they integrate, and the two contexts that are candidates for future extraction. It is a **living
+design document** — use it to place new domain concepts and to reason about where a seam should form
+if the monolith is ever split.
 
 ---
 
-## Visão Geral
+## Overview
 
 ```mermaid
 graph LR
-    subgraph EST["Bounded Contexts Estabelecidos"]
-        KM["Kanban Management BC<br/>Board · Step · Card · Organization<br/>domain/model/kanban · domain/model/organization<br/>CP1 — Visualize"]
-        SIM["Simulation BC<br/>Simulation · Scenario · SimulationEngine · DailySnapshot<br/>domain/model/simulation · domain/simulation<br/>CP3 — Manage Flow"]
-        ANA["Analytics BC (lógico)<br/>FlowMetrics · CFD · séries temporais<br/>usecases (queries) · rotas GET /api/v1/simulations<br/>CP5 — Feedback Loops"]
+    subgraph EST["Established Bounded Contexts"]
+        KM["Kanban Management BC<br/>Board · Step · Card · Organization<br/>domain/model/kanban · domain/model/organization<br/>Practice 1 — Visualize"]
+        SIM["Simulation BC<br/>Simulation · Scenario · SimulationEngine · DailySnapshot<br/>domain/model/simulation · domain/simulation<br/>Practice 3 — Manage Flow"]
+        ANA["Analytics BC (logical)<br/>FlowMetrics · CFD · time series<br/>usecases queries · GET /api/v1/simulations…<br/>Practice 5 — Feedback Loops"]
     end
-    subgraph FUT["Candidatos a Extração Futura"]
+    subgraph FUT["Future Extraction Candidates"]
         FOR["Forecasting BC<br/>Lead time P50/P85/P95 · Monte Carlo<br/>(Reinertsen)"]
-        POL["Policy BC<br/>ServiceClass · PolicySet · WIP policies<br/>(Burrows — 4 classes de serviço)"]
+        POL["Policy BC<br/>ServiceClass · PolicySet · WIP policies<br/>(Burrows — 4 service classes)"]
     end
-    KM -->|"Customer-Supplier<br/>(estrutura Board/Step/Card)"| SIM
-    SIM -->|"Customer-Supplier (atual)<br/>ACL planejada no lado Analytics"| ANA
-    ANA -.->|"Customer-Supplier (futuro)"| FOR
-    POL -.->|"Open Host Service (futuro)"| SIM
+    KM -->|"Customer-Supplier<br/>(Board/Step/Card structure)"| SIM
+    SIM -->|"Customer-Supplier (today)<br/>ACL planned on the Analytics side"| ANA
+    ANA -.->|"Customer-Supplier (future)"| FOR
+    POL -.->|"Open Host Service (future)"| SIM
 ```
 
-> Setas sólidas = relações atuais no monólito modular; setas tracejadas = relações planejadas/futuras.
-> Os três BCs estabelecidos compartilham o **Shared Kernel** (`domain/` — entidades, VOs, `DomainError`), detalhado na tabela de [Padrões de Integração](#padrões-de-integração).
+> Solid arrows = relationships that exist today in the modular monolith; dashed arrows =
+> planned/future relationships. The three established BCs share the **Shared Kernel** (`domain/` —
+> entities, value objects, `DomainError`), detailed in [Integration Patterns](#integration-patterns).
 
 ---
 
-## Bounded Contexts Estabelecidos
+## Established bounded contexts
 
 ### 1. Kanban Management
 
-**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/kanban/` + `domain/src/main/kotlin/com/kanbanvision/domain/model/organization/`
+**Packages:** `domain/…/model/kanban/` + `domain/…/model/organization/`
+**Aggregate roots:** `Board`, `Organization`
 
-**Aggregate Roots:** `Board`, `Organization`
-
-| Entidade/VO | Tipo | Responsabilidade |
+| Entity / VO | Type | Responsibility |
 |---|---|---|
-| `Board` | Aggregate Root | Estrutura do board; garante nomes de steps únicos |
-| `Step` | Entity | Posição no fluxo; workers com ability obrigatória |
-| `Card` | Entity | Unidade de trabalho; state machine (states: TODO, IN_PROGRESS, BLOCKED, DONE) |
-| `Organization` | Aggregate Root | Hierarquia de times (Tribe → Squad → Worker) |
-| `Worker` | Entity | Capacidade diária por ability (determinística com seed) |
+| `Board` | Aggregate root | Board structure; enforces unique step names |
+| `Step` | Entity | Position in the flow; workers with a required ability |
+| `Card` | Entity | Unit of work; state machine (TODO, IN_PROGRESS, BLOCKED, DONE) |
+| `Organization` | Aggregate root | Team hierarchy (Tribe → Squad → Worker) |
+| `Worker` | Entity | Deterministic (seeded) daily capacity per ability |
 | `ServiceClass` | Enum | STANDARD · EXPEDITE · FIXED_DATE · INTANGIBLE |
 | `AbilityName` | Enum | PRODUCT_MANAGER · DEVELOPER · TESTER · DEPLOYER |
 
-**Invariantes de domínio:**
-- `Board.addStep()` — nome único por board
-- `Step.assignWorker()` — worker deve ter a ability requerida pelo step
-- `Worker` TESTER implica DEPLOYER
+**Domain invariants:** unique step name per board; `Step.assignWorker` requires the step's ability;
+a `TESTER` worker also implies `DEPLOYER`.
 
-**Linguagem Ubíqua:** Board, Step, Card, Service Class, WIP, Aging, Effort, Ability, Seniority
+**Ubiquitous language:** Board, Step, Card, Service Class, WIP, Aging, Effort, Ability, Seniority.
 
 ---
 
-### 2. Simulation Engine
+### 2. Simulation
 
-**Pacotes:** `domain/src/main/kotlin/com/kanbanvision/domain/model/simulation/` (entidades) + `domain/src/main/kotlin/com/kanbanvision/domain/simulation/SimulationEngine.kt` (Domain Service); `Scenario`, `ScenarioRules` e `PolicySet` vivem em `domain/src/main/kotlin/com/kanbanvision/domain/model/organization/`
+**Packages:** `domain/…/model/simulation/` (entities) + `domain/…/simulation/SimulationEngine.kt`
+(domain service). `Scenario`, `ScenarioRules` and `PolicySet` live in `domain/…/model/organization/`.
+**Aggregate roots:** `Simulation`, `Scenario`
 
-**Aggregate Roots:** `Simulation`, `Scenario`
-
-| Entidade/VO | Tipo | Responsabilidade |
+| Entity / VO | Type | Responsibility |
 |---|---|---|
-| `Simulation` | Aggregate Root | Ciclo de vida da simulação (DRAFT→RUNNING→PAUSED→FINISHED) |
-| `Scenario` | Aggregate Root | Estado imutável do board + regras + histórico de execução |
-| `ScenarioRules` | Value Object | WIP limit, team size, seed determinístico |
-| `SimulationEngine` | Domain Service | Execução pura e determinística de um dia |
-| `Decision` | Entity | Comando aplicado a um dia (`DecisionType`: MOVE_ITEM, BLOCK_ITEM, UNBLOCK_ITEM, ADD_ITEM; factories: move, block, unblock, addItem) |
-| `DailySnapshot` | Entity | Estado capturado ao final de cada dia executado |
-| `FlowMetrics` | Value Object | throughput, wipCount, blockedCount, avgAgingDays |
-| `Movement` | Entity | Rastreamento de cada movimentação de card no dia |
+| `Simulation` | Aggregate root | Runtime state and lifecycle (DRAFT→RUNNING→PAUSED→FINISHED): `currentDay`, `decisions`, `history` |
+| `Scenario` | Aggregate root | Immutable configuration: the `Board` + `ScenarioRules` |
+| `ScenarioRules` | Value object | WIP limit, team size, deterministic seed (+ `PolicySet`) |
+| `SimulationEngine` | Domain service | Pure, deterministic execution of one day |
+| `Decision` | Sealed interface | A command applied to a day: `MoveItem` · `BlockItem` · `UnblockItem` · `AddItem` (ADR-0018 — sealed hierarchy, no type-tag + null-guards) |
+| `DailySnapshot` | Entity | State captured at the end of each executed day |
+| `FlowMetrics` | Value object | throughput, wipCount, blockedCount, avgAgingDays |
+| `Movement` | Entity | Records each card movement within a day |
 
-**Linguagem Ubíqua:** Simulation Day, Scenario, Decision, Snapshot, WIP Limit, Seed, Throughput, Lead Time
+> **Configuration vs. runtime:** `Scenario` holds the *immutable* board + rules; the *mutable* run
+> state (`currentDay`, `status`, applied `decisions`, `history` of snapshots) lives on `Simulation`.
+> Keeping them apart is what lets `SimulationEngine.runDay(simulation, decisions, seed)` stay a pure
+> function.
+
+**Ubiquitous language:** Simulation Day, Scenario, Decision, Snapshot, WIP Limit, Seed, Throughput, Lead Time.
 
 ---
 
-### 3. Analytics
+### 3. Analytics (logical)
 
-**Pacotes:** Usecases — `usecases/simulation/GetSimulationDays*`, `GetSimulationCfd*`, `ListSimulations*`
+A logical context, not yet a separate module — it reads Simulation output. Lives in the query use
+cases and the read endpoints.
 
-**Rotas HTTP:**
+**Packages:** `usecases/…/simulation/` — `ListSimulations*`, `GetSimulationDays*`, `GetSimulationCfd*`
 
-| Endpoint | Descrição |
+| Endpoint | Description |
 |---|---|
-| `GET /api/v1/simulations` | Lista paginada de simulações (ordenada por id ASC) |
-| `GET /api/v1/simulations/{id}/days` | Série temporal de snapshots diários |
-| `GET /api/v1/simulations/{id}/cfd` | Dados de Cumulative Flow Diagram |
+| `GET /api/v1/simulations` | Paginated list of simulations |
+| `GET /api/v1/simulations/{id}/days` | Time series of daily snapshots |
+| `GET /api/v1/simulations/{id}/cfd` | Cumulative Flow Diagram data |
 
-| DTO | Campos |
+| DTO | Fields |
 |---|---|
 | `SimulationSummaryResponse` | id, name, status, currentDay |
 | `SimulationDaysResponse` | simulationId, days: List\<DayMetricsResponse\> |
@@ -96,57 +105,62 @@ graph LR
 | `CfdDataPointResponse` | day, throughputCumulative, wipCount, blockedCount |
 | `SimulationCfdResponse` | simulationId, series: List\<CfdDataPointResponse\> |
 
-**Linguagem Ubíqua:** CFD, Time-Series, Throughput Cumulative, Pagination, Day Series
+**Ubiquitous language:** CFD, Time Series, Cumulative Throughput, Pagination, Day Series.
 
 ---
 
-## Padrões de Integração
+## Integration patterns
 
-| Relação | Padrão DDD | Estado | Descrição |
+| Relationship | DDD pattern | State | Description |
 |---|---|---|---|
-| `domain/` → todos os módulos | **Shared Kernel** | Atual | Entidades, VOs e `DomainError` compartilhados — mudanças requerem coordenação entre módulos |
-| `http_api` → `usecases` | **Customer-Supplier** | Atual | `http_api` (customer) consome use cases (supplier) via interfaces CQS — supplier define o contrato |
-| `sql_persistence` → `domain` | **Conformist** | Atual | Persistence aceita o modelo de domínio sem tradução — tabelas Exposed espelham entidades |
-| `Simulation` → `Analytics` | **Customer-Supplier** | Atual | Simulation (supplier) fornece `DailySnapshot`/`FlowMetrics` que as queries de Analytics consomem diretamente no monólito |
-| `Analytics` → `Simulation` | **ACL** | Planejado | Analytics deve consumir `DailySnapshot` via Anti-Corruption Layer para isolar seu modelo de leitura do modelo de execução |
-| `Simulation` → `Policy Engine` | **Open Host Service** | Futuro | Policy Engine expõe protocolo estável para que Simulation resolva decisões automaticamente |
-| `Forecasting` → `Analytics` | **Customer-Supplier** | Futuro | Forecasting consome dados agregados de Analytics via contrato versionado |
+| `domain/` → all modules | **Shared Kernel** | Current | Shared entities, VOs and `DomainError` — changes need cross-module coordination |
+| `http_api` → `usecases` | **Customer-Supplier** | Current | `http_api` (customer) consumes CQS use cases (supplier); the supplier owns the contract |
+| `sql_persistence` → `domain` | **Conformist** | Current | Persistence accepts the domain model without translation — tables mirror entities |
+| `Simulation` → `Analytics` | **Customer-Supplier** | Current | Simulation (supplier) produces `DailySnapshot`/`FlowMetrics` that Analytics queries read directly in the monolith |
+| `Analytics` → `Simulation` | **Anti-Corruption Layer** | Planned | Analytics should read `DailySnapshot` through an ACL to isolate its read model from the execution model |
+| `Simulation` → `Policy Engine` | **Open Host Service** | Future | A Policy Engine exposes a stable protocol so Simulation can resolve decisions automatically |
+| `Forecasting` → `Analytics` | **Customer-Supplier** | Future | Forecasting consumes aggregated Analytics data via a versioned contract |
+
+> **Reading the map for extraction:** the *Planned* ACL and the *Future* Open Host Service are the
+> seams where a module would split first — they are the relationships deliberately kept explicit so
+> that, if extracted, each side owns its own model rather than sharing the kernel.
 
 ---
 
-## Contextos Candidatos à Extração
+## Extraction candidates
 
 ### Forecasting
 
-**Motivação:** *The Principles of Product Development Flow* (Reinertsen) — análise quantitativa de fluxo gera insights sobre lead time e capacidade preditiva que vão além da visualização histórica.
+**Motivation** — *The Principles of Product Development Flow* (Reinertsen): quantitative flow analysis
+yields lead-time and predictive insight beyond historical visualization.
 
-**Responsabilidade futura:**
-- Distribuição de lead time (percentis P50/P85/P95)
-- Previsão de throughput por período
-- Monte Carlo simulation para estimativas probabilísticas de entrega
+**Future responsibility:** lead-time distribution (P50/P85/P95), throughput forecasting, Monte Carlo
+simulation for probabilistic delivery estimates.
 
-**Relação esperada:** Customer-Supplier downstream de Analytics (consome `SimulationDaysResponse` e `CfdDataPointResponse` sem acoplar ao modelo de execução)
-
----
+**Expected relationship:** Customer-Supplier downstream of Analytics (consumes `SimulationDaysResponse`
+and `CfdDataPointResponse` without coupling to the execution model).
 
 ### Policy Engine
 
-**Motivação:** *Kanban from the Inside* (Burrows) — políticas explícitas são o 4º dos 6 valores do Kanban; atualmente as políticas (WIP limit, prioridade por `ServiceClass`, regras de escalation) estão embutidas no `SimulationEngine`.
+**Motivation** — *Kanban from the Inside* (Burrows): explicit policies are a core Kanban practice.
+Today the policies (WIP limit, `ServiceClass` priority, escalation rules) are embedded in
+`SimulationEngine`.
 
-**Responsabilidade futura:**
-- Regras de escalation por `ServiceClass`
-- Automação de decisões (MOVE/BLOCK) baseada em políticas configuráveis
-- Configuração de limites e critérios por step
+**Future responsibility:** escalation rules per `ServiceClass`, policy-driven decision automation
+(MOVE/BLOCK), and configurable per-step limits/criteria.
 
-**Relação esperada:** Open Host Service — expõe protocolo estável para que `SimulationEngine` delegue decisões automatizadas sem acoplar ao motor de regras
+**Expected relationship:** Open Host Service — exposes a stable protocol so `SimulationEngine` can
+delegate automated decisions without coupling to the rules engine.
 
 ---
 
-## Referências Teóricas
+## Theoretical references
 
-| Obra | Autor | Aplicação neste projeto |
+| Work | Author | Application here |
 |---|---|---|
-| *Kanban from the Inside* | Mike Burrows | 9 valores, 6 práticas e 4 classes de serviço como lente de design dos BCs |
-| *The Principles of Product Development Flow* | Donald Reinertsen | Métricas de fluxo (throughput, WIP, lead time) e base do Analytics BC |
-| *Domain-Driven Design* | Eric Evans | Padrões de Context Map (Shared Kernel, ACL, Customer-Supplier, Open Host Service) |
-| *Implementing DDD* | Vaughn Vernon | Guidance de Bounded Context e integration patterns |
+| *Kanban from the Inside* | Mike Burrows | Values, practices and the 4 service classes as a design lens for the BCs |
+| *The Principles of Product Development Flow* | Donald Reinertsen | Flow metrics (throughput, WIP, lead time) and the basis of the Analytics BC |
+| *Domain-Driven Design* | Eric Evans | Context Map patterns (Shared Kernel, ACL, Customer-Supplier, Open Host Service) |
+| *Implementing DDD* | Vaughn Vernon | Bounded Context and integration-pattern guidance |
+
+See also: [Wiki → Architecture Domain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Domain) · [Wiki → Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) · ADR-0021.
