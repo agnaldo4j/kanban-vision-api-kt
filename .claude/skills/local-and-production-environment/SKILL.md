@@ -598,8 +598,11 @@ spec:
                 secretKeyRef:
                   name: kanban-vision-api-secrets
                   key: DATABASE_PASSWORD
+            # ⚠️ Exemplo do caminho JVM/fat-jar. Produção roda Native Image (ADR-0031/0032):
+            # SEM javaagent e SEM JAVA_TOOL_OPTIONS — ver k8s/03-deployment.yml e a subseção
+            # "Perf-parameters de runtime" abaixo. No fat-jar, use só MaxRAMPercentage:
             - name: JAVA_TOOL_OPTIONS
-              value: "-javaagent:/opt/opentelemetry-javaagent.jar -XX:MaxRAMPercentage=75.0"
+              value: "-XX:MaxRAMPercentage=75.0"   # cgroup-aware; sem -javaagent (ADR-0031)
 
           # ── Probes ─────────────────────────────────────────────────────────────
           # Startup: aguarda a JVM inicializar (30s max)
@@ -637,7 +640,7 @@ spec:
               memory: "256Mi"           # 256MB garantido
             limits:
               cpu: "1000m"              # max 1 vCPU
-              memory: "512Mi"           # max 512MB (JVM usa ~200MB + headroom)
+              memory: "512Mi"           # cap atual; o Native usa ~80MiB (superdimensionado) — ver subseção abaixo
 
       # Distribui pods entre nós disponíveis (alta disponibilidade)
       topologySpreadConstraints:
@@ -648,6 +651,32 @@ spec:
             matchLabels:
               app: kanban-vision-api
 ```
+
+### Perf-parameters de runtime — Native (produção) vs JVM (dev/fallback)
+
+> **Reconciliação:** os exemplos de Dockerfile/Deployment acima ilustram o **padrão JVM**. A
+> produção real roda **GraalVM Native Image** (ADR-0031/0032): imagem Oracle Linux 9 slim, **sem
+> javaagent**, `ENTRYPOINT ["/app/kanban-vision-api", "-Djava.io.tmpdir=/tmp",
+> "-Dio.ktor.internal.disable.sfg=true"]`, startup ~0,12 s. Não há `-jar`, `-javaagent` nem
+> `JAVA_TOOL_OPTIONS` no binário nativo.
+
+**Native (produção).** GC/heap: defaults do SubstrateVM (Serial GC), sem `-Xmx`. Footprint medido
+~40–82 MiB (`docs/quality/performance-baseline-2026-07-native.md`). Tuning de GC/heap do nativo →
+skill `/graalvm` seção 8.
+
+**JVM (fat-jar — dev e eventual fallback).** Prefira **`-XX:MaxRAMPercentage`** (cgroup-aware) a
+`-Xmx` fixo — o JDK ≥ 17 lê o limite do container. GC default do Temurin 25 = **G1** (adequado a
+512Mi). O pico *sem limite* medido foi ~640 MiB; sob o cap de 512Mi é obrigatório
+`MaxRAMPercentage≈75` (via `JAVA_TOOL_OPTIONS`) ou há risco de OOM.
+
+**Sizing do container.** Native e JVM diferem ~5–8× de footprint → `requests`/`limits` do k8s têm
+de refletir o **artefato real**. Os `256Mi`/`512Mi` atuais foram dimensionados para JVM e ficam
+**superdimensionados** para o nativo (~80 MiB de pico). Right-size é candidato — mas exige validar
+headroom sob carga + margem de spike, e por ser NFR passa por **ADR** (card GAP-BR). Método: medir
+`container_memory_working_set_bytes` sob o baseline k6 (ADR-0027) + margem.
+
+**HPA.** Com o nativo, a memória fica ~15 % de 512Mi e quase não dispara o autoscaler de memória
+(target 80 %) — na prática **a CPU (target 70 %) é quem escala**. Reavaliar os targets ao right-size.
 
 ### service.yml
 
