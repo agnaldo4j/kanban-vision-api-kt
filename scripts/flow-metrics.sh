@@ -48,15 +48,19 @@ query($owner:String!, $name:String!, $first:Int!) {
 
 # --- Board WIP snapshot (Doing / Todo counts) -------------------------------
 # Distinguish "board unavailable" from a genuine zero — a failed lookup must not
-# masquerade as a WIP-limit-respected signal.
+# masquerade as a WIP-limit-respected signal. Surface a short, token-safe reason
+# so a missing read:project scope is diagnosable from the report itself.
+wip_err_file="$(mktemp)"
 if wip_json="$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" \
-      --format json --limit 200 2>/dev/null)"; then
-  wip_ok=1
+      --format json --limit 200 2>"$wip_err_file")"; then
+  wip_ok=1; wip_err=""
 else
   wip_ok=0; wip_json='{"items":[]}'
+  wip_err="$(tr '\n' ' ' <"$wip_err_file" | sed 's/  */ /g' | cut -c1-200)"
 fi
+rm -f "$wip_err_file"
 
-PRS_TSV="$prs_tsv" WIP_JSON="$wip_json" WIP_OK="$wip_ok" \
+PRS_TSV="$prs_tsv" WIP_JSON="$wip_json" WIP_OK="$wip_ok" WIP_ERR="$wip_err" \
 WINDOW="$WINDOW" PROJECT_NUMBER="$PROJECT_NUMBER" python3 - <<'PY'
 import json, os, datetime
 
@@ -106,6 +110,8 @@ if os.environ["WIP_OK"] == "1":
     print(f"- WIP snapshot (board #{os.environ['PROJECT_NUMBER']}): "
           f"Doing=**{doing}** (limit 1), Todo=**{todo}**")
 else:
+    reason = os.environ.get("WIP_ERR", "").strip()
+    suffix = f": {reason}" if reason else " — not a zero-WIP signal"
     print(f"- WIP snapshot (board #{os.environ['PROJECT_NUMBER']}): "
-          f"**unavailable** (board query failed — not a zero-WIP signal)")
+          f"**unavailable** (board query failed{suffix})")
 PY
