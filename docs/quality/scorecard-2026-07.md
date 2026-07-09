@@ -1,19 +1,31 @@
 # Quality Scorecard — July 2026 (re-score after GAP-BD..BI)
 
-Full re-score of the 18-skill Quality-Analysis scorecard on `main` @ `f157674`, after the
-GAP-BD..BI cycle (PRs #261–#266) closed the four dimensions that had been below 9.0. Each score
-was re-assessed against the current codebase with the corresponding `/skill` rubric and the live
-CI signals. This file is the in-repo, immutable snapshot (ADR-0023) and the source for the wiki
+Full re-score on `main` @ `f157674`, after the GAP-BD..BI cycle (PRs #261–#266) closed the four
+dimensions that had been below 9.0. Each score was re-assessed against the current codebase with
+the corresponding `/skill` rubric and the live CI signals. This pass also **adds four previously
+untracked dimensions** (Security, Performance efficiency, GraalVM, Circular-dependency control) —
+skills that exist in `.claude/skills/` but were absent from the scorecard — taking it from 18 to
+**22 skills**. This file is the in-repo, immutable snapshot (ADR-0023) and the source for the wiki
 `Quality-Analysis` page.
 
-## Overall — 9.30 / 10
+## Overall — 9.12 / 10
 
-**Method (new, reproducible):** the overall is the **simple arithmetic mean of the 18 dimension
-scores** — recomputable by anyone from the table below. The previously-published *9.4* was an
-editorial figure, not the mean (the mean of the prior scores was **9.16**). Adopting the
-transparent mean, the improvements move the headline **9.16 → 9.30**.
+**Method (reproducible):** the overall is the **simple arithmetic mean of the dimension scores** —
+recomputable from the table (`200.7 / 22 = 9.12`). The previously-published *9.4* was an editorial
+figure, not a mean.
 
-## 18-skill scorecard
+Two things move the headline this cycle, in opposite directions:
+- The GAP-BD..BI improvements raise the **18-skill** transparent mean **9.16 → 9.30**.
+- **Adding the four untracked dimensions** (avg 8.33) lowers the **22-skill** mean to **9.12** —
+  the scorecard's blind spots (Circular-dependency 7.8, Performance 8.0, Security 8.5) were
+  flattering the average by omission. This is the scorecard becoming honest, not a regression.
+
+> Overlap note: **GraalVM** overlaps Infra + Performance, and **Circular-dependency control**
+> overlaps Clean Architecture + Refactoring (both reviewers flagged shared evidence). Excluding
+> those two overlapping rows, the **20-skill** mean is **9.20** — a useful reference for readers
+> who prefer non-overlapping dimensions.
+
+## 22-skill scorecard
 
 | # | Skill | Dimension | Prev | New | Δ |
 |---|---|---|---|---|---|
@@ -35,8 +47,12 @@ transparent mean, the improvements move the headline **9.16 → 9.30**.
 | 16 | c4-model | Architecture docs | 9.0 | 9.0 | — |
 | 17 | xp-kanban | Engineering practices | 8.7 | **9.4** | +0.7 |
 | 18 | definition-of-done | DoD | 9.0 | **9.2** | +0.2 |
+| 19 | owasp | **Security** | — | **8.5** | new |
+| 20 | load-testing | **Performance efficiency** | — | **8.0** | new |
+| 21 | graalvm | **GraalVM / Native runtime** | — | **9.0** | new |
+| 22 | circular-dependency-control | **Circular-dependency control** | — | **7.8** | new |
 
-**Mean = 167.4 / 18 = 9.30.** Seven dimensions rose; eleven held with no regression.
+**Mean = 200.7 / 22 = 9.12.** Seven dimensions rose; eleven held; four added.
 
 ## What moved, and why (evidence)
 
@@ -48,15 +64,30 @@ transparent mean, the improvements move the headline **9.16 → 9.30**.
   ports+adapters (zero references remain), GAP-BE made the `Decision` write-path `when` exhaustive
   with compile-anchored safety-net tests.
 - **Microservices/Modular 8.4 → 8.8** — the named cap (no context-boundary fitness function) is
-  closed by GAP-BG's `ContextBoundaryTest` (enforces one-way `simulation → kanban`); GAP-BF removed
-  dead cross-context ports. **Still below 9.0** by design — see residual debt.
-- **Evolutionary Change 8.8 → 9.2** — the flow-feedback layer now exists (GAP-BI:
-  `scripts/flow-metrics.sh` + `flow-2026-07.md` + non-blocking `flow-metrics` CI job + Grafana
-  panel); PR-size is machine-measured (GAP-BH `pr-size`); revert-on-red documented (GAP-BD). Held
-  below 9.3: a single baseline point, refreshed manually.
-- **DDD 9.6 / Refactoring 9.2 / DoD 9.2** — repository ports now exist only for aggregate roots
-  (GAP-BF); −605 lines of dead code removed (GAP-BF); PR-template/CI gate alignment + CODEOWNERS
-  (GAP-BD).
+  closed by GAP-BG's `ContextBoundaryTest`; GAP-BF removed dead cross-context ports. Still below
+  9.0 by design — see residual debt.
+- **Evolutionary Change 8.8 → 9.2** — the flow-feedback layer now exists (GAP-BI); PR-size is
+  machine-measured (GAP-BH); revert-on-red documented (GAP-BD). Held below 9.3: single baseline,
+  refreshed manually.
+- **DDD 9.6 / Refactoring 9.2 / DoD 9.2** — ports only for aggregate roots (GAP-BF); −605 lines of
+  dead code removed (GAP-BF); PR-template/CI gate alignment + CODEOWNERS (GAP-BD).
+
+### New dimensions added (were untracked)
+- **Security 8.5** — defense-in-depth, CI-enforced: JWT Bearer, all `/api/v1` under
+  `authenticate("jwt-auth")`, Exposed DSL (no raw SQL), fail-closed StatusPages, blocking
+  osv-scanner SCA + CycloneDX SBOM (ADR-0025), Detekt ForbiddenImport SAST, `guard-security.sh`
+  hook. Below 9 by concrete residuals (see candidate gaps).
+- **Performance efficiency 8.0** — reproducible k6 baseline (p95 ~22 ms, ~1,644 req/s, 0% failures;
+  ADR-0027) + four comparative runtime baselines; GraalVM native (~0.12 s startup). Capped: single
+  point-in-time baseline, manual (not a PR gate), no stress/soak/spike profiles.
+- **GraalVM / Native runtime 9.0** — Native Image is the production artifact (app + migration
+  binaries, ADR-0030→0032), disciplined reachability metadata, measured ~9× startup / −79–94% mem.
+  Overlaps Infra + Performance (evidence shared). Native-path debt remains.
+- **Circular-dependency control 7.8** — Gradle/layer/context cycles structurally prevented
+  (Konsist directional rules + `ContextBoundaryTest` + DIP ports). Capped: **no dedicated
+  whole-graph cycle detector** — cycle-freedom is emergent from the layer rules, so intra-package
+  class↔class cycles are uncovered; a documented organization↔simulation trade-off is managed by
+  prose. Overlaps Clean Architecture + Refactoring.
 
 Gap → dimension map: BD → XP/Kanban + Evolutionary + DoD · BE → SOLID · BF → SOLID + Modular +
 Refactoring + DDD · BG → Modular · BH → Evolutionary · BI → Evolutionary + XP/Kanban.
@@ -72,29 +103,31 @@ Refactoring + DDD · BG → Modular · BH → Evolutionary · BI → Evolutionar
 - **Architecture fitness:** Konsist **14/14** fitness functions (Hexagonal, Ports placement,
   Conventions, Domain purity, Context boundary).
 - **Supply chain:** CycloneDX SBOM + osv-scanner SCA, **blocking** (ADR-0025); 1 documented exception.
+- **Performance:** k6 baseline p95 ~22 ms, ~1,644 req/s (ADR-0027, manual).
 - **Process:** `main` branch protection on (3 blocking checks, enforce_admins, linear history);
   CI jobs `quality` · `supply-chain` · `pr-size` (non-blocking) · `flow-metrics` (non-blocking) ·
   `build`.
-- **Runtime (prior baselines):** GraalVM Native Image — ~0.12 s startup, ~74 MiB RSS (ADR-0030→0032).
+- **Runtime:** GraalVM Native Image — ~0.12 s startup, ~74 MiB RSS (ADR-0030→0032).
 
 ## Residual debt & candidate gaps for the next cycle
 
-The only dimension still below 9.0 is **Microservices/Modular (8.8)**: the two bounded contexts
-share one `domain` module as a coarse shared kernel with compile-level cross-context references
-(`Scenario` holds a concrete `Board`; `SimulationEngine` imports kanban types; one unified DB
-schema with cross-context FKs). This is **intentional, deferred `[E]` structural debt** — raising
-it requires an ADR-approved extraction (context module split / ACL), a genuine candidate for a
-future cycle, not a quick fix.
+The lowest dimensions are now the honestly-surfaced ones — strong candidates for GitHub Project #6
+(ADR-0023: the board is the single source of progress; this snapshot records state, it does not
+schedule work):
 
-Other watch-items surfaced by the review (candidates, not executed here):
-- Primitive-obsession on identity — entity IDs are raw `String` rather than typed `@JvmInline`
-  value objects (`BoardId`/`CardId`) — DDD.
-- `OpenApi.kt:13` `@Suppress("LongMethod")` lacks the justifying comment the quality rule requires.
-- No automated dead-code detector to prevent port/adapter dead-code recurrence — Refactoring.
-- Stale doc references to the removed `JdbcBoardRepository` in `docs/politicas-explicitas.md` and
-  `.claude/rules/architecture.md` "Known Pitfalls" — doc hygiene.
-- k8s manifests not validated by a CI gate (kubeconform); no image-layer vuln scan (SCA is
-  SBOM-based only) — Infra.
-
-> These candidates belong on GitHub Project #6 as future gaps (ADR-0023: the board is the single
-> source of progress). This snapshot records the state; it does not schedule the work.
+- **Security (8.5) — highest-value candidates:** JWT `validate{}` verifies only the audience, not
+  an `organizationId` claim, and use cases have **no caller-vs-resource ownership check** →
+  IDOR / cross-tenant risk. Swagger UI (`/swagger`, `/api.json`) is mounted **unconditionally**
+  (not gated by `ENABLE_SWAGGER`). No HSTS header. Rate limit keyed on a spoofable first
+  `X-Forwarded-For`; no stricter `/auth/*` limit.
+- **Circular-dependency (7.8):** no purpose-built cycle detector (add a Konsist "no package cycles"
+  assertion); resolve the documented organization↔simulation trade-off.
+- **Performance (8.0):** no automated regression signal (single baseline); add stress/soak/spike
+  profiles.
+- **GraalVM (9.0):** `DomainErrorResponse` serialization fails on the native **error path**
+  (reachability-metadata gap — previously noted, still uncarded); native all-route smoke is manual.
+- **Microservices (8.8):** intentional `[E]` structural debt — the two contexts share one `domain`
+  module (Scenario holds a concrete `Board`; one unified schema). Raising it needs an ADR-approved
+  extraction, not a quick fix.
+- **Doc hygiene:** stale references to the removed `JdbcBoardRepository` in
+  `docs/politicas-explicitas.md` and `.claude/rules/architecture.md`.
