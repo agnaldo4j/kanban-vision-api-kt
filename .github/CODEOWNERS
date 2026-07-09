@@ -1,0 +1,10 @@
+# Code owners — every change is reviewed by the maintainer.
+#
+# `main` is branch-protected, but code-owner review is NOT a required gate:
+# this is a single-maintainer repository, and GitHub forbids approving your
+# own pull request, so requiring a code-owner approval would deadlock every
+# merge. This file therefore documents ownership rather than blocking merges.
+# (Enforcement of "green before merge / all work via PR" comes from the
+# required status checks + linear history on `main`, not from this file.)
+
+*                 @agnaldo4j
