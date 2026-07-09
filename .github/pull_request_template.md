@@ -1,72 +1,73 @@
 ## ADR
 
 > Fill in if this PR implements an architectural decision:
-> Decisão documentada em: `adr/ADR-NNNN-slug.md` _(or N/A)_
+> Decision documented in: `adr/ADR-NNNN-slug.md` _(or N/A)_
 
 ---
 
-## Contexto
+## Context
 
-> 1–3 frases sobre o problema ou gap que motiva este PR.
+> 1–3 sentences on the problem or gap that motivates this PR.
 
 ---
 
-## O que muda
+## What changes
 
 -
 -
 
 ---
 
-## Checklist de Qualidade
+## Quality Checklist
 
 ### Pipeline
-- [ ] `./gradlew testAll` verde localmente (Detekt + KtLint + testes + JaCoCo ≥ 95%)
-- [ ] Zero violações Detekt (`warningsAsErrors = true`)
-- [ ] Zero erros KtLint (`./gradlew ktlintFormat` executado antes do commit)
-- [ ] Cobertura JaCoCo ≥ 95% em todos os módulos afetados
-- [ ] PR ≤ 400 linhas alteradas
+- [ ] `./gradlew testAll` green locally (Detekt + KtLint + tests + JaCoCo ≥ 98%)
+- [ ] Zero Detekt violations (`warningsAsErrors = true`)
+- [ ] Zero KtLint errors (`./gradlew ktlintFormat` run before commit)
+- [ ] JaCoCo coverage ≥ 98% on every affected module
+- [ ] PR ≤ 400 changed lines
+- [ ] Squash-merge only; `main` is branch-protected (required checks + linear history)
 
-### Arquitetura
-- [ ] Dependency Rule respeitada: `domain ← usecases ← http_api / sql_persistence`
-- [ ] Zero imports de framework em `domain/` ou `usecases/` (exceto Arrow-kt)
-- [ ] Repository interfaces definidas em `usecases/repositories/`, implementações em `sql_persistence/`
-- [ ] Erros de domínio modelados como `Either<DomainError, T>` — sem exceções não tratadas
+### Architecture
+- [ ] Dependency Rule respected: `domain ← usecases ← http_api / sql_persistence`
+- [ ] Zero framework imports in `domain/` or `usecases/` (except Arrow-kt)
+- [ ] Repository interfaces defined in `usecases/repositories/`, implementations in `sql_persistence/`
+- [ ] Domain errors modelled as `Either<DomainError, T>` — no unhandled exceptions
 
-### Segurança e Dados
-- [ ] Sem secrets, tokens ou PII no código ou logs
-- [ ] `JWT_DEV_MODE=true` não presente em código de produção
+### Security & Data
+- [ ] No secrets, tokens or PII in code or logs
+- [ ] `JWT_DEV_MODE=true` absent from production code
 
-### Observabilidade
-- [ ] `requestId` propagado no MDC em novas rotas (se aplicável, ou N/A)
-- [ ] Novos erros de domínio mapeados em `StatusPages` (se aplicável, ou N/A)
-- [ ] Métricas existentes não foram quebradas (`/metrics` responde sem erro)
+### Observability
+- [ ] `requestId` propagated in the MDC on new routes (if applicable, or N/A)
+- [ ] New domain errors mapped in `StatusPages` (if applicable, or N/A)
+- [ ] Existing metrics not broken (`/metrics` responds without error)
 
-### Rastreabilidade
-- [ ] Branch segue convenção: `feat/gap-X-slug`, `fix/...`, `docs/...`
-- [ ] Commits com mensagens descritivas e referência ao gap/ticket
-- [ ] Se ADR aplicável: status atualizado para `Aceita` e campo `PR` preenchido
+### Traceability
+- [ ] Branch follows the convention: `feat/gap-X-slug`, `fix/...`, `docs/...`
+- [ ] Commits with descriptive messages and a reference to the gap/ticket
+- [ ] If an ADR applies: status updated to `accepted` and the `PR` field filled in
 
-### ADR-only checklist (preencher se este PR implementa uma ADR)
-- [ ] Plano de implementação com todas as tarefas marcadas `[x]`
-- [ ] Todos os itens do DOD confirmados ou marcados N/A com justificativa
-- [ ] Diagramas C4 atualizados se novo módulo, rota ou use case foi adicionado
+### ADR-only checklist (fill in if this PR implements an ADR)
+- [ ] Implementation plan with every task marked `[x]`
+- [ ] All DoD items confirmed or marked N/A with justification
+- [ ] C4 diagrams updated if a new module, route or use case was added
 
-### Bug Fix (preencher apenas se este PR é um `fix/`)
-- [ ] Reprodução mínima do bug documentada no corpo do PR
-- [ ] Teste de regressão adicionado que falharia sem o fix: _(nome do teste)_
-- [ ] Causa raiz identificada
-
----
-
-## Plano de Testes
-
-- [ ] Testes unitários: _(descreva os cenários — happy path + erro)_
-- [ ] Testes de integração: _(descreva os boundaries testados)_
-- [ ] CI pipeline verde no PR
+### Bug Fix (fill in only if this PR is a `fix/`)
+- [ ] Minimal reproduction of the bug documented in the PR body
+- [ ] Regression test added that would fail without the fix: _(test name)_
+- [ ] Root cause identified
 
 ---
 
-> Para features complexas, verifique o checklist `/definition-of-done` completo antes de marcar como Done.
+## Test Plan
+
+- [ ] Unit tests: _(describe the scenarios — happy path + error)_
+- [ ] Integration tests: _(describe the boundaries tested)_
+- [ ] CI pipeline green on the PR
+
+---
+
+> For complex features, run the full `/definition-of-done` checklist before marking as Done.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

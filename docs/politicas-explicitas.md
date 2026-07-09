@@ -122,6 +122,22 @@ AFTER THE PR IS MERGED:
 > an *open* PR closes it without merging. Always verify `state=MERGED` and a non-null `mergedAt`
 > first; the merge commit lands on `main`, so a `git pull` that stays "up to date" is a warning sign.
 
+### Rollback — revert-on-red
+
+If a merged change breaks `main` (a required check goes red on `main`, or a defect ships), **revert
+forward** — never rewrite history:
+
+```
+1. git checkout main && git pull origin main
+2. git checkout -b fix/revert-<gap-or-pr>          (from updated main)
+3. git revert -m 1 <merge-commit-sha>              (-m 1 keeps main's first parent)
+4. Open a fix/ PR, let it go green, merge it (squash).
+5. File a regression card on the board describing the failure.
+```
+
+Never force-push `main` and never edit or move a Done card — Done is immutable (§3); the fix is a
+*new* card and a *new* forward commit. Reverting is a normal, blameless operation.
+
 Board #6 is the **only** source of truth for progress (ADR-0023). Never record progress in ADRs —
 they are immutable once accepted.
 
@@ -196,12 +212,21 @@ fails CI, not just review. See [Wiki → Fitness Functions](https://github.com/a
 | Docs branch | `docs/short-description` |
 | Base | Always from an updated `main` (`git checkout main && git pull origin main`) |
 | Lifetime | Delete immediately after a **confirmed** merge (see §5) |
-| Direct push to `main` | **NEVER** — all work goes through a PR |
-| Force push to `main` | **NEVER** |
+| Merge method | **Squash and merge only** — `main` enforces linear history |
+| Direct push to `main` | **NEVER** — enforced by branch protection (all work goes through a PR) |
+| Force push to `main` | **NEVER** — enforced by branch protection |
 
 Merges are always **manual and human-reviewed** — including Dependabot PRs. When a Dependabot PR
 needs a human fix, push the commit onto its branch directly and do **not** comment `@dependabot
 rebase` afterwards (it discards the commit).
+
+**`main` is branch-protected** — this is no longer discipline alone. A PR cannot merge until the
+required checks are green (`Quality Gates`, `Supply Chain (SBOM + SCA)`, `Build & Push Image`), the
+branch is up to date with `main`, review threads are resolved, and history stays linear (squash).
+Direct and force pushes to `main` are blocked, for admins too. Required approvals are set to **0**
+by design: this is a single-maintainer repo and GitHub forbids self-approval, so "green before
+merge / all work via PR" is what is enforced — not a review count (`.github/CODEOWNERS` documents
+ownership without gating).
 
 ---
 
