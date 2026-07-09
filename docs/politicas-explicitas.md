@@ -130,7 +130,8 @@ forward** — never rewrite history:
 ```
 1. git checkout main && git pull origin main
 2. git checkout -b fix/revert-<gap-or-pr>          (from updated main)
-3. git revert -m 1 <merge-commit-sha>              (-m 1 keeps main's first parent)
+3. git revert <squash-commit-sha>                  (squash merges land a single-parent
+                                                    commit on main — revert it directly, no -m)
 4. Open a fix/ PR, let it go green, merge it (squash).
 5. File a regression card on the board describing the failure.
 ```
