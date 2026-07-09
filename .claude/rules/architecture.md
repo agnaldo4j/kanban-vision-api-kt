@@ -14,9 +14,9 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 
 ## Modules
 
-- **domain** — Pure Kotlin. Zero framework dependencies. `Board` is the Aggregate Root for Board Management: `Board.addColumn(name)` enforces column name uniqueness per board; `Board.addCard(column, title, description)` validates the column belongs to the board. Contains board entities (`Board`, `Card`, `Column`), simulation entities, value objects (`BoardId`, `CardId`, `ColumnId`, `TenantId`, `ScenarioId`, `WorkItemId`).
+- **domain** — Pure Kotlin. Zero framework dependencies. `Board` is the Aggregate Root for Board Management: `Board.addStep(name, requiredAbility)` enforces unique **step** name per board; `Board.addCard(step, title, description)` validates the step belongs to the board. Contains board entities (`Board`, `Card`, `Step`), simulation entities (`Simulation`, `Scenario`, `DailySnapshot`, sealed `Decision`), and typed refs in `Refs.kt` (`BoardRef`, `StepRef`, `SimulationRef`, `ScenarioRef`).
 - **usecases** — Application layer. CQS pattern: each use case accepts one `Command` (mutates) or `Query` (reads). Repository interfaces (ports) live under `repositories/` — NOT in domain.
-- **sql_persistence** — JDBC + HikariCP. Implements all ports. Flyway migrations: `V1__initial_schema.sql`, `V2__add_indexes_and_constraints.sql`, `V3__unique_column_name_per_board.sql` (UNIQUE on `columns(board_id, name)`). JSON serialization via `kotlinx.serialization` surrogate classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
+- **sql_persistence** — **Exposed DSL** + HikariCP (no raw JDBC). Implements the three repository ports (`Organization`, `Simulation`, `Snapshot` — the Board/Card/Step ports were removed in GAP-BF). Flyway migrations: `V1__initial_schema.sql` (all tables + FK indexes + CHECK constraints, incl. `UNIQUE(steps.board_id, steps.name)`) and `V2__jsonb_simulation_blobs.sql` (TEXT→JSONB, ADR-0013). There is no `V3`. JSON serialization via `kotlinx.serialization` surrogate classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
 - **http_api** — Ktor (Netty) + Koin DI. `Main.kt` wires everything. Plugins: Observability, Authentication (JWT Bearer), Metrics (Micrometer), RateLimit (100 req/min), Serialization, StatusPages, Routing, OpenApi. `AppModule` binds implementations to ports.
 
 ## Key Conventions
@@ -201,7 +201,7 @@ transaction {
 
 ## Known Pitfalls
 
-- **Board aggregate hydration**: `JdbcBoardRepository.findById()` returns `Board(columns = emptyList())`. Use cases must load existing columns/cards and build a hydrated board (`board.copy(columns = existingColumns)`) before calling `board.addColumn()` / `board.addCard()`. Same for `Column(cards = emptyList())` before `board.addCard()`.
+- **Board management not wired**: after GAP-BF there is no `Board`/`Step`/`Card` repository or use case — the `Board` aggregate exists (invariants exercised by domain tests) but has no persistence. If Board management is wired later, load existing steps/cards and hydrate (`board.copy(steps = existingSteps)`) before calling `board.addStep()` / `board.addCard()`.
 - **`raise()` inside `either {}`**: member of `Raise<E>` — available implicitly inside the DSL block. Do NOT `import arrow.core.raise.raise` — it is not a top-level function.
 - **JWT_DEV_MODE**: `POST /auth/token` only mounted when `JWT_DEV_MODE=true`. Never true in production.
 - **Prometheus metric naming**: `Counter.builder("kanban.simulation.days.executed")` → `kanban_simulation_days_executed_total`.

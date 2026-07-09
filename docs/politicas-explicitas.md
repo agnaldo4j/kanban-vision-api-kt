@@ -197,7 +197,7 @@ change, that is a decision — open an ADR (e.g. ADR-0029 raised coverage from 9
 | CQS | Each use case takes exactly one `Command` (mutates) or `Query` (reads) and exposes `execute(...): Either<DomainError, T>` — never loose primitives. |
 | Typed errors | Errors are `Either<DomainError, T>` — no exceptions for control flow. |
 | Aggregate Root | Use cases don't enforce invariants directly — they delegate to the aggregate (`Board`, `Simulation`). |
-| Board hydration | `JdbcBoardRepository.findById()` returns a `Board` with `steps = emptyList()`. Use cases must hydrate (`board.copy(steps = …)`) before calling `addStep`/`addCard`. |
+| Board management not wired | After GAP-BF there is no `Board`/`Step`/`Card` repository or use case; the `Board` aggregate is exercised only by domain tests. If wired later, hydrate (`board.copy(steps = …)`) before calling `addStep`/`addCard`. |
 
 All of the first four are **enforced by Konsist fitness functions** in `architecture/` — a violation
 fails CI, not just review. See [Wiki → Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions).
