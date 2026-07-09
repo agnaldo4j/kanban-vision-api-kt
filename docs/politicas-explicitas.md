@@ -1,181 +1,247 @@
-# Políticas Explícitas — Kanban Vision API
+# Explicit Policies & Contributor Guide — Kanban Vision API
 
-> **Princípio Kanban**: Políticas invisíveis criam comportamentos imprevisíveis.
-> Políticas explícitas e visíveis permitem que qualquer membro do time — humano ou LLM —
-> tome decisões consistentes sem precisar perguntar a cada vez.
+> **Kanban principle:** invisible policies create unpredictable behaviour. Explicit, visible
+> policies let any team member — human or AI agent — make consistent decisions without asking
+> every time.
 
-Estas políticas são a **fonte canônica de verdade** sobre como o trabalho flui neste projeto.
-Estão versionadas em `docs/politicas-explicitas.md` e referenciadas no `CLAUDE.md`.
-Qualquer mudança deve ser feita via PR com justificativa explícita.
+This document has two jobs:
+
+1. **Learn from the project** — a guided tour of what this codebase demonstrates and how to study it.
+2. **Contribute to the project** — the explicit policies that govern how work flows, from pulling a
+   card to merging a PR.
+
+It is the **canonical source of truth** for how work happens here, referenced from `CLAUDE.md` and
+`README.md`. Any change goes through a PR with an explicit rationale (see §11).
+
+> The deep technical reference lives in the [project wiki](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki);
+> decisions live in [`adr/`](../adr); progress lives on [GitHub Project #6](https://github.com/users/agnaldo4j/projects/6).
+> This file is the *process and orientation* layer that ties them together.
 
 ---
 
-## 1. Board — Critérios de Step
+## 1. Start here — orient yourself
+
+If you are new, read in this order. Each step builds the mental model for the next.
+
+1. **[README](../README.md)** — one-screen overview, tech stack, quick start.
+2. **[Wiki → Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture)** — the C4 view, the five modules, the Dependency Rule.
+3. **Run it locally** — `JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build`, then mint a token via `POST /auth/token` (mounted only in dev mode), open Swagger at `http://localhost:8080/swagger`, and drive one simulation end to end. The simulation routes require a JWT, so `JWT_DEV_MODE=true` is what makes the dev token endpoint available. For a fast JVM loop see the [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide).
+4. **Read one vertical slice** — follow a single request through the layers: a route in `http_api/…/routes/SimulationRoutes.kt` → a use case in `usecases/…/simulation/` → the domain aggregate/service in `domain/…/model/` → a repository in `sql_persistence/…/repositories/`.
+5. **This document** — the policies below, so your first PR fits the flow.
+
+### The mental model in one paragraph
+
+A **Kanban flow simulator** exposed as a versioned REST API. The core is a **pure domain** (`Board` and `Simulation` aggregates, a deterministic `SimulationEngine` service) with **zero framework dependencies**. Application logic is **CQS use cases** returning `Either<DomainError, T>`. Adapters (Ktor HTTP, JDBC/Exposed persistence) sit at the edges. Everything the architecture promises is **enforced by tests** (Konsist fitness functions) and **verified in CI** (coverage, mutation, static analysis, supply-chain scanning). Production ships as a **GraalVM Native Image**.
+
+---
+
+## 2. What this project demonstrates (and how to study it)
+
+This is a reference implementation for a broad set of engineering practices. Each row below is a
+capability you can learn here, with a pointer to where to look. This is the "evaluate all the
+qualities" map — use it to decide what to study or where to contribute.
+
+| Quality | What to learn | Where to look |
+|---|---|---|
+| **Clean / Hexagonal Architecture** | Strict Dependency Rule, ports & adapters, layer boundaries that don't erode | `architecture/` fitness tests · [Wiki → Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) |
+| **Domain-Driven Design** | Rich aggregates with invariants, value objects, a pure domain service, sealed domain errors/events, ubiquitous language | `domain/src/main/…/model/` · [Wiki → Architecture Domain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Domain) · `/ddd` skill |
+| **Functional + OO Kotlin** | `Either`/`Raise`, immutability, pure functions, sealed hierarchies over null-guards, deterministic engine pipeline | Arrow-kt usage across `usecases/` and `domain/` · ADR-0018 · `/fp-oo-kotlin` skill |
+| **Testing rigour** | A real test pyramid: pure unit, property-based (Kotest), integration (embedded Postgres), route (`testApplication`), contract (Pact) | `*/src/test/` · [Wiki → Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) |
+| **Mutation testing** | Using PITest to measure *test effectiveness*, not just coverage | `*/build.gradle.kts` PITest config · [Wiki → Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) |
+| **Architecture fitness functions** | Encoding architecture rules as executable Konsist tests that fail CI | `architecture/src/test/` · [Wiki → Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions) · ADR-0026 |
+| **Observability** | Metrics (Micrometer/Prometheus), traces (OTel SDK, **no javaagent**), structured logs with trace correlation, health checks | `http_api/…/plugins/Telemetry.kt`, `Metrics.kt` · [Wiki → Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) · ADR-0031 |
+| **Supply-chain security** | CycloneDX SBOM + osv-scanner SCA as a blocking gate, with a disciplined exception policy | `osv-scanner.toml` · [Wiki → Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) · ADR-0025 |
+| **GraalVM Native Image** | AOT compilation, reachability metadata, the JIT↔AOT trade-off, a native migration binary | `Dockerfile` · [Wiki → GraalVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM) · ADR-0030/0032 |
+| **The JVM toolchain** | One-JDK model (Java 25), a Gradle convention plugin, configuration cache | `buildSrc/` · [Wiki → JVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/JVM) · ADR-0024 |
+| **Performance engineering** | A k6 load journey, an immutable-baseline policy, runtime comparisons | `load/` · `docs/quality/` · [Wiki → Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) · ADR-0027 |
+| **Decision records & evolutionary change** | MADR ADRs, immutability, one-gap-per-session, J-curve safety | [`adr/`](../adr) · ADR-0023 · `/evolutionary-change` skill |
+
+> **How to read a decision:** every non-trivial choice has an ADR in `adr/` (MADR format). Start
+> from the ADR to understand *why*, then follow its *Confirmation* section to the gate that keeps
+> the decision true. ADRs are immutable — a changed decision is a new ADR that supersedes the old.
+
+---
+
+## 3. The board — step criteria
+
+Progress is tracked only on [GitHub Project #6](https://github.com/users/agnaldo4j/projects/6) (ADR-0023).
 
 ### Backlog
-**Entrada**: identificado como gap, melhoria ou tarefa, independente de prioridade.
-**Saída para Todo**: precisa de todas as condições abaixo:
-- [ ] Escopo definido (1-2 frases claras)
-- [ ] Tipo classificado: `[N]` normativo, `[M]` médio, `[E]` estrutural
-- [ ] Se `[E]`: ADR com status `Aceita` já existe
-- [ ] Dependências anteriores concluídas (ex.: GAP-G antes de GAP-O)
+**Entry:** anything identified as a gap, improvement or task, regardless of priority.
+**Exit to Todo** requires all of:
+- [ ] Scope defined (1–2 clear sentences)
+- [ ] Type classified: `[N]` normative, `[M]` medium, `[E]` structural (see §6)
+- [ ] If `[E]`: an ADR with status `accepted` already exists
+- [ ] Prerequisite items completed
 
 ### Todo
-**WIP limit**: sem limite fixo — mas apenas o item **no topo** é o próximo a ser puxado.
-**Entrada**: passou pelos critérios de saída do Backlog.
-**Saída para Doing**: quando uma sessão LLM inicia **e** não há item em Doing.
-**Ordem**: itens são priorizados de cima para baixo. O topo = maior prioridade.
+**WIP:** no fixed limit — but only the item **at the top** is next to pull.
+**Order:** items are prioritised top-to-bottom. Top = highest priority; the order *is* the plan.
 
 ### Doing
-**WIP limit: 1** — nunca mais de um item em Doing simultaneamente.
-**Entrada**: puxado do topo do Todo no início de uma sessão LLM.
-**Saída para Done**: PR mergeado em `main` + branch deletada + `main` atualizado localmente.
-**Bloqueio**: se o item travar (bloqueio técnico, dependência externa), documentar o bloqueio
-no card e mover de volta para Todo com nota de bloqueio — não deixar em Doing parado.
+**WIP limit: 1** — never more than one item in Doing at a time.
+**Entry:** pulled from the top of Todo at the start of a session.
+**Exit to Done:** PR merged to `main` + branch deleted + local `main` updated.
+**Blocked:** if an item stalls, document the blocker on the card and move it back to Todo — never leave it parked in Doing.
 
 ### Done
-**Entrada**: PR mergeado + branch deletada + `main` local atualizado.
-**Imutável**: itens em Done nunca retrocedem. Se surgir regressão, cria-se um novo card.
+**Entry:** PR merged + branch deleted + local `main` updated.
+**Immutable:** Done items never move back. A regression becomes a *new* card.
 
 ---
 
-## 2. Pull Policy — Como Iniciar Trabalho
+## 4. Pull policy — how to start work
 
 ```
-INÍCIO DE SESSÃO LLM:
-  1. gh project item-list 6 --owner agnaldo4j → verificar se há item em Doing
-  2. Se há item em Doing → continuar aquele item (não iniciar novo)
-  3. Se Doing está vazio → puxar o PRIMEIRO item do topo de Todo
-  4. Mover o item para Doing (atualizar GitHub Project via gh api graphql)
-  5. Criar branch: git checkout -b feat/gap-X-slug (a partir de main atualizado)
-  6. Reler CLAUDE.md + arquivos alvo antes de escrever qualquer código
+START OF A WORK SESSION:
+  1. gh project item-list 6 --owner agnaldo4j   → is there an item in Doing?
+  2. If Doing has an item      → continue that item (do not start a new one)
+  3. If Doing is empty         → pull the FIRST item from the top of Todo
+  4. Move the item to Doing    (update GitHub Project via gh api graphql)
+  5. Branch from an updated main: git checkout -b feat/gap-X-slug
+  6. Re-read CLAUDE.md + the target files before writing any code
 ```
 
-**Regra de ouro**: nunca escolha qual item iniciar com base no que parece mais fácil
-ou mais interessante. Sempre o **topo do Todo**. A prioridade já foi decidida.
+**Golden rule:** never pick an item because it looks easier or more interesting. Always the **top of
+Todo** — the priority was already decided. (Board and field IDs are in `.claude/rules/workflow.md`.)
 
 ---
 
-## 3. Política de Encerramento — Como Fechar Trabalho
+## 5. Closing policy — how to finish work
 
 ```
-APÓS MERGE DO PR:
-  1. git checkout main && git pull origin main
-  2. git branch -d feat/gap-X-slug
-  3. git push origin --delete feat/gap-X-slug (se necessário)
-  4. Mover card no GitHub Project: Doing → Done (via gh api graphql)
-  5. Encerrar a sessão LLM
-
-O board #6 é a ÚNICA fonte de verdade de progresso (ADR-0023).
-Nunca registrar progresso em ADRs — elas são imutáveis após aceitas.
+AFTER THE PR IS MERGED:
+  1. Confirm the merge:  gh pr view <N> --json state,mergedAt   → state=MERGED, mergedAt not null
+  2. git checkout main && git pull origin main
+  3. git branch -d feat/gap-X-slug
+  4. git push origin --delete feat/gap-X-slug   (if the remote branch still exists)
+  5. Move the card Doing → Done (via gh api graphql)
 ```
+
+> **Never delete the remote branch of a PR that is not confirmed merged** — deleting the branch of
+> an *open* PR closes it without merging. Always verify `state=MERGED` and a non-null `mergedAt`
+> first; the merge commit lands on `main`, so a `git pull` that stays "up to date" is a warning sign.
+
+Board #6 is the **only** source of truth for progress (ADR-0023). Never record progress in ADRs —
+they are immutable once accepted.
 
 ---
 
-## 4. Políticas de Qualidade (J-Curve Safety Limits)
+## 6. Quality gates (J-curve safety limits)
 
-Estas políticas são **não negociáveis**. O CI as enforça automaticamente.
-Nenhum PR pode ser mergeado se qualquer uma delas for violada.
+These are **non-negotiable** and enforced automatically. No PR merges if any is violated.
 
-| Política | Limite | Enforçado por |
+| Policy | Limit | Enforced by |
 |---|---|---|
-| Cobertura de instruções JaCoCo | ≥ 97% por módulo | CI — bloqueia merge |
-| Detekt violations | 0 (`warningsAsErrors = true`) | CI — bloqueia merge |
-| KtLint formatting | 0 erros | CI — bloqueia merge |
-| `./gradlew testAll` | verde | CI — bloqueia merge |
-| PITest mutation score | domain ≥ 58% · usecases ≥ 55% | CI — bloqueia merge |
-| Fitness functions de arquitetura (Konsist) | 8/8 verdes (ADR-0026) | CI — via `testAll` |
-| SCA supply chain (osv-scanner sobre SBOM) | 0 CVEs não tratadas; exceção só com `reason` no `osv-scanner.toml` (ADR-0025) | CI — job `supply-chain` bloqueia a imagem |
-| Tamanho de PR | ≤ 400 linhas alteradas | Heurística — acima, dividir |
-| WIP (itens em Doing) | máximo 1 | Política de pull |
-| Gaps por sessão LLM | máximo 1 | Protocolo de sessão |
+| JaCoCo instruction coverage | **≥ 98%** per module (ADR-0029) | CI — blocks merge |
+| Detekt violations | 0 (`warningsAsErrors = true`) | CI — blocks merge |
+| KtLint formatting | 0 errors | CI — blocks merge |
+| `./gradlew testAll` | green | CI — blocks merge |
+| PITest mutation score | `domain` **≥ 78** · `usecases` **≥ 55** · `sql_persistence` **≥ 65** · `http_api` **≥ 45** | CI (`domain`+`usecases` mandatory) |
+| Architecture fitness functions (Konsist) | all green (ADR-0026) | CI — via `testAll` |
+| Supply-chain SCA (osv-scanner over the SBOM) | 0 untreated CVEs; exceptions only with a `reason` in `osv-scanner.toml` (ADR-0025) | CI — `supply-chain` job blocks the image |
+| PR size | ≤ 400 changed lines | Heuristic — split if larger |
+| WIP (items in Doing) | max 1 | Pull policy |
+| Gaps per session | max 1 | Session protocol |
 
-**Regra absoluta**: nunca editar `detekt.yml`, `.editorconfig`, `build.gradle.kts`,
-`gradle.properties` ou o convention plugin para contornar uma violação. Corrija o código.
+**Absolute rule:** never edit `detekt.yml`, `.editorconfig`, `build.gradle.kts`, `gradle.properties`
+or the convention plugin to bypass a violation. **Fix the code.** If a threshold genuinely needs to
+change, that is a decision — open an ADR (e.g. ADR-0029 raised coverage from 97% to 98%).
 
 ---
 
-## 5. Políticas de ADR
+## 7. ADR policy
 
-> Fonte: [ADR-0023](../adr/ADR-0023-politica-adrs-imutabilidade-madr.md) — imutabilidade + MADR 4.0.
+> Source: [ADR-0023](../adr/ADR-0023-politica-adrs-imutabilidade-madr.md) — immutability + MADR 4.0.
 
-| Tipo de gap | Política |
+| Gap type | Policy |
 |---|---|
-| `[N]` Normativo | Execute diretamente. Sem ADR obrigatória. |
-| `[M]` Médio | 1 sessão de design + 1 PR focado. ADR recomendada se novo conceito. |
-| `[E]` Estrutural | ADR com status `accepted` **antes de qualquer código**. Sem ADR = fica no Backlog. |
+| `[N]` Normative | Execute directly. No ADR required. |
+| `[M]` Medium | 1 design session + 1 focused PR. ADR recommended if it introduces a new concept. |
+| `[E]` Structural | ADR with status `accepted` **before any code**. No ADR ⇒ it stays in Backlog. |
 
-**ADR-first**: nenhum gap `[E]` pode entrar em Todo sem ADR aprovada.
-
-**Regras de forma e ciclo de vida (ADR-0023):**
-
-- **Imutabilidade**: ADR aceita nunca é editada; mudança de decisão = nova ADR que supersede
-  (a antiga só ganha a linha `superseded by ADR-XXXX`).
-- **Uma decisão por ADR**, ~1 página; só decisões arquiteturalmente significativas.
-- **Template MADR 4.0** para ADRs novas, com seção *Confirmation* apontando o gate que verifica a decisão.
-- **Separação de camadas**: decisão em `adr/` · planejamento no board #6 · medição no CI + `docs/quality/`.
-  ADR referencia essas camadas por link, nunca as contém (sem checkboxes, scores ou ordem de execução).
+**Form & lifecycle (ADR-0023):**
+- **Immutable** — an accepted ADR is never edited; a changed decision is a *new* ADR that supersedes it (the old one only gains a `superseded by ADR-XXXX` line).
+- **One decision per ADR**, ~1 page, only architecturally significant choices.
+- **MADR 4.0 template**, with a *Confirmation* section pointing at the gate that verifies the decision.
+- **Layer separation** — decisions in `adr/` · planning on Project #6 · measurement in CI + `docs/quality/`. An ADR links to these; it never contains checklists, scores, or execution order.
 
 ---
 
-## 6. Políticas de Sessão LLM
+## 8. Architecture policy
 
-| Política | Regra |
+| Policy | Rule |
 |---|---|
-| Contexto | Reler CLAUDE.md + arquivos alvo no início de cada sessão |
-| Escopo | Implementar apenas o gap planejado — sem "enquanto estamos aqui" |
-| Limite de arquivos | Se o PR tocar > 5 arquivos de camadas distintas: parar e dividir |
-| Encerramento | Fechar a sessão após o PR estar pronto para revisão |
-| Sinal de esgotamento | LLM cria helpers desnecessários, esquece padrões ou sugere refatorações off-topic |
+| Dependency Rule | `http_api → usecases → domain`; `sql_persistence → domain/usecases`; `http_api → sql_persistence` for DI wiring only. Imports point inward. |
+| Domain purity | Zero framework imports in `domain/` (Ktor, Koin, Exposed, JDBC, serialization, logging, …). |
+| Ports location | Repository interfaces live in `usecases/repositories/` — **never** in `domain/`. |
+| Adapter isolation | Concrete `Jdbc*`/`Exposed*` repositories may be imported only in `di/AppModule.kt` (Konsist `ConventionsTest`, ADR-0028). Detekt `ForbiddenImport` covers security imports (`ObjectInputStream`, `MessageDigest`). |
+| CQS | Each use case takes exactly one `Command` (mutates) or `Query` (reads) and exposes `execute(...): Either<DomainError, T>` — never loose primitives. |
+| Typed errors | Errors are `Either<DomainError, T>` — no exceptions for control flow. |
+| Aggregate Root | Use cases don't enforce invariants directly — they delegate to the aggregate (`Board`, `Simulation`). |
+| Board hydration | `JdbcBoardRepository.findById()` returns a `Board` with `steps = emptyList()`. Use cases must hydrate (`board.copy(steps = …)`) before calling `addStep`/`addCard`. |
+
+All of the first four are **enforced by Konsist fitness functions** in `architecture/` — a violation
+fails CI, not just review. See [Wiki → Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions).
 
 ---
 
-## 7. Política de Branches
+## 9. Branch policy
 
-| Convenção | Padrão |
+| Convention | Pattern |
 |---|---|
-| Branch de gap | `feat/gap-X-slug` (ex.: `feat/gap-j-pagination`) |
-| Branch de ADR | `feat/adr-NNNN-slug` |
-| Branch de fix | `fix/descricao-curta` |
-| Branch de docs | `docs/descricao-curta` |
-| Base | Sempre criada a partir de `main` atualizado (`git pull origin main`) |
-| Lifetime | Deletar imediatamente após merge |
-| Push direto em main | **NUNCA** — todo trabalho vai via PR |
-| Force push em main | **NUNCA** |
+| Gap branch | `feat/gap-X-slug` (e.g. `feat/gap-j-pagination`) |
+| ADR branch | `feat/adr-NNNN-slug` |
+| Fix branch | `fix/short-description` |
+| Docs branch | `docs/short-description` |
+| Base | Always from an updated `main` (`git checkout main && git pull origin main`) |
+| Lifetime | Delete immediately after a **confirmed** merge (see §5) |
+| Direct push to `main` | **NEVER** — all work goes through a PR |
+| Force push to `main` | **NEVER** |
+
+Merges are always **manual and human-reviewed** — including Dependabot PRs. When a Dependabot PR
+needs a human fix, push the commit onto its branch directly and do **not** comment `@dependabot
+rebase` afterwards (it discards the commit).
 
 ---
 
-## 8. Políticas de Arquitetura
+## 10. Session & communication policy
 
-| Política | Regra |
+| Situation | Policy |
 |---|---|
-| Dependency Rule | `domain ← usecases ← adapters` — imports só apontam para dentro |
-| Domain purity | Zero imports de framework em `domain/` |
-| Ports location | Interfaces de repositório em `usecases/repositories/` — nunca em `domain/` |
-| ForbiddenImport | `Jdbc*Repository` não pode ser importado fora de `AppModule` (Detekt rule) |
-| CQS | Cada use case aceita exatamente um `Command` ou `Query` — nunca primitivos avulsos |
-| Either para erros | Erros modelados como `Either<DomainError, T>` — sem exceções para controle de fluxo |
-| Aggregate Root | Use cases não enforçam invariantes diretamente — delegam ao Aggregate Root |
-| Board hydration | `JdbcBoardRepository.findById()` retorna Board com `steps = emptyList()`. Use cases devem hidratar antes de chamar `board.addStep()` / `board.addCard()` |
+| Context | Re-read `CLAUDE.md` + the target files at the start of every session |
+| Scope | Implement only the planned gap — no "while we're here" changes |
+| File spread | If a PR touches > 5 files across distinct layers, stop and split |
+| Definition of Done | Verify the DoD before marking anything complete (`/definition-of-done` skill) |
+| Architecture change | Open an ADR *before* implementing — never surprise reviewers in the PR |
+| Regression found | Create a card immediately — never ignore it |
+| Technical blocker | Document it on the card and move it back to Todo — never park it in Doing |
+| Policy disagreement | Change this file via PR — policy changes by consensus, not silently |
 
 ---
 
-## 9. Políticas de Comunicação
+## 11. How to contribute — a checklist
 
-| Situação | Política |
-|---|---|
-| Mudança de arquitetura | Abrir ADR antes de implementar — nunca surpresa no PR |
-| Regressão descoberta | Criar card no board imediatamente — nunca ignorar |
-| Bloqueio técnico | Documentar no card e mover de volta para Todo — nunca deixar em Doing parado |
-| Divergência de política | Discutir via PR neste arquivo — a política muda via consenso, não silenciosamente |
+1. **Pick work from the top of Todo** (§4) — or open an issue/card first if you're proposing something new. Structural (`[E]`) work needs an accepted ADR before code (§7).
+2. **Branch** from an updated `main` (§9).
+3. **Build the mental model** — read the relevant vertical slice (§1) before writing code.
+4. **Write the code and its tests together** — match the surrounding style; new behaviour needs unit + (where it applies) property/integration/route tests. Keep the domain pure.
+5. **Run the gates locally** before pushing:
+   ```bash
+   ./gradlew ktlintFormat        # auto-fix formatting
+   ./gradlew testAll             # Detekt + KtLint + JaCoCo 98% + tests + Konsist
+   ./gradlew pitestAll           # mutation gates (slower; CI runs domain+usecases)
+   ```
+6. **Open a PR** ≤ 400 lines with a clear rationale. CI runs `quality`, `supply-chain`, and `build` (with an image smoke test). Address review comments; keep threads resolved.
+7. **After a confirmed merge**, close out (§5): delete the branch and move the card to Done.
+
+> Quality thresholds and config files are never edited to pass a gate (§6). If a gate is genuinely
+> wrong for a change, that's a conversation — raise it in the PR or an ADR, don't work around it.
 
 ---
 
-## Referências
+## References
 
-- Skill: [xp-kanban](../.claude/skills/xp-kanban/SKILL.md)
-- Skill: [evolutionary-change](../.claude/skills/evolutionary-change/SKILL.md)
-- Skill: [definition-of-done](../.claude/skills/definition-of-done/SKILL.md)
-- GitHub Project #6: https://github.com/users/agnaldo4j/projects/6
-- ADR-0004: [`adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md`](../adr/ADR-0004-avaliacao-qualidade-gaps-priorizados.md)
-- CLAUDE.md — seção "Kanban Board Protocol"
+- Wiki: [Home](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki) · [Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) · [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis)
+- Skills: [`xp-kanban`](../.claude/skills/xp-kanban/SKILL.md) · [`evolutionary-change`](../.claude/skills/evolutionary-change/SKILL.md) · [`definition-of-done`](../.claude/skills/definition-of-done/SKILL.md)
+- [GitHub Project #6](https://github.com/users/agnaldo4j/projects/6) · [ADR index](../adr) · `CLAUDE.md` (Kanban Board Protocol)
