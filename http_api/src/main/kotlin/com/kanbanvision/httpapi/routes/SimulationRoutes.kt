@@ -252,7 +252,7 @@ private fun RouteConfig.applyGetDailySnapshotResponses() {
     }
 }
 
-private suspend fun ApplicationCall.handleCreateSimulation(createSimulation: CreateSimulationUseCase) {
+internal suspend fun ApplicationCall.handleCreateSimulation(createSimulation: CreateSimulationUseCase) {
     val callerOrganizationId = callerOrganizationId() ?: return
     val request = receive<CreateSimulationRequest>()
     createSimulation
@@ -273,7 +273,7 @@ private suspend fun ApplicationCall.handleCreateSimulation(createSimulation: Cre
         )
 }
 
-private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimulationUseCase) {
+internal suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimulationUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
@@ -284,7 +284,7 @@ private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimula
     }
 }
 
-private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
+internal suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
@@ -312,13 +312,14 @@ private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
 
 private suspend fun ApplicationCall.requiredDayParam(): Int? {
     val dayStr = requiredPathParam("day", "Missing day") ?: return null
-    return dayStr.toIntOrNull() ?: run {
+    val day = dayStr.toIntOrNull()
+    if (day == null) {
         respondWithDomainError(DomainError.ValidationError("Day must be an integer"))
-        null
     }
+    return day
 }
 
-private suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: GetDailySnapshotUseCase) {
+internal suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: GetDailySnapshotUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
     val day = requiredDayParam() ?: return
     val callerOrganizationId = callerOrganizationId() ?: return

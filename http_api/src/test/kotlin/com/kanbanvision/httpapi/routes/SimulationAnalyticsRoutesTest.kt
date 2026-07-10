@@ -4,7 +4,12 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
+import com.kanbanvision.httpapi.TEST_JWT_ISSUER
+import com.kanbanvision.httpapi.TEST_JWT_REALM
+import com.kanbanvision.httpapi.TEST_JWT_SECRET
 import com.kanbanvision.httpapi.fixtureSnapshot
+import com.kanbanvision.httpapi.plugins.configureAuthentication
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.withJwt
 import com.kanbanvision.usecases.simulation.CfdDataPoint
@@ -12,6 +17,7 @@ import com.kanbanvision.usecases.simulation.CfdResult
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.authenticate
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
@@ -122,12 +128,17 @@ class SimulationAnalyticsRoutesTest {
             val mocks = SimulationApiMocks()
             application {
                 configureSerialization()
+                // Rota autenticada sem {simulationId}: passa o guard de tenancy (principal presente
+                // via withJwt) e exercita o requiredPathParam faltante → 400.
+                configureAuthentication(TEST_JWT_SECRET, TEST_JWT_ISSUER, TEST_JWT_AUDIENCE, TEST_JWT_REALM)
                 routing {
-                    get("/test/days-no-id") { call.handleGetSimulationDays(mocks.getSimulationDaysUseCase) }
+                    authenticate("jwt-auth") {
+                        get("/test/days-no-id") { call.handleGetSimulationDays(mocks.getSimulationDaysUseCase) }
+                    }
                 }
             }
 
-            val response = client.get("/test/days-no-id")
+            val response = client.get("/test/days-no-id") { withJwt().invoke(this) }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             assertTrue(response.bodyAsText().contains("Missing simulation id"))
@@ -139,12 +150,15 @@ class SimulationAnalyticsRoutesTest {
             val mocks = SimulationApiMocks()
             application {
                 configureSerialization()
+                configureAuthentication(TEST_JWT_SECRET, TEST_JWT_ISSUER, TEST_JWT_AUDIENCE, TEST_JWT_REALM)
                 routing {
-                    get("/test/cfd-no-id") { call.handleGetSimulationCfd(mocks.getSimulationCfdUseCase) }
+                    authenticate("jwt-auth") {
+                        get("/test/cfd-no-id") { call.handleGetSimulationCfd(mocks.getSimulationCfdUseCase) }
+                    }
                 }
             }
 
-            val response = client.get("/test/cfd-no-id")
+            val response = client.get("/test/cfd-no-id") { withJwt().invoke(this) }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             assertTrue(response.bodyAsText().contains("Missing simulation id"))

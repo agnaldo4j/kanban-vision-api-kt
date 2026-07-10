@@ -30,24 +30,31 @@ suspend fun ApplicationCall.requiredPathParam(
 
 /**
  * Resolve o organizationId do JWT do chamador (fonte da verdade de tenancy). O plugin de
- * autenticação já garante a presença do claim — `validate` rejeita tokens sem ele — então o
- * caminho nulo é defensivo: responde 401 (fail closed) em vez de assumir acesso (security.md §A10).
+ * autenticação (`validate`) já rejeita tokens sem o claim ou com claim em branco, então aqui basta
+ * tratar a ausência de principal — caminho defensivo (rota mal-configurada fora de `authenticate`):
+ * responde 401 (fail closed) em vez de assumir acesso (security.md §A10). Um claim eventualmente em
+ * branco que escapasse ainda é barrado pela validação de `isNotBlank` na query/command a jusante.
  */
 suspend fun ApplicationCall.callerOrganizationId(): String? {
-    val organizationId =
-        principal<JWTPrincipal>()
-            ?.payload
-            ?.getClaim("organizationId")
-            ?.asString()
-            ?.takeIf { it.isNotBlank() }
+    val principal = principal<JWTPrincipal>()
+    if (principal == null) {
+        respondMissingOrganization()
+        return null
+    }
+    val organizationId = principal.payload.getClaim("organizationId").asString()
     if (organizationId == null) {
-        val requestId = attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
-        respond(
-            HttpStatusCode.Unauthorized,
-            DomainErrorResponse(error = "Missing organization context", requestId = requestId),
-        )
+        respondMissingOrganization()
+        return null
     }
     return organizationId
+}
+
+private suspend fun ApplicationCall.respondMissingOrganization() {
+    val requestId = attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
+    respond(
+        HttpStatusCode.Unauthorized,
+        DomainErrorResponse(error = "Missing organization context", requestId = requestId),
+    )
 }
 
 suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {

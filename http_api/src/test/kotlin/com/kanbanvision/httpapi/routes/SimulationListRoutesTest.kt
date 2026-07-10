@@ -2,6 +2,8 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.left
 import arrow.core.right
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
@@ -16,14 +18,21 @@ import com.kanbanvision.httpapi.withJwt
 import com.kanbanvision.usecases.Page
 import com.kanbanvision.usecases.simulation.queries.ListSimulationsQuery
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.slot
 import kotlinx.serialization.json.Json
+import java.util.Date
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -41,8 +50,9 @@ class SimulationListRoutesTest {
 
             application { configureSimulationApi(mocks) }
 
+            // page e size numéricos válidos exercitam os ramos não-nulos de toIntOrNull.
             val response =
-                client.get("/api/v1/simulations") {
+                client.get("/api/v1/simulations?page=1&size=20") {
                     withJwt().invoke(this)
                 }
 
@@ -167,6 +177,41 @@ class SimulationListRoutesTest {
             }
 
             val response = client.get("/test/list-no-principal")
+
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+            assertTrue(response.bodyAsText().contains("Missing organization context"))
+        }
+
+    @Test
+    fun `given principal without organizationId claim when listing then handler fails closed`() =
+        testApplication {
+            val mocks = SimulationApiMocks()
+            application {
+                configureSerialization()
+                // Provider custom que aceita o token SEM o claim organizationId (contorna o validate
+                // real, que rejeitaria) — exercita o ramo principal-presente-claim-ausente do guard.
+                authentication {
+                    jwt("no-claim") {
+                        verifier(JWT.require(Algorithm.HMAC256(TEST_JWT_SECRET)).withIssuer(TEST_JWT_ISSUER).build())
+                        validate { JWTPrincipal(it.payload) }
+                    }
+                }
+                routing {
+                    authenticate("no-claim") {
+                        get("/test/list-no-claim") { call.handleListSimulations(mocks.listSimulationsUseCase) }
+                    }
+                }
+            }
+            val tokenWithoutOrg =
+                JWT
+                    .create()
+                    .withIssuer(TEST_JWT_ISSUER)
+                    .withSubject("tester")
+                    .withExpiresAt(Date(System.currentTimeMillis() + 60_000L))
+                    .sign(Algorithm.HMAC256(TEST_JWT_SECRET))
+
+            val response =
+                client.get("/test/list-no-claim") { header(HttpHeaders.Authorization, "Bearer $tokenWithoutOrg") }
 
             assertEquals(HttpStatusCode.Unauthorized, response.status)
             assertTrue(response.bodyAsText().contains("Missing organization context"))
