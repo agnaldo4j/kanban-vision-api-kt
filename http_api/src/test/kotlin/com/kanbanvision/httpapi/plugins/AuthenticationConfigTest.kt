@@ -109,12 +109,61 @@ class AuthenticationConfigTest {
             assertEquals(HttpStatusCode.Unauthorized, response.status)
         }
 
+    @Test
+    fun `given jwt without organizationId claim when authenticating then validate rejects credential`() =
+        testApplication {
+            environment {
+                config =
+                    MapApplicationConfig(
+                        "jwt.secret" to TEST_JWT_SECRET,
+                        "jwt.issuer" to TEST_JWT_ISSUER,
+                        "jwt.audience" to TEST_JWT_AUDIENCE,
+                        "jwt.realm" to TEST_JWT_REALM,
+                    )
+            }
+            application {
+                configureSerialization()
+                configureStatusPages()
+                configureAuthentication()
+                routing { authenticate("jwt-auth") { get("/check") { call.respondText("ok") } } }
+            }
+
+            // Sem claim organizationId → rejeitado (tenancy obrigatória, GAP-BJ).
+            val missing =
+                client.get("/check") { header(HttpHeaders.Authorization, "Bearer ${jwtWithoutOrganization()}") }
+            assertEquals(HttpStatusCode.Unauthorized, missing.status)
+
+            // Claim organizationId em branco → também rejeitado.
+            val blank =
+                client.get("/check") { header(HttpHeaders.Authorization, "Bearer ${jwtWithBlankOrganization()}") }
+            assertEquals(HttpStatusCode.Unauthorized, blank.status)
+        }
+
     private fun wrongAudienceJwt(): String =
         JWT
             .create()
             .withAudience("wrong-audience")
             .withIssuer(TEST_JWT_ISSUER)
             .withSubject("tester")
+            .withExpiresAt(Date(System.currentTimeMillis() + 60_000L))
+            .sign(Algorithm.HMAC256(TEST_JWT_SECRET))
+
+    private fun jwtWithoutOrganization(): String =
+        JWT
+            .create()
+            .withAudience(TEST_JWT_AUDIENCE)
+            .withIssuer(TEST_JWT_ISSUER)
+            .withSubject("tester")
+            .withExpiresAt(Date(System.currentTimeMillis() + 60_000L))
+            .sign(Algorithm.HMAC256(TEST_JWT_SECRET))
+
+    private fun jwtWithBlankOrganization(): String =
+        JWT
+            .create()
+            .withAudience(TEST_JWT_AUDIENCE)
+            .withIssuer(TEST_JWT_ISSUER)
+            .withSubject("tester")
+            .withClaim("organizationId", "")
             .withExpiresAt(Date(System.currentTimeMillis() + 60_000L))
             .sign(Algorithm.HMAC256(TEST_JWT_SECRET))
 }

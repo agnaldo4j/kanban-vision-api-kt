@@ -152,7 +152,6 @@ class DtoMappingPropertyTest {
                 iterations = 300,
                 arbitrary {
                     CreateSimulationRequest(
-                        organizationId = "org-${Arb.int(1..999).bind()}",
                         wipLimit = Arb.int(1..100).bind(),
                         teamSize = Arb.int(1..50).bind(),
                         seedValue = Arb.long().bind(),

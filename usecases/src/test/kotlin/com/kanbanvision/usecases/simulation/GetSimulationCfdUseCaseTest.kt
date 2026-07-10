@@ -5,6 +5,7 @@ import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationCfdQuery
 import io.mockk.coEvery
@@ -17,8 +18,9 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class GetSimulationCfdUseCaseTest {
+    private val simulationRepository = mockk<SimulationRepository>()
     private val snapshotRepository = mockk<SnapshotRepository>()
-    private val useCase = GetSimulationCfdUseCase(snapshotRepository)
+    private val useCase = GetSimulationCfdUseCase(simulationRepository, snapshotRepository)
 
     @Test
     fun `given simulation with snapshots when building cfd then series accumulates throughput correctly`() =
@@ -32,9 +34,10 @@ class GetSimulationCfdUseCaseTest {
                         day = 2,
                     ).copy(metrics = FlowMetrics(throughput = 2, wipCount = 4, blockedCount = 0, avgAgingDays = 1.5)),
                 )
+            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
             coEvery { snapshotRepository.findAllBySimulation("sim-1") } returns snapshots.right()
 
-            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1"))
+            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))
 
             assertTrue(result.isRight())
             val cfd = result.getOrNull()!!
@@ -51,10 +54,12 @@ class GetSimulationCfdUseCaseTest {
     @Test
     fun `given simulation with no snapshots when building cfd then empty series is returned`() =
         runTest {
+            coEvery { simulationRepository.findById("sim-empty") } returns
+                fixtureSimulation(id = "sim-empty", organizationId = "org-1").right()
             coEvery { snapshotRepository.findAllBySimulation("sim-empty") } returns
                 emptyList<DailySnapshot>().right()
 
-            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-empty"))
+            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-empty", callerOrganizationId = "org-1"))
 
             assertTrue(result.isRight())
             val cfd = result.getOrNull()!!
@@ -77,9 +82,10 @@ class GetSimulationCfdUseCaseTest {
                         day = 2,
                     ).copy(metrics = FlowMetrics(throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.0)),
                 )
+            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
             coEvery { snapshotRepository.findAllBySimulation("sim-1") } returns snapshots.right()
 
-            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1"))
+            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))
 
             assertTrue(result.isRight())
             val series = result.getOrNull()!!.series
@@ -94,7 +100,7 @@ class GetSimulationCfdUseCaseTest {
     @Test
     fun `given blank simulation id when building cfd then validation error is returned`() =
         runTest {
-            val result = useCase.execute(GetSimulationCfdQuery(simulationId = ""))
+            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -102,12 +108,25 @@ class GetSimulationCfdUseCaseTest {
         }
 
     @Test
+    fun `given simulation of another organization when building cfd then forbidden is returned`() =
+        runTest {
+            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-owner").right()
+
+            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = "org-attacker"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.Forbidden>(result.leftOrNull())
+            coVerify(exactly = 0) { snapshotRepository.findAllBySimulation(any()) }
+        }
+
+    @Test
     fun `given persistence error when building cfd then error is propagated`() =
         runTest {
+            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
             coEvery { snapshotRepository.findAllBySimulation("sim-1") } returns
                 DomainError.PersistenceError("db error").left()
 
-            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1"))
+            val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

@@ -1,6 +1,7 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.httpapi.adapters.callerOrganizationId
 import com.kanbanvision.httpapi.adapters.requiredPathParam
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
@@ -23,16 +24,12 @@ private const val DEFAULT_PAGE_SIZE = 20
 internal fun listSimulationsSpec(): RouteConfig.() -> Unit =
     {
         operationId = "listSimulations"
-        summary = "Lista simulações paginadas de uma organização"
+        summary = "Lista simulações paginadas da organização do chamador"
         tags("simulations")
-        description = "Retorna a lista paginada de simulações para a organização informada via parâmetro organizationId."
+        description = "Retorna a lista paginada de simulações da organização do chamador (derivada do claim " +
+            "organizationId do JWT). O escopo de tenancy vem sempre do token, nunca de parâmetro de query."
         applyBearerAuthSecurity()
         request {
-            queryParameter<String>("organizationId") {
-                description = "UUID da organização."
-                required = true
-                example("default") { value = "550e8400-e29b-41d4-a716-446655440000" }
-            }
             queryParameter<Int>("page") {
                 description = "Número da página (padrão 1, mínimo 1)."
                 required = false
@@ -85,6 +82,7 @@ internal fun getSimulationDaysSpec(): RouteConfig.() -> Unit =
                 example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
         }
+        applyCrossTenantForbiddenResponse()
         applySimulationDaysResponses()
     }
 
@@ -102,6 +100,7 @@ internal fun getSimulationCfdSpec(): RouteConfig.() -> Unit =
                 example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
         }
+        applyCrossTenantForbiddenResponse()
         applySimulationCfdResponses()
     }
 
@@ -154,9 +153,7 @@ private fun RouteConfig.applySimulationCfdResponses() {
 }
 
 internal suspend fun ApplicationCall.handleListSimulations(listSimulations: ListSimulationsUseCase) {
-    val organizationId =
-        request.queryParameters["organizationId"]
-            ?: return respondWithDomainError(DomainError.ValidationError("Missing organizationId"))
+    val organizationId = callerOrganizationId() ?: return
     val pageParam = request.queryParameters["page"]
     val page =
         if (pageParam == null) {
@@ -181,20 +178,26 @@ internal suspend fun ApplicationCall.handleListSimulations(listSimulations: List
 
 internal suspend fun ApplicationCall.handleGetSimulationDays(getSimulationDays: GetSimulationDaysUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
+    val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
-        getSimulationDays.execute(GetSimulationDaysQuery(simulationId = simulationId)).fold(
-            ifLeft = { error -> respondWithDomainError(error) },
-            ifRight = { snapshots -> respond(snapshots.toDaysResponse(simulationId)) },
-        )
+        getSimulationDays
+            .execute(GetSimulationDaysQuery(simulationId = simulationId, callerOrganizationId = callerOrganizationId))
+            .fold(
+                ifLeft = { error -> respondWithDomainError(error) },
+                ifRight = { snapshots -> respond(snapshots.toDaysResponse(simulationId)) },
+            )
     }
 }
 
 internal suspend fun ApplicationCall.handleGetSimulationCfd(getSimulationCfd: GetSimulationCfdUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
+    val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
-        getSimulationCfd.execute(GetSimulationCfdQuery(simulationId = simulationId)).fold(
-            ifLeft = { error -> respondWithDomainError(error) },
-            ifRight = { result -> respond(result.toResponse()) },
-        )
+        getSimulationCfd
+            .execute(GetSimulationCfdQuery(simulationId = simulationId, callerOrganizationId = callerOrganizationId))
+            .fold(
+                ifLeft = { error -> respondWithDomainError(error) },
+                ifRight = { result -> respond(result.toResponse()) },
+            )
     }
 }

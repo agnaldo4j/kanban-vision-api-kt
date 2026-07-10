@@ -13,12 +13,14 @@ private const val MIN_DAY = 1
 data class GetDailySnapshotQuery(
     val simulationId: String,
     val day: Int,
+    val callerOrganizationId: String,
 ) : Query {
     override fun validate(): Either<DomainError.ValidationError, Unit> =
         either<NonEmptyList<DomainError.ValidationError>, Unit> {
             zipOrAccumulate(
                 { ensure(simulationId.isNotBlank()) { DomainError.ValidationError("Simulation id must not be blank") } },
                 { ensure(day >= MIN_DAY) { DomainError.ValidationError("Day must be at least 1") } },
-            ) { _, _ -> }
+                { ensure(callerOrganizationId.isNotBlank()) { DomainError.ValidationError("Caller organization id must not be blank") } },
+            ) { _, _, _ -> }
         }.mapLeft { errors -> DomainError.ValidationError(errors.map { it.message }) }
 }

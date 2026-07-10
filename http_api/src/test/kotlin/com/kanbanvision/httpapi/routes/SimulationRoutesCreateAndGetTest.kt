@@ -3,7 +3,9 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.httpapi.issueTestJwt
 import com.kanbanvision.httpapi.withJwt
+import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -14,6 +16,7 @@ import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.slot
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,7 +29,8 @@ class SimulationRoutesCreateAndGetTest {
     fun `given valid create simulation request when posting to simulations endpoint then api returns created response`() =
         testApplication {
             val mocks = SimulationApiMocks()
-            coEvery { mocks.createSimulationUseCase.execute(any()) } returns "sim-123".right()
+            val commandSlot = slot<CreateSimulationCommand>()
+            coEvery { mocks.createSimulationUseCase.execute(capture(commandSlot)) } returns "sim-123".right()
 
             application { configureSimulationApi(mocks) }
 
@@ -34,13 +38,36 @@ class SimulationRoutesCreateAndGetTest {
                 client.post("/api/v1/simulations") {
                     withJwt().invoke(this)
                     contentType(ContentType.Application.Json)
-                    setBody("""{"organizationId":"org-1","wipLimit":2,"teamSize":3,"seedValue":10}""")
+                    setBody("""{"wipLimit":2,"teamSize":3,"seedValue":10}""")
                 }
 
             assertEquals(HttpStatusCode.Created, response.status)
             val payload = json.decodeFromString<SimulationCreatedResponse>(response.bodyAsText())
             assertEquals("sim-123", payload.simulationId)
+            // Tenancy: a organização vem do JWT (org-1), nunca do corpo (GAP-BJ).
+            assertEquals("org-1", commandSlot.captured.organizationId)
             coVerify(exactly = 1) { mocks.createSimulationUseCase.execute(any()) }
+        }
+
+    @Test
+    fun `given create request with spoofed organization in body when posting then command uses the token organization`() =
+        testApplication {
+            val mocks = SimulationApiMocks()
+            val commandSlot = slot<CreateSimulationCommand>()
+            coEvery { mocks.createSimulationUseCase.execute(capture(commandSlot)) } returns "sim-321".right()
+
+            application { configureSimulationApi(mocks) }
+
+            val response =
+                client.post("/api/v1/simulations") {
+                    withJwt(issueTestJwt(organizationId = "org-1")).invoke(this)
+                    contentType(ContentType.Application.Json)
+                    // Corpo tenta forjar outra organização — deve ser ignorado.
+                    setBody("""{"organizationId":"org-attacker","wipLimit":2,"teamSize":3,"seedValue":10}""")
+                }
+
+            assertEquals(HttpStatusCode.Created, response.status)
+            assertEquals("org-1", commandSlot.captured.organizationId)
         }
 
     @Test
@@ -49,7 +76,7 @@ class SimulationRoutesCreateAndGetTest {
             val mocks = SimulationApiMocks()
             coEvery {
                 mocks.createSimulationUseCase.execute(any())
-            } returns DomainError.ValidationError("Organization id must not be blank").left()
+            } returns DomainError.ValidationError("WIP limit must be at least 1").left()
 
             application { configureSimulationApi(mocks) }
 
@@ -57,11 +84,11 @@ class SimulationRoutesCreateAndGetTest {
                 client.post("/api/v1/simulations") {
                     withJwt().invoke(this)
                     contentType(ContentType.Application.Json)
-                    setBody("""{"organizationId":"","wipLimit":1,"teamSize":1,"seedValue":10}""")
+                    setBody("""{"wipLimit":0,"teamSize":1,"seedValue":10}""")
                 }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
-            assertTrue(response.bodyAsText().contains("Organization id must not be blank"))
+            assertTrue(response.bodyAsText().contains("WIP limit must be at least 1"))
         }
 
     @Test
@@ -74,7 +101,7 @@ class SimulationRoutesCreateAndGetTest {
                 client.post("/api/v1/simulations") {
                     withJwt().invoke(this)
                     contentType(ContentType.Application.Json)
-                    setBody("""{"organizationId":"org-1","wipLimit":}""")
+                    setBody("""{"wipLimit":}""")
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
@@ -115,5 +142,21 @@ class SimulationRoutesCreateAndGetTest {
 
             assertEquals(HttpStatusCode.NotFound, response.status)
             assertTrue(response.bodyAsText().contains("Simulation not found"))
+        }
+
+    @Test
+    fun `given simulation of another organization when requesting by id then api returns forbidden`() =
+        testApplication {
+            val mocks = SimulationApiMocks()
+            coEvery {
+                mocks.getSimulationUseCase.execute(any())
+            } returns DomainError.Forbidden("Simulation does not belong to the caller's organization").left()
+
+            application { configureSimulationApi(mocks) }
+
+            val response = client.get("/api/v1/simulations/sim-1") { withJwt().invoke(this) }
+
+            assertEquals(HttpStatusCode.Forbidden, response.status)
+            assertTrue(response.bodyAsText().contains("Forbidden"))
         }
 }

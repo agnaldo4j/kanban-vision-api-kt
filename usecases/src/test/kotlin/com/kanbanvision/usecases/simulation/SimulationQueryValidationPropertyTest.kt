@@ -17,7 +17,20 @@ class SimulationQueryValidationPropertyTest {
     fun `RunDayCommand rejects any blank simulationId`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                RunDayCommand(simulationId = blank, decisions = emptyList()).validate().isLeft()
+                RunDayCommand(simulationId = blank, decisions = emptyList(), callerOrganizationId = FIXTURE_ORGANIZATION_ID)
+                    .validate()
+                    .isLeft()
+            }
+        }
+    }
+
+    @Test
+    fun `RunDayCommand rejects any blank callerOrganizationId`() {
+        runBlocking {
+            forAll(ARB_BLANK) { blank ->
+                RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = blank)
+                    .validate()
+                    .isLeft()
             }
         }
     }
@@ -25,8 +38,10 @@ class SimulationQueryValidationPropertyTest {
     @Test
     fun `RunDayCommand accepts any non-blank simulationId`() {
         runBlocking {
-            forAll(ARB_NON_BLANK) { id ->
-                RunDayCommand(simulationId = id, decisions = emptyList()).validate().isRight()
+            forAll(ARB_NON_BLANK, ARB_NON_BLANK) { id, callerOrgId ->
+                RunDayCommand(simulationId = id, decisions = emptyList(), callerOrganizationId = callerOrgId)
+                    .validate()
+                    .isRight()
             }
         }
     }
@@ -35,7 +50,18 @@ class SimulationQueryValidationPropertyTest {
     fun `GetSimulationQuery rejects any blank simulationId`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                GetSimulationQuery(simulationId = blank).validate().isLeft()
+                GetSimulationQuery(simulationId = blank, callerOrganizationId = FIXTURE_ORGANIZATION_ID)
+                    .validate()
+                    .isLeft()
+            }
+        }
+    }
+
+    @Test
+    fun `GetSimulationQuery rejects any blank callerOrganizationId`() {
+        runBlocking {
+            forAll(ARB_BLANK) { blank ->
+                GetSimulationQuery(simulationId = "sim-1", callerOrganizationId = blank).validate().isLeft()
             }
         }
     }
@@ -43,8 +69,8 @@ class SimulationQueryValidationPropertyTest {
     @Test
     fun `GetSimulationQuery accepts any non-blank simulationId`() {
         runBlocking {
-            forAll(ARB_NON_BLANK) { id ->
-                GetSimulationQuery(simulationId = id).validate().isRight()
+            forAll(ARB_NON_BLANK, ARB_NON_BLANK) { id, callerOrgId ->
+                GetSimulationQuery(simulationId = id, callerOrganizationId = callerOrgId).validate().isRight()
             }
         }
     }
@@ -53,7 +79,18 @@ class SimulationQueryValidationPropertyTest {
     fun `GetSimulationDaysQuery rejects any blank simulationId`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                GetSimulationDaysQuery(simulationId = blank).validate().isLeft()
+                GetSimulationDaysQuery(simulationId = blank, callerOrganizationId = FIXTURE_ORGANIZATION_ID)
+                    .validate()
+                    .isLeft()
+            }
+        }
+    }
+
+    @Test
+    fun `GetSimulationDaysQuery rejects any blank callerOrganizationId`() {
+        runBlocking {
+            forAll(ARB_BLANK) { blank ->
+                GetSimulationDaysQuery(simulationId = "sim-1", callerOrganizationId = blank).validate().isLeft()
             }
         }
     }
@@ -61,8 +98,8 @@ class SimulationQueryValidationPropertyTest {
     @Test
     fun `GetSimulationDaysQuery accepts any non-blank simulationId`() {
         runBlocking {
-            forAll(ARB_NON_BLANK) { id ->
-                GetSimulationDaysQuery(simulationId = id).validate().isRight()
+            forAll(ARB_NON_BLANK, ARB_NON_BLANK) { id, callerOrgId ->
+                GetSimulationDaysQuery(simulationId = id, callerOrganizationId = callerOrgId).validate().isRight()
             }
         }
     }
@@ -71,7 +108,18 @@ class SimulationQueryValidationPropertyTest {
     fun `GetSimulationCfdQuery rejects any blank simulationId`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                GetSimulationCfdQuery(simulationId = blank).validate().isLeft()
+                GetSimulationCfdQuery(simulationId = blank, callerOrganizationId = FIXTURE_ORGANIZATION_ID)
+                    .validate()
+                    .isLeft()
+            }
+        }
+    }
+
+    @Test
+    fun `GetSimulationCfdQuery rejects any blank callerOrganizationId`() {
+        runBlocking {
+            forAll(ARB_BLANK) { blank ->
+                GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = blank).validate().isLeft()
             }
         }
     }
@@ -79,8 +127,8 @@ class SimulationQueryValidationPropertyTest {
     @Test
     fun `GetSimulationCfdQuery accepts any non-blank simulationId`() {
         runBlocking {
-            forAll(ARB_NON_BLANK) { id ->
-                GetSimulationCfdQuery(simulationId = id).validate().isRight()
+            forAll(ARB_NON_BLANK, ARB_NON_BLANK) { id, callerOrgId ->
+                GetSimulationCfdQuery(simulationId = id, callerOrganizationId = callerOrgId).validate().isRight()
             }
         }
     }

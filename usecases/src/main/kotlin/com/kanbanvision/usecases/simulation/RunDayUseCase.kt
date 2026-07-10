@@ -29,6 +29,9 @@ class RunDayUseCase(
         either {
             command.validate().bind()
             val simulation = simulationRepository.findById(command.simulationId).bind()
+            ensure(simulation.organization.id == command.callerOrganizationId) {
+                DomainError.Forbidden("Simulation does not belong to the caller's organization")
+            }
             guardDuplicate(simulation.id, simulation.currentDay.value).bind()
 
             val result = simulationEngine.runDay(simulation, command.decisions, simulation.scenario.rules.seedValue)

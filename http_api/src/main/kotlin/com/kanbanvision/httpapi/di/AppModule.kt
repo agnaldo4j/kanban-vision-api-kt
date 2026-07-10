@@ -40,9 +40,9 @@ object AppModule {
             single { CreateSimulationUseCase(get(), get(), get()) }
             single { GetSimulationUseCase(get()) }
             single { RunDayUseCase(get(), get(), get(), get()) }
-            single { GetDailySnapshotUseCase(get()) }
+            single { GetDailySnapshotUseCase(get(), get()) }
             single { ListSimulationsUseCase(get()) }
-            single { GetSimulationDaysUseCase(get()) }
-            single { GetSimulationCfdUseCase(get()) }
+            single { GetSimulationDaysUseCase(get(), get()) }
+            single { GetSimulationCfdUseCase(get(), get()) }
         }
 }

@@ -12,6 +12,7 @@ import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
+import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -38,7 +39,7 @@ class RunDayUseCaseTest {
             coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
             coEvery { snapshotRepository.findByDay("sim-1", SimulationDay(3)) } returns existingSnapshot.right()
 
-            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList()))
+            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             val error = result.leftOrNull()
@@ -65,7 +66,10 @@ class RunDayUseCaseTest {
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
             coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
 
-            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = listOf(Decision.MoveItem("card-1"))))
+            val result =
+                useCase.execute(
+                    RunDayCommand(simulationId = "sim-1", decisions = listOf(Decision.MoveItem("card-1")), callerOrganizationId = "org-1"),
+                )
 
             assertTrue(result.isRight())
             assertEquals(snapshot.id, result.getOrNull()?.id)
@@ -98,7 +102,7 @@ class RunDayUseCaseTest {
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
             coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
 
-            useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList()))
+            useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             verify(exactly = 1) {
                 publisher.publish(
@@ -115,7 +119,7 @@ class RunDayUseCaseTest {
     @Test
     fun `given blank simulation id when running simulation day then validation error is returned`() =
         runTest {
-            val result = useCase.execute(RunDayCommand(simulationId = "", decisions = emptyList()))
+            val result = useCase.execute(RunDayCommand(simulationId = "", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -124,11 +128,29 @@ class RunDayUseCaseTest {
         }
 
     @Test
+    fun `given simulation of another organization when running simulation day then forbidden without side effects`() =
+        runTest {
+            val simulation = fixtureSimulation(id = "sim-1", day = 1, organizationId = "org-owner")
+            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
+
+            val result =
+                useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-attacker"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.Forbidden>(result.leftOrNull())
+
+            // wasNot Called evita any() no value class SimulationDay (pitfall MockK, testing.md).
+            coVerify { snapshotRepository wasNot Called }
+            coVerify { simulationEngine wasNot Called }
+            coVerify(exactly = 0) { simulationRepository.save(any()) }
+        }
+
+    @Test
     fun `given repository failure when loading simulation then error is propagated without side effects`() =
         runTest {
             coEvery { simulationRepository.findById("sim-1") } returns DomainError.PersistenceError("db unavailable").left()
 
-            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList()))
+            val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())

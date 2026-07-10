@@ -16,6 +16,7 @@ class DomainErrorVariantsBehaviorTest {
         val persistence = DomainError.PersistenceError(message = "db")
         val invalidDecision = DomainError.InvalidDecision(reason = "invalid")
         val serviceUnavailable = DomainError.ServiceUnavailable(service = "database", reason = "circuit breaker open")
+        val forbidden = DomainError.Forbidden(reason = "cross-tenant access denied")
 
         assertIs<DomainError.BoardNotFound>(board)
         assertEquals("b-1", board.id)
@@ -27,6 +28,8 @@ class DomainErrorVariantsBehaviorTest {
         assertEquals("invalid", invalidDecision.reason)
         assertEquals("database", serviceUnavailable.service)
         assertEquals("circuit breaker open", serviceUnavailable.reason)
+        assertIs<DomainError.Forbidden>(forbidden)
+        assertEquals("cross-tenant access denied", forbidden.reason)
     }
 
     @Test

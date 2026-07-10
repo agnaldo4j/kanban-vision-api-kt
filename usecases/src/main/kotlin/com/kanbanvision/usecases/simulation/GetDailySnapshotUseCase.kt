@@ -2,16 +2,19 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.Either
 import arrow.core.raise.either
+import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
 import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
 
 class GetDailySnapshotUseCase(
+    private val simulationRepository: SimulationRepository,
     private val snapshotRepository: SnapshotRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -20,6 +23,10 @@ class GetDailySnapshotUseCase(
         either {
             query.validate().bind()
             val id = query.simulationId
+            val simulation = simulationRepository.findById(id).bind()
+            ensure(simulation.organization.id == query.callerOrganizationId) {
+                DomainError.Forbidden("Simulation does not belong to the caller's organization")
+            }
             val (snapshot, duration) = timed { snapshotRepository.findByDay(id, SimulationDay(query.day)) }
             ensureNotNull(snapshot) { DomainError.SimulationNotFound(id) }
             log.info("Snapshot fetched: simulation={} day={} duration={}ms", id, query.day, duration.inWholeMilliseconds)
