@@ -95,11 +95,17 @@ não existem em Kotlin.
 - ✅ **Zero-cost**: `@JvmInline` não aloca no caminho quente; sem custo em memória/throughput
   (relevante para o Native Image).
 - ✅ Elimina o resíduo de DDD; alinha com o skill `/ddd` (Value Objects para identidade).
-- ⚠️ **Migração transversal**: toca `domain/model`, os serializers (`kotlinx.serialization` de value
-  class exige `@Serializable` no wrapper e cuidado com o `$serializer`), DTOs e mapeamentos de repo.
-  Escopo controlado, mas não trivial — daí ser `[M]`, não `[N]`.
-- ⚠️ **GraalVM native**: value classes são resolvidas em compile-time; a reachability metadata
-  existente cobre o padrão (validar no smoke da imagem, como manda o DoD do gap).
+- ⚠️ **Migração transversal + pureza do domínio**: toca `domain/model`, DTOs e mapeamentos de
+  repo/serializers. **As value classes de ID permanecem livres de framework** — o `DomainPurityTest`
+  (Konsist) proíbe `kotlinx.serialization` em `domain/src/main`, então **não** se anota
+  `@Serializable` no wrapper: a (de)serialização é resolvida **na borda** (surrogates/serializers de
+  `sql_persistence` e DTOs de `http_api` — ex. `KSerializer` custom sobre o `.value`, ou o DTO
+  carrega `String` e converte no mapeamento). Escopo controlado mas não trivial — daí `[M]`.
+- ⚠️ **GraalVM native**: value classes resolvem em compile-time, mas **novos serializers exigem
+  reachability metadata nova** — **não** assumir que a existente já cobre (ela lista os serializers
+  de DTO atuais, não futuros wrappers de ID; o repo inclusive já registra um gap nativo conhecido em
+  `DomainErrorResponse`, ver GAP-BM). GAP-BT **deve estender a metadata e validá-la no smoke do
+  binário nativo** (obrigatório no DoD do gap).
 
 ## Consequences
 
