@@ -1,6 +1,16 @@
 {
-  "comment": "Metadata MANUAL (revisável) complementar à gerada pelo tracing agent, compartilhada pelos DOIS binários (app e migração). Reflection: HikariConfig.copyStateTo/logConfiguration invocam getters por reflection — o agent não registra os métodos de forma confiável. Resources: configuração de logging, necessária ao binário de migração (que exclui a metadata do app do classpath).",
+  "comment": "Metadata MANUAL (revisável) complementar à gerada pelo tracing agent, compartilhada pelos DOIS binários (app e migração). Reflection: HikariConfig.copyStateTo/logConfiguration invocam getters por reflection — o agent não registra os métodos de forma confiável. Os $$serializer dos DTOs de ERRO (DomainErrorResponse/ValidationErrorResponse) só são alcançados no caminho de erro em runtime — o tracing agent registra o tipo mas não o acesso ao campo estático INSTANCE, que o GraalVM 25 exige explicitamente (GAP-BM; caçado pelo smoke test de contrato). Resources: configuração de logging, necessária ao binário de migração (que exclui a metadata do app do classpath).",
   "reflection": [
+    {
+      "type": "com.kanbanvision.httpapi.dtos.DomainErrorResponse$$serializer",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "type": "com.kanbanvision.httpapi.dtos.ValidationErrorResponse$$serializer",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true
+    },
     {
       "type": "com.zaxxer.hikari.HikariConfig",
       "allDeclaredMethods": true
