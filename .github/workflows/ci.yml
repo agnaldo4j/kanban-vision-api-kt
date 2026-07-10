@@ -528,6 +528,7 @@ jobs:
       contents: read
       packages: write
       actions: write
+      pull-requests: write # postar o Smoke Test Report como comentário do PR
 
     steps:
       - name: Checkout
@@ -565,13 +566,19 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
 
-      - name: Smoke test the image (run + /health/ready)
+      - name: Smoke test the image (boot + contract probes)
+        id: smoke
         if: github.event_name == 'pull_request'
         # O CI construía a imagem mas nunca a EXECUTAVA — classe de bug que acumulou
         # 5 falhas de runtime invisíveis até o GAP-AR (PR #225). Este gate sobe o
-        # container contra um postgres efêmero e exige readiness (boot + Flyway + DB).
+        # container nativo contra um postgres efêmero, exige readiness (boot + Flyway + DB)
+        # e roda probes de contrato — inclusive um caminho de erro que serializa
+        # DomainErrorResponse no Native Image (reachability metadata — cf. GAP-BM).
         run: |
+          set -uo pipefail
           IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -1)
+          IMAGE_BYTES=$(docker image inspect "$IMAGE" --format '{{.Size}}' 2>/dev/null || echo 0)
+          IMAGE_MB=$(( IMAGE_BYTES / 1024 / 1024 ))
           docker network create smoke
           docker run -d --name smoke-pg --network smoke \
             -e POSTGRES_DB=kanbanvision -e POSTGRES_USER=kanban -e POSTGRES_PASSWORD=kanban \
@@ -581,23 +588,86 @@ jobs:
             docker exec smoke-pg pg_isready -U kanban >/dev/null 2>&1 && { PG_READY=1; break; }
             sleep 2
           done
-          if [ "$PG_READY" -ne 1 ]; then
-            echo "Postgres não ficou pronto em 60s — logs:" >&2
-            docker logs smoke-pg >&2 || true
-            exit 1
-          fi
+          [ "$PG_READY" -eq 1 ] || { echo "Postgres não ficou pronto em 60s" >&2; docker logs smoke-pg >&2 || true; }
+
+          START=$(date +%s)
           docker run -d --name smoke-app --network smoke -p 8080:8080 \
             -e DATABASE_URL=jdbc:postgresql://smoke-pg:5432/kanbanvision \
             -e DATABASE_USER=kanban -e DATABASE_PASSWORD=kanban \
             -e OTEL_TRACES_EXPORTER=none -e OTEL_METRICS_EXPORTER=none -e OTEL_LOGS_EXPORTER=none \
             "$IMAGE"
+          READY=0; READY_DETAIL="timeout após 120s"
           for i in $(seq 1 40); do
-            curl -sf http://localhost:8080/health/ready >/dev/null 2>&1 && { echo "SMOKE OK"; exit 0; }
+            if curl -sf http://localhost:8080/health/ready >/dev/null 2>&1; then
+              READY=1; READY_DETAIL="200 em $(( $(date +%s) - START ))s"; break
+            fi
             sleep 3
           done
-          echo "Smoke test FAILED — app logs:" >&2
-          docker logs smoke-app >&2 || true
-          exit 1
+
+          FAILED=0
+          ROWS=""
+          add_row() { # $1 probe  $2 esperado  $3 obtido  $4 pass(0/1)
+            local mark; [ "$4" -eq 0 ] && mark='✅' || { mark='❌'; FAILED=1; }
+            ROWS="${ROWS}| $1 | $2 | $3 | ${mark} |"$'\n'
+          }
+
+          add_row "Boot + readiness (\`/health/ready\`)" "200" "$READY_DETAIL" "$([ "$READY" -eq 1 ] && echo 0 || echo 1)"
+
+          if [ "$READY" -eq 1 ]; then
+            LV=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health/live || echo 000)
+            add_row "Liveness (\`/health/live\`)" "200" "$LV" "$([ "$LV" = "200" ] && echo 0 || echo 1)"
+
+            # Sem token: challenge 401 serializa DomainErrorResponse (kotlinx) no binário nativo.
+            EP="http://localhost:8080/api/v1/simulations/smoke-test"
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "$EP" || echo 000)
+            BODY=$(curl -s "$EP" || true)
+            if [ "$CODE" = "401" ] && printf '%s' "$BODY" | grep -q '"error"'; then
+              add_row "Auth + serialização de erro (sem token → \`DomainErrorResponse\`)" "401 + JSON" "401 · corpo JSON com \`error\`" 0
+            else
+              add_row "Auth + serialização de erro (sem token → \`DomainErrorResponse\`)" "401 + JSON" "code=$CODE corpo=$(printf '%s' "$BODY" | head -c 60)" 1
+            fi
+          fi
+
+          STATUS=$([ "$FAILED" -eq 0 ] && echo '✅ Passou' || echo '❌ Falhou')
+          {
+            echo 'body<<SMOKE_REPORT'
+            echo '## Smoke Test Report'
+            echo ''
+            echo "**Status:** ${STATUS} · **Imagem:** \`${IMAGE}\` — ${IMAGE_MB} MB (GraalVM Native Image)"
+            echo ''
+            echo '| Probe | Esperado | Obtido | |'
+            echo '|---|---|---|:-:|'
+            printf '%s' "$ROWS"
+            echo ''
+            echo '> Sobe o binário nativo contra um Postgres efêmero (boot + Flyway + DB). O probe de'
+            echo '> erro exercita a serialização de `DomainErrorResponse` no Native Image — reachability'
+            echo '> metadata (cf. GAP-BM). Gate bloqueante: falha de probe reprova o job.'
+            echo 'SMOKE_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED" -ne 0 ] || [ "$READY" -ne 1 ]; then
+            echo "Smoke FAILED — app logs:" >&2; docker logs smoke-app >&2 || true
+            exit 1
+          fi
+          echo "SMOKE OK"
+
+      - name: Find existing smoke test comment
+        if: always() && github.event_name == 'pull_request'
+        id: find-smoke
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Smoke Test Report'
+
+      - name: Post smoke test report on PR
+        if: always() && github.event_name == 'pull_request' && steps.smoke.outputs.body != ''
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.find-smoke.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.smoke.outputs.body }}
+          edit-mode: replace
 
       - name: Smoke test teardown
         if: always() && github.event_name == 'pull_request'

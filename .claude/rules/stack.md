@@ -62,8 +62,14 @@
 
 | Trigger | Action |
 |---|---|
-| Pull Request | Build Docker image only (no push) — validates Dockerfile |
+| Pull Request | Build Docker image only (no push) — validates Dockerfile, then **smoke test** |
 | Push to `main` | Build + push: `sha-<short>` + `latest` |
 | Tag `v*.*.*` | Build + push: `sha-<short>` + `v<version>` + `latest` |
 
 Registry: `ghcr.io/agnaldo4j/kanban-vision-api-kt`
+
+On PRs the built **native image** is booted against an ephemeral Postgres and probed
+(readiness + liveness + a no-token `401` that serialises `DomainErrorResponse` in the Native Image —
+reachability metadata, cf. GAP-BM). Results post as a sticky **Smoke Test Report** PR comment; any
+failed probe **fails the job** (blocking gate — the same class of runtime bug that stayed invisible
+until GAP-AR / PR #225).
