@@ -12,6 +12,7 @@ import com.kanbanvision.usecases.ports.SimulationEnginePort
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
+import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -138,8 +139,9 @@ class RunDayUseCaseTest {
             assertTrue(result.isLeft())
             assertIs<DomainError.Forbidden>(result.leftOrNull())
 
-            coVerify(exactly = 0) { snapshotRepository.findByDay(any(), any()) }
-            coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any()) }
+            // wasNot Called evita any() no value class SimulationDay (pitfall MockK, testing.md).
+            coVerify { snapshotRepository wasNot Called }
+            coVerify { simulationEngine wasNot Called }
             coVerify(exactly = 0) { simulationRepository.save(any()) }
         }
 
