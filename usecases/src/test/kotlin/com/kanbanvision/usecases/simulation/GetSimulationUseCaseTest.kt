@@ -20,10 +20,10 @@ class GetSimulationUseCaseTest {
     @Test
     fun `given existing simulation id when loading simulation then use case returns the aggregate`() =
         runTest {
-            val simulation = fixtureSimulation(id = "sim-1")
+            val simulation = fixtureSimulation(id = "sim-1", organizationId = "org-1")
             coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
 
-            val result = useCase.execute(GetSimulationQuery(simulationId = "sim-1"))
+            val result = useCase.execute(GetSimulationQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))
 
             assertTrue(result.isRight())
             coVerify(exactly = 1) { simulationRepository.findById("sim-1") }
@@ -32,7 +32,7 @@ class GetSimulationUseCaseTest {
     @Test
     fun `given blank simulation id when loading simulation then validation error is returned`() =
         runTest {
-            val result = useCase.execute(GetSimulationQuery(simulationId = ""))
+            val result = useCase.execute(GetSimulationQuery(simulationId = "", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -44,10 +44,23 @@ class GetSimulationUseCaseTest {
         runTest {
             coEvery { simulationRepository.findById("sim-missing") } returns DomainError.SimulationNotFound("sim-missing").left()
 
-            val result = useCase.execute(GetSimulationQuery(simulationId = "sim-missing"))
+            val result = useCase.execute(GetSimulationQuery(simulationId = "sim-missing", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.SimulationNotFound>(result.leftOrNull())
             coVerify(exactly = 1) { simulationRepository.findById("sim-missing") }
+        }
+
+    @Test
+    fun `given simulation of another organization when loading simulation then forbidden is returned`() =
+        runTest {
+            val simulation = fixtureSimulation(id = "sim-1", organizationId = "org-owner")
+            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
+
+            val result = useCase.execute(GetSimulationQuery(simulationId = "sim-1", callerOrganizationId = "org-attacker"))
+
+            assertTrue(result.isLeft())
+            assertIs<DomainError.Forbidden>(result.leftOrNull())
+            coVerify(exactly = 1) { simulationRepository.findById("sim-1") }
         }
 }

@@ -53,4 +53,8 @@ sealed class DomainError {
         val service: String,
         val reason: String,
     ) : DomainError()
+
+    data class Forbidden(
+        val reason: String,
+    ) : DomainError()
 }

@@ -4,11 +4,9 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.FlowMetrics
-import com.kanbanvision.httpapi.fixtureSimulation
 import com.kanbanvision.httpapi.fixtureSnapshot
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.withJwt
-import com.kanbanvision.usecases.Page
 import com.kanbanvision.usecases.simulation.CfdDataPoint
 import com.kanbanvision.usecases.simulation.CfdResult
 import io.ktor.client.request.get
@@ -25,62 +23,6 @@ import kotlin.test.assertTrue
 
 class SimulationAnalyticsRoutesTest {
     private val json = Json { ignoreUnknownKeys = true }
-
-    @Test
-    fun `given valid organization id when listing simulations then api returns paginated list`() =
-        testApplication {
-            val mocks = SimulationApiMocks()
-            val simulations = listOf(fixtureSimulation("s1"), fixtureSimulation("s2"))
-            coEvery { mocks.listSimulationsUseCase.execute(any()) } returns
-                Page(data = simulations, page = 1, size = 20, total = 2L).right()
-
-            application { configureSimulationApi(mocks) }
-
-            val response =
-                client.get("/api/v1/simulations?organizationId=org-1") {
-                    withJwt().invoke(this)
-                }
-
-            assertEquals(HttpStatusCode.OK, response.status)
-            val body = response.bodyAsText()
-            val payload = json.decodeFromString<SimulationListResponse>(body)
-            assertEquals(2, payload.data.size)
-            assertEquals(1, payload.page)
-            assertEquals(20, payload.size)
-            assertEquals(2L, payload.total)
-        }
-
-    @Test
-    fun `given missing organization id when listing simulations then api returns bad request`() =
-        testApplication {
-            val mocks = SimulationApiMocks()
-            application { configureSimulationApi(mocks) }
-
-            val response =
-                client.get("/api/v1/simulations") {
-                    withJwt().invoke(this)
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            assertTrue(response.bodyAsText().contains("organizationId"))
-        }
-
-    @Test
-    fun `given validation error when listing simulations then api returns bad request`() =
-        testApplication {
-            val mocks = SimulationApiMocks()
-            coEvery { mocks.listSimulationsUseCase.execute(any()) } returns
-                DomainError.ValidationError("Page must be at least 1").left()
-
-            application { configureSimulationApi(mocks) }
-
-            val response =
-                client.get("/api/v1/simulations?organizationId=org-1&page=0") {
-                    withJwt().invoke(this)
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-        }
 
     @Test
     fun `given valid simulation id when fetching days then api returns time series`() =
@@ -172,47 +114,6 @@ class SimulationAnalyticsRoutesTest {
                 }
 
             assertEquals(HttpStatusCode.InternalServerError, response.status)
-        }
-
-    @Test
-    fun `given non-integer page parameter when listing simulations then api returns bad request`() =
-        testApplication {
-            val mocks = SimulationApiMocks()
-            application { configureSimulationApi(mocks) }
-
-            val response =
-                client.get("/api/v1/simulations?organizationId=org-1&page=abc") {
-                    withJwt().invoke(this)
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            assertTrue(response.bodyAsText().contains("Invalid page"))
-        }
-
-    @Test
-    fun `given non-integer size parameter when listing simulations then api returns bad request`() =
-        testApplication {
-            val mocks = SimulationApiMocks()
-            application { configureSimulationApi(mocks) }
-
-            val response =
-                client.get("/api/v1/simulations?organizationId=org-1&size=xyz") {
-                    withJwt().invoke(this)
-                }
-
-            assertEquals(HttpStatusCode.BadRequest, response.status)
-            assertTrue(response.bodyAsText().contains("Invalid size"))
-        }
-
-    @Test
-    fun `given unauthenticated request when listing simulations then api returns unauthorized`() =
-        testApplication {
-            val mocks = SimulationApiMocks()
-            application { configureSimulationApi(mocks) }
-
-            val response = client.get("/api/v1/simulations?organizationId=org-1")
-
-            assertEquals(HttpStatusCode.Unauthorized, response.status)
         }
 
     @Test

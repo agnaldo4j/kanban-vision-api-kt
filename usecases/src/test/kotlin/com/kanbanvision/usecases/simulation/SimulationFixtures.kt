@@ -38,17 +38,20 @@ internal fun fixtureScenario(
     )
 }
 
+internal const val FIXTURE_ORGANIZATION_ID = "org-1"
+
 internal fun fixtureSimulation(
     id: String = "sim-1",
     day: Int = 1,
     status: SimulationStatus = SimulationStatus.DRAFT,
+    organizationId: String = FIXTURE_ORGANIZATION_ID,
 ): Simulation =
     Simulation(
         id = id,
         name = "Simulation",
         currentDay = SimulationDay(day),
         status = status,
-        organization = fixtureOrganization(),
+        organization = fixtureOrganization(id = organizationId),
         scenario = fixtureScenario(),
     )
 

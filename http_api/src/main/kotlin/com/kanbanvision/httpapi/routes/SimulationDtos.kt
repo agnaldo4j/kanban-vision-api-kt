@@ -18,15 +18,14 @@ internal const val EXAMPLE_SIMULATION_ID = "550e8400-e29b-41d4-a716-446655440001
 
 @Serializable
 data class CreateSimulationRequest(
-    val organizationId: String,
     val wipLimit: Int,
     val teamSize: Int,
     val seedValue: Long = 0L,
 ) {
+    // A organização é derivada do claim organizationId do JWT (tenancy), nunca do corpo (GAP-BJ).
     companion object {
         val example =
             CreateSimulationRequest(
-                organizationId = EXAMPLE_ORGANIZATION_ID,
                 wipLimit = 5,
                 teamSize = 4,
                 seedValue = 12345L,

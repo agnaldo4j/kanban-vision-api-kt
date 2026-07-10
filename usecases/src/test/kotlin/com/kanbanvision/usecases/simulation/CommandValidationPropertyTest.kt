@@ -97,7 +97,9 @@ class CommandValidationPropertyTest {
     fun `GetDailySnapshotQuery rejects any blank simulationId`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                GetDailySnapshotQuery(simulationId = blank, day = 1).validate().isLeft()
+                GetDailySnapshotQuery(simulationId = blank, day = 1, callerOrganizationId = FIXTURE_ORGANIZATION_ID)
+                    .validate()
+                    .isLeft()
             }
         }
     }
@@ -106,7 +108,20 @@ class CommandValidationPropertyTest {
     fun `GetDailySnapshotQuery rejects day less than 1`() {
         runBlocking {
             forAll(Arb.int(NEG_BOUND..0)) { invalid ->
-                GetDailySnapshotQuery(simulationId = "sim-1", day = invalid).validate().isLeft()
+                GetDailySnapshotQuery(simulationId = "sim-1", day = invalid, callerOrganizationId = FIXTURE_ORGANIZATION_ID)
+                    .validate()
+                    .isLeft()
+            }
+        }
+    }
+
+    @Test
+    fun `GetDailySnapshotQuery rejects any blank callerOrganizationId`() {
+        runBlocking {
+            forAll(ARB_BLANK) { blank ->
+                GetDailySnapshotQuery(simulationId = "sim-1", day = 1, callerOrganizationId = blank)
+                    .validate()
+                    .isLeft()
             }
         }
     }
@@ -114,8 +129,10 @@ class CommandValidationPropertyTest {
     @Test
     fun `GetDailySnapshotQuery accepts valid inputs`() {
         runBlocking {
-            forAll(ARB_NON_BLANK, Arb.int(1..POS_BOUND)) { simId, day ->
-                GetDailySnapshotQuery(simulationId = simId, day = day).validate().isRight()
+            forAll(ARB_NON_BLANK, Arb.int(1..POS_BOUND), ARB_NON_BLANK) { simId, day, callerOrgId ->
+                GetDailySnapshotQuery(simulationId = simId, day = day, callerOrganizationId = callerOrgId)
+                    .validate()
+                    .isRight()
             }
         }
     }

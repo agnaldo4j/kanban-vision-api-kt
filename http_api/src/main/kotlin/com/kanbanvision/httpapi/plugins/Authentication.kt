@@ -46,7 +46,9 @@ fun Application.configureAuthentication(
                     .build(),
             )
             validate { credential ->
-                if (credential.payload.audience.contains(audience)) JWTPrincipal(credential.payload) else null
+                val organizationId = credential.payload.getClaim("organizationId").asString()
+                val hasAudience = credential.payload.audience.contains(audience)
+                if (hasAudience && !organizationId.isNullOrBlank()) JWTPrincipal(credential.payload) else null
             }
             challenge { _, _ ->
                 val requestId = call.attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"

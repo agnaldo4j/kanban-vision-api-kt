@@ -10,14 +10,13 @@ class RouteDtosContractTest {
 
     @Test
     fun `given simulation request dtos when using defaults and copy then values remain consistent`() {
-        val create = CreateSimulationRequest(organizationId = "org-1", wipLimit = 3, teamSize = 4)
+        val create = CreateSimulationRequest(wipLimit = 3, teamSize = 4)
         assertEquals(0L, create.seedValue)
         val createCopy = create.copy(seedValue = 99L)
         assertEquals(99L, createCopy.seedValue)
-        assertEquals("org-1", create.component1())
-        assertEquals(3, create.component2())
-        assertEquals(4, create.component3())
-        assertEquals(0L, create.component4())
+        assertEquals(3, create.component1())
+        assertEquals(4, create.component2())
+        assertEquals(0L, create.component3())
 
         val decision = DecisionRequest(type = "move_item")
         assertTrue(decision.payload.isEmpty())

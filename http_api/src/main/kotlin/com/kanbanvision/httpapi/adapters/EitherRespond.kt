@@ -6,6 +6,8 @@ import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.httpapi.plugins.REQUEST_ID_KEY
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 
 /**
@@ -26,6 +28,28 @@ suspend fun ApplicationCall.requiredPathParam(
     return value
 }
 
+/**
+ * Resolve o organizationId do JWT do chamador (fonte da verdade de tenancy). O plugin de
+ * autenticação já garante a presença do claim — `validate` rejeita tokens sem ele — então o
+ * caminho nulo é defensivo: responde 401 (fail closed) em vez de assumir acesso (security.md §A10).
+ */
+suspend fun ApplicationCall.callerOrganizationId(): String? {
+    val organizationId =
+        principal<JWTPrincipal>()
+            ?.payload
+            ?.getClaim("organizationId")
+            ?.asString()
+            ?.takeIf { it.isNotBlank() }
+    if (organizationId == null) {
+        val requestId = attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
+        respond(
+            HttpStatusCode.Unauthorized,
+            DomainErrorResponse(error = "Missing organization context", requestId = requestId),
+        )
+    }
+    return organizationId
+}
+
 suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
     val requestId = attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
     return when (error) {
@@ -40,6 +64,8 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
             respond(HttpStatusCode.InternalServerError, DomainErrorResponse(error = "Internal server error", requestId = requestId))
         is DomainError.InvalidDecision ->
             respond(HttpStatusCode.BadRequest, DomainErrorResponse(error = error.reason, requestId = requestId))
+        is DomainError.Forbidden ->
+            respond(HttpStatusCode.Forbidden, DomainErrorResponse(error = "Forbidden", requestId = requestId))
         is DomainError.DayAlreadyExecuted ->
             respond(HttpStatusCode.Conflict, DomainErrorResponse(error = "Day ${error.day} was already executed", requestId = requestId))
         is DomainError.ServiceUnavailable ->

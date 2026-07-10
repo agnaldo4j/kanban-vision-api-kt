@@ -10,9 +10,11 @@ import com.kanbanvision.usecases.cqs.Command
 data class RunDayCommand(
     val simulationId: String,
     val decisions: List<Decision>,
+    val callerOrganizationId: String,
 ) : Command {
     override fun validate(): Either<DomainError.ValidationError, Unit> =
         either {
             ensure(simulationId.isNotBlank()) { DomainError.ValidationError("Simulation id must not be blank") }
+            ensure(callerOrganizationId.isNotBlank()) { DomainError.ValidationError("Caller organization id must not be blank") }
         }
 }

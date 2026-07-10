@@ -8,9 +8,11 @@ import com.kanbanvision.usecases.cqs.Query
 
 data class GetSimulationCfdQuery(
     val simulationId: String,
+    val callerOrganizationId: String,
 ) : Query {
     override fun validate(): Either<DomainError.ValidationError, Unit> =
         either {
             ensure(simulationId.isNotBlank()) { DomainError.ValidationError("Simulation id must not be blank") }
+            ensure(callerOrganizationId.isNotBlank()) { DomainError.ValidationError("Caller organization id must not be blank") }
         }
 }

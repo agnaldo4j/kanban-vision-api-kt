@@ -35,7 +35,12 @@ class SimulationInputValidationTest {
 
     @Test
     fun `given run day command with blank simulation id when validating then validation error is returned`() {
-        val result = RunDayCommand(simulationId = "", decisions = emptyList()).validate()
+        val result =
+            RunDayCommand(
+                simulationId = "",
+                decisions = emptyList(),
+                callerOrganizationId = FIXTURE_ORGANIZATION_ID,
+            ).validate()
 
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -43,7 +48,15 @@ class SimulationInputValidationTest {
 
     @Test
     fun `given get simulation query with blank id when validating then validation error is returned`() {
-        val result = GetSimulationQuery(simulationId = "").validate()
+        val result = GetSimulationQuery(simulationId = "", callerOrganizationId = FIXTURE_ORGANIZATION_ID).validate()
+
+        assertTrue(result.isLeft())
+        assertIs<DomainError.ValidationError>(result.leftOrNull())
+    }
+
+    @Test
+    fun `given get simulation query with blank caller organization id when validating then validation error is returned`() {
+        val result = GetSimulationQuery(simulationId = "sim-1", callerOrganizationId = "").validate()
 
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -51,13 +64,14 @@ class SimulationInputValidationTest {
 
     @Test
     fun `given daily snapshot query with invalid inputs when validating then all messages are accumulated`() {
-        val result = GetDailySnapshotQuery(simulationId = "", day = 0).validate()
+        val result = GetDailySnapshotQuery(simulationId = "", day = 0, callerOrganizationId = "").validate()
 
         assertTrue(result.isLeft())
         val error = result.leftOrNull()
         assertIs<DomainError.ValidationError>(error)
         assertContains(error.messages, "Simulation id must not be blank")
         assertContains(error.messages, "Day must be at least 1")
+        assertContains(error.messages, "Caller organization id must not be blank")
     }
 
     @Test
@@ -82,7 +96,7 @@ class SimulationInputValidationTest {
 
     @Test
     fun `given get simulation days query with blank id when validating then validation error is returned`() {
-        val result = GetSimulationDaysQuery(simulationId = "").validate()
+        val result = GetSimulationDaysQuery(simulationId = "", callerOrganizationId = FIXTURE_ORGANIZATION_ID).validate()
 
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())
@@ -90,7 +104,7 @@ class SimulationInputValidationTest {
 
     @Test
     fun `given get simulation cfd query with blank id when validating then validation error is returned`() {
-        val result = GetSimulationCfdQuery(simulationId = "").validate()
+        val result = GetSimulationCfdQuery(simulationId = "", callerOrganizationId = FIXTURE_ORGANIZATION_ID).validate()
 
         assertTrue(result.isLeft())
         assertIs<DomainError.ValidationError>(result.leftOrNull())

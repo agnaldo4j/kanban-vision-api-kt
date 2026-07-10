@@ -2,6 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.httpapi.adapters.callerOrganizationId
 import com.kanbanvision.httpapi.adapters.requiredPathParam
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
@@ -117,6 +118,7 @@ private fun getSimulationSpec(): RouteConfig.() -> Unit =
                 example("default") { value = "550e8400-e29b-41d4-a716-446655440001" }
             }
         }
+        applyCrossTenantForbiddenResponse()
         applyGetSimulationResponses()
     }
 
@@ -164,6 +166,7 @@ private fun runDaySpec(): RouteConfig.() -> Unit =
                 example("mover item") { value = RunDayRequest.example }
             }
         }
+        applyCrossTenantForbiddenResponse()
         applyRunDayResponses()
     }
 
@@ -216,6 +219,7 @@ private fun getDailySnapshotSpec(): RouteConfig.() -> Unit =
                 example("default") { value = 1 }
             }
         }
+        applyCrossTenantForbiddenResponse()
         applyGetDailySnapshotResponses()
     }
 
@@ -249,11 +253,12 @@ private fun RouteConfig.applyGetDailySnapshotResponses() {
 }
 
 private suspend fun ApplicationCall.handleCreateSimulation(createSimulation: CreateSimulationUseCase) {
+    val callerOrganizationId = callerOrganizationId() ?: return
     val request = receive<CreateSimulationRequest>()
     createSimulation
         .execute(
             CreateSimulationCommand(
-                organizationId = request.organizationId,
+                organizationId = callerOrganizationId,
                 wipLimit = request.wipLimit,
                 teamSize = request.teamSize,
                 seedValue = request.seedValue,
@@ -270,8 +275,9 @@ private suspend fun ApplicationCall.handleCreateSimulation(createSimulation: Cre
 
 private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimulationUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
+    val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
-        getSimulation.execute(GetSimulationQuery(simulationId = simulationId)).fold(
+        getSimulation.execute(GetSimulationQuery(simulationId = simulationId, callerOrganizationId = callerOrganizationId)).fold(
             ifLeft = { error -> respondWithDomainError(error) },
             ifRight = { result -> respond(result.toSimulationResponse()) },
         )
@@ -280,6 +286,7 @@ private suspend fun ApplicationCall.handleGetSimulation(getSimulation: GetSimula
 
 private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
+    val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
         val request = receive<RunDayRequest>()
         val decisions = mutableListOf<Decision>()
@@ -289,8 +296,9 @@ private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
                 ifRight = { decisions += it },
             )
         }
+        val command = RunDayCommand(simulationId, decisions, callerOrganizationId)
         withSpan("simulation.run_day") {
-            runDay.execute(RunDayCommand(simulationId = simulationId, decisions = decisions)).fold(
+            runDay.execute(command).fold(
                 ifLeft = { error -> respondWithDomainError(error) },
                 ifRight = { snapshot ->
                     MDC.putCloseable("day", snapshot.day.value.toString()).use {
@@ -302,18 +310,27 @@ private suspend fun ApplicationCall.handleRunDay(runDay: RunDayUseCase) {
     }
 }
 
+private suspend fun ApplicationCall.requiredDayParam(): Int? {
+    val dayStr = requiredPathParam("day", "Missing day") ?: return null
+    return dayStr.toIntOrNull() ?: run {
+        respondWithDomainError(DomainError.ValidationError("Day must be an integer"))
+        null
+    }
+}
+
 private suspend fun ApplicationCall.handleGetDailySnapshot(getDailySnapshot: GetDailySnapshotUseCase) {
     val simulationId = requiredPathParam("simulationId", "Missing simulation id") ?: return
-    val dayStr = requiredPathParam("day", "Missing day") ?: return
-    val day =
-        dayStr.toIntOrNull()
-            ?: return respondWithDomainError(DomainError.ValidationError("Day must be an integer"))
+    val day = requiredDayParam() ?: return
+    val callerOrganizationId = callerOrganizationId() ?: return
     MDC.putCloseable("simulationId", simulationId).use {
         MDC.putCloseable("day", day.toString()).use {
-            getDailySnapshot.execute(GetDailySnapshotQuery(simulationId = simulationId, day = day)).fold(
-                ifLeft = { error -> respondWithDomainError(error) },
-                ifRight = { snapshot -> respond(snapshot.toResponse()) },
-            )
+            getDailySnapshot
+                .execute(
+                    GetDailySnapshotQuery(simulationId = simulationId, day = day, callerOrganizationId = callerOrganizationId),
+                ).fold(
+                    ifLeft = { error -> respondWithDomainError(error) },
+                    ifRight = { snapshot -> respond(snapshot.toResponse()) },
+                )
         }
     }
 }
