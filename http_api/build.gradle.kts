@@ -186,7 +186,7 @@ dependencies {
     // Binário de migração (ADR-0032): persistência + logback para logs do Job.
     // O logback.xml referencia o OpenTelemetryAppender — o jar precisa estar presente.
     migrationRuntime(project(":sql_persistence"))
-    migrationRuntime("ch.qos.logback:logback-classic:1.5.37")
+    migrationRuntime("ch.qos.logback:logback-classic:1.5.38")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
     migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
@@ -214,13 +214,13 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
 
     // OpenTelemetry API — spans manuais somente em http_api
-    implementation("io.opentelemetry:opentelemetry-api:1.63.0")
+    implementation("io.opentelemetry:opentelemetry-api:1.64.0")
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
-    implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.63.0")
+    implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.64.0")
     // ADR-0031: traces em build time (sem javaagent) — SDK autoconfigure lê as envs OTEL_*;
     // instrumentações de biblioteca na linha 2.29.0(-alpha), alinhada ao SDK/API 1.63.0.
-    implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.63.0")
-    implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.63.0")
+    implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.64.0")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.64.0")
     implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.29.0-alpha")
     // implementation (não runtimeOnly): OpenTelemetryDriver.install() é chamado em código —
     // o driver nasce com noop() e não lê o GlobalOpenTelemetry.
@@ -228,7 +228,7 @@ dependencies {
     // Referenciada só pelo logback*.xml — runtime only.
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
 
-    implementation("ch.qos.logback:logback-classic:1.5.37")
+    implementation("ch.qos.logback:logback-classic:1.5.38")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
@@ -237,14 +237,14 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.1")
     testImplementation("io.insert-koin:koin-test-junit5:4.2.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.1")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("com.h2database:h2:2.4.240")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
-    testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.63.0")
-    testImplementation("io.kotest:kotest-property:6.2.1")
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.64.0")
+    testImplementation("io.kotest:kotest-property:6.2.2")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
     testImplementation("au.com.dius.pact.consumer:junit5:4.7.3")
     testImplementation("au.com.dius.pact.provider:junit5:4.7.3")
