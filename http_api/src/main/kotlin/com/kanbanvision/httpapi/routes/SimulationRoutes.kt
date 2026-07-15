@@ -7,7 +7,7 @@ import com.kanbanvision.httpapi.adapters.requiredPathParam
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
-import com.kanbanvision.httpapi.plugins.withSpan
+import com.kanbanvision.httpapi.support.withSpan
 import com.kanbanvision.usecases.simulation.CreateSimulationUseCase
 import com.kanbanvision.usecases.simulation.GetDailySnapshotUseCase
 import com.kanbanvision.usecases.simulation.GetSimulationCfdUseCase

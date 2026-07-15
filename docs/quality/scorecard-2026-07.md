@@ -84,10 +84,12 @@ Two things move the headline this cycle, in opposite directions:
   binaries, ADR-0030→0032), disciplined reachability metadata, measured ~9× startup / −79–94% mem.
   Overlaps Infra + Performance (evidence shared). Native-path debt remains.
 - **Circular-dependency control 7.8** — Gradle/layer/context cycles structurally prevented
-  (Konsist directional rules + `ContextBoundaryTest` + DIP ports). Capped: **no dedicated
-  whole-graph cycle detector** — cycle-freedom is emergent from the layer rules, so intra-package
-  class↔class cycles are uncovered; a documented organization↔simulation trade-off is managed by
-  prose. Overlaps Clean Architecture + Refactoring.
+  (Konsist directional rules + `ContextBoundaryTest` + DIP ports). A dedicated whole-graph
+  package-cycle detector now exists (`PackageCycleTest`, GAP-BN), which surfaced and fixed a real
+  intra-module `plugins ↔ routes` cycle (shared helpers extracted to a neutral `support` package).
+  The organization/simulation relationship is **one-way `simulation → organization` (a DAG, not a
+  cycle)** — the `↔` framing was stale. Residual cap: class↔class cycles within a single package are
+  not analysed (import-based, package granularity). Overlaps Clean Architecture + Refactoring.
 
 Gap → dimension map: BD → XP/Kanban + Evolutionary + DoD · BE → SOLID · BF → SOLID + Modular +
 Refactoring + DDD · BG → Modular · BH → Evolutionary · BI → Evolutionary + XP/Kanban.
@@ -120,8 +122,8 @@ schedule work):
   IDOR / cross-tenant risk. Swagger UI (`/swagger`, `/api.json`) is mounted **unconditionally**
   (not gated by `ENABLE_SWAGGER`). No HSTS header. Rate limit keyed on a spoofable first
   `X-Forwarded-For`; no stricter `/auth/*` limit.
-- **Circular-dependency (7.8):** no purpose-built cycle detector (add a Konsist "no package cycles"
-  assertion); resolve the documented organization↔simulation trade-off.
+- **Circular-dependency (7.8):** ✅ addressed by GAP-BN — Konsist `PackageCycleTest` added (whole
+  graph); the `plugins ↔ routes` cycle it found was fixed; organization/simulation confirmed one-way.
 - **Performance (8.0):** no automated regression signal (single baseline); add stress/soak/spike
   profiles.
 - **GraalVM (9.0):** `DomainErrorResponse` serialization fails on the native **error path**

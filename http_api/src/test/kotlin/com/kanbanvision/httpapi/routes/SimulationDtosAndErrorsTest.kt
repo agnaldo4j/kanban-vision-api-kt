@@ -7,8 +7,8 @@ import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.fixtureSimulation
 import com.kanbanvision.httpapi.fixtureSnapshot
-import com.kanbanvision.httpapi.plugins.REQUEST_ID_KEY
 import com.kanbanvision.httpapi.plugins.configureSerialization
+import com.kanbanvision.httpapi.support.REQUEST_ID_KEY
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode

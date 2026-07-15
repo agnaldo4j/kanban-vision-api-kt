@@ -129,15 +129,19 @@ data class Board(val id: String, val name: String) {
 ### Tipo 3 — Ciclo Transitivo entre Pacotes (Insidioso)
 
 ```
-organization/ → simulation/ → organization/
+❌ (hipotético) organization/ → simulation/ → organization/
 
-Scenario.kt (organization) importa Decision, DailySnapshot (simulation)
-Simulation.kt (simulation) importa Scenario (organization)
+Se Scenario.kt (organization) importasse Decision/DailySnapshot (simulation)
+E Simulation.kt (simulation) importasse Scenario (organization) → ciclo bidirecional
 ```
 
-Este ciclo existe atualmente no projeto como trade-off consciente documentado no
-PR #171. A resolução correta é mover `decisions` e `history` para o agregado
-`Simulation`, transformando `Scenario` num value object puro de configuração.
+**Caso RESOLVIDO no projeto.** Este ciclo já existiu (documentado no PR #171) mas foi
+desfeito: `decisions` e `history` vivem hoje no agregado `Simulation`
+(`Simulation.kt`), e `Scenario` é config pura (`name`, `rules`, `board`) que **não**
+importa nenhum tipo de `simulation`. O grafo atual é **one-way `simulation → organization`
+(um DAG, sem ciclo)** — a `ContextBoundaryTest` garante que o back-edge `organization → simulation`
+não pode reaparecer, e a `PackageCycleTest` (GAP-BN) detecta qualquer ciclo de pacote no grafo
+inteiro de produção. Mantém-se o exemplo como padrão a reconhecer, não como débito ativo.
 
 ---
 
