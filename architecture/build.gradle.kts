@@ -9,12 +9,12 @@ plugins {
 
 dependencies {
     testImplementation("com.lemonappdev:konsist:0.17.3")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.1")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
     // O Konsist REQUISITA JUnit Platform 1.x (linha JUnit 5); sem o launcher explícito
     // abaixo, o classpath misto impedia o Gradle de iniciar o runner ("Failed to load
     // JUnit Platform"). Com ele, a resolução de conflito alinha tudo em 6.1.1.
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.2")
 }
 
 // Correção de cache (ADR-0026): o Konsist lê as fontes dos demais módulos em runtime,
