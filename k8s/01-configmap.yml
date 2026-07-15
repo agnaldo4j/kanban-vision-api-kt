@@ -37,3 +37,7 @@ data:
   # MAX_REQUEST_BODY_SIZE — payload size limit em bytes. Aumentar somente se endpoints
   # receberem payloads JSON maiores em produção.
   MAX_REQUEST_BODY_SIZE: "1048576"
+  # TRUSTED_PROXY_COUNT — nº de reverse-proxies confiáveis à frente do pod, usado para chavear
+  # o rate limit pelo IP real do cliente (imune a spoofing de X-Forwarded-For). "1" assume um
+  # único Ingress à frente; ajuste para a profundidade real da cadeia (Ingress + LB + mesh).
+  TRUSTED_PROXY_COUNT: "1"
