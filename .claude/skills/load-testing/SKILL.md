@@ -46,6 +46,10 @@ k6 run -e PROFILE=baseline load/simulation-journey.js # medição oficial (ramp 
 
 Instalação: `brew install k6` (2.x). Validar sintaxe sem servidor: `k6 inspect load/simulation-journey.js`.
 
+> **Rode a API com `TRUSTED_PROXY_COUNT=1`** durante a carga (GAP-BL). O rate limit passou a
+> chavear pelo IP real do cliente resistente a spoofing; com o default `0` a API ignora o
+> `X-Forwarded-For` e chaveia pelo peer do socket — todo o tráfego k6 colapsaria numa só cota.
+
 ## 3. A jornada e suas decisões de design (não regredir)
 
 Cada iteração = **um cliente distinto**: token dev → `POST /api/v1/simulations` →
@@ -53,7 +57,7 @@ Cada iteração = **um cliente distinto**: token dev → `POST /api/v1/simulatio
 
 | Decisão | Por quê |
 |---|---|
-| `X-Forwarded-For` único por iteração | O rate limit (100 req/min) é chaveado pelo primeiro IP do XFF — sem isso o teste mede o LIMITADOR, não o servidor |
+| `X-Forwarded-For` único por iteração (+ API com `TRUSTED_PROXY_COUNT=1`) | O rate limit (100 req/min) é chaveado pelo IP real do cliente — sem isso o teste mede o LIMITADOR, não o servidor |
 | `exec.test.abort()` se o token falhar | Fail fast — métricas de 401 são lixo |
 | `simulationId` só parseado em sucesso; falha em run day encerra a iteração | Resposta de erro pode não ser JSON; 404/500 derivados contaminariam o p95 por endpoint |
 | PROFILE inválido falha no init | Spread de `undefined` daria erro obscuro |

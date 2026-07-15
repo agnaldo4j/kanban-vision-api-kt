@@ -3,9 +3,11 @@ package com.kanbanvision.httpapi.routes
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
+import com.kanbanvision.httpapi.plugins.AUTH_RATE_LIMIT_NAME
 import io.github.smiley4.ktoropenapi.config.RouteConfig
 import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.plugins.ratelimit.rateLimit
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -22,20 +24,22 @@ fun Route.authRoutes(
     audience: String,
     ttlMs: Long,
 ) {
-    route("/auth") {
-        post("/token", issueTokenSpec()) {
-            val request = call.receive<IssueTokenRequest>()
-            val token =
-                JWT
-                    .create()
-                    .withAudience(audience)
-                    .withIssuer(issuer)
-                    .withSubject(request.subject)
-                    .withClaim("organizationId", request.organizationId)
-                    .withExpiresAt(Date(System.currentTimeMillis() + ttlMs))
-                    .sign(Algorithm.HMAC256(secret))
-            log.warn("DEV MODE: issued JWT for subject='{}' organizationId='{}'", request.subject, request.organizationId)
-            call.respond(HttpStatusCode.OK, TokenResponse(token = token))
+    rateLimit(AUTH_RATE_LIMIT_NAME) {
+        route("/auth") {
+            post("/token", issueTokenSpec()) {
+                val request = call.receive<IssueTokenRequest>()
+                val token =
+                    JWT
+                        .create()
+                        .withAudience(audience)
+                        .withIssuer(issuer)
+                        .withSubject(request.subject)
+                        .withClaim("organizationId", request.organizationId)
+                        .withExpiresAt(Date(System.currentTimeMillis() + ttlMs))
+                        .sign(Algorithm.HMAC256(secret))
+                log.warn("DEV MODE: issued JWT for subject='{}' organizationId='{}'", request.subject, request.organizationId)
+                call.respond(HttpStatusCode.OK, TokenResponse(token = token))
+            }
         }
     }
 }

@@ -17,7 +17,7 @@ The project's first performance-efficiency measurement (the only ISO/IEC 25010 c
 
 ## Load
 
-- **Journey per iteration** (each iteration = one distinct client via a unique `X-Forwarded-For`, to measure the server and not the 100 req/min/client rate limiter): issuing the token doesn't count; 1× create simulation → 5× run day → days → snapshot → cfd → list (≈10 requests).
+- **Journey per iteration** (each iteration = one distinct client via a unique `X-Forwarded-For`; run the API with `TRUSTED_PROXY_COUNT=1` so that entry is trusted as the real client — GAP-BL — to measure the server and not the 100 req/min/client rate limiter): issuing the token doesn't count; 1× create simulation → 5× run day → days → snapshot → cfd → list (≈10 requests).
 - **`baseline` profile**: ramp 0→5 VUs (30s) → 5→20 (1m) → 20 constant (2m) → 20→0 (30s). Total 4m.
 
 ## Results

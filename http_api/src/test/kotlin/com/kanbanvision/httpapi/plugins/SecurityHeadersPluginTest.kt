@@ -31,6 +31,20 @@ class SecurityHeadersPluginTest {
             assertNotNull(response.headers["Referrer-Policy"])
             assertNotNull(response.headers["Content-Security-Policy"])
             assertNotNull(response.headers["X-XSS-Protection"])
+            assertNotNull(response.headers["Strict-Transport-Security"])
+        }
+
+    @Test
+    fun `Strict-Transport-Security enforces one year and subdomains`() =
+        testApplication {
+            application {
+                configureSecurityHeaders()
+                routing { get("/test") { call.respondText("ok") } }
+            }
+            assertEquals(
+                "max-age=31536000; includeSubDomains",
+                client.get("/test").headers["Strict-Transport-Security"],
+            )
         }
 
     @Test

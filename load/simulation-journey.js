@@ -77,10 +77,12 @@ export function setup() {
 }
 
 export default function (data) {
-  // Cada iteração simula um CLIENTE distinto: o rate limit da API (100 req/min)
-  // é chaveado pelo primeiro IP do X-Forwarded-For, então um XFF único por
-  // iteração mede a capacidade do servidor sob N clientes — não o limitador
-  // (uma jornada tem ~9 requests, muito abaixo do limite por cliente).
+  // Cada iteração simula um CLIENTE distinto: o rate limit da API (100 req/min) é chaveado
+  // pelo IP real do cliente. Rode a API com TRUSTED_PROXY_COUNT=1 para que o único entry de
+  // X-Forwarded-For enviado abaixo seja tratado como o cliente genuíno (com o default 0 a API
+  // ignora o XFF e chaveia pelo peer do socket — todo o tráfego k6 colapsaria numa só cota).
+  // Assim um XFF único por iteração mede a capacidade do servidor sob N clientes — não o
+  // limitador (uma jornada tem ~9 requests, muito abaixo do limite por cliente).
   const it = exec.scenario.iterationInTest;
   const clientIp = `10.${(it >> 16) & 0xff}.${(it >> 8) & 0xff}.${it & 0xff}`;
   const auth = {
