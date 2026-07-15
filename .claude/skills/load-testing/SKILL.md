@@ -25,7 +25,8 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 |---|---|
 | Script de jornada | `load/simulation-journey.js` |
 | Baseline vigente | `docs/quality/performance-baseline-2026-07.md` (1.644 req/s, 0% falhas, p95 22ms) |
-| Workflow manual | `.github/workflows/load-test.yml` (`workflow_dispatch`, perfis smoke/baseline) |
+| Workflow manual | `.github/workflows/load-test.yml` (`workflow_dispatch`, perfis smoke/baseline/stress/soak/spike) |
+| Sinal de regressão | `scripts/perf-regression.sh` (diff de dois `--summary-export`) |
 | Decisão | `adr/ADR-0027-load-tests-k6-baseline-p95.md` |
 | Wiki | [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) |
 
@@ -33,16 +34,22 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 
 ```bash
 # 1. Stack completo com dev auth
-JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build -d
+JWT_DEV_MODE=true TRUSTED_PROXY_COUNT=1 GRAFANA_ADMIN_PASSWORD=admin docker compose up --build -d
 
 # 2. Seed da organização (OBRIGATÓRIO: não há rota nem migration de criação)
 docker compose exec -T postgres psql -U kanban -d kanbanvision -c \
   "INSERT INTO organizations (id, name) VALUES ('11111111-1111-4111-8111-111111111111', 'k6-load-org') ON CONFLICT (id) DO NOTHING;"
 
-# 3. Rodar
+# 3. Rodar (PROFILE: smoke | baseline | stress | soak | spike)
 k6 run load/simulation-journey.js                     # smoke (1 VU, 30s — valida script/ambiente)
 k6 run -e PROFILE=baseline load/simulation-journey.js # medição oficial (ramp 20 VUs, 4min)
+k6 run -e PROFILE=stress   load/simulation-journey.js # joelho: 20→50→100 VUs, ~6min
+k6 run -e PROFILE=soak     load/simulation-journey.js # leaks: 20 VUs sustentados ~34min
+k6 run -e PROFILE=spike    load/simulation-journey.js # resiliência: surto 10→100 + recuperação
 ```
+
+`stress`/`spike` relaxam os thresholds de latência de propósito (o valor é ONDE o p95 estoura,
+não pass/fail); `smoke`/`baseline`/`soak` usam os thresholds do baseline vigente.
 
 Instalação: `brew install k6` (2.x). Validar sintaxe sem servidor: `k6 inspect load/simulation-journey.js`.
 
@@ -70,6 +77,23 @@ Cada iteração = **um cliente distinto**: token dev → `POST /api/v1/simulatio
 - `list` é o endpoint mais caro e cresce com o volume acumulado — primeiro candidato a paginação se subir.
 - Score/relatório: `--summary-export=k6-summary.json` para diff programático entre medições.
 
+### Sinal de regressão (`scripts/perf-regression.sh` — GAP-BO)
+
+Diffa dois `--summary-export` (referência conhecida-boa vs run atual) e **falha (exit 1)** se algo
+regrediu além da tolerância. Manual, **nunca gate de PR** (ADR-0027); rode sempre no **mesmo ambiente**.
+
+```bash
+# referência: salve um summary de um run bom (uma vez, no seu ambiente)
+k6 run -e PROFILE=baseline --summary-export=ref.json load/simulation-journey.js
+# depois de uma mudança de risco: rode de novo e compare
+k6 run -e PROFILE=baseline --summary-export=atual.json load/simulation-journey.js
+scripts/perf-regression.sh ref.json atual.json
+```
+
+Tolerâncias (constantes no topo do script): throughput cai > **10%**, p95 de endpoint sobe > **20%**,
+ou taxa de erro sobe > **+0.01** absoluto. Baseline é máquina-dependente → nada de summary commitado;
+você fornece os dois JSONs.
+
 ## 5. Medindo um baseline novo (obrigatório ao mudar threshold)
 
 1. Máquina ociosa (sem builds paralelos), stack recém-subido (`--build` com o código alvo).
@@ -82,9 +106,11 @@ Cada iteração = **um cliente distinto**: token dev → `POST /api/v1/simulatio
 
 ## 6. Workflow manual no CI
 
-`Actions → Load Test (manual)`: input `profile`, sobe compose, seeda org, roda k6, publica
-`k6-summary.json` como artifact (30 dias). Usar antes de release/tag como smoke de
-performance. **Nunca** transformar em gate de PR (ADR-0027).
+`Actions → Load Test (manual)`: input `profile` (smoke·baseline·stress·soak·spike), sobe compose
+(com `TRUSTED_PROXY_COUNT=1`), seeda org, roda k6, publica `k6-summary.json` como artifact (30 dias).
+Usar antes de release/tag como smoke de performance. **Nunca** transformar em gate de PR (ADR-0027).
+A regressão (`scripts/perf-regression.sh`) roda **localmente** — runners de CI têm latência ruidosa;
+a comparação válida é sempre no mesmo ambiente.
 
 ## 7. Pitfalls conhecidos
 
