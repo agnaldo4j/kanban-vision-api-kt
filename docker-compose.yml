@@ -31,6 +31,10 @@ services:
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-}"
       # MAX_REQUEST_BODY_SIZE — tamanho máximo do body em bytes (default: 1MB = 1048576).
       MAX_REQUEST_BODY_SIZE: "${MAX_REQUEST_BODY_SIZE:-1048576}"
+      # TRUSTED_PROXY_COUNT — nº de reverse-proxies confiáveis à frente da API para chavear o
+      # rate limit por IP real. 0 = ignora X-Forwarded-For e usa o peer do socket (seguro por
+      # padrão). Aqui a API é acessada direto, então 0. Testes de carga k6 usam 1.
+      TRUSTED_PROXY_COUNT: "${TRUSTED_PROXY_COUNT:-0}"
       LOG_FORMAT: "json"
       # ── OpenTelemetry (traces exported to Grafana Tempo via OTLP gRPC) ──────
       OTEL_SERVICE_NAME: "kanban-vision-api"

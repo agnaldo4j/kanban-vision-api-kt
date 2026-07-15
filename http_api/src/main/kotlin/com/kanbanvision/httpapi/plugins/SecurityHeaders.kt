@@ -10,6 +10,9 @@ internal val DOC_PATHS = listOf("/swagger", "/api.json")
 fun Application.configureSecurityHeaders() {
     intercept(ApplicationCallPipeline.Plugins) {
         val path = call.request.path()
+        // HSTS is transport-level and safe on every path (incl. Swagger): instructs browsers to
+        // only ever reach this host over HTTPS for a year, including subdomains.
+        call.response.headers.append("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         call.response.headers.append("X-Frame-Options", "DENY")
         call.response.headers.append("X-Content-Type-Options", "nosniff")
         call.response.headers.append("Referrer-Policy", "strict-origin-when-cross-origin")

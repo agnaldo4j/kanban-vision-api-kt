@@ -3,6 +3,7 @@ package com.kanbanvision.httpapi.routes
 import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
 import com.kanbanvision.httpapi.TEST_JWT_ISSUER
 import com.kanbanvision.httpapi.TEST_JWT_SECRET
+import com.kanbanvision.httpapi.plugins.configureRateLimit
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -60,6 +61,7 @@ class HealthAndAuthRoutesTest {
     fun `given valid auth request when posting token endpoint then api returns jwt token`() =
         testApplication {
             application {
+                configureRateLimit()
                 configureSerialization()
                 routing {
                     authRoutes(
