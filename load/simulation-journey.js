@@ -1,21 +1,29 @@
-// Fitness de performance (ADR-0027, GAP-AR): jornada completa de simulação.
-// Perfis via -e PROFILE=smoke|baseline (default: smoke).
+// Fitness de performance (ADR-0027, GAP-AR/GAP-BO): jornada completa de simulação.
+// Perfis via -e PROFILE=smoke|baseline|stress|soak|spike (default: smoke).
 //
 //   smoke    — 1 VU, 30s: valida o script e o ambiente (usado pelo workflow manual).
 //   baseline — ramp 0→20 VUs, ~4min: mede p95/throughput contra o docker compose.
+//   stress   — ramp 20→50→100 VUs, ~6min: acha o joelho (onde p95/erros disparam).
+//   soak     — 20 VUs sustentados por ~34min: detecta leaks/degradação ao longo do tempo.
+//   spike    — surto 10→100 VUs em 10s + recuperação: mede resiliência a picos súbitos.
+//
+// stress/spike relaxam os thresholds de latência de propósito (o valor é ONDE o p95
+// estoura, não pass/fail); smoke/baseline/soak usam os thresholds do baseline vigente.
 //
 // Pré-requisitos:
-//   1. Stack local com dev auth habilitado:
-//        JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
+//   1. Stack local com dev auth E confiança de proxy (para o XFF por-iteração virar
+//      cliente distinto — pós-GAP-BL; sem isso o rate limit colapsa numa só cota):
+//        JWT_DEV_MODE=true TRUSTED_PROXY_COUNT=1 GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 //   2. Organização seedada (não há rota nem migration de criação de organização):
 //        docker compose exec -T postgres psql -U kanban -d kanbanvision -c \
 //          "INSERT INTO organizations (id, name) VALUES
 //           ('11111111-1111-4111-8111-111111111111', 'k6-load-org')
 //           ON CONFLICT (id) DO NOTHING;"
 //
-//   k6 run -e PROFILE=baseline load/simulation-journey.js
+//   k6 run -e PROFILE=baseline --summary-export=k6-summary.json load/simulation-journey.js
 //
 // Baseline vigente: docs/quality/performance-baseline-2026-07.md
+// Sinal de regressão: scripts/perf-regression.sh <referencia.json> <k6-summary.json>
 
 import http from 'k6/http';
 import { check, group } from 'k6';
@@ -23,10 +31,29 @@ import exec from 'k6/execution';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 
+// Thresholds do baseline vigente — sinal executável (ADR-0027): NÃO é gate de PR.
+// Novo threshold exige nova medição documentada em docs/quality/ (ver Confirmation da ADR).
+const baseThresholds = {
+  http_req_failed: ['rate<0.01'],
+  'http_req_duration{endpoint:create}': ['p(95)<300'],
+  'http_req_duration{endpoint:run_day}': ['p(95)<500'],
+  'http_req_duration{endpoint:snapshot}': ['p(95)<300'],
+  'http_req_duration{endpoint:cfd}': ['p(95)<300'],
+  'http_req_duration{endpoint:list}': ['p(95)<300'],
+};
+
+// stress/spike: latência alta é esperada perto/no pico — thresholds relaxados para que o
+// run não seja marcado "failed" indevidamente (o valor é ONDE degrada, não pass/fail).
+const overloadThresholds = {
+  http_req_failed: ['rate<0.05'],
+  http_req_duration: ['p(95)<3000'],
+};
+
 const PROFILES = {
   smoke: {
     vus: 1,
     duration: '30s',
+    thresholds: baseThresholds,
   },
   baseline: {
     stages: [
@@ -35,6 +62,36 @@ const PROFILES = {
       { duration: '2m', target: 20 },
       { duration: '30s', target: 0 },
     ],
+    thresholds: baseThresholds,
+  },
+  stress: {
+    stages: [
+      { duration: '1m', target: 20 },
+      { duration: '2m', target: 50 },
+      { duration: '2m', target: 100 },
+      { duration: '1m', target: 0 },
+    ],
+    thresholds: overloadThresholds,
+  },
+  soak: {
+    // Carga moderada sustentada: p95/erros estáveis ao longo do tempo = sem leak.
+    stages: [
+      { duration: '2m', target: 20 },
+      { duration: '30m', target: 20 },
+      { duration: '2m', target: 0 },
+    ],
+    thresholds: baseThresholds,
+  },
+  spike: {
+    stages: [
+      { duration: '30s', target: 10 },
+      { duration: '10s', target: 100 },
+      { duration: '1m', target: 100 },
+      { duration: '10s', target: 10 },
+      { duration: '1m', target: 10 },
+      { duration: '10s', target: 0 },
+    ],
+    thresholds: overloadThresholds,
   },
 };
 
@@ -46,16 +103,6 @@ if (!profile) {
 
 export const options = {
   ...profile,
-  thresholds: {
-    // Sinal executável (ADR-0027): NÃO é gate de PR. Novo threshold exige
-    // nova medição documentada em docs/quality/ (ver Confirmation da ADR).
-    http_req_failed: ['rate<0.01'],
-    'http_req_duration{endpoint:create}': ['p(95)<300'],
-    'http_req_duration{endpoint:run_day}': ['p(95)<500'],
-    'http_req_duration{endpoint:snapshot}': ['p(95)<300'],
-    'http_req_duration{endpoint:cfd}': ['p(95)<300'],
-    'http_req_duration{endpoint:list}': ['p(95)<300'],
-  },
 };
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
