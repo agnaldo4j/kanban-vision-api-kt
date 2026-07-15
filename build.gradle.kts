@@ -1,9 +1,9 @@
 plugins {
     id("io.ktor.plugin") version "3.5.1" apply false
     // SBOM CycloneDX agregado dos módulos — gate de supply chain no CI (ADR-0025)
-    id("org.cyclonedx.bom") version "3.2.4"
+    id("org.cyclonedx.bom") version "3.3.0"
     // Native Image opt-in em :http_api — GAP-BA (ADR-0030 Fase 2); nunca roda no CI
-    id("org.graalvm.buildtools.native") version "1.1.3" apply false
+    id("org.graalvm.buildtools.native") version "1.1.4" apply false
 }
 
 // O gate de SCA cobre o artefato publicado (ADR-0025): só o runtimeClasspath
