@@ -26,7 +26,7 @@ class PortsPlacementTest {
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("Repository")
-            .assertTrue { it.resideInPackage("com.kanbanvision.persistence.repositories") }
+            .assertTrue { it.resideInPackage("com.kanbanvision.persistence.internal.repositories") }
     }
 
     @Test

@@ -9,15 +9,16 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 ```
 
 > **Enforced by Konsist** (ADR-0026): the Dependency Rule, domain purity, ports placement, the
-> bounded-context boundaries (Kanban Management BC ↛ Simulation BC, per `docs/context-map.md`) and
-> whole-graph package acyclicity (`PackageCycleTest`, GAP-BN) are fitness functions in
+> bounded-context boundaries (Kanban Management BC ↛ Simulation BC, per `docs/context-map.md`),
+> whole-graph package acyclicity (`PackageCycleTest`, GAP-BN) and the contract-package rule
+> (`ContractPackageTest`, GAP-BS/ADR-0033 — no cross-module import of `*.internal`) are fitness functions in
 > `architecture/src/test/kotlin/` — they run in `testAll` and fail CI.
 
 ## Modules
 
 - **domain** — Pure Kotlin. Zero framework dependencies. `Board` is the Aggregate Root for Board Management: `Board.addStep(name, requiredAbility)` enforces unique **step** name per board; `Board.addCard(step, title, description)` validates the step belongs to the board. Contains board entities (`Board`, `Card`, `Step`), simulation entities (`Simulation`, `Scenario`, `DailySnapshot`, sealed `Decision`), and typed refs in `Refs.kt` (`BoardRef`, `StepRef`, `SimulationRef`, `ScenarioRef`).
 - **usecases** — Application layer. CQS pattern: each use case accepts one `Command` (mutates) or `Query` (reads). Repository interfaces (ports) live under `repositories/` — NOT in domain.
-- **sql_persistence** — **Exposed DSL** + HikariCP (no raw JDBC). Implements the three repository ports (`Organization`, `Simulation`, `Snapshot` — the Board/Card/Step ports were removed in GAP-BF). Flyway migrations: `V1__initial_schema.sql` (all tables + FK indexes + CHECK constraints, incl. `UNIQUE(steps.board_id, steps.name)`) and `V2__jsonb_simulation_blobs.sql` (TEXT→JSONB, ADR-0013). There is no `V3`. JSON serialization via `kotlinx.serialization` surrogate classes in `serializers/`. Integration tests use Embedded PostgreSQL (zonky).
+- **sql_persistence** — **Exposed DSL** + HikariCP (no raw JDBC). Implements the three repository ports (`Organization`, `Simulation`, `Snapshot` — the Board/Card/Step ports were removed in GAP-BF). Flyway migrations: `V1__initial_schema.sql` (all tables + FK indexes + CHECK constraints, incl. `UNIQUE(steps.board_id, steps.name)`) and `V2__jsonb_simulation_blobs.sql` (TEXT→JSONB, ADR-0013). There is no `V3`. JSON serialization via `kotlinx.serialization` surrogate classes in `internal/serializers/`. Integration tests use Embedded PostgreSQL (zonky). **Implementation packages** (`internal/repositories`, `internal/tables`, `internal/serializers`) are module-private by the `*.internal` contract-package rule (GAP-BS); only the root types (`DatabaseFactory`, `DatabaseConfig`, `DbCircuitBreaker`) are the public bootstrap contract.
 - **http_api** — Ktor (Netty) + Koin DI. `Main.kt` wires everything. Plugins: Observability, Authentication (JWT Bearer), Metrics (Micrometer), RateLimit (100 req/min), Serialization, StatusPages, Routing, OpenApi. `AppModule` binds implementations to ports.
 
 ## Key Conventions
@@ -26,10 +27,10 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 - **Versions**: Declared inline per `build.gradle.kts`. No `libs.versions.toml`.
 - **Kotlin serialization plugin**: applied in `http_api` and `sql_persistence` without version — already on classpath from `buildSrc`.
 - **Domain stays pure**: `:domain` must have zero framework imports.
-- **Ports-and-adapters**: interfaces in `usecases/repositories/`; implementations in `sql_persistence/repositories/`. Routes call use cases, never repositories.
+- **Ports-and-adapters**: interfaces in `usecases/repositories/`; implementations in `sql_persistence/internal/repositories/`. Routes call use cases, never repositories.
 - **CQS**: `CreateBoardUseCase` ← `CreateBoardCommand`; `GetBoardUseCase` ← `GetBoardQuery`.
 - **Error handling**: `Either<DomainError, T>` via Arrow-kt. `either { ensure(...) {} }` + `zipOrAccumulate` for multi-field validation. Routes use `.fold(ifLeft = { respondWithDomainError(it) }, ifRight = { ... })`.
-- **Repositórios concretos só no AppModule**: fitness function Konsist (`architecture/ConventionsTest`) bloqueia `Jdbc*`/`Exposed*` fora do wiring de DI (migrada do Detekt — ADR-0028). O `ForbiddenImport` do Detekt cobre imports de segurança (`ObjectInputStream`, `MessageDigest`).
+- **Pacotes de contrato vs `*.internal`**: fitness function Konsist (`architecture/ContractPackageTest`, GAP-BS/ADR-0033) proíbe qualquer import cross-module de um pacote `*.internal` — a única exceção é o `AppModule` (seam de DI). Subsume a antiga regra `Jdbc*`/`Exposed*`-só-no-AppModule (ADR-0028): os adapters agora vivem em `persistence.internal.repositories`. O `ForbiddenImport` do Detekt cobre imports de segurança (`ObjectInputStream`, `MessageDigest`).
 - **Package root**: `com.kanbanvision`
 
 ## Exposed ORM (sql_persistence only)
@@ -60,7 +61,7 @@ implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 Define table objects alongside their repository. Never define table objects in `domain/` or `usecases/`.
 
 ```kotlin
-// sql_persistence/tables/SimulationsTable.kt
+// sql_persistence/internal/tables/SimulationsTable.kt
 object SimulationsTable : Table("simulations") {
     val id             = uuid("id")
     val organizationId = uuid("organization_id")
@@ -196,7 +197,7 @@ transaction {
 | Wrap in `either {}` | All repository methods return `Either<DomainError, T>` |
 | Map outside chain | `ResultRow.toDomain()` is a pure extension function |
 | Shared HikariCP | One `DataSource` shared between Exposed and any raw JDBC |
-| Konsist (ConventionsTest) | `Jdbc*`/`Exposed*Repository` imports restricted to `AppModule` (ADR-0028) |
+| Konsist (ContractPackageTest) | `*.internal` packages (incl. `internal/repositories`, `internal/tables`, `internal/serializers`) not importable cross-module except `AppModule` (GAP-BS/ADR-0033; subsumes the ADR-0028 `Jdbc`/`Exposed` rule) |
 
 ---
 

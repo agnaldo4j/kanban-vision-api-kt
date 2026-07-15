@@ -1,12 +1,12 @@
-package com.kanbanvision.persistence.repositories
+package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.persistence.dbQuery
-import com.kanbanvision.persistence.serializers.DailySnapshotSerializer
-import com.kanbanvision.persistence.tables.DailySnapshotsTable
+import com.kanbanvision.persistence.internal.serializers.DailySnapshotSerializer
+import com.kanbanvision.persistence.internal.tables.DailySnapshotsTable
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq

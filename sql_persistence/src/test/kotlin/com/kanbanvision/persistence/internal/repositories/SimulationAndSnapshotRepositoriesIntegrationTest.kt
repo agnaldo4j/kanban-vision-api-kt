@@ -1,4 +1,4 @@
-package com.kanbanvision.persistence.repositories
+package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.getOrElse
 import com.kanbanvision.domain.errors.DomainError

@@ -1,9 +1,9 @@
 package com.kanbanvision.httpapi.di
 
 import com.kanbanvision.httpapi.events.MicrometerEventPublisher
-import com.kanbanvision.persistence.repositories.JdbcOrganizationRepository
-import com.kanbanvision.persistence.repositories.JdbcSimulationRepository
-import com.kanbanvision.persistence.repositories.JdbcSnapshotRepository
+import com.kanbanvision.persistence.internal.repositories.JdbcOrganizationRepository
+import com.kanbanvision.persistence.internal.repositories.JdbcSimulationRepository
+import com.kanbanvision.persistence.internal.repositories.JdbcSnapshotRepository
 import com.kanbanvision.usecases.ports.DefaultSimulationEngine
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.ports.SimulationEnginePort

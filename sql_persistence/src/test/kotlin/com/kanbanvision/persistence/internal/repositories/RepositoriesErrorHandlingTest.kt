@@ -1,4 +1,4 @@
-package com.kanbanvision.persistence.repositories
+package com.kanbanvision.persistence.internal.repositories
 
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.SimulationDay

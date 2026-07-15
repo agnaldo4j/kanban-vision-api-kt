@@ -1,4 +1,4 @@
-package com.kanbanvision.persistence.tables
+package com.kanbanvision.persistence.internal.tables
 
 import org.postgresql.util.PGobject
 import kotlin.test.Test
