@@ -10,27 +10,27 @@
 | Serialization | kotlinx.serialization |
 | DI | Koin 4.2.2 |
 | JDBC | Raw JDBC + HikariCP 7.1.0 |
-| DB Migrations | Flyway 12.10.0 |
+| DB Migrations | Flyway 12.11.0 |
 | Production DB | PostgreSQL (JDBC driver `org.postgresql:postgresql` 42.7.13) |
 | Test DB | Embedded PostgreSQL (zonky) |
 | Metrics | Micrometer + Prometheus (`/metrics`) |
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
-| Testing | JUnit Jupiter 6.1.1 + MockK 1.14.11 |
+| Testing | JUnit Jupiter 6.1.2 + MockK 1.14.11 |
 | Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER; gates: `domain` 78% (módulo inteiro) · `usecases` 55% · `sql_persistence` 65% · `http_api` 45% (plugins/adapters/events)) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 — módulo test-only `architecture/` (ADR-0026); roda no `testAll` |
 | Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, nunca gate de PR |
-| SBOM | CycloneDX Gradle plugin 3.2.4 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
+| SBOM | CycloneDX Gradle plugin 3.3.0 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
 | SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
 | Containerisation | Docker multi-stage: GraalVM **Native Image** (binários app + migração — ADR-0032) sobre Oracle Linux 9 slim + docker-compose. Dev/testes seguem JVM (`buildFatJar` disponível) |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
-| Observability | Prometheus 2.54 + Grafana 11.3 + OTel SDK/instrumentação de biblioteca 2.29.0 (API 1.63.0, sem javaagent — ADR-0031) |
+| Observability | Prometheus 2.54 + Grafana 11.3 + OTel SDK/instrumentação de biblioteca 2.29.0 (API 1.64.0, sem javaagent — ADR-0031) |
 | Java | Java 25 LTS (Gradle 9.6.1 wrapper; Foojay resolver auto-provisions toolchain) |
-| Kotlin | 2.4.0 |
+| Kotlin | 2.4.10 |
 
 ## CI/CD — GitHub Actions (`.github/workflows/ci.yml`)
 
