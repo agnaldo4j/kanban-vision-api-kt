@@ -1,4 +1,4 @@
-package com.kanbanvision.httpapi.plugins
+package com.kanbanvision.httpapi.support
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest

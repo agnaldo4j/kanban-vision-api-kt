@@ -3,7 +3,7 @@ package com.kanbanvision.httpapi.adapters
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
-import com.kanbanvision.httpapi.plugins.REQUEST_ID_KEY
+import com.kanbanvision.httpapi.support.REQUEST_ID_KEY
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTPrincipal

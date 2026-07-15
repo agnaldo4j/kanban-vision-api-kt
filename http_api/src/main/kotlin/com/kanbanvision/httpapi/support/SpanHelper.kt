@@ -1,4 +1,4 @@
-package com.kanbanvision.httpapi.plugins
+package com.kanbanvision.httpapi.support
 
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.SpanKind
@@ -19,11 +19,12 @@ import kotlinx.coroutines.withContext
  * [CancellationException] is re-thrown without being recorded as an error span,
  * since coroutine cancellations are not application errors.
  *
- * When the OTel SDK is registered as global by [configureTelemetry] (ADR-0031) the span
+ * When the OTel SDK is registered as global by `configureTelemetry` (ADR-0031) the span
  * is exported. When no SDK is registered (unit tests, `OTEL_TRACES_EXPORTER` unset/none)
  * the call is a no-op because [GlobalOpenTelemetry] returns a no-op tracer by default.
  *
- * Only use this helper in `http_api/` — never import it from `usecases/` or `domain/`.
+ * Lives in the neutral `support` package so both `plugins` and `routes` can use it without
+ * creating a package cycle (enforced by `PackageCycleTest`). Only use it in `http_api/`.
  */
 suspend fun <T> withSpan(
     spanName: String,

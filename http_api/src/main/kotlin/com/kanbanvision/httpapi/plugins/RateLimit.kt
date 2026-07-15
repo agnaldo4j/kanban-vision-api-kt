@@ -1,19 +1,16 @@
 package com.kanbanvision.httpapi.plugins
 
+import com.kanbanvision.httpapi.support.AUTH_RATE_LIMIT_NAME
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
 import io.ktor.server.plugins.ratelimit.RateLimit
-import io.ktor.server.plugins.ratelimit.RateLimitName
 import kotlin.time.Duration.Companion.minutes
 
 private const val DEFAULT_RATE_LIMIT = 100
 private const val AUTH_RATE_LIMIT = 5
 private const val RATE_LIMIT_WINDOW_MINUTES = 1
-
-/** Named limiter for the `/auth` routes — stricter than the global limit (OWASP A07, security.md). */
-val AUTH_RATE_LIMIT_NAME = RateLimitName("auth")
 
 fun Application.configureRateLimit(
     limit: Int = DEFAULT_RATE_LIMIT,
