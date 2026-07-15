@@ -23,7 +23,7 @@ internal class OpenApiSpecTest {
     private fun withSpec(assertions: (JsonObject) -> Unit) =
         testApplication {
             application {
-                configureOpenApi()
+                configureOpenApi(enabled = true)
                 configureSimulationApi(SimulationApiMocks())
             }
             val response = client.get("/api.json")

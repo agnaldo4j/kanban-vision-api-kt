@@ -24,6 +24,8 @@ services:
       JWT_AUDIENCE: "kanban-vision-clients"
       JWT_TTL_MS: "86400000"
       JWT_DEV_MODE: "${JWT_DEV_MODE:-false}"
+      # ENABLE_SWAGGER — expõe /api.json e /swagger. Default off (nunca em produção — security.md §3).
+      ENABLE_SWAGGER: "${ENABLE_SWAGGER:-false}"
       # CORS — lista de origens permitidas (URL completa com scheme), separadas por vírgula.
       # Vazio = nenhuma origem cross-origin permitida (comportamento padrão seguro).
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-}"

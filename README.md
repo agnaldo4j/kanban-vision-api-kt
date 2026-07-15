@@ -51,14 +51,14 @@ cd kanban-vision-api-kt
 # Run full stack (API + PostgreSQL + Prometheus + Grafana)
 GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 
-# Dev mode — enables POST /auth/token for local JWT generation
-JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
+# Dev mode — enables POST /auth/token (JWT_DEV_MODE) and /swagger (ENABLE_SWAGGER)
+JWT_DEV_MODE=true ENABLE_SWAGGER=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 ```
 
 | Service | URL |
 |---|---|
 | API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger |
+| Swagger UI | http://localhost:8080/swagger (requires `ENABLE_SWAGGER=true` — off by default) |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 

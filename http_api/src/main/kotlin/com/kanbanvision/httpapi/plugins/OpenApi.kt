@@ -9,9 +9,20 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import org.slf4j.LoggerFactory
 
+private val log = LoggerFactory.getLogger("OpenApi")
+
+/**
+ * Reads the `ENABLE_SWAGGER` flag. Default-off, mirroring `JWT_DEV_MODE`: the OpenAPI spec and
+ * Swagger UI are exposed only when explicitly enabled (`security.md` §3). The `env` seam keeps this
+ * unit-testable without touching real environment variables (same idiom as `Cors.loadCorsOrigins`).
+ */
+internal fun swaggerEnabled(env: (String) -> String? = System::getenv): Boolean = env("ENABLE_SWAGGER")?.lowercase() == "true"
+
+// LongMethod: the OpenAPI info/tags/security block is a flat declarative config, not branching logic.
 @Suppress("LongMethod")
-fun Application.configureOpenApi() {
+fun Application.configureOpenApi(enabled: Boolean = swaggerEnabled()) {
     install(OpenApi) {
         info {
             title = "Kanban Vision API"
@@ -42,6 +53,11 @@ fun Application.configureOpenApi() {
             }
         }
     }
+    if (!enabled) {
+        log.info("ENABLE_SWAGGER not 'true' — /api.json and /swagger disabled")
+        return
+    }
+    log.warn("Swagger UI enabled at /swagger (ENABLE_SWAGGER=true) — do not enable in production")
     configureOpenApiRoutes()
 }
 
