@@ -74,23 +74,35 @@ spec:
             initialDelaySeconds: 0
             periodSeconds: 5
             failureThreshold: 3
-          # Dimensionado por medição (ADR-0036 / GAP-BR) —
-          # docs/quality/performance-baseline-2026-07-native-tuned.md
+          # Dimensionado por medição (ADR-0037 / GAP-BU) —
+          # docs/quality/performance-baseline-2026-07-envelope-medido.md
           resources:
             requests:
-              # Inalterado: é o que o scheduler RESERVA. Manter em 100m é o que torna o
-              # limit de 1000m abaixo gratuito em densidade.
-              cpu: "100m"
-              # 128Mi: pico medido de 80–92 MiB sob carga (estável em qualquer nível de CPU).
+              # 100m → 500m (ADR-0037). O request NÃO é um botão de custo: é uma declaração
+              # factual ao scheduler, e ele acredita nela. Com 100m o k8s empacotava ~10 pods
+              # por core achando que cada um precisa de 0,1 — e sob carga cada um quer 1000m,
+              # estrangulando todos. Também é o denominador do HPA: 70% de 100m = gatilho de
+              # 70m contra teto de 1000m, ou seja, o HPA media "está servindo tráfego", não
+              # saturação. Razão 2:1 com o limit; 70% de 500m = 350m, um alvo que significa algo.
+              cpu: "500m"
+              # Working set medido sob carga: p50 55 MiB, máx 92 MiB (115 amostras, 1 CPU).
+              # Memória é INCOMPRESSÍVEL: pods acima do request são despejados primeiro sob
+              # pressão do nó (QoS Burstable), então o request tem de cobrir o uso real. Cobre
+              # 1,4× o pico. NÃO usar memory.peak aqui: ele inclui page cache reclaimável e
+              # oscilou 93↔152 MiB na MESMA config — peak prova não-encosto, working set dimensiona.
               memory: "128Mi"
             limits:
               # 500m → 1000m: +153% de throughput (785,8 → 1989,8 req/s) e p95 −60%
               # (81,7 → 32,9 ms). Sob 500m o runtime reporta Effective CPU Count = 1 e o CFS
-              # estrangula o pod — era o gargalo real, não o GC. É o joelho da curva: 1→2 CPUs
-              # rende só +31%. O limit é teto de burst, não reserva ⇒ não consome capacidade.
+              # estrangula o pod — era o gargalo real, não o GC. Joelho REAL da curva (1→2 CPUs
+              # rende só +31%, medido com o event loop já dimensionado para 2 — não é artefato
+              # de thread pool). O limit é teto de burst: não reserva capacidade, mas a razão
+              # limit/request é uma promessa que o nó precisa poder honrar — daí o request 2:1.
               cpu: "1000m"
-              # 512Mi → 256Mi: ~2,8× de folga sobre o pico. Medido com o limite APLICADO:
-              # oom_kill 0 e max 0 (nunca encostou) ⇒ o right-size custa zero throughput.
+              # 512Mi → 256Mi: 2,8× de folga sobre o WORKING SET de pico (92 MiB). Medido com o
+              # limite APLICADO: oom_kill 0 e max 0 (nunca encostou) ⇒ custa zero throughput.
+              # Reavaliar ANTES de subir limits.cpu: memória escala com throughput (0,5 CPU → ~80
+              # MiB; 1,0 CPU → 92 MiB).
               memory: "256Mi"
           volumeMounts:
             - name: tmp
