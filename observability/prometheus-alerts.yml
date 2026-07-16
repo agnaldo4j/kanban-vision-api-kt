@@ -64,25 +64,39 @@ groups:
             (threshold: 90%) for more than 2 minutes.
 
       # Exaustão de conexões da FROTA — o modo de falha que o alerta por instância acima NÃO vê:
-      # 8 pods a 30% cada não disparam nada enquanto o banco satura. É a razão de o GAP-BU/ADR-0037
-      # ter amarrado maxReplicas ao pool (invariante: maxReplicas × poolSize <= max_connections).
-      # 82 = 8 réplicas × 10 (pool fixo, application.conf:34) + 2 do Job de migração; o alerta
-      # dispara em ~80% disso.
+      # pods pouco utilizados não disparam nada enquanto o banco satura. É a razão de o
+      # GAP-BU/ADR-0037 ter amarrado maxReplicas ao pool.
+      #
+      # ⚠️ A métrica é `hikaricp_connections` (TOTAL = active + idle), NÃO `_active`.
+      # `_active` conta só as conexões EMPRESTADAS a requests no momento; quem ocupa slot no
+      # PostgreSQL é o total, porque `minimumIdle` não é setado (application.conf:34) ⇒ o Hikari
+      # o iguala ao máximo e mantém as 10 conexões ABERTAS mesmo em repouso.
+      # Medido com o app ocioso, zero requests:
+      #     hikaricp_connections 10 · hikaricp_connections_idle 10 · hikaricp_connections_active 0
+      #     pg_stat_activity: 12 conexões abertas
+      # Ou seja: 8 réplicas ociosas ocupam 80 slots com `_active` em ZERO — um alerta sobre
+      # `_active` nunca avisaria antes da exaustão.
+      #
+      # Threshold: no teto do HPA a frota mantém 8 × 10 = 80 conexões POR DESIGN (ociosas ou não);
+      # o Postgres default oferece ~95 utilizáveis (100 − 3 de superuser), e o Job de migração pede
+      # +2 quando roda (o Job não entra neste sum(): o binário de migração não tem Micrometer).
+      # 85 = acima das 80 previstas e ainda ~10 abaixo do teto real ⇒ dispara quando o invariante
+      # foi violado (maxReplicas elevado sem refazer a conta, poolSize alterado), não no uso normal.
+      #
       # ⚠️ Limitação honesta: localmente há UMA instância e o prometheus.yml fixa `instance` numa
       # constante, então este sum() não é testável aqui contra o conjunto de labels de produção —
-      # num cluster o Prometheus externo põe instance=podIP:port. A regra está certa; a validação
-      # de frota depende do Prometheus em k8s, que este repo ainda não define.
+      # num cluster o Prometheus externo põe instance=podIP:port (GAP-CB).
       - alert: DbConnectionFleetExhaustion
-        expr: sum(hikaricp_connections_active) > 65
+        expr: sum(hikaricp_connections) > 85
         for: 2m
         labels:
           severity: critical
         annotations:
           summary: "Conexões da frota perto do teto do banco"
           description: >
-            {{ printf "%.0f" $value }} conexões ativas somadas na frota
-            (teto do invariante: 82 = maxReplicas 8 × poolSize 10 + 2 do Job de migração;
-            max_connections default do PostgreSQL: 100, menos 3 de superuser).
+            {{ printf "%.0f" $value }} conexões ABERTAS somadas na frota (active + idle)
+            — acima das 80 previstas pelo invariante (maxReplicas 8 × poolSize 10).
+            Teto real: ~95 utilizáveis num PostgreSQL default, menos +2 do Job de migração.
 
       # ── Camada de CONTAINER (cAdvisor — GAP-BW) ────────────────────────────────────────
       # Até aqui NENHUM alerta enxergava esta camada: um pod estrangulado pelo CFS ou perto do
