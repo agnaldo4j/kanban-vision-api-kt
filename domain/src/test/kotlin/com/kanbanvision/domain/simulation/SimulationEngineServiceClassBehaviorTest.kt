@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -30,8 +30,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "expedite-card" }.state)
-        assertEquals(CardState.TODO, allCards.single { it.id == "fixed-date-card" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id.value == "expedite-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id.value == "fixed-date-card" }.state)
     }
 
     @Test
@@ -48,8 +48,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "expedite-card" }.state)
-        assertEquals(CardState.TODO, allCards.single { it.id == "intangible-card" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id.value == "expedite-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id.value == "intangible-card" }.state)
     }
 
     @Test
@@ -100,8 +100,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "fixed-date-card" }.state)
-        assertEquals(CardState.TODO, allCards.single { it.id == "standard-card" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id.value == "fixed-date-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id.value == "standard-card" }.state)
     }
 
     @Test
@@ -118,8 +118,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "fixed-date-card" }.state)
-        assertEquals(CardState.TODO, allCards.single { it.id == "intangible-card" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id.value == "fixed-date-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id.value == "intangible-card" }.state)
     }
 
     @Test
@@ -136,8 +136,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id == "standard-card" }.state)
-        assertEquals(CardState.TODO, allCards.single { it.id == "intangible-card" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.single { it.id.value == "standard-card" }.state)
+        assertEquals(CardState.TODO, allCards.single { it.id.value == "intangible-card" }.state)
     }
 
     private fun simulationWithTwoCards(
@@ -152,8 +152,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val input = board.steps.first()
         val cards =
             listOf(
-                Card(id = first.first, step = StepRef(input.id), title = first.first, serviceClass = first.second),
-                Card(id = second.first, step = StepRef(input.id), title = second.first, serviceClass = second.second),
+                Card(id = CardId(first.first), step = input.id, title = first.first, serviceClass = first.second),
+                Card(id = CardId(second.first), step = input.id, title = second.first, serviceClass = second.second),
             )
         val rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = 2, seedValue = 77L)
         val scenario =

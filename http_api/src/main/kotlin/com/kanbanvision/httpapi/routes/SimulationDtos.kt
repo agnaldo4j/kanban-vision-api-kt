@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision
@@ -145,7 +146,7 @@ data class DailySnapshotResponse(
 
 internal fun DailySnapshot.toResponse() =
     DailySnapshotResponse(
-        simulationId = simulation.id,
+        simulationId = simulation.value,
         day = day.value,
         metrics =
             FlowMetricsResponse(
@@ -158,7 +159,7 @@ internal fun DailySnapshot.toResponse() =
             movements.map { m ->
                 MovementResponse(
                     type = m.type.name,
-                    cardId = m.cardId,
+                    cardId = m.cardId.value,
                     day = m.day.value,
                     reason = m.reason,
                 )
@@ -272,7 +273,7 @@ internal fun Page<Simulation>.toListResponse() =
 
 internal fun Simulation.toSummaryResponse() =
     SimulationSummaryResponse(
-        id = id,
+        id = id.value,
         name = name,
         status = status.name,
         currentDay = currentDay.value,
@@ -316,20 +317,22 @@ internal fun DecisionRequest.toDomain(): Either<DomainError, Decision> =
         else -> DomainError.InvalidDecision("Unknown decision type: $type").left()
     }
 
-private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveItem> =
+// Valida ANTES de construir CardId: o guard isNotBlank do value class lançaria
+// IllegalArgumentException (→ 500 via StatusPages) num cardId em branco. Aqui vira 400.
+private fun DecisionRequest.requireCardId(type: String): Either<DomainError, CardId> =
     payload["cardId"]
-        ?.let { Decision.MoveItem(it).right() }
-        ?: DomainError.InvalidDecision("Missing required field 'cardId' for MOVE_ITEM").left()
+        ?.takeIf { it.isNotBlank() }
+        ?.let { CardId(it).right() }
+        ?: DomainError.InvalidDecision("Missing or blank required field 'cardId' for $type").left()
+
+private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveItem> =
+    requireCardId("MOVE_ITEM").map { Decision.MoveItem(it) }
 
 private fun DecisionRequest.toBlockDecision(): Either<DomainError, Decision.BlockItem> =
-    payload["cardId"]
-        ?.let { Decision.BlockItem(it, payload["reason"] ?: "blocked").right() }
-        ?: DomainError.InvalidDecision("Missing required field 'cardId' for BLOCK_ITEM").left()
+    requireCardId("BLOCK_ITEM").map { Decision.BlockItem(it, payload["reason"] ?: "blocked") }
 
 private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.UnblockItem> =
-    payload["cardId"]
-        ?.let { Decision.UnblockItem(it).right() }
-        ?: DomainError.InvalidDecision("Missing required field 'cardId' for UNBLOCK_ITEM").left()
+    requireCardId("UNBLOCK_ITEM").map { Decision.UnblockItem(it) }
 
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
     payload["title"]
@@ -342,7 +345,7 @@ private fun decisionServiceClass(value: String?): ServiceClass =
 internal fun Simulation.toSimulationResponse(): SimulationResponse {
     val cardCount = scenario.board.steps.sumOf { it.cards.size }
     return SimulationResponse(
-        simulationId = id,
+        simulationId = id.value,
         organizationId = organization.id,
         wipLimit = scenario.rules.wipLimit,
         teamSize = scenario.rules.teamSize,

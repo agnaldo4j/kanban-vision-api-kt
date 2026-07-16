@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.internal.repositories
 import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.Scenario
 import com.kanbanvision.domain.model.organization.ScenarioRules
@@ -34,33 +35,33 @@ class JdbcSimulationRepository : SimulationRepository {
     override suspend fun save(simulation: Simulation): Either<DomainError, Simulation> =
         dbQuery(log) {
             SimulationsTable.upsert {
-                it[id] = simulation.id
+                it[id] = simulation.id.value
                 it[organizationId] = simulation.organization.id
                 it[wipLimit] = simulation.scenario.rules.wipLimit
                 it[teamSize] = simulation.scenario.rules.teamSize
                 it[seedValue] = simulation.scenario.rules.seedValue
             }
             SimulationStatesTable.upsert {
-                it[simulationId] = simulation.id
+                it[simulationId] = simulation.id.value
                 it[stateJson] = SimulationSerializer.encode(simulation)
             }
             simulation
         }
 
-    override suspend fun findById(id: String): Either<DomainError, Simulation> =
+    override suspend fun findById(id: SimulationId): Either<DomainError, Simulation> =
         dbQuery(log) {
             (
                 SimulationsTable
                     .join(OrganizationsTable, JoinType.INNER, SimulationsTable.organizationId, OrganizationsTable.id)
                     .join(SimulationStatesTable, JoinType.LEFT, SimulationsTable.id, SimulationStatesTable.simulationId)
             ).selectAll()
-                .where(SimulationsTable.id eq id)
+                .where(SimulationsTable.id eq id.value)
                 .singleOrNull()
                 ?.let { row -> rowToSimulation(row) }
         }.fold(
             ifLeft = { it.left() },
             ifRight = { simulation ->
-                simulation?.let { Either.Right(it) } ?: DomainError.SimulationNotFound(id).left()
+                simulation?.let { Either.Right(it) } ?: DomainError.SimulationNotFound(id.value).left()
             },
         )
 
@@ -111,7 +112,7 @@ class JdbcSimulationRepository : SimulationRepository {
             )
         val scenario = Scenario.create(name = "Default Simulation Scenario", rules = rules)
         return Simulation(
-            id = row[SimulationsTable.id],
+            id = SimulationId(row[SimulationsTable.id]),
             name = "Simulation ${row[SimulationsTable.id].take(SIMULATION_NAME_ID_PREFIX_LENGTH)}",
             currentDay = SimulationDay(1),
             status = SimulationStatus.DRAFT,

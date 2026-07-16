@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -44,7 +44,7 @@ class SimulationEngineEdgeCaseBehaviorTest {
         val board = Board.create("B").addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         val step = board.steps.first()
         val worker = Worker(name = "Dev", abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
-        val card = Card(id = "c1", step = StepRef(step.id), title = "T", state = CardState.DONE)
+        val card = Card(id = CardId("c1"), step = step.id, title = "T", state = CardState.DONE)
         val boardWithCard = board.copy(steps = listOf(step.assignWorker(worker).copy(cards = listOf(card))))
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 1, seedValue = 1L)
         val scenario = Scenario.create(name = "S", rules = rules, board = boardWithCard)

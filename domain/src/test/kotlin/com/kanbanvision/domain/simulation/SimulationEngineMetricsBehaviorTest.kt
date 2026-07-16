@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -63,10 +63,10 @@ class SimulationEngineMetricsBehaviorTest {
     fun `given move decision completing in progress card when metrics computed then throughput is one`() {
         val simulation = simulationWithSingleCard(cardId = "wip", state = CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("wip")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem(CardId("wip"))), seed = 1L)
 
         assertEquals(1, result.snapshot.metrics.throughput)
-        assertTrue(result.snapshot.movements.any { it.type == MovementType.COMPLETED && it.cardId == "wip" })
+        assertTrue(result.snapshot.movements.any { it.type == MovementType.COMPLETED && it.cardId.value == "wip" })
     }
 
     @Test
@@ -105,7 +105,7 @@ class SimulationEngineMetricsBehaviorTest {
         val result = SimulationEngine.runDay(simulation, decisions = emptyList(), seed = 0L)
 
         assertNotNull(result.snapshot)
-        assertEquals(simulation.id, result.snapshot.simulation.id)
+        assertEquals(simulation.id.value, result.snapshot.simulation.value)
     }
 
     private fun simulationWithSingleCard(
@@ -115,7 +115,7 @@ class SimulationEngineMetricsBehaviorTest {
     ): Simulation {
         val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val card = Card(id = cardId, step = StepRef(step.id), title = "Task", state = state, agingDays = agingDays)
+        val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state, agingDays = agingDays)
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 
@@ -124,9 +124,9 @@ class SimulationEngineMetricsBehaviorTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = "wip-1", step = StepRef(step.id), title = "WIP 1", state = CardState.IN_PROGRESS),
-                Card(id = "wip-2", step = StepRef(step.id), title = "WIP 2", state = CardState.IN_PROGRESS),
-                Card(id = "done-1", step = StepRef(step.id), title = "Done 1", state = CardState.DONE),
+                Card(id = CardId("wip-1"), step = step.id, title = "WIP 1", state = CardState.IN_PROGRESS),
+                Card(id = CardId("wip-2"), step = step.id, title = "WIP 2", state = CardState.IN_PROGRESS),
+                Card(id = CardId("done-1"), step = step.id, title = "Done 1", state = CardState.DONE),
             )
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 5)
     }
@@ -142,8 +142,8 @@ class SimulationEngineMetricsBehaviorTest {
             )
         val card =
             Card(
-                id = "card",
-                step = StepRef(step.id),
+                id = CardId("card"),
+                step = step.id,
                 title = "Task",
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 10,

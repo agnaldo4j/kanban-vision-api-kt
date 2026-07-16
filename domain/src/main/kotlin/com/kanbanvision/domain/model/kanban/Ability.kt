@@ -9,7 +9,7 @@ data class Ability(
     val name: AbilityName,
     val seniority: Seniority,
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<String> {
     init {
         require(id.isNotBlank()) { "Ability id must not be blank" }
     }

@@ -1,6 +1,7 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.SimulationDay
@@ -40,7 +41,7 @@ class SimulationDtosAndErrorsTest {
 
     @Test
     fun `given daily snapshot when mapping to response then movements and metrics are serialized consistently`() {
-        val movement = Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(1), reason = "move")
+        val movement = Movement(type = MovementType.MOVED, cardId = CardId("card-1"), day = SimulationDay(1), reason = "move")
         val snapshot = fixtureSnapshot(simulationId = "sim-1", day = 1).copy(movements = listOf(movement))
 
         val payload = snapshot.toResponse()

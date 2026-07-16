@@ -60,11 +60,18 @@ class AuditAndIdentityBehaviorTest {
     @Test
     fun `given blank ids in domain entities when constructing then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { Organization(id = "", name = "Org") }
-        assertFailsWith<IllegalArgumentException> { Board(id = "", name = "Board") }
-        assertFailsWith<IllegalArgumentException> { Scenario(id = "", name = "Scenario", rules = scenarioRules(), board = board()) }
+        assertFailsWith<IllegalArgumentException> { Board(id = BoardId(""), name = "Board") }
+        assertFailsWith<IllegalArgumentException> {
+            Scenario(
+                id = ScenarioId(""),
+                name = "Scenario",
+                rules = scenarioRules(),
+                board = board(),
+            )
+        }
         assertFailsWith<IllegalArgumentException> {
             Simulation(
-                id = "",
+                id = SimulationId(""),
                 name = "Simulation",
                 currentDay = SimulationDay(1),
                 status = SimulationStatus.DRAFT,
@@ -76,11 +83,11 @@ class AuditAndIdentityBehaviorTest {
 
     @Test
     fun `given blank names in domain entities when constructing with valid id then creation is rejected`() {
-        assertFailsWith<IllegalArgumentException> { Board(id = "b-1", name = "") }
-        assertFailsWith<IllegalArgumentException> { Scenario(id = "sc-1", name = "", rules = scenarioRules(), board = board()) }
+        assertFailsWith<IllegalArgumentException> { Board(id = BoardId("b-1"), name = "") }
+        assertFailsWith<IllegalArgumentException> { Scenario(id = ScenarioId("sc-1"), name = "", rules = scenarioRules(), board = board()) }
         assertFailsWith<IllegalArgumentException> {
             Simulation(
-                id = "s-1",
+                id = SimulationId("s-1"),
                 name = "",
                 currentDay = SimulationDay(1),
                 status = SimulationStatus.DRAFT,

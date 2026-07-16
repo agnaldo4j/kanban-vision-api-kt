@@ -1,7 +1,7 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.model.ScenarioRef
-import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.ScenarioId
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.organization.Organization
@@ -60,8 +60,8 @@ class DtoMappingPropertyTest {
     private val arbSnapshot: Arb<DailySnapshot> =
         arbitrary {
             DailySnapshot(
-                simulation = SimulationRef(id = "sim-${Arb.int(1..999).bind()}"),
-                scenario = ScenarioRef(id = "sc-${Arb.int(1..999).bind()}"),
+                simulation = SimulationId("sim-${Arb.int(1..999).bind()}"),
+                scenario = ScenarioId("sc-${Arb.int(1..999).bind()}"),
                 day = SimulationDay(Arb.int(1..365).bind()),
                 metrics =
                     FlowMetrics(
@@ -81,7 +81,7 @@ class DtoMappingPropertyTest {
         runBlocking {
             forAll(iterations = 300, arbSimulation) { sim ->
                 val r = sim.toSimulationResponse()
-                r.simulationId == sim.id &&
+                r.simulationId == sim.id.value &&
                     r.organizationId == sim.organization.id &&
                     r.wipLimit == sim.scenario.rules.wipLimit &&
                     r.teamSize == sim.scenario.rules.teamSize &&
@@ -101,7 +101,7 @@ class DtoMappingPropertyTest {
         runBlocking {
             forAll(iterations = 300, arbSimulation) { sim ->
                 val s = sim.toSummaryResponse()
-                s.id == sim.id && s.name == sim.name && s.status == sim.status.name && s.currentDay == sim.currentDay.value
+                s.id == sim.id.value && s.name == sim.name && s.status == sim.status.name && s.currentDay == sim.currentDay.value
             }
         }
     }

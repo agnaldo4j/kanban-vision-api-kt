@@ -1,9 +1,10 @@
 package com.kanbanvision.persistence.support
 
-import com.kanbanvision.domain.model.BoardRef
-import com.kanbanvision.domain.model.ScenarioRef
-import com.kanbanvision.domain.model.SimulationRef
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.BoardId
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.ScenarioId
+import com.kanbanvision.domain.model.SimulationId
+import com.kanbanvision.domain.model.StepId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -112,7 +113,7 @@ internal object PersistenceFixtures {
         val scenario = sampleScenario(worker)
         val organization = sampleOrganization(organizationId, worker)
         return Simulation(
-            id = simulationId,
+            id = SimulationId(simulationId),
             name = "Simulation 1",
             currentDay = SimulationDay(2),
             status = SimulationStatus.RUNNING,
@@ -141,7 +142,7 @@ internal object PersistenceFixtures {
         val board = scenarioBoard(worker)
         val scenarioRules = scenarioRules()
         return Scenario(
-            id = "a0000000-0000-0000-0000-000000000001",
+            id = ScenarioId("a0000000-0000-0000-0000-000000000001"),
             name = "Scenario 1",
             rules = scenarioRules,
             board = board,
@@ -151,15 +152,15 @@ internal object PersistenceFixtures {
     private fun scenarioBoard(worker: Worker): Board {
         val step =
             Step(
-                id = "50000000-0000-0000-0000-000000000001",
-                board = BoardRef("60000000-0000-0000-0000-000000000001"),
+                id = StepId("50000000-0000-0000-0000-000000000001"),
+                board = BoardId("60000000-0000-0000-0000-000000000001"),
                 name = "Development",
                 position = 1,
                 requiredAbility = AbilityName.DEVELOPER,
                 cards = listOf(card()),
                 workers = listOf(worker),
             )
-        return Board(id = "60000000-0000-0000-0000-000000000001", name = "Main Board", steps = listOf(step))
+        return Board(id = BoardId("60000000-0000-0000-0000-000000000001"), name = "Main Board", steps = listOf(step))
     }
 
     private fun scenarioRules() =
@@ -171,7 +172,7 @@ internal object PersistenceFixtures {
             seedValue = 42L,
         )
 
-    private fun scenarioDecision() = Decision.MoveItem(cardId = "c-1")
+    private fun scenarioDecision() = Decision.MoveItem(cardId = CardId("c-1"))
 
     private fun sampleOrganization(
         organizationId: String,
@@ -187,8 +188,8 @@ internal object PersistenceFixtures {
         stepId: String = "50000000-0000-0000-0000-000000000001",
     ): Card =
         Card(
-            id = id,
-            step = StepRef(stepId),
+            id = CardId(id),
+            step = StepId(stepId),
             title = "Card 1",
             description = "desc",
             position = 0,
@@ -210,8 +211,8 @@ internal object PersistenceFixtures {
     ): DailySnapshot =
         DailySnapshot(
             id = "c0000000-0000-0000-0000-000000000001",
-            simulation = SimulationRef(simulationId),
-            scenario = ScenarioRef(scenarioId),
+            simulation = SimulationId(simulationId),
+            scenario = ScenarioId(scenarioId),
             day = SimulationDay(day),
             metrics =
                 FlowMetrics(
@@ -226,7 +227,7 @@ internal object PersistenceFixtures {
                     Movement(
                         id = "e0000000-0000-0000-0000-000000000001",
                         type = MovementType.MOVED,
-                        cardId = "b0000000-0000-0000-0000-000000000001",
+                        cardId = CardId("b0000000-0000-0000-0000-000000000001"),
                         day = SimulationDay(day),
                         reason = "progress",
                     ),

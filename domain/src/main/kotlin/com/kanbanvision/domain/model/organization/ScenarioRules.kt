@@ -11,7 +11,7 @@ data class ScenarioRules(
     val teamSize: Int,
     val seedValue: Long,
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<String> {
     init {
         require(id.isNotBlank()) { "ScenarioRules id must not be blank" }
         require(wipLimit > 0) { "WIP limit must be greater than zero" }

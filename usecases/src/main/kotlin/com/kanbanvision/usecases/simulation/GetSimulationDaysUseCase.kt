@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -21,11 +22,11 @@ class GetSimulationDaysUseCase(
         either {
             query.validate().bind()
             val id = query.simulationId
-            val simulation = simulationRepository.findById(id).bind()
+            val simulation = simulationRepository.findById(SimulationId(id)).bind()
             ensure(simulation.organization.id == query.callerOrganizationId) {
                 DomainError.Forbidden("Simulation does not belong to the caller's organization")
             }
-            val (snapshots, duration) = timed { snapshotRepository.findAllBySimulation(id) }
+            val (snapshots, duration) = timed { snapshotRepository.findAllBySimulation(SimulationId(id)) }
             val sorted = snapshots.sortedBy { it.day.value }
             log.info(
                 "Simulation days fetched: id={} count={} duration={}ms",

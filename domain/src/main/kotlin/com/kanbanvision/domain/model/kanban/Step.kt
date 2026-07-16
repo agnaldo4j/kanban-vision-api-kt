@@ -1,22 +1,22 @@
 package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.model.Audit
-import com.kanbanvision.domain.model.BoardRef
+import com.kanbanvision.domain.model.BoardId
 import com.kanbanvision.domain.model.Domain
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.StepId
 import java.time.Instant
 import java.util.UUID
 
 data class Step(
-    override val id: String = UUID.randomUUID().toString(),
-    val board: BoardRef,
+    override val id: StepId = StepId(UUID.randomUUID().toString()),
+    val board: BoardId,
     val name: String,
     val position: Int = 0,
     val requiredAbility: AbilityName,
     val cards: List<Card> = emptyList(),
     val workers: List<Worker> = emptyList(),
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<StepId> {
     data class ExecutionResult(
         val updatedCard: Card,
         val consumedEffort: Int,
@@ -24,7 +24,6 @@ data class Step(
     )
 
     init {
-        require(id.isNotBlank()) { "Step id must not be blank" }
         require(name.isNotBlank()) { "Step name must not be blank" }
         require(position >= 0) { "Step position must be non-negative" }
         require(workers.all { it.hasAbility(requiredAbility) }) {
@@ -34,7 +33,7 @@ data class Step(
 
     companion object {
         fun create(
-            board: BoardRef,
+            board: BoardId,
             name: String,
             position: Int,
             requiredAbility: AbilityName,
@@ -42,7 +41,7 @@ data class Step(
             require(name.isNotBlank()) { "Step name must not be blank" }
             require(position >= 0) { "Step position must be non-negative" }
             return Step(
-                id = UUID.randomUUID().toString(),
+                id = StepId(UUID.randomUUID().toString()),
                 board = board,
                 name = name,
                 position = position,
@@ -61,7 +60,7 @@ data class Step(
         return copy(workers = workers + worker)
     }
 
-    fun toRef(): StepRef = StepRef(id = id)
+    fun toRef(): StepId = id
 
     fun unassignWorker(workerId: String): Step = copy(workers = workers.filterNot { it.id == workerId })
 

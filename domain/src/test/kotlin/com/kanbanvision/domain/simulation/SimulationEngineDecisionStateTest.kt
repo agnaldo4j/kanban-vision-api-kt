@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -22,28 +22,28 @@ class SimulationEngineDecisionStateTest {
     fun `given in progress card when block decision then card state becomes blocked`() {
         val sim = singleCard("c", CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.BlockItem("c", "wait")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.BlockItem(CardId("c"), "wait")), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-                .first { it.id == "c" }
+                .first { it.id.value == "c" }
         assertEquals(CardState.BLOCKED, card.state)
-        assertTrue(result.snapshot.movements.any { it.cardId == "c" && it.type == MovementType.BLOCKED })
+        assertTrue(result.snapshot.movements.any { it.cardId.value == "c" && it.type == MovementType.BLOCKED })
     }
 
     @Test
     fun `given blocked card when unblock decision then card state becomes in progress`() {
         val sim = singleCard("c", CardState.BLOCKED)
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.UnblockItem("c")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.UnblockItem(CardId("c"))), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-                .first { it.id == "c" }
+                .first { it.id.value == "c" }
         assertEquals(CardState.IN_PROGRESS, card.state)
-        assertTrue(result.snapshot.movements.any { it.cardId == "c" && it.type == MovementType.UNBLOCKED })
+        assertTrue(result.snapshot.movements.any { it.cardId.value == "c" && it.type == MovementType.UNBLOCKED })
     }
 
     @Test
@@ -79,8 +79,8 @@ class SimulationEngineDecisionStateTest {
         val step = board.steps.first()
         val existing =
             listOf(
-                Card(id = "c0", step = StepRef(step.id), title = "C0", state = CardState.IN_PROGRESS, position = 0),
-                Card(id = "c1", step = StepRef(step.id), title = "C1", state = CardState.IN_PROGRESS, position = 1),
+                Card(id = CardId("c0"), step = step.id, title = "C0", state = CardState.IN_PROGRESS, position = 0),
+                Card(id = CardId("c1"), step = step.id, title = "C1", state = CardState.IN_PROGRESS, position = 1),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = existing))), wipLimit = 5)
 
@@ -99,7 +99,7 @@ class SimulationEngineDecisionStateTest {
     ): Simulation {
         val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val card = Card(id = cardId, step = StepRef(step.id), title = "Task", state = state)
+        val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state)
         return boardSim(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 

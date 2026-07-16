@@ -17,25 +17,25 @@ class StepValidationAndExecutionBehaviorTest {
     @Test
     fun `given invalid step constructor and factory inputs when creating then invariants reject invalid values`() {
         assertFailsWith<IllegalArgumentException> {
-            Step(id = "", board = BoardRef("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId(""), board = BoardId("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step(id = "s-1", board = BoardRef(""), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId("s-1"), board = BoardId(""), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step(id = "s-1", board = BoardRef("b-1"), name = "", requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId("s-1"), board = BoardId("b-1"), name = "", requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step(id = "s-1", board = BoardRef("b-1"), name = "Dev", position = -1, requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId("s-1"), board = BoardId("b-1"), name = "Dev", position = -1, requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step.create(board = BoardRef(""), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+            Step.create(board = BoardId(""), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step.create(board = BoardRef("b-1"), name = "", position = 0, requiredAbility = AbilityName.DEVELOPER)
+            Step.create(board = BoardId("b-1"), name = "", position = 0, requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step.create(board = BoardRef("b-1"), name = "Dev", position = -1, requiredAbility = AbilityName.DEVELOPER)
+            Step.create(board = BoardId("b-1"), name = "Dev", position = -1, requiredAbility = AbilityName.DEVELOPER)
         }
     }
 
@@ -49,7 +49,7 @@ class StepValidationAndExecutionBehaviorTest {
 
         assertFailsWith<IllegalArgumentException> {
             Step(
-                board = BoardRef("b-1"),
+                board = BoardId("b-1"),
                 name = "Dev",
                 requiredAbility = AbilityName.DEVELOPER,
                 workers = listOf(incompatible),
@@ -66,7 +66,7 @@ class StepValidationAndExecutionBehaviorTest {
             )
         val step =
             Step
-                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .assignWorker(worker)
 
         val updated = step.unassignWorker(worker.id)
@@ -92,9 +92,9 @@ class StepValidationAndExecutionBehaviorTest {
             )
         val step =
             Step
-                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .assignWorker(developer)
-        val card = Card(step = StepRef(step.id), title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 1)
+        val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 1)
 
         assertFailsWith<IllegalArgumentException> {
             step.executeCard(worker = tester, card = card, dailyCapacities = mapOf(AbilityName.DEVELOPER to 1), now = Instant.EPOCH)
@@ -110,7 +110,7 @@ class StepValidationAndExecutionBehaviorTest {
             )
         val step =
             Step
-                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .assignWorker(worker)
 
         assertFailsWith<IllegalArgumentException> { step.assignWorker(worker) }
@@ -125,9 +125,9 @@ class StepValidationAndExecutionBehaviorTest {
             )
         val step =
             Step
-                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .assignWorker(worker)
-        val card = Card(step = StepRef(step.id), title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 3)
+        val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 3)
 
         val result = step.executeCard(worker = worker, card = card, dailyCapacities = emptyMap(), now = Instant.EPOCH)
 
@@ -144,11 +144,11 @@ class StepValidationAndExecutionBehaviorTest {
             )
         val step =
             Step
-                .create(board = BoardRef("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
+                .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .assignWorker(worker)
         val doneEffortCard =
             Card(
-                step = StepRef(step.id),
+                step = step.id,
                 title = "Task",
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 3,

@@ -1,9 +1,12 @@
 package com.kanbanvision.httpapi.routes
 
+import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
@@ -19,9 +22,9 @@ import kotlin.test.assertTrue
 class DecisionRequestExhaustivenessTest {
     private val samples =
         listOf(
-            Decision.MoveItem("c-1"),
-            Decision.BlockItem("c-1", "dep"),
-            Decision.UnblockItem("c-1"),
+            Decision.MoveItem(CardId("c-1")),
+            Decision.BlockItem(CardId("c-1"), "dep"),
+            Decision.UnblockItem(CardId("c-1")),
             Decision.AddItem("t", ServiceClass.EXPEDITE),
         )
 
@@ -31,14 +34,14 @@ class DecisionRequestExhaustivenessTest {
             val request =
                 when (original) {
                     is Decision.MoveItem ->
-                        DecisionRequest("MOVE_ITEM", mapOf("cardId" to original.cardId))
+                        DecisionRequest("MOVE_ITEM", mapOf("cardId" to original.cardId.value))
                     is Decision.BlockItem ->
                         DecisionRequest(
                             "BLOCK_ITEM",
-                            mapOf("cardId" to original.cardId, "reason" to original.reason),
+                            mapOf("cardId" to original.cardId.value, "reason" to original.reason),
                         )
                     is Decision.UnblockItem ->
-                        DecisionRequest("UNBLOCK_ITEM", mapOf("cardId" to original.cardId))
+                        DecisionRequest("UNBLOCK_ITEM", mapOf("cardId" to original.cardId.value))
                     is Decision.AddItem ->
                         DecisionRequest(
                             "ADD_ITEM",
@@ -48,6 +51,16 @@ class DecisionRequestExhaustivenessTest {
             val decoded = request.toDomain()
             assertTrue(decoded.isRight())
             assertEquals(original, decoded.getOrNull())
+        }
+    }
+
+    @Test
+    fun `blank cardId decodes to InvalidDecision instead of throwing`() {
+        // Regression (GAP-BT): CardId's isNotBlank guard would throw → 500; must fold to a 400 error.
+        listOf("MOVE_ITEM", "BLOCK_ITEM", "UNBLOCK_ITEM").forEach { type ->
+            val decoded = DecisionRequest(type, mapOf("cardId" to "   ")).toDomain()
+            assertTrue(decoded.isLeft(), "$type with blank cardId must be Left")
+            assertIs<DomainError.InvalidDecision>(decoded.leftOrNull())
         }
     }
 }

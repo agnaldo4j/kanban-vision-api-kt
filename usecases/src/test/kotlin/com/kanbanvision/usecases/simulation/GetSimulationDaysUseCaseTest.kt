@@ -3,6 +3,7 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
@@ -24,9 +25,10 @@ class GetSimulationDaysUseCaseTest {
     @Test
     fun `given simulation with snapshots when fetching days then all snapshots are returned sorted by day`() =
         runTest {
-            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns
+                fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
             val snapshots = listOf(fixtureSnapshot(day = 3), fixtureSnapshot(day = 1), fixtureSnapshot(day = 2))
-            coEvery { snapshotRepository.findAllBySimulation("sim-1") } returns snapshots.right()
+            coEvery { snapshotRepository.findAllBySimulation(SimulationId("sim-1")) } returns snapshots.right()
 
             val result = useCase.execute(GetSimulationDaysQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))
 
@@ -36,15 +38,15 @@ class GetSimulationDaysUseCaseTest {
             assertEquals(1, days[0].day.value)
             assertEquals(2, days[1].day.value)
             assertEquals(3, days[2].day.value)
-            coVerify(exactly = 1) { snapshotRepository.findAllBySimulation("sim-1") }
+            coVerify(exactly = 1) { snapshotRepository.findAllBySimulation(SimulationId("sim-1")) }
         }
 
     @Test
     fun `given simulation with no snapshots when fetching days then empty list is returned`() =
         runTest {
-            coEvery { simulationRepository.findById("sim-empty") } returns
+            coEvery { simulationRepository.findById(SimulationId("sim-empty")) } returns
                 fixtureSimulation(id = "sim-empty", organizationId = "org-1").right()
-            coEvery { snapshotRepository.findAllBySimulation("sim-empty") } returns
+            coEvery { snapshotRepository.findAllBySimulation(SimulationId("sim-empty")) } returns
                 emptyList<DailySnapshot>().right()
 
             val result = useCase.execute(GetSimulationDaysQuery(simulationId = "sim-empty", callerOrganizationId = "org-1"))
@@ -66,7 +68,8 @@ class GetSimulationDaysUseCaseTest {
     @Test
     fun `given simulation of another organization when fetching days then forbidden is returned`() =
         runTest {
-            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-owner").right()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns
+                fixtureSimulation(id = "sim-1", organizationId = "org-owner").right()
 
             val result = useCase.execute(GetSimulationDaysQuery(simulationId = "sim-1", callerOrganizationId = "org-attacker"))
 
@@ -78,8 +81,9 @@ class GetSimulationDaysUseCaseTest {
     @Test
     fun `given persistence error when fetching days then error is propagated`() =
         runTest {
-            coEvery { simulationRepository.findById("sim-1") } returns fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
-            coEvery { snapshotRepository.findAllBySimulation("sim-1") } returns
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns
+                fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
+            coEvery { snapshotRepository.findAllBySimulation(SimulationId("sim-1")) } returns
                 DomainError.PersistenceError("db error").left()
 
             val result = useCase.execute(GetSimulationDaysQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))

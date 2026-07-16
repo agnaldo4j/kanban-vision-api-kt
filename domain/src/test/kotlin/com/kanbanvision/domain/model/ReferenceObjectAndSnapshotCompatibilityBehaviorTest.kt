@@ -27,46 +27,46 @@ class ReferenceObjectAndSnapshotCompatibilityBehaviorTest {
         val organization = Organization.create(name = "Org")
         val simulation = Simulation.create(name = "Sim", organization = organization, scenario = scenario)
 
-        assertEquals(board.id, board.toRef().id)
-        assertEquals(step.id, step.toRef().id)
-        assertEquals(scenario.id, scenario.toRef().id)
-        assertEquals(simulation.id, simulation.toRef().id)
+        assertEquals(board.id.value, board.toRef().value)
+        assertEquals(step.id.value, step.toRef().value)
+        assertEquals(scenario.id.value, scenario.toRef().value)
+        assertEquals(simulation.id.value, simulation.toRef().value)
     }
 
     @Test
     fun `given blank ids when creating refs then validation fails`() {
-        assertFailsWith<IllegalArgumentException> { BoardRef("") }
-        assertFailsWith<IllegalArgumentException> { StepRef("") }
-        assertFailsWith<IllegalArgumentException> { SimulationRef("") }
-        assertFailsWith<IllegalArgumentException> { ScenarioRef("") }
+        assertFailsWith<IllegalArgumentException> { BoardId("") }
+        assertFailsWith<IllegalArgumentException> { StepId("") }
+        assertFailsWith<IllegalArgumentException> { SimulationId("") }
+        assertFailsWith<IllegalArgumentException> { ScenarioId("") }
     }
 
     @Test
     fun `given snapshots built from refs when created then referenced identifiers remain consistent`() {
         val metrics = FlowMetrics(throughput = 2, wipCount = 3, blockedCount = 1, avgAgingDays = 1.5)
-        val movement = Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(2), reason = "done")
+        val movement = Movement(type = MovementType.MOVED, cardId = CardId("card-1"), day = SimulationDay(2), reason = "done")
 
         val fromRefs =
             DailySnapshot(
-                simulation = SimulationRef("sim-1"),
-                scenario = ScenarioRef("scn-1"),
+                simulation = SimulationId("sim-1"),
+                scenario = ScenarioId("scn-1"),
                 day = SimulationDay(2),
                 metrics = metrics,
                 movements = listOf(movement),
             )
         val fromIds =
             DailySnapshot(
-                simulation = SimulationRef("sim-2"),
-                scenario = ScenarioRef("scn-2"),
+                simulation = SimulationId("sim-2"),
+                scenario = ScenarioId("scn-2"),
                 day = SimulationDay(3),
                 metrics = metrics,
                 movements = emptyList(),
             )
 
-        assertEquals("sim-1", fromRefs.simulation.id)
-        assertEquals("scn-1", fromRefs.scenario.id)
-        assertEquals("sim-2", fromIds.simulation.id)
-        assertEquals("scn-2", fromIds.scenario.id)
+        assertEquals("sim-1", fromRefs.simulation.value)
+        assertEquals("scn-1", fromRefs.scenario.value)
+        assertEquals("sim-2", fromIds.simulation.value)
+        assertEquals("scn-2", fromIds.scenario.value)
     }
 
     @Test

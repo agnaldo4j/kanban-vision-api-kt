@@ -11,7 +11,7 @@ data class FlowMetrics(
     val blockedCount: Int,
     val avgAgingDays: Double,
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<String> {
     init {
         require(id.isNotBlank()) { "FlowMetrics id must not be blank" }
         require(throughput >= 0) { "Throughput must be non-negative" }

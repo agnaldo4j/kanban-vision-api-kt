@@ -10,7 +10,7 @@ data class Squad(
     val name: String,
     val workers: List<Worker> = emptyList(),
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<String> {
     init {
         require(id.isNotBlank()) { "Squad id must not be blank" }
         require(name.isNotBlank()) { "Squad name must not be blank" }

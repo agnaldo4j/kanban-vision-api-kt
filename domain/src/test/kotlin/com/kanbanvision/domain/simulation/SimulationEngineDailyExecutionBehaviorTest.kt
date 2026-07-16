@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -30,7 +30,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
 
         assertEquals(simulation.currentDay.value + 1, result.simulation.currentDay.value)
         assertEquals(1, result.simulation.history.size)
-        assertEquals(simulation.id, result.snapshot.simulation.id)
+        assertEquals(simulation.id, result.snapshot.simulation)
     }
 
     @Test
@@ -55,14 +55,14 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        val expediteCard = allCards.single { it.id == "expedite-card" }
-        val standardCard = allCards.single { it.id == "standard-card" }
+        val expediteCard = allCards.single { it.id.value == "expedite-card" }
+        val standardCard = allCards.single { it.id.value == "standard-card" }
 
         assertEquals(CardState.IN_PROGRESS, expediteCard.state)
         assertEquals(CardState.TODO, standardCard.state)
         assertNotNull(
             result.snapshot.movements.firstOrNull {
-                it.type == MovementType.MOVED && it.cardId == "expedite-card"
+                it.type == MovementType.MOVED && it.cardId.value == "expedite-card"
             },
         )
     }
@@ -97,11 +97,11 @@ class SimulationEngineDailyExecutionBehaviorTest {
 
         val analysis = boardWithSteps.steps.first { it.requiredAbility == AbilityName.PRODUCT_MANAGER }
         val development = boardWithSteps.steps.first { it.requiredAbility == AbilityName.DEVELOPER }
-        val boardWithWorker = boardWithAssignedDeveloper(boardWithSteps, development.id)
+        val boardWithWorker = boardWithAssignedDeveloper(boardWithSteps, development.id.value)
         val withCards =
             boardWithCards(
                 board = boardWithWorker,
-                stepIds = StepIds(analysis = analysis.id, development = development.id),
+                stepIds = StepIds(analysis = analysis.id.value, development = development.id.value),
                 developmentCard = DevelopmentCardSetup(state = devCardState, effort = devRemainingEffort),
             )
 
@@ -128,7 +128,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
         return board.copy(
             steps =
                 board.steps.map { step ->
-                    if (step.id == developmentStepId) step.assignWorker(developer) else step
+                    if (step.id.value == developmentStepId) step.assignWorker(developer) else step
                 },
         )
     }
@@ -141,15 +141,15 @@ class SimulationEngineDailyExecutionBehaviorTest {
         board.copy(
             steps =
                 board.steps.map { step ->
-                    when (step.id) {
-                        stepIds.analysis -> step.copy(cards = listOf(Card(id = "analysis-card", step = StepRef(step.id), title = "Spec")))
+                    when (step.id.value) {
+                        stepIds.analysis -> step.copy(cards = listOf(Card(id = CardId("analysis-card"), step = step.id, title = "Spec")))
                         stepIds.development ->
                             step.copy(
                                 cards =
                                     listOf(
                                         Card(
-                                            id = "dev-card",
-                                            step = StepRef(step.id),
+                                            id = CardId("dev-card"),
+                                            step = step.id,
                                             title = "Build",
                                             state = developmentCard.state,
                                             developmentEffort = developmentCard.effort,
@@ -182,8 +182,8 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val input = board.steps.first()
         val cards =
             listOf(
-                Card(id = "standard-card", step = StepRef(input.id), title = "Std", serviceClass = ServiceClass.STANDARD),
-                Card(id = "expedite-card", step = StepRef(input.id), title = "Exp", serviceClass = ServiceClass.EXPEDITE),
+                Card(id = CardId("standard-card"), step = input.id, title = "Std", serviceClass = ServiceClass.STANDARD),
+                Card(id = CardId("expedite-card"), step = input.id, title = "Exp", serviceClass = ServiceClass.EXPEDITE),
             )
 
         val boardWithCards = board.copy(steps = listOf(input.copy(cards = cards)))

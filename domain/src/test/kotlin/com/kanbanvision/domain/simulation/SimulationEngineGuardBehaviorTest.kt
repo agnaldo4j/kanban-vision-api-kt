@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -29,7 +29,7 @@ class SimulationEngineGuardBehaviorTest {
         val card =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-                .first { it.id == "done" }
+                .first { it.id.value == "done" }
         assertEquals(5, card.agingDays)
     }
 
@@ -42,7 +42,7 @@ class SimulationEngineGuardBehaviorTest {
         val card =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-                .first { it.id == "wip" }
+                .first { it.id.value == "wip" }
         assertEquals(4, card.agingDays)
     }
 
@@ -50,50 +50,50 @@ class SimulationEngineGuardBehaviorTest {
     fun `given move decision on done card when running day then card remains done and no movement registered`() {
         val simulation = simulationWithSingleCard(cardId = "done", state = CardState.DONE)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem("done")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.MoveItem(CardId("done"))), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-                .first { it.id == "done" }
+                .first { it.id.value == "done" }
         assertEquals(CardState.DONE, card.state)
-        assertTrue(result.snapshot.movements.none { it.cardId == "done" })
+        assertTrue(result.snapshot.movements.none { it.cardId.value == "done" })
     }
 
     @Test
     fun `given block decision on todo card when running day then no blocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "todo", state = CardState.TODO)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem("todo", "reason")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem(CardId("todo"), "reason")), seed = 1L)
 
-        assertTrue(result.snapshot.movements.none { it.cardId == "todo" && it.type == MovementType.BLOCKED })
+        assertTrue(result.snapshot.movements.none { it.cardId.value == "todo" && it.type == MovementType.BLOCKED })
     }
 
     @Test
     fun `given block decision on done card when running day then no blocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "done", state = CardState.DONE)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem("done", "reason")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.BlockItem(CardId("done"), "reason")), seed = 1L)
 
-        assertTrue(result.snapshot.movements.none { it.cardId == "done" && it.type == MovementType.BLOCKED })
+        assertTrue(result.snapshot.movements.none { it.cardId.value == "done" && it.type == MovementType.BLOCKED })
     }
 
     @Test
     fun `given unblock decision on in progress card when running day then no unblocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "wip", state = CardState.IN_PROGRESS)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem("wip")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem(CardId("wip"))), seed = 1L)
 
-        assertTrue(result.snapshot.movements.none { it.cardId == "wip" && it.type == MovementType.UNBLOCKED })
+        assertTrue(result.snapshot.movements.none { it.cardId.value == "wip" && it.type == MovementType.UNBLOCKED })
     }
 
     @Test
     fun `given unblock decision on todo card when running day then no unblocked movement is recorded`() {
         val simulation = simulationWithSingleCard(cardId = "todo", state = CardState.TODO)
 
-        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem("todo")), seed = 1L)
+        val result = SimulationEngine.runDay(simulation, decisions = listOf(Decision.UnblockItem(CardId("todo"))), seed = 1L)
 
-        assertTrue(result.snapshot.movements.none { it.cardId == "todo" && it.type == MovementType.UNBLOCKED })
+        assertTrue(result.snapshot.movements.none { it.cardId.value == "todo" && it.type == MovementType.UNBLOCKED })
     }
 
     @Test
@@ -128,8 +128,8 @@ class SimulationEngineGuardBehaviorTest {
             )
         val card =
             Card(
-                id = "card",
-                step = StepRef(step.id),
+                id = CardId("card"),
+                step = step.id,
                 title = "Task",
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 5,
@@ -154,7 +154,7 @@ class SimulationEngineGuardBehaviorTest {
     ): Simulation {
         val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val card = Card(id = cardId, step = StepRef(step.id), title = "Task", state = state, agingDays = agingDays)
+        val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state, agingDays = agingDays)
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 
@@ -167,10 +167,10 @@ class SimulationEngineGuardBehaviorTest {
         val step = board.steps.first()
         val cards =
             (1..inProgressCount).map { i ->
-                Card(id = "wip-$i", step = StepRef(step.id), title = "WIP $i", state = CardState.IN_PROGRESS)
+                Card(id = CardId("wip-$i"), step = step.id, title = "WIP $i", state = CardState.IN_PROGRESS)
             } +
                 (1..todoCount).map { i ->
-                    Card(id = "todo-$i", step = StepRef(step.id), title = "Todo $i", state = CardState.TODO)
+                    Card(id = CardId("todo-$i"), step = step.id, title = "Todo $i", state = CardState.TODO)
                 }
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = wipLimit)
     }

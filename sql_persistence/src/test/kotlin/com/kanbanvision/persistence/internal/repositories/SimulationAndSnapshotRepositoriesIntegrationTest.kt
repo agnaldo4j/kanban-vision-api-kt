@@ -2,6 +2,7 @@ package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.getOrElse
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
@@ -89,9 +90,13 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
                 ),
             )
 
-            val loaded = simulationRepository.findById(simulationId).getOrElse { error("find fallback simulation failed: $it") }
+            val loaded =
+                simulationRepository
+                    .findById(
+                        SimulationId(simulationId),
+                    ).getOrElse { error("find fallback simulation failed: $it") }
 
-            assertEquals(simulationId, loaded.id)
+            assertEquals(simulationId, loaded.id.value)
             assertEquals("Fallback Org", loaded.organization.name)
             assertEquals(1, loaded.currentDay.value)
             assertEquals(3, loaded.scenario.rules.wipLimit)
@@ -100,7 +105,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     @Test
     fun `given unknown simulation id when finding by id then repository returns simulation not found domain error`() =
         runBlocking {
-            val result = simulationRepository.findById("04000000-0000-0000-0000-000000009999")
+            val result = simulationRepository.findById(SimulationId("04000000-0000-0000-0000-000000009999"))
             assertIs<DomainError.SimulationNotFound>(result.leftOrNull())
         }
 
@@ -120,8 +125,8 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given persisted daily snapshots when querying by day and simulation then repository returns filtered and ordered data`() =
         runBlocking {
             val simulation = PersistenceFixtures.simulation()
-            val dayTwo = PersistenceFixtures.snapshot(simulation.id, day = 2)
-            val dayThree = PersistenceFixtures.snapshot(simulation.id, day = 3).copy(id = "c0000000-0000-0000-0000-000000000099")
+            val dayTwo = PersistenceFixtures.snapshot(simulation.id.value, day = 2)
+            val dayThree = PersistenceFixtures.snapshot(simulation.id.value, day = 3).copy(id = "c0000000-0000-0000-0000-000000000099")
             EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
             simulationRepository.save(simulation).getOrElse { error("save simulation failed: $it") }
 
@@ -140,7 +145,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given same snapshot day when saving again then repository upserts latest snapshot payload`() =
         runBlocking {
             val simulation = PersistenceFixtures.simulation()
-            val dayTwo = PersistenceFixtures.snapshot(simulation.id, day = 2)
+            val dayTwo = PersistenceFixtures.snapshot(simulation.id.value, day = 2)
             val changedDayTwo = dayTwo.copy(id = "c0000000-0000-0000-0000-000000000222")
             EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
             simulationRepository.save(simulation).getOrElse { error("save simulation failed: $it") }
@@ -172,7 +177,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
         runBlocking {
             val all =
                 snapshotRepository
-                    .findAllBySimulation("05000000-0000-0000-0000-000000009998")
+                    .findAllBySimulation(SimulationId("05000000-0000-0000-0000-000000009998"))
                     .getOrElse { error("find all failed: $it") }
             assertEquals(emptyList(), all)
         }

@@ -1,5 +1,7 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.StepId
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.domain.model.kanban.CardState
@@ -127,7 +129,7 @@ object SimulationEngine {
         if (!worker.hasAbility(step.requiredAbility)) return
         val targetIndex =
             current.indexOfFirst { card ->
-                card.step.id == step.id &&
+                card.step == step.id &&
                     card.state == CardState.IN_PROGRESS &&
                     card.remainingEffortFor(step.requiredAbility) > 0
             }
@@ -155,7 +157,7 @@ object SimulationEngine {
 
 private fun applyMove(
     current: MutableList<Card>,
-    cardId: String,
+    cardId: CardId,
     day: Int,
 ): Movement? {
     val idx = current.indexOfFirst { it.id == cardId }
@@ -169,7 +171,7 @@ private fun applyMove(
 
 private fun applyBlock(
     current: MutableList<Card>,
-    cardId: String,
+    cardId: CardId,
     reason: String,
     day: Int,
 ): Movement? {
@@ -182,7 +184,7 @@ private fun applyBlock(
 
 private fun applyUnblock(
     current: MutableList<Card>,
-    cardId: String,
+    cardId: CardId,
     day: Int,
 ): Movement? {
     val idx = current.indexOfFirst { it.id == cardId }
@@ -204,7 +206,7 @@ private fun applyAdd(
     serviceClass: ServiceClass,
 ) {
     val firstStep = board.steps.minByOrNull { it.position } ?: return
-    val position = current.count { it.step.id == firstStep.id }
+    val position = current.count { it.step == firstStep.id }
     current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
 }
 
@@ -221,7 +223,7 @@ private fun stableExecutionSeed(
     simulationSeed: Long,
     day: Int,
     workerId: String,
-    stepId: String,
+    stepId: StepId,
 ): Long =
     listOf(simulationSeed, day.toLong(), workerId.hashCode().toLong(), stepId.hashCode().toLong())
         .fold(STABLE_HASH_SEED) { acc, value -> acc * STABLE_HASH_MULTIPLIER + value }
@@ -239,7 +241,7 @@ private fun orderTodoByPriority(
 }
 
 private fun Board.withCards(cards: List<Card>): Board {
-    val cardsByStep = cards.groupBy { it.step.id }
+    val cardsByStep = cards.groupBy { it.step }
     val updatedSteps =
         steps.map { step ->
             val stepCards = cardsByStep[step.id].orEmpty().sortedBy { it.position }

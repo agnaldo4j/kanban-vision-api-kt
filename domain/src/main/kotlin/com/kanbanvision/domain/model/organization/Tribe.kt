@@ -9,7 +9,7 @@ data class Tribe(
     val name: String,
     val squads: List<Squad> = emptyList(),
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<String> {
     init {
         require(id.isNotBlank()) { "Tribe id must not be blank" }
         require(name.isNotBlank()) { "Tribe name must not be blank" }

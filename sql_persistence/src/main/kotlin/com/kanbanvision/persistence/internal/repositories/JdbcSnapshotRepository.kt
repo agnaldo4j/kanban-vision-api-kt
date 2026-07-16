@@ -2,6 +2,7 @@ package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.persistence.dbQuery
@@ -21,7 +22,7 @@ class JdbcSnapshotRepository : SnapshotRepository {
         dbQuery(log) {
             val json = DailySnapshotSerializer.encode(snapshot)
             DailySnapshotsTable.upsert {
-                it[simulationId] = snapshot.simulation.id
+                it[simulationId] = snapshot.simulation.value
                 it[day] = snapshot.day.value
                 it[snapshotJson] = json
             }
@@ -29,22 +30,22 @@ class JdbcSnapshotRepository : SnapshotRepository {
         }
 
     override suspend fun findByDay(
-        simulationId: String,
+        simulationId: SimulationId,
         day: SimulationDay,
     ): Either<DomainError, DailySnapshot?> =
         dbQuery(log) {
             DailySnapshotsTable
                 .selectAll()
-                .where((DailySnapshotsTable.simulationId eq simulationId) and (DailySnapshotsTable.day eq day.value))
+                .where((DailySnapshotsTable.simulationId eq simulationId.value) and (DailySnapshotsTable.day eq day.value))
                 .singleOrNull()
                 ?.let { row -> DailySnapshotSerializer.decode(row[DailySnapshotsTable.snapshotJson]) }
         }
 
-    override suspend fun findAllBySimulation(simulationId: String): Either<DomainError, List<DailySnapshot>> =
+    override suspend fun findAllBySimulation(simulationId: SimulationId): Either<DomainError, List<DailySnapshot>> =
         dbQuery(log) {
             DailySnapshotsTable
                 .selectAll()
-                .where(DailySnapshotsTable.simulationId eq simulationId)
+                .where(DailySnapshotsTable.simulationId eq simulationId.value)
                 .orderBy(DailySnapshotsTable.day)
                 .map { row -> DailySnapshotSerializer.decode(row[DailySnapshotsTable.snapshotJson]) }
         }

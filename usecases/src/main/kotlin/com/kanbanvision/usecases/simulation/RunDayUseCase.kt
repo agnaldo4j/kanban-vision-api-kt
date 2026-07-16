@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.events.DomainEvent
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.Simulation
@@ -28,7 +29,7 @@ class RunDayUseCase(
     suspend fun execute(command: RunDayCommand): Either<DomainError, DailySnapshot> =
         either {
             command.validate().bind()
-            val simulation = simulationRepository.findById(command.simulationId).bind()
+            val simulation = simulationRepository.findById(SimulationId(command.simulationId)).bind()
             ensure(simulation.organization.id == command.callerOrganizationId) {
                 DomainError.Forbidden("Simulation does not belong to the caller's organization")
             }
@@ -46,7 +47,7 @@ class RunDayUseCase(
         }
 
     private suspend fun guardDuplicate(
-        simulationId: String,
+        simulationId: SimulationId,
         currentDay: Int,
     ): Either<DomainError, Unit> =
         either {
@@ -64,7 +65,7 @@ class RunDayUseCase(
         either {
             simulationRepository.save(updatedSimulation).bind()
             snapshotRepository.save(snapshot).bind()
-            publisher.publish(buildDomainEvents(updatedSimulation.id, snapshot))
+            publisher.publish(buildDomainEvents(updatedSimulation.id.value, snapshot))
             snapshot
         }
 
@@ -76,13 +77,13 @@ class RunDayUseCase(
             snapshot.movements.forEach { movement ->
                 when (movement.type) {
                     MovementType.COMPLETED ->
-                        add(DomainEvent.CardCompleted(simulationId, movement.cardId, snapshot.day.value))
+                        add(DomainEvent.CardCompleted(simulationId, movement.cardId.value, snapshot.day.value))
                     MovementType.BLOCKED ->
-                        add(DomainEvent.CardBlocked(simulationId, movement.cardId, snapshot.day.value, movement.reason))
+                        add(DomainEvent.CardBlocked(simulationId, movement.cardId.value, snapshot.day.value, movement.reason))
                     MovementType.MOVED ->
-                        add(DomainEvent.CardMoved(simulationId, movement.cardId, snapshot.day.value))
+                        add(DomainEvent.CardMoved(simulationId, movement.cardId.value, snapshot.day.value))
                     MovementType.UNBLOCKED ->
-                        add(DomainEvent.CardUnblocked(simulationId, movement.cardId, snapshot.day.value))
+                        add(DomainEvent.CardUnblocked(simulationId, movement.cardId.value, snapshot.day.value))
                 }
             }
             add(

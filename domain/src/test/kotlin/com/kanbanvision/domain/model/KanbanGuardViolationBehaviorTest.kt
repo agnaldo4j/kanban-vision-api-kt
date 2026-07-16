@@ -35,15 +35,15 @@ class KanbanGuardViolationBehaviorTest {
     @Test
     fun `given blank title when creating card via factory then guard rejects`() {
         assertFailsWith<IllegalArgumentException> {
-            Card.create(step = StepRef("s1"), title = "   ", description = "", position = 0)
+            Card.create(step = StepId("s1"), title = "   ", description = "", position = 0)
         }
     }
 
     @Test
     fun `given negative target position when moving card then guard rejects and zero is accepted`() {
         val c = card()
-        assertFailsWith<IllegalArgumentException> { c.moveTo(StepRef("s2"), newPosition = -1) }
-        assertEquals(0, c.moveTo(StepRef("s2"), newPosition = 0).position)
+        assertFailsWith<IllegalArgumentException> { c.moveTo(StepId("s2"), newPosition = -1) }
+        assertEquals(0, c.moveTo(StepId("s2"), newPosition = 0).position)
     }
 
     @Test
@@ -154,7 +154,7 @@ class KanbanGuardViolationBehaviorTest {
         val board = Board.create("B").addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         assertFailsWith<IllegalArgumentException> { board.addStep(name = " ", requiredAbility = AbilityName.TESTER) }
         assertFailsWith<IllegalArgumentException> { board.addStep(name = "Dev", requiredAbility = AbilityName.TESTER) }
-        assertFailsWith<IllegalStateException> { board.addCard(step = StepRef("nope"), title = "T") }
+        assertFailsWith<IllegalStateException> { board.addCard(step = StepId("nope"), title = "T") }
     }
 
     private fun card(
@@ -164,8 +164,8 @@ class KanbanGuardViolationBehaviorTest {
         deployEffort: Int = 0,
     ): Card =
         Card(
-            id = "c1",
-            step = StepRef("s1"),
+            id = CardId("c1"),
+            step = StepId("s1"),
             title = "T",
             analysisEffort = analysisEffort,
             developmentEffort = developmentEffort,

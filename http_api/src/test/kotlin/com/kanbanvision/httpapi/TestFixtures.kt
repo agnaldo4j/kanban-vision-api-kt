@@ -2,8 +2,9 @@ package com.kanbanvision.httpapi
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.kanbanvision.domain.model.ScenarioRef
-import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.BoardId
+import com.kanbanvision.domain.model.ScenarioId
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.organization.Organization
@@ -45,18 +46,18 @@ internal fun ApplicationTestBuilder.withJwt(token: String = issueTestJwt()): io.
 
 internal fun fixtureSimulation(id: String = "sim-1"): Simulation {
     val board =
-        Board(id = "board-1", name = "Main Board")
+        Board(id = BoardId("board-1"), name = "Main Board")
             .addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
             .addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
     val scenario =
         Scenario(
-            id = "scn-1",
+            id = ScenarioId("scn-1"),
             name = "Default Simulation Scenario",
             rules = ScenarioRules.create(wipLimit = 2, teamSize = 2, seedValue = 42L),
             board = board,
         )
     return Simulation(
-        id = id,
+        id = SimulationId(id),
         name = "Simulation",
         currentDay = SimulationDay(1),
         status = SimulationStatus.DRAFT,
@@ -71,8 +72,8 @@ internal fun fixtureSnapshot(
     day: Int = 1,
 ): DailySnapshot =
     DailySnapshot(
-        simulation = SimulationRef(simulationId),
-        scenario = ScenarioRef(scenarioId),
+        simulation = SimulationId(simulationId),
+        scenario = ScenarioId(scenarioId),
         day = SimulationDay(day),
         metrics = FlowMetrics(throughput = 1, wipCount = 1, blockedCount = 0, avgAgingDays = 0.0),
         movements = emptyList(),

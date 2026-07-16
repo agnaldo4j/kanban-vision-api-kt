@@ -15,13 +15,13 @@ import kotlin.test.assertIs
 class DecisionSnapshotAndMetricsBehaviorTest {
     @Test
     fun `given decision subtypes when creating decisions then fields match intent`() {
-        val move = Decision.MoveItem(cardId = "card-1")
-        val block = Decision.BlockItem(cardId = "card-2", reason = "dependency")
-        val unblock = Decision.UnblockItem(cardId = "card-2")
+        val move = Decision.MoveItem(cardId = CardId("card-1"))
+        val block = Decision.BlockItem(cardId = CardId("card-2"), reason = "dependency")
+        val unblock = Decision.UnblockItem(cardId = CardId("card-2"))
         val add = Decision.AddItem(title = "New item", serviceClass = ServiceClass.EXPEDITE)
 
         assertIs<Decision.MoveItem>(move)
-        assertEquals("card-1", move.cardId)
+        assertEquals("card-1", move.cardId.value)
         assertIs<Decision.BlockItem>(block)
         assertEquals("dependency", block.reason)
         assertIs<Decision.UnblockItem>(unblock)
@@ -51,15 +51,15 @@ class DecisionSnapshotAndMetricsBehaviorTest {
 
         assertFailsWith<IllegalArgumentException> {
             DailySnapshot(
-                simulation = SimulationRef(""),
-                scenario = ScenarioRef("scn-1"),
+                simulation = SimulationId(""),
+                scenario = ScenarioId("scn-1"),
                 day = SimulationDay(1),
                 metrics = metrics,
                 movements = emptyList(),
             )
         }
         assertFailsWith<IllegalArgumentException> {
-            Movement(type = MovementType.MOVED, cardId = "", day = SimulationDay(1), reason = "invalid")
+            Movement(type = MovementType.MOVED, cardId = CardId(""), day = SimulationDay(1), reason = "invalid")
         }
     }
 
