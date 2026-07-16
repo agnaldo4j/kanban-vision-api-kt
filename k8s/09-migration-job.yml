@@ -85,13 +85,20 @@ spec:
                 secretKeyRef:
                   name: kanban-vision-secret
                   key: DATABASE_PASSWORD
+          # Right-size por medição (ADR-0036 / GAP-BR): o binário nativo de migração roda com
+          # --gc=epsilon; validado em DB virgem sob 256Mi/0.5cpu — 2 migrações, exit 0, sem OOM.
+          # CPU fica em 500m (não segue o 1000m da API): o Job é bounded, roda uma vez no
+          # pré-rollout e não tem SLA de latência — o throughput da API não se aplica aqui.
+          # ⚠️ Epsilon NUNCA libera ⇒ o pico é função da alocação TOTAL do Job, não do live set.
+          # As migrações atuais são 8 KB de DDL. Um backfill de dados grande exige remedir ANTES
+          # de fundir — este limite não tem a folga que a API tem.
           resources:
             requests:
               cpu: "100m"
-              memory: "256Mi"
+              memory: "128Mi"
             limits:
               cpu: "500m"
-              memory: "512Mi"
+              memory: "256Mi"
           volumeMounts:
             - name: tmp
               mountPath: /tmp

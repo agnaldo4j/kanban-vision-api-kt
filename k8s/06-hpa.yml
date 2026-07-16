@@ -12,6 +12,14 @@ spec:
     name: kanban-vision-api
   minReplicas: 2
   maxReplicas: 10
+  # Escala SÓ por CPU (ADR-0036 / GAP-BR). A métrica de memória foi removida: num binário nativo
+  # o heap é pequeno e não é devolvido ao SO, então utilização de memória não acompanha carga —
+  # ela é LATCH de réplicas, não sinal. Com request 128Mi, 80% = 102Mi contra um pico medido de
+  # ~92 MiB: a métrica dispararia perto do repouso e, como a memória não volta no scale-down,
+  # travaria réplicas no alto para sempre. Antes do right-size ela era só inerte (80% de 256Mi =
+  # 205Mi, nunca atingido) — o right-size a tornaria ativa e errada.
+  # A CPU é quem escala de fato: throughput e p95 respondem linearmente a ela
+  # (docs/quality/performance-baseline-2026-07-native-tuned.md).
   metrics:
     - type: Resource
       resource:
@@ -19,9 +27,3 @@ spec:
         target:
           type: Utilization
           averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 80

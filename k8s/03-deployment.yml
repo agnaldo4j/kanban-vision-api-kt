@@ -74,13 +74,24 @@ spec:
             initialDelaySeconds: 0
             periodSeconds: 5
             failureThreshold: 3
+          # Dimensionado por medição (ADR-0036 / GAP-BR) —
+          # docs/quality/performance-baseline-2026-07-native-tuned.md
           resources:
             requests:
+              # Inalterado: é o que o scheduler RESERVA. Manter em 100m é o que torna o
+              # limit de 1000m abaixo gratuito em densidade.
               cpu: "100m"
-              memory: "256Mi"
+              # 128Mi: pico medido de 80–92 MiB sob carga (estável em qualquer nível de CPU).
+              memory: "128Mi"
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              # 500m → 1000m: +153% de throughput (785,8 → 1989,8 req/s) e p95 −60%
+              # (81,7 → 32,9 ms). Sob 500m o runtime reporta Effective CPU Count = 1 e o CFS
+              # estrangula o pod — era o gargalo real, não o GC. É o joelho da curva: 1→2 CPUs
+              # rende só +31%. O limit é teto de burst, não reserva ⇒ não consome capacidade.
+              cpu: "1000m"
+              # 512Mi → 256Mi: ~2,8× de folga sobre o pico. Medido com o limite APLICADO:
+              # oom_kill 0 e max 0 (nunca encostou) ⇒ o right-size custa zero throughput.
+              memory: "256Mi"
           volumeMounts:
             - name: tmp
               mountPath: /tmp

@@ -40,6 +40,14 @@ COPY domain/src domain/src
 COPY usecases/src usecases/src
 COPY sql_persistence/src sql_persistence/src
 COPY http_api/src http_api/src
+# PGO (ADR-0036): o perfil é versionado GZIPADO — 39,6 MB crus contra um repo de 8,9 MB; a 5,1 MB
+# comprimido cabe sem Git LFS. Descomprimir ANTES do nativeCompile: o plugin Gradle acha o perfil
+# pela convenção src/pgo-profiles/main/*.iprof (sem buildArg) e só então passa --pgo. Se o .gz não
+# existir, o build segue sem PGO — degradação suave, é semântica do plugin.
+# Capturar o perfil exige app instrumentado + Postgres + carga k6, o que NÃO roda dentro de
+# `docker build` — procedimento manual no skill /graalvm §8.
+RUN gunzip -kf http_api/src/pgo-profiles/main/default.iprof.gz 2>/dev/null || \
+    echo "AVISO: sem perfil PGO — build sem otimização guiada por perfil"
 RUN GRAALVM_HOME="$JAVA_HOME" ./gradlew :http_api:nativeCompile :http_api:nativeMigrationCompile \
     --no-daemon --no-configuration-cache -q
 
