@@ -86,9 +86,11 @@ envelhecer); perfil obsoleto **degrada suavemente** — o native-image ignora m�
 
 ### Confirmation
 
-Cumprida **por antecipação**: esta ADR nasce da medição que a ADR-0035 exigiu —
-`docs/quality/performance-baseline-2026-07-native-tuned.md` (6 arms + curva de CPU, mesma sessão,
-control e treatment sob o mesmo envelope, ADR-0027). Cada ✅/❌ acima cita o número que o sustenta.
+Esta ADR **nasce da medição** que a ADR-0035 exigiu, e o snapshot vem **neste mesmo commit**:
+[`docs/quality/performance-baseline-2026-07-native-tuned.md`](../docs/quality/performance-baseline-2026-07-native-tuned.md)
+— 8 arms + curva de CPU, mesma sessão, control e treatment sob o mesmo envelope, com o veredito de
+cada comparação emitido pelo `scripts/perf-regression.sh` (ADR-0027). Cada ✅/❌ acima cita o número
+que o sustenta e é inspecionável/reproduzível lá (seção *How to reproduce*).
 
 Gate contínuo: qualquer mudança futura nestes parâmetros exige **nova medição sob o envelope de
 produção** (memória **e** CPU) documentada em `docs/quality/` — medição em host livre não autoriza
