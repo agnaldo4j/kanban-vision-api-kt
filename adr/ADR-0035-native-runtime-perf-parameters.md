@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-16
 decision-makers: "@agnaldo4j"
 ---
