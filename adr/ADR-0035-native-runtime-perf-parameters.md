@@ -1,10 +1,15 @@
 ---
-status: accepted
+status: superseded
+superseded-by: ADR-0036
 date: 2026-07-16
 decision-makers: "@agnaldo4j"
 ---
 
 # ADR-0035 — Parâmetros de runtime de produção: G1 + PGO no nativo e right-size do k8s
+
+> **Superseded by [ADR-0036](ADR-0036-runtime-nativo-medido-pgo-cpu.md)** — a medição do GAP-BR, que
+> esta ADR exigiu, refutou o G1 sob o envelope real de produção (−22,4%) e mostrou que o gargalo é o
+> `limits.cpu`, não o GC. PGO, right-size e Epsilon foram confirmados e seguem na ADR-0036.
 
 > Produção roda o binário GraalVM Native Image (ADR-0030/0032) com **zero tuning**: Serial GC
 > default, sem heap policy, e pods dimensionados para JVM (`256Mi`/`512Mi`) enquanto o nativo usa
