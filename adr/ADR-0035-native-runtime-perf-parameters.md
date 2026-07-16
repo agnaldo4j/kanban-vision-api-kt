@@ -59,9 +59,12 @@ deliberado e medido, não os defaults:
   de perfil com workload representativo (k6) → *optimized build*.
 - ✅ **Binário de migração: `--gc=epsilon`** (no-op) — carga bounded e curta; nunca para a API
   long-running. Micro-otimização segura.
-- ✅ **Heap: sem `-Xmx` fixo.** Confiar na cgroup-awareness do SubstrateVM; recorrer a
-  `-XX:MaximumHeapSizePercent=N` apenas se a medição indicar necessidade sob o container
-  right-sized. `-Xms` não se aplica (não há warm-up de JIT).
+- ✅ **Heap: sem `-Xmx` fixo.** Confiar na cgroup-awareness do SubstrateVM. Se a medição indicar
+  necessidade de limitar o heap sob o container right-sized, usar a knob **correta para o G1** —
+  `-XX:MaxRAMPercentage=N` (relativa à memória disponível) ou `-Xmx` explícito. Atenção:
+  `-XX:MaximumHeapSizePercent` é opção do **Serial GC** e **não** ajusta o heap do binário G1
+  (Oracle, *Memory Management* do Native Image) — não usar no perfil desta ADR. `-Xms` não se
+  aplica (não há warm-up de JIT).
 - ✅ **Right-size k8s:** memória da API de `256Mi/512Mi` → alvo **`request 128Mi` / `limit 256Mi`**
   (mantém ~3× sobre o pico ~82 MiB, com margem para a base do G1 e spikes); mesmo tratamento no
   Job de migração; reavaliar o target de memória do HPA (na prática a CPU 70% é quem escala).
@@ -78,12 +81,18 @@ A Confirmation se cumpre quando a implementação (GAP-BR) documentar, **no mesm
 
 - **(a) Throughput ≥** o nativo atual e recuperando em direção ao JIT — senão G1/PGO não se
   justificam e uma ADR superseding reverte a decisão;
-- **(b)** `container_memory_working_set_bytes` sob o baseline k6 **dentro** dos novos limites
-  right-sized, com margem de spike observada;
+- **(b) Memória sob limite real:** o app precisa rodar **com o `limit` de memória alvo aplicado ao
+  container** (não desbloqueado), e a medição registrar `container_memory_working_set_bytes` sob o
+  baseline k6 **dentro** desse limite, **sem OOMKill nem throttle**, com margem de spike observada.
+  ⚠️ O `load-test.yml` atual sobe `docker compose` **sem** `--memory` e o Prometheus raspa só o
+  `/metrics` do app — isso valida (a)/(c) mas **não** exercita o limite do pod. Portanto GAP-BR
+  **deve** incluir um run com o container limitado ao alvo (`docker run --memory=256Mi` /
+  `compose` com `mem_limit`, ou um run k8s/kind) coletando o working-set via cgroup/cAdvisor;
 - **(c)** p95 por-endpoint dentro do baseline vigente.
 
-O gate executável continua sendo o workflow manual k6 (`.github/workflows/load-test.yml`, ADR-0027)
-+ a medição versionada em `docs/quality/` — nunca um gate de PR. Uma mudança de parâmetro sem nova
+O gate de **throughput/p95** continua sendo o workflow manual k6 (`.github/workflows/load-test.yml`,
+ADR-0027); o gate de **memória/right-size** exige adicionalmente o run com limite de container
+acima. Ambos versionados em `docs/quality/` — nunca gate de PR. Uma mudança de parâmetro sem nova
 medição documentada é rejeitada no review.
 
 ## Pros and Cons of the Options
