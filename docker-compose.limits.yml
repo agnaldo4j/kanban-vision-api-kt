@@ -1,0 +1,22 @@
+# Validação de right-size (GAP-BR / ADR-0035, Confirmation b).
+#
+# Aplica ao container local o MESMO envelope de recursos do pod k8s, para que o baseline
+# k6 exercite o limite REAL. Sem isto o `docker compose` sobe sem `--memory`/`--cpus` e a
+# medição valida (a)/(c) mas nunca o limite do pod — a lacuna que a ADR-0035 aponta.
+#
+# Unidades: docker `m` = MiB = k8s `Mi`; `cpus: 0.5` = k8s `limits.cpu: 500m`.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.limits.yml up -d --no-build
+#
+# Evidência do kernel (cgroup v2), lida DENTRO do container:
+#   docker exec kanban-vision-app sh -c 'cat /sys/fs/cgroup/memory.peak'    # marca d'água exata
+#   docker exec kanban-vision-app sh -c 'cat /sys/fs/cgroup/memory.events'  # oom_kill / max
+services:
+  app:
+    mem_limit: 256m # k8s limits.memory
+    mem_reservation: 128m # k8s requests.memory
+    # limits.cpu: 500m. Load-bearing para a decisão do GC: sob quota CFS de 0,5 o
+    # availableProcessors vira 1 e o G1 roda com ~1 thread — a tese de "G1 paralelo bate
+    # o Serial em nó multi-core" NÃO se aplica ao pod. Medir sem este cap mediria uma
+    # configuração que não existe em produção.
+    cpus: 0.5
