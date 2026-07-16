@@ -317,20 +317,22 @@ internal fun DecisionRequest.toDomain(): Either<DomainError, Decision> =
         else -> DomainError.InvalidDecision("Unknown decision type: $type").left()
     }
 
-private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveItem> =
+// Valida ANTES de construir CardId: o guard isNotBlank do value class lançaria
+// IllegalArgumentException (→ 500 via StatusPages) num cardId em branco. Aqui vira 400.
+private fun DecisionRequest.requireCardId(type: String): Either<DomainError, CardId> =
     payload["cardId"]
-        ?.let { Decision.MoveItem(CardId(it)).right() }
-        ?: DomainError.InvalidDecision("Missing required field 'cardId' for MOVE_ITEM").left()
+        ?.takeIf { it.isNotBlank() }
+        ?.let { CardId(it).right() }
+        ?: DomainError.InvalidDecision("Missing or blank required field 'cardId' for $type").left()
+
+private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveItem> =
+    requireCardId("MOVE_ITEM").map { Decision.MoveItem(it) }
 
 private fun DecisionRequest.toBlockDecision(): Either<DomainError, Decision.BlockItem> =
-    payload["cardId"]
-        ?.let { Decision.BlockItem(CardId(it), payload["reason"] ?: "blocked").right() }
-        ?: DomainError.InvalidDecision("Missing required field 'cardId' for BLOCK_ITEM").left()
+    requireCardId("BLOCK_ITEM").map { Decision.BlockItem(it, payload["reason"] ?: "blocked") }
 
 private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.UnblockItem> =
-    payload["cardId"]
-        ?.let { Decision.UnblockItem(CardId(it)).right() }
-        ?: DomainError.InvalidDecision("Missing required field 'cardId' for UNBLOCK_ITEM").left()
+    requireCardId("UNBLOCK_ITEM").map { Decision.UnblockItem(it) }
 
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
     payload["title"]

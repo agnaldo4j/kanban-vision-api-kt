@@ -1,10 +1,12 @@
 package com.kanbanvision.httpapi.routes
 
+import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
@@ -49,6 +51,16 @@ class DecisionRequestExhaustivenessTest {
             val decoded = request.toDomain()
             assertTrue(decoded.isRight())
             assertEquals(original, decoded.getOrNull())
+        }
+    }
+
+    @Test
+    fun `blank cardId decodes to InvalidDecision instead of throwing`() {
+        // Regression (GAP-BT): CardId's isNotBlank guard would throw → 500; must fold to a 400 error.
+        listOf("MOVE_ITEM", "BLOCK_ITEM", "UNBLOCK_ITEM").forEach { type ->
+            val decoded = DecisionRequest(type, mapOf("cardId" to "   ")).toDomain()
+            assertTrue(decoded.isLeft(), "$type with blank cardId must be Left")
+            assertIs<DomainError.InvalidDecision>(decoded.leftOrNull())
         }
     }
 }
