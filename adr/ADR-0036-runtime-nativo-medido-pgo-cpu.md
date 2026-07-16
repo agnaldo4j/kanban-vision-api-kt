@@ -1,11 +1,14 @@
 ---
-status: accepted
+status: superseded
+superseded-by: ADR-0037
 date: 2026-07-16
 decision-makers: "@agnaldo4j"
 supersedes: ADR-0035
 ---
 
 # ADR-0036 — Runtime nativo medido: PGO + CPU do pod, sem G1
+
+> **Status: Supersedida pela [ADR-0037](ADR-0037-envelope-recursos-pod.md)** (2026-07-16).
 
 > Supersede a **ADR-0035**. A medição do GAP-BR (`docs/quality/performance-baseline-2026-07-native-tuned.md`)
 > refutou o G1 **sob o envelope real de produção** (−22,4%) e revelou que o gargalo nunca foi o GC:
