@@ -4,6 +4,8 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.events.DomainEvent
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationResult
@@ -36,8 +38,8 @@ class RunDayUseCaseTest {
             val simulation = fixtureSimulation(id = "sim-1", day = 3)
             val existingSnapshot = fixtureSnapshot(simulationId = "sim-1", day = 3)
 
-            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
-            coEvery { snapshotRepository.findByDay("sim-1", SimulationDay(3)) } returns existingSnapshot.right()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
+            coEvery { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(3)) } returns existingSnapshot.right()
 
             val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
 
@@ -58,24 +60,23 @@ class RunDayUseCaseTest {
             val updatedSimulation = fixtureSimulation(id = "sim-1", day = 2)
             val snapshot = fixtureSnapshot(simulationId = "sim-1", day = 1)
 
-            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
-            coEvery { snapshotRepository.findByDay("sim-1", SimulationDay(1)) } returns null.right()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
+            coEvery { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) } returns null.right()
             coEvery {
                 simulationEngine.runDay(simulation = simulation, decisions = any(), seed = simulation.scenario.rules.seedValue)
             } returns SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
             coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
 
-            val result =
-                useCase.execute(
-                    RunDayCommand(simulationId = "sim-1", decisions = listOf(Decision.MoveItem("card-1")), callerOrganizationId = "org-1"),
-                )
+            val decision = Decision.MoveItem(CardId("card-1"))
+            val command = RunDayCommand(simulationId = "sim-1", decisions = listOf(decision), callerOrganizationId = "org-1")
+            val result = useCase.execute(command)
 
             assertTrue(result.isRight())
             assertEquals(snapshot.id, result.getOrNull()?.id)
 
-            coVerify(exactly = 1) { simulationRepository.findById("sim-1") }
-            coVerify(exactly = 1) { snapshotRepository.findByDay("sim-1", SimulationDay(1)) }
+            coVerify(exactly = 1) { simulationRepository.findById(SimulationId("sim-1")) }
+            coVerify(exactly = 1) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) }
             coVerify(exactly = 1) { simulationEngine.runDay(simulation, any(), simulation.scenario.rules.seedValue) }
             coVerify(exactly = 1) { simulationRepository.save(updatedSimulation) }
             coVerify(exactly = 1) { snapshotRepository.save(snapshot) }
@@ -95,8 +96,8 @@ class RunDayUseCaseTest {
             val updatedSimulation = fixtureSimulation(id = "sim-1", day = 2)
             val snapshot = fixtureSnapshotWithAllMovements(simulationId = "sim-1", day = 1)
 
-            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
-            coEvery { snapshotRepository.findByDay("sim-1", SimulationDay(1)) } returns null.right()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
+            coEvery { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) } returns null.right()
             coEvery { simulationEngine.runDay(simulation, any(), any()) } returns
                 SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
@@ -131,7 +132,7 @@ class RunDayUseCaseTest {
     fun `given simulation of another organization when running simulation day then forbidden without side effects`() =
         runTest {
             val simulation = fixtureSimulation(id = "sim-1", day = 1, organizationId = "org-owner")
-            coEvery { simulationRepository.findById("sim-1") } returns simulation.right()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
 
             val result =
                 useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-attacker"))
@@ -148,14 +149,14 @@ class RunDayUseCaseTest {
     @Test
     fun `given repository failure when loading simulation then error is propagated without side effects`() =
         runTest {
-            coEvery { simulationRepository.findById("sim-1") } returns DomainError.PersistenceError("db unavailable").left()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns DomainError.PersistenceError("db unavailable").left()
 
             val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
             assertIs<DomainError.PersistenceError>(result.leftOrNull())
 
-            coVerify(exactly = 0) { snapshotRepository.findByDay("sim-1", SimulationDay(1)) }
+            coVerify(exactly = 0) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) }
             coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any()) }
         }
 }

@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Seniority
@@ -13,7 +14,7 @@ import com.kanbanvision.domain.model.simulation.SimulationStatus
 
 internal fun Simulation.toSurrogate() =
     SimulationSurrogate(
-        id = id,
+        id = id.value,
         name = name,
         currentDay = currentDay.value,
         status = status.name,
@@ -25,7 +26,7 @@ internal fun Simulation.toSurrogate() =
 
 internal fun SimulationSurrogate.toDomain() =
     Simulation(
-        id = id,
+        id = SimulationId(id),
         name = name,
         currentDay = SimulationDay(currentDay),
         status = SimulationStatus.valueOf(status),

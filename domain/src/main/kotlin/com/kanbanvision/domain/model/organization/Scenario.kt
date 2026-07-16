@@ -2,19 +2,18 @@ package com.kanbanvision.domain.model.organization
 
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Domain
-import com.kanbanvision.domain.model.ScenarioRef
+import com.kanbanvision.domain.model.ScenarioId
 import com.kanbanvision.domain.model.kanban.Board
 import java.util.UUID
 
 data class Scenario(
-    override val id: String,
+    override val id: ScenarioId,
     val name: String,
     val rules: ScenarioRules,
     val board: Board,
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<ScenarioId> {
     init {
-        require(id.isNotBlank()) { "Scenario id must not be blank" }
         require(name.isNotBlank()) { "Scenario name must not be blank" }
     }
 
@@ -26,7 +25,7 @@ data class Scenario(
         ): Scenario {
             require(name.isNotBlank()) { "Scenario name must not be blank" }
             return Scenario(
-                id = UUID.randomUUID().toString(),
+                id = ScenarioId(UUID.randomUUID().toString()),
                 name = name,
                 rules = rules,
                 board = board,
@@ -34,5 +33,5 @@ data class Scenario(
         }
     }
 
-    fun toRef(): ScenarioRef = ScenarioRef(id = id)
+    fun toRef(): ScenarioId = id
 }

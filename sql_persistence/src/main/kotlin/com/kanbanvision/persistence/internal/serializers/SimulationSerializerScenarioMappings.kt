@@ -1,7 +1,9 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.BoardRef
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.BoardId
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.ScenarioId
+import com.kanbanvision.domain.model.StepId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -14,7 +16,7 @@ import com.kanbanvision.domain.model.organization.ScenarioRules
 
 internal fun Scenario.toSurrogate() =
     ScenarioSurrogate(
-        id = id,
+        id = id.value,
         name = name,
         rules = rules.toSurrogate(),
         board = board.toSurrogate(),
@@ -22,7 +24,7 @@ internal fun Scenario.toSurrogate() =
 
 internal fun ScenarioSurrogate.toDomain() =
     Scenario(
-        id = id,
+        id = ScenarioId(id),
         name = name,
         rules = rules.toDomain(),
         board = board.toDomain(),
@@ -50,14 +52,14 @@ private fun PolicySet.toSurrogate() = PolicySetSurrogate(id = id, wipLimit = wip
 
 private fun PolicySetSurrogate.toDomain() = PolicySet(id = id, wipLimit = wipLimit)
 
-private fun Board.toSurrogate() = BoardSurrogate(id = id, name = name, steps = steps.map { it.toSurrogate() })
+private fun Board.toSurrogate() = BoardSurrogate(id = id.value, name = name, steps = steps.map { it.toSurrogate() })
 
-private fun BoardSurrogate.toDomain() = Board(id = id, name = name, steps = steps.map { it.toDomain() })
+private fun BoardSurrogate.toDomain() = Board(id = BoardId(id), name = name, steps = steps.map { it.toDomain() })
 
 private fun Step.toSurrogate() =
     StepSurrogate(
-        id = id,
-        boardId = board.id,
+        id = id.value,
+        boardId = board.value,
         name = name,
         position = position,
         requiredAbility = requiredAbility.name,
@@ -67,8 +69,8 @@ private fun Step.toSurrogate() =
 
 private fun StepSurrogate.toDomain() =
     Step(
-        id = id,
-        board = BoardRef(boardId),
+        id = StepId(id),
+        board = BoardId(boardId),
         name = name,
         position = position,
         requiredAbility = AbilityName.valueOf(requiredAbility),
@@ -78,8 +80,8 @@ private fun StepSurrogate.toDomain() =
 
 private fun Card.toSurrogate() =
     CardSurrogate(
-        id = id,
-        stepId = step.id,
+        id = id.value,
+        stepId = step.value,
         title = title,
         description = description,
         position = position,
@@ -98,8 +100,8 @@ private fun Card.toSurrogate() =
 
 private fun CardSurrogate.toDomain() =
     Card(
-        id = id,
-        step = StepRef(stepId),
+        id = CardId(id),
+        step = StepId(stepId),
         title = title,
         description = description,
         position = position,

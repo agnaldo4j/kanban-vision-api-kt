@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
 import kotlin.test.Test
@@ -18,9 +19,9 @@ import kotlin.test.assertEquals
 class DecisionRoundTripExhaustivenessTest {
     private val samples =
         listOf(
-            Decision.MoveItem(cardId = "c-1"),
-            Decision.BlockItem(cardId = "c-1", reason = "dep"),
-            Decision.UnblockItem(cardId = "c-1"),
+            Decision.MoveItem(cardId = CardId("c-1")),
+            Decision.BlockItem(cardId = CardId("c-1"), reason = "dep"),
+            Decision.UnblockItem(cardId = CardId("c-1")),
             Decision.AddItem(title = "t", serviceClass = ServiceClass.EXPEDITE),
         )
 

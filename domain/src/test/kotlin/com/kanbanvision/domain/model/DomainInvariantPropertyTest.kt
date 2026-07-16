@@ -18,10 +18,10 @@ class DomainInvariantPropertyTest {
     fun `refs reject any blank id`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                runCatching { BoardRef(blank) }.isFailure &&
-                    runCatching { StepRef(blank) }.isFailure &&
-                    runCatching { SimulationRef(blank) }.isFailure &&
-                    runCatching { ScenarioRef(blank) }.isFailure
+                runCatching { BoardId(blank) }.isFailure &&
+                    runCatching { StepId(blank) }.isFailure &&
+                    runCatching { SimulationId(blank) }.isFailure &&
+                    runCatching { ScenarioId(blank) }.isFailure
             }
         }
     }
@@ -30,10 +30,10 @@ class DomainInvariantPropertyTest {
     fun `refs accept any non-blank id`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { id ->
-                runCatching { BoardRef(id) }.isSuccess &&
-                    runCatching { StepRef(id) }.isSuccess &&
-                    runCatching { SimulationRef(id) }.isSuccess &&
-                    runCatching { ScenarioRef(id) }.isSuccess
+                runCatching { BoardId(id) }.isSuccess &&
+                    runCatching { StepId(id) }.isSuccess &&
+                    runCatching { SimulationId(id) }.isSuccess &&
+                    runCatching { ScenarioId(id) }.isSuccess
             }
         }
     }

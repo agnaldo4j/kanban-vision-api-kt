@@ -1,7 +1,8 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.ScenarioRef
-import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.ScenarioId
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.Movement
@@ -50,8 +51,8 @@ internal object DailySnapshotSerializer {
     private fun DailySnapshot.toSurrogate() =
         SnapshotDailySnapshotSurrogate(
             id = id,
-            simulationId = simulation.id,
-            scenarioId = scenario.id,
+            simulationId = simulation.value,
+            scenarioId = scenario.value,
             day = day.value,
             metrics = metrics.toSurrogate(),
             movements = movements.map { it.toSurrogate() },
@@ -70,7 +71,7 @@ internal object DailySnapshotSerializer {
         SnapshotMovementSurrogate(
             id = id,
             type = type.name,
-            cardId = cardId,
+            cardId = cardId.value,
             day = day.value,
             reason = reason,
         )
@@ -78,8 +79,8 @@ internal object DailySnapshotSerializer {
     private fun SnapshotDailySnapshotSurrogate.toDomain() =
         DailySnapshot(
             id = id,
-            simulation = SimulationRef(simulationId),
-            scenario = ScenarioRef(scenarioId),
+            simulation = SimulationId(simulationId),
+            scenario = ScenarioId(scenarioId),
             day = SimulationDay(day),
             metrics = metrics.toDomain(),
             movements = movements.map { it.toDomain() },
@@ -98,7 +99,7 @@ internal object DailySnapshotSerializer {
         Movement(
             id = id,
             type = MovementType.valueOf(type),
-            cardId = cardId,
+            cardId = CardId(cardId),
             day = SimulationDay(day),
             reason = reason,
         )

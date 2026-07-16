@@ -1,7 +1,9 @@
 package com.kanbanvision.usecases.simulation
 
-import com.kanbanvision.domain.model.ScenarioRef
-import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.BoardId
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.ScenarioId
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.organization.Organization
@@ -27,11 +29,11 @@ internal fun fixtureScenario(
     seedValue: Long = 42L,
 ): Scenario {
     val board =
-        Board(id = "board-1", name = "Main Board")
+        Board(id = BoardId("board-1"), name = "Main Board")
             .addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
             .addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
     return Scenario(
-        id = id,
+        id = ScenarioId(id),
         name = "Default Simulation Scenario",
         rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = teamSize, seedValue = seedValue),
         board = board,
@@ -47,7 +49,7 @@ internal fun fixtureSimulation(
     organizationId: String = FIXTURE_ORGANIZATION_ID,
 ): Simulation =
     Simulation(
-        id = id,
+        id = SimulationId(id),
         name = "Simulation",
         currentDay = SimulationDay(day),
         status = status,
@@ -61,8 +63,8 @@ internal fun fixtureSnapshot(
     day: Int = 1,
 ): DailySnapshot =
     DailySnapshot(
-        simulation = SimulationRef(simulationId),
-        scenario = ScenarioRef(scenarioId),
+        simulation = SimulationId(simulationId),
+        scenario = ScenarioId(scenarioId),
         day = SimulationDay(day),
         metrics = FlowMetrics(throughput = 1, wipCount = 1, blockedCount = 0, avgAgingDays = 0.0),
         movements = emptyList(),
@@ -75,9 +77,9 @@ internal fun fixtureSnapshotWithAllMovements(
     fixtureSnapshot(simulationId = simulationId, day = day).copy(
         movements =
             listOf(
-                Movement(type = MovementType.MOVED, cardId = "c-1", day = SimulationDay(day), reason = "moved"),
-                Movement(type = MovementType.BLOCKED, cardId = "c-2", day = SimulationDay(day), reason = "dep"),
-                Movement(type = MovementType.UNBLOCKED, cardId = "c-3", day = SimulationDay(day), reason = "resumed"),
-                Movement(type = MovementType.COMPLETED, cardId = "c-4", day = SimulationDay(day), reason = "done"),
+                Movement(type = MovementType.MOVED, cardId = CardId("c-1"), day = SimulationDay(day), reason = "moved"),
+                Movement(type = MovementType.BLOCKED, cardId = CardId("c-2"), day = SimulationDay(day), reason = "dep"),
+                Movement(type = MovementType.UNBLOCKED, cardId = CardId("c-3"), day = SimulationDay(day), reason = "resumed"),
+                Movement(type = MovementType.COMPLETED, cardId = CardId("c-4"), day = SimulationDay(day), reason = "done"),
             ),
     )

@@ -1,14 +1,15 @@
 package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.Domain
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.StepId
 import java.time.Instant
 import java.util.UUID
 
 data class Card(
-    override val id: String = UUID.randomUUID().toString(),
-    val step: StepRef,
+    override val id: CardId = CardId(UUID.randomUUID().toString()),
+    val step: StepId,
     val title: String,
     val description: String = "",
     val position: Int = 0,
@@ -24,9 +25,8 @@ data class Card(
     val remainingTestEffort: Int = testEffort,
     val remainingDeployEffort: Int = deployEffort,
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<CardId> {
     init {
-        require(id.isNotBlank()) { "Card id must not be blank" }
         require(title.isNotBlank()) { "Card title must not be blank" }
         require(position >= 0) { "Card position must be non-negative" }
         require(agingDays >= 0) { "Card agingDays must be non-negative" }
@@ -44,14 +44,14 @@ data class Card(
 
     companion object {
         fun create(
-            step: StepRef,
+            step: StepId,
             title: String,
             description: String = "",
             position: Int,
         ): Card {
             require(title.isNotBlank()) { "Card title must not be blank" }
             return Card(
-                id = UUID.randomUUID().toString(),
+                id = CardId(UUID.randomUUID().toString()),
                 step = step,
                 title = title,
                 description = description,
@@ -61,7 +61,7 @@ data class Card(
     }
 
     fun moveTo(
-        targetStep: StepRef,
+        targetStep: StepId,
         newPosition: Int,
     ): Card {
         require(newPosition >= 0) { "Card target position must be non-negative" }

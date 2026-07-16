@@ -94,7 +94,7 @@ class CardWorkerBehaviorPropertyTest {
             ) { effort, points, ability ->
                 val card =
                     Card(
-                        id = "card-1",
+                        id = CardId("card-1"),
                         step = STEP_REF,
                         title = "T",
                         analysisEffort = effort,
@@ -158,7 +158,7 @@ class CardWorkerBehaviorPropertyTest {
         const val NEG_BOUND = -1000
         const val MAX_EFFORT = 20
         const val MAX_CONSUMED = 50
-        val STEP_REF = StepRef("step-1")
+        val STEP_REF = StepId("step-1")
         val ARB_BLANK: Arb<String> = Arb.of("", " ", "   ", "\t", "\n")
         val ARB_NON_BLANK: Arb<String> =
             Arb.string(minSize = 1, maxSize = NAME_MAX).filter { it.isNotBlank() }

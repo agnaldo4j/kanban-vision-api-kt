@@ -42,7 +42,7 @@ class CreateSimulationUseCase(
             val scenario = Scenario.create(name = "Default Simulation Scenario", rules = rules, board = board)
             val simulation =
                 Simulation.create(
-                    name = "Simulation ${scenario.id.take(SIMULATION_NAME_ID_PREFIX_LENGTH)}",
+                    name = "Simulation ${scenario.id.value.take(SIMULATION_NAME_ID_PREFIX_LENGTH)}",
                     organization = organization,
                     scenario = scenario,
                     status = SimulationStatus.DRAFT,
@@ -59,12 +59,12 @@ class CreateSimulationUseCase(
             publisher.publish(
                 listOf(
                     DomainEvent.SimulationCreated(
-                        simulationId = simulation.id,
+                        simulationId = simulation.id.value,
                         simulationName = simulation.name,
                         organizationId = simulation.organization.id,
                     ),
                 ),
             )
-            simulation.id
+            simulation.id.value
         }
 }

@@ -1,26 +1,25 @@
 package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.model.Audit
-import com.kanbanvision.domain.model.BoardRef
+import com.kanbanvision.domain.model.BoardId
 import com.kanbanvision.domain.model.Domain
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.StepId
 import java.util.UUID
 
 data class Board(
-    override val id: String,
+    override val id: BoardId,
     val name: String,
     val steps: List<Step> = emptyList(),
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<BoardId> {
     init {
-        require(id.isNotBlank()) { "Board id must not be blank" }
         require(name.isNotBlank()) { "Board name must not be blank" }
     }
 
     companion object {
         fun create(name: String): Board {
             require(name.isNotBlank()) { "Board name must not be blank" }
-            return Board(id = UUID.randomUUID().toString(), name = name)
+            return Board(id = BoardId(UUID.randomUUID().toString()), name = name)
         }
     }
 
@@ -35,11 +34,11 @@ data class Board(
     }
 
     fun addCard(
-        step: StepRef,
+        step: StepId,
         title: String,
         description: String = "",
     ): Board {
-        val target = steps.firstOrNull { it.id == step.id } ?: error("Step ${step.id} not found in board $id")
+        val target = steps.firstOrNull { it.id == step } ?: error("Step ${step.value} not found in board ${id.value}")
         val newCard = Card.create(step = target.toRef(), title = title, description = description, position = target.cards.size)
         val updatedSteps =
             steps.map { currentStep ->
@@ -48,5 +47,5 @@ data class Board(
         return copy(steps = updatedSteps)
     }
 
-    fun toRef(): BoardRef = BoardRef(id = id)
+    fun toRef(): BoardId = id
 }

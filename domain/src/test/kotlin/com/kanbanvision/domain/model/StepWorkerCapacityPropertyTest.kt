@@ -151,7 +151,7 @@ class StepWorkerCapacityPropertyTest {
         const val NAME_MAX = 50
         const val NEG_BOUND = -1000
         const val MAX_POINTS = 50
-        val BOARD_REF = BoardRef("board-1")
+        val BOARD_REF = BoardId("board-1")
         val ARB_BLANK: Arb<String> = Arb.of("", " ", "   ", "\t", "\n")
         val ARB_NON_BLANK: Arb<String> =
             Arb.string(minSize = 1, maxSize = NAME_MAX).filter { it.isNotBlank() }

@@ -2,13 +2,13 @@ package com.kanbanvision.domain.model.simulation
 
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Domain
-import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.Scenario
 import java.util.UUID
 
 data class Simulation(
-    override val id: String,
+    override val id: SimulationId,
     val name: String,
     val currentDay: SimulationDay,
     val status: SimulationStatus,
@@ -17,9 +17,8 @@ data class Simulation(
     val decisions: List<Decision> = emptyList(),
     val history: List<DailySnapshot> = emptyList(),
     override val audit: Audit = Audit(),
-) : Domain {
+) : Domain<SimulationId> {
     init {
-        require(id.isNotBlank()) { "Simulation id must not be blank" }
         require(name.isNotBlank()) { "Simulation name must not be blank" }
     }
 
@@ -32,7 +31,7 @@ data class Simulation(
         ): Simulation {
             require(name.isNotBlank()) { "Simulation name must not be blank" }
             return Simulation(
-                id = UUID.randomUUID().toString(),
+                id = SimulationId(UUID.randomUUID().toString()),
                 name = name,
                 currentDay = SimulationDay(1),
                 status = status,
@@ -42,7 +41,7 @@ data class Simulation(
         }
     }
 
-    fun toRef(): SimulationRef = SimulationRef(id = id)
+    fun toRef(): SimulationId = id
 
     fun withStatus(newStatus: SimulationStatus): Simulation = copy(status = newStatus)
 

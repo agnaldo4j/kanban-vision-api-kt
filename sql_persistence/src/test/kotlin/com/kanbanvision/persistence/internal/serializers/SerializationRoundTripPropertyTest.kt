@@ -1,6 +1,7 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.SimulationRef
+import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -84,10 +85,10 @@ class SerializationRoundTripPropertyTest {
     private val arbSnapshot: Arb<DailySnapshot> =
         arbitrary {
             DailySnapshot(
-                simulation = SimulationRef(id = "sim-${Arb.int(1..999).bind()}"),
+                simulation = SimulationId("sim-${Arb.int(1..999).bind()}"),
                 scenario =
                     com.kanbanvision.domain.model
-                        .ScenarioRef(id = "sc-${Arb.int(1..999).bind()}"),
+                        .ScenarioId("sc-${Arb.int(1..999).bind()}"),
                 day = SimulationDay(Arb.int(1..365).bind()),
                 metrics =
                     FlowMetrics(
@@ -104,7 +105,7 @@ class SerializationRoundTripPropertyTest {
                             arbitrary {
                                 Movement(
                                     type = Arb.enum<MovementType>().bind(),
-                                    cardId = "card-${Arb.int(1..999).bind()}",
+                                    cardId = CardId("card-${Arb.int(1..999).bind()}"),
                                     day = SimulationDay(Arb.int(1..365).bind()),
                                     reason = Arb.string(0..20).bind(),
                                 )

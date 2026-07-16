@@ -26,15 +26,15 @@ class ModelInvariantBoundaryCoverageTest {
         assertFailsWith<IllegalArgumentException> {
             DailySnapshot(
                 id = "",
-                simulation = SimulationRef("sim-1"),
-                scenario = ScenarioRef("scn-1"),
+                simulation = SimulationId("sim-1"),
+                scenario = ScenarioId("scn-1"),
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0),
                 movements = emptyList(),
             )
         }
         assertFailsWith<IllegalArgumentException> {
-            Movement(id = "", type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(1), reason = "ok")
+            Movement(id = "", type = MovementType.MOVED, cardId = CardId("card-1"), day = SimulationDay(1), reason = "ok")
         }
         assertFailsWith<IllegalArgumentException> { PolicySet(id = "", wipLimit = 1) }
         assertFailsWith<IllegalArgumentException> {
@@ -55,7 +55,7 @@ class ModelInvariantBoundaryCoverageTest {
 
     @Test
     fun `given decision subtypes when creating block and add item then default values are present`() {
-        val blocked = Decision.BlockItem(cardId = "card-1")
+        val blocked = Decision.BlockItem(cardId = CardId("card-1"))
         val added = Decision.AddItem(title = "Task")
 
         assertEquals("blocked", blocked.reason)

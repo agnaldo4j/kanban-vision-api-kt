@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.model
 
-interface Domain {
-    val id: String
+interface Domain<ID> {
+    val id: ID
     val audit: Audit
 }

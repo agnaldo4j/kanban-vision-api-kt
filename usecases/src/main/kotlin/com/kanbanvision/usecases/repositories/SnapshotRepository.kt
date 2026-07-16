@@ -2,6 +2,7 @@ package com.kanbanvision.usecases.repositories
 
 import arrow.core.Either
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.SimulationDay
 
@@ -9,9 +10,9 @@ interface SnapshotRepository {
     suspend fun save(snapshot: DailySnapshot): Either<DomainError, DailySnapshot>
 
     suspend fun findByDay(
-        simulationId: String,
+        simulationId: SimulationId,
         day: SimulationDay,
     ): Either<DomainError, DailySnapshot?>
 
-    suspend fun findAllBySimulation(simulationId: String): Either<DomainError, List<DailySnapshot>>
+    suspend fun findAllBySimulation(simulationId: SimulationId): Either<DomainError, List<DailySnapshot>>
 }

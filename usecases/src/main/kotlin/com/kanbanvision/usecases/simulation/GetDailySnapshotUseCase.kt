@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.usecases.repositories.SimulationRepository
@@ -23,11 +24,11 @@ class GetDailySnapshotUseCase(
         either {
             query.validate().bind()
             val id = query.simulationId
-            val simulation = simulationRepository.findById(id).bind()
+            val simulation = simulationRepository.findById(SimulationId(id)).bind()
             ensure(simulation.organization.id == query.callerOrganizationId) {
                 DomainError.Forbidden("Simulation does not belong to the caller's organization")
             }
-            val (snapshot, duration) = timed { snapshotRepository.findByDay(id, SimulationDay(query.day)) }
+            val (snapshot, duration) = timed { snapshotRepository.findByDay(SimulationId(id), SimulationDay(query.day)) }
             ensureNotNull(snapshot) { DomainError.SimulationNotFound(id) }
             log.info("Snapshot fetched: simulation={} day={} duration={}ms", id, query.day, duration.inWholeMilliseconds)
             snapshot

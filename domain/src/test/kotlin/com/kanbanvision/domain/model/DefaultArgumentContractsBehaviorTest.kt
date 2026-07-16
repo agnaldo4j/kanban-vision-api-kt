@@ -64,8 +64,8 @@ class DefaultArgumentContractsBehaviorTest {
 
         val step =
             Step(
-                id = "s-1",
-                board = BoardRef("b-1"),
+                id = StepId("s-1"),
+                board = BoardId("b-1"),
                 name = "Dev",
                 requiredAbility = AbilityName.DEVELOPER,
                 audit = explicitAudit,
@@ -73,12 +73,12 @@ class DefaultArgumentContractsBehaviorTest {
         assertEquals(0, step.position)
         assertTrue(step.cards.isEmpty() && step.workers.isEmpty())
 
-        val board = Board(id = "b-1", name = "B", audit = explicitAudit)
+        val board = Board(id = BoardId("b-1"), name = "B", audit = explicitAudit)
         assertTrue(board.steps.isEmpty())
 
-        val card = Card(id = "c-1", step = StepRef("s-1"), title = "T", audit = explicitAudit)
+        val card = Card(id = CardId("c-1"), step = StepId("s-1"), title = "T", audit = explicitAudit)
         assertEquals(0, card.analysisEffort + card.developmentEffort + card.testEffort + card.deployEffort)
-        assertNotNull(Card(step = StepRef("s-1"), title = "T").id)
+        assertNotNull(Card(step = StepId("s-1"), title = "T").id)
     }
 
     @Test
@@ -106,8 +106,15 @@ class DefaultArgumentContractsBehaviorTest {
             )
         assertEquals("r-1", rules.id)
 
-        val scenario = Scenario(id = "sc-1", name = "S", rules = rules, board = Board(id = "b", name = "B"), audit = explicitAudit)
-        assertEquals("sc-1", scenario.id)
+        val scenario =
+            Scenario(
+                id = ScenarioId("sc-1"),
+                name = "S",
+                rules = rules,
+                board = Board(id = BoardId("b"), name = "B"),
+                audit = explicitAudit,
+            )
+        assertEquals("sc-1", scenario.id.value)
     }
 
     @Test
@@ -119,7 +126,7 @@ class DefaultArgumentContractsBehaviorTest {
             Movement(
                 id = "mv-1",
                 type = MovementType.MOVED,
-                cardId = "c-1",
+                cardId = CardId("c-1"),
                 day = SimulationDay(1),
                 reason = "moved",
                 audit = explicitAudit,
@@ -129,8 +136,8 @@ class DefaultArgumentContractsBehaviorTest {
         val snapshot =
             DailySnapshot(
                 id = "ds-1",
-                simulation = SimulationRef("sim-1"),
-                scenario = ScenarioRef("sc-1"),
+                simulation = SimulationId("sim-1"),
+                scenario = ScenarioId("sc-1"),
                 day = SimulationDay(1),
                 metrics = metrics,
                 movements = listOf(movement),
@@ -144,7 +151,7 @@ class DefaultArgumentContractsBehaviorTest {
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 2, seedValue = 7L)
         val simulation =
             Simulation(
-                id = "sim-1",
+                id = SimulationId("sim-1"),
                 name = "Sim",
                 currentDay = SimulationDay(1),
                 status = SimulationStatus.DRAFT,

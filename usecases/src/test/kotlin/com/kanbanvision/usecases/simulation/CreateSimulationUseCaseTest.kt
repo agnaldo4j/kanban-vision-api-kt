@@ -38,7 +38,7 @@ class CreateSimulationUseCaseTest {
             val result = useCase.execute(CreateSimulationCommand("org-42", wipLimit = 3, teamSize = 4, seedValue = 99L))
 
             assertTrue(result.isRight())
-            assertEquals(simulationSlot.captured.id, result.getOrElse { error("Expected id") })
+            assertEquals(simulationSlot.captured.id.value, result.getOrElse { error("Expected id") })
             assertEquals(3, simulationSlot.captured.scenario.rules.wipLimit)
             assertEquals(4, simulationSlot.captured.scenario.rules.teamSize)
             coVerify(exactly = 1) { simulationRepository.save(any()) }

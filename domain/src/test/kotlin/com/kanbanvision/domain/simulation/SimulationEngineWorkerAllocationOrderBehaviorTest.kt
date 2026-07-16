@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -49,8 +49,8 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
                 .assignWorker(workerA())
         val card =
             Card(
-                id = "card-1",
-                step = StepRef(stepWithWorkers.id),
+                id = CardId("card-1"),
+                step = stepWithWorkers.id,
                 title = "Task",
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 6,

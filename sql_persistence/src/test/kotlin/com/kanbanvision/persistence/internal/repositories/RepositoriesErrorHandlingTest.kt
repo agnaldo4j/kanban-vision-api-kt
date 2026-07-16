@@ -43,7 +43,7 @@ class RepositoriesErrorHandlingTest {
     fun `given closed datasource when snapshot methods execute then persistence errors are returned`() =
         runBlocking {
             val simulation = PersistenceFixtures.simulation()
-            val snapshot = PersistenceFixtures.snapshot(simulation.id)
+            val snapshot = PersistenceFixtures.snapshot(simulation.id.value)
             DatabaseFactory.dataSource.close()
             assertPersistenceError(snapshotRepository.save(snapshot).leftOrNull())
             assertPersistenceError(snapshotRepository.findByDay(simulation.id, SimulationDay(1)).leftOrNull())

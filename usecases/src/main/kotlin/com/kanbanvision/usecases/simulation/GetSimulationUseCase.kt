@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationQuery
@@ -19,7 +20,7 @@ class GetSimulationUseCase(
         either {
             query.validate().bind()
             val id = query.simulationId
-            val (simulation, duration) = timed { simulationRepository.findById(id) }
+            val (simulation, duration) = timed { simulationRepository.findById(SimulationId(id)) }
             ensure(simulation.organization.id == query.callerOrganizationId) {
                 DomainError.Forbidden("Simulation does not belong to the caller's organization")
             }

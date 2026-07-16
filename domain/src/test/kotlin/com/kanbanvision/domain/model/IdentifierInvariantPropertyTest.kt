@@ -22,7 +22,7 @@ class IdentifierInvariantPropertyTest {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
                 runCatching {
-                    Movement(id = blank, type = MovementType.MOVED, cardId = "c-1", day = SimulationDay(1), reason = "r")
+                    Movement(id = blank, type = MovementType.MOVED, cardId = CardId("c-1"), day = SimulationDay(1), reason = "r")
                 }.isFailure
             }
         }
@@ -33,7 +33,7 @@ class IdentifierInvariantPropertyTest {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
                 runCatching {
-                    Movement(type = MovementType.MOVED, cardId = blank, day = SimulationDay(1), reason = "r")
+                    Movement(type = MovementType.MOVED, cardId = CardId(blank), day = SimulationDay(1), reason = "r")
                 }.isFailure
             }
         }
@@ -44,7 +44,7 @@ class IdentifierInvariantPropertyTest {
         runBlocking {
             forAll(ARB_NON_BLANK, ARB_NON_BLANK) { id, cardId ->
                 runCatching {
-                    Movement(id = id, type = MovementType.MOVED, cardId = cardId, day = SimulationDay(1), reason = "r")
+                    Movement(id = id, type = MovementType.MOVED, cardId = CardId(cardId), day = SimulationDay(1), reason = "r")
                 }.isSuccess
             }
         }
@@ -113,8 +113,8 @@ class IdentifierInvariantPropertyTest {
         val ARB_BLANK: Arb<String> = Arb.of("", " ", "   ", "\t", "\n")
         val ARB_NON_BLANK: Arb<String> =
             Arb.string(minSize = 1, maxSize = ID_MAX_LENGTH).filter { it.isNotBlank() }
-        val SIM_REF = SimulationRef("sim-1")
-        val SCENARIO_REF = ScenarioRef("sc-1")
+        val SIM_REF = SimulationId("sim-1")
+        val SCENARIO_REF = ScenarioId("sc-1")
         val METRICS = FlowMetrics(throughput = 0, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0)
     }
 }

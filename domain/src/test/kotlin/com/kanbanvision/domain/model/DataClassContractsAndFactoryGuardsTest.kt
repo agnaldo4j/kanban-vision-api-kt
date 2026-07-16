@@ -31,11 +31,11 @@ class DataClassContractsAndFactoryGuardsTest {
         val simulation = Simulation.create(name = "Sim", organization = Organization.create("Org"), scenario = scenario)
         val snapshot =
             DailySnapshot(
-                simulation = SimulationRef(simulation.id),
-                scenario = ScenarioRef(scenario.id),
+                simulation = simulation.id,
+                scenario = scenario.id,
                 day = SimulationDay(1),
                 metrics = FlowMetrics(throughput = 1, wipCount = 1, blockedCount = 0, avgAgingDays = 1.0),
-                movements = listOf(Movement(type = MovementType.MOVED, cardId = "card-1", day = SimulationDay(1), reason = "move")),
+                movements = listOf(Movement(type = MovementType.MOVED, cardId = CardId("card-1"), day = SimulationDay(1), reason = "move")),
             )
 
         val sameScenario = scenario.copy()
@@ -44,12 +44,12 @@ class DataClassContractsAndFactoryGuardsTest {
         assertEquals(scenario, sameScenario)
         assertEquals(scenario.hashCode(), sameScenario.hashCode())
         assertNotEquals(scenario, changedScenario)
-        assertEquals(simulation.id, snapshot.simulation.id)
+        assertEquals(simulation.id, snapshot.simulation)
     }
 
     @Test
     fun `given value objects when destructuring and copying then values remain consistent`() {
-        val movement = Movement(type = MovementType.BLOCKED, cardId = "card-1", day = SimulationDay(2), reason = "blocked")
+        val movement = Movement(type = MovementType.BLOCKED, cardId = CardId("card-1"), day = SimulationDay(2), reason = "blocked")
         val flow = FlowMetrics(throughput = 3, wipCount = 4, blockedCount = 1, avgAgingDays = 2.5)
         val policySet = PolicySet(wipLimit = 5)
         val decision = Decision.AddItem(title = "Task")
@@ -67,8 +67,8 @@ class DataClassContractsAndFactoryGuardsTest {
 
     @Test
     fun `given companion factories with invalid input when creating domain objects then validation guards trigger`() {
-        assertFailsWith<IllegalArgumentException> { Card.create(step = StepRef(""), title = "Task", position = 0) }
-        assertFailsWith<IllegalArgumentException> { Card.create(step = StepRef("step-1"), title = "", position = 0) }
+        assertFailsWith<IllegalArgumentException> { Card.create(step = StepId(""), title = "Task", position = 0) }
+        assertFailsWith<IllegalArgumentException> { Card.create(step = StepId("step-1"), title = "", position = 0) }
         assertFailsWith<IllegalArgumentException> {
             Scenario.create(name = "", rules = ScenarioRules.create(1, 1, 1L), board = Board.create("B"))
         }

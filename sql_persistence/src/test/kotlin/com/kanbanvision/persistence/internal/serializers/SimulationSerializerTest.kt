@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.Simulation
@@ -26,26 +27,26 @@ class SimulationSerializerTest {
     @Test
     fun `given simulation with block item decision when encoding and decoding then decision is preserved`() {
         val base = PersistenceFixtures.simulation()
-        val decision = Decision.BlockItem(cardId = "c-2", reason = "waiting")
+        val decision = Decision.BlockItem(cardId = CardId("c-2"), reason = "waiting")
         val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
         val restored = assertIs<Decision.BlockItem>(decoded.decisions.first())
-        assertEquals("c-2", restored.cardId)
+        assertEquals("c-2", restored.cardId.value)
         assertEquals("waiting", restored.reason)
     }
 
     @Test
     fun `given simulation with unblock item decision when encoding and decoding then decision is preserved`() {
         val base = PersistenceFixtures.simulation()
-        val decision = Decision.UnblockItem(cardId = "c-3")
+        val decision = Decision.UnblockItem(cardId = CardId("c-3"))
         val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
         val restored = assertIs<Decision.UnblockItem>(decoded.decisions.first())
-        assertEquals("c-3", restored.cardId)
+        assertEquals("c-3", restored.cardId.value)
     }
 
     @Test
@@ -76,7 +77,7 @@ class SimulationSerializerTest {
     @Test
     fun `given encoded block item with reason removed when decoding then default reason is used`() {
         val base = PersistenceFixtures.simulation()
-        val decision = Decision.BlockItem(cardId = "c-2", reason = "dep")
+        val decision = Decision.BlockItem(cardId = CardId("c-2"), reason = "dep")
         val source = base.copy(decisions = listOf(decision))
         val encoded = SimulationSerializer.encode(source).replace(""","reason":"dep"""", "")
 

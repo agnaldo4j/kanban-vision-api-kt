@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.StepRef
+import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -24,10 +24,10 @@ class SimulationEngineCardOrderAndMetricsTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = "s1", step = StepRef(step.id), title = "S1", serviceClass = ServiceClass.STANDARD),
-                Card(id = "s2", step = StepRef(step.id), title = "S2", serviceClass = ServiceClass.STANDARD),
-                Card(id = "e1", step = StepRef(step.id), title = "E1", serviceClass = ServiceClass.EXPEDITE),
-                Card(id = "e2", step = StepRef(step.id), title = "E2", serviceClass = ServiceClass.EXPEDITE),
+                Card(id = CardId("s1"), step = step.id, title = "S1", serviceClass = ServiceClass.STANDARD),
+                Card(id = CardId("s2"), step = step.id, title = "S2", serviceClass = ServiceClass.STANDARD),
+                Card(id = CardId("e1"), step = step.id, title = "E1", serviceClass = ServiceClass.EXPEDITE),
+                Card(id = CardId("e2"), step = step.id, title = "E2", serviceClass = ServiceClass.EXPEDITE),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 2)
 
@@ -36,10 +36,10 @@ class SimulationEngineCardOrderAndMetricsTest {
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-        assertEquals(CardState.IN_PROGRESS, allCards.first { it.id == "e1" }.state)
-        assertEquals(CardState.IN_PROGRESS, allCards.first { it.id == "e2" }.state)
-        assertEquals(CardState.TODO, allCards.first { it.id == "s1" }.state)
-        assertEquals(CardState.TODO, allCards.first { it.id == "s2" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.first { it.id.value == "e1" }.state)
+        assertEquals(CardState.IN_PROGRESS, allCards.first { it.id.value == "e2" }.state)
+        assertEquals(CardState.TODO, allCards.first { it.id.value == "s1" }.state)
+        assertEquals(CardState.TODO, allCards.first { it.id.value == "s2" }.state)
     }
 
     @Test
@@ -61,10 +61,10 @@ class SimulationEngineCardOrderAndMetricsTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = "wip1", step = StepRef(step.id), title = "W1", state = CardState.IN_PROGRESS),
-                Card(id = "wip2", step = StepRef(step.id), title = "W2", state = CardState.IN_PROGRESS),
-                Card(id = "blk1", step = StepRef(step.id), title = "B1", state = CardState.BLOCKED),
-                Card(id = "done1", step = StepRef(step.id), title = "D1", state = CardState.DONE),
+                Card(id = CardId("wip1"), step = step.id, title = "W1", state = CardState.IN_PROGRESS),
+                Card(id = CardId("wip2"), step = step.id, title = "W2", state = CardState.IN_PROGRESS),
+                Card(id = CardId("blk1"), step = step.id, title = "B1", state = CardState.BLOCKED),
+                Card(id = CardId("done1"), step = step.id, title = "D1", state = CardState.DONE),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 5)
 
@@ -81,9 +81,9 @@ class SimulationEngineCardOrderAndMetricsTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = "c-pos2", step = StepRef(step.id), title = "P2", state = CardState.DONE, position = 2),
-                Card(id = "c-pos0", step = StepRef(step.id), title = "P0", state = CardState.DONE, position = 0),
-                Card(id = "c-pos1", step = StepRef(step.id), title = "P1", state = CardState.DONE, position = 1),
+                Card(id = CardId("c-pos2"), step = step.id, title = "P2", state = CardState.DONE, position = 2),
+                Card(id = CardId("c-pos0"), step = step.id, title = "P0", state = CardState.DONE, position = 0),
+                Card(id = CardId("c-pos1"), step = step.id, title = "P1", state = CardState.DONE, position = 1),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 1)
 
@@ -93,9 +93,9 @@ class SimulationEngineCardOrderAndMetricsTest {
             result.simulation.scenario.board.steps
                 .first()
                 .cards
-        assertEquals("c-pos0", resultCards[0].id)
-        assertEquals("c-pos1", resultCards[1].id)
-        assertEquals("c-pos2", resultCards[2].id)
+        assertEquals("c-pos0", resultCards[0].id.value)
+        assertEquals("c-pos1", resultCards[1].id.value)
+        assertEquals("c-pos2", resultCards[2].id.value)
     }
 
     // Uses DEPLOYER ability whose daily capacity is always Int.MAX_VALUE (not random 0..10),
@@ -114,8 +114,8 @@ class SimulationEngineCardOrderAndMetricsTest {
             )
         val card =
             Card(
-                id = "c1",
-                step = StepRef(step.id),
+                id = CardId("c1"),
+                step = step.id,
                 title = "Task",
                 state = CardState.IN_PROGRESS,
                 deployEffort = deployEffort,

@@ -24,7 +24,7 @@ class CardBoardAndValueObjectContractsTest {
     fun `given card when consuming effort for each ability then remaining effort is updated per ability`() {
         val card =
             Card(
-                step = StepRef("s-1"),
+                step = StepId("s-1"),
                 title = "Feature",
                 analysisEffort = 2,
                 developmentEffort = 3,
@@ -48,8 +48,8 @@ class CardBoardAndValueObjectContractsTest {
     fun `given card data class contract when copying then equality hash and textual identity remain coherent`() {
         val original =
             Card(
-                id = "card-1",
-                step = StepRef("step-1"),
+                id = CardId("card-1"),
+                step = StepId("step-1"),
                 title = "Task",
                 description = "desc",
                 position = 1,
@@ -80,7 +80,7 @@ class CardBoardAndValueObjectContractsTest {
         val analysis = board.steps.first { it.requiredAbility == AbilityName.PRODUCT_MANAGER }
         val development = board.steps.first { it.requiredAbility == AbilityName.DEVELOPER }
 
-        val updated = board.addCard(step = StepRef(development.id), title = "Build", description = "impl")
+        val updated = board.addCard(step = development.id, title = "Build", description = "impl")
 
         val updatedAnalysis = updated.steps.first { it.id == analysis.id }
         val updatedDevelopment = updated.steps.first { it.id == development.id }
@@ -92,14 +92,14 @@ class CardBoardAndValueObjectContractsTest {
     @Test
     fun `given value object data classes when copying then contracts are consistent`() {
         val flow = FlowMetrics(id = "f-1", throughput = 1, wipCount = 2, blockedCount = 0, avgAgingDays = 1.0)
-        val movement = Movement(id = "m-1", type = MovementType.MOVED, cardId = "c-1", day = SimulationDay(2), reason = "ok")
+        val movement = Movement(id = "m-1", type = MovementType.MOVED, cardId = CardId("c-1"), day = SimulationDay(2), reason = "ok")
         val policy = PolicySet(id = "p-1", wipLimit = 2)
-        val decision = Decision.MoveItem(cardId = "c-1")
+        val decision = Decision.MoveItem(cardId = CardId("c-1"))
         val snapshot =
             DailySnapshot(
                 id = "snap-1",
-                simulation = SimulationRef("sim-1"),
-                scenario = ScenarioRef("scn-1"),
+                simulation = SimulationId("sim-1"),
+                scenario = ScenarioId("scn-1"),
                 day = SimulationDay(2),
                 metrics = flow,
                 movements = listOf(movement),
