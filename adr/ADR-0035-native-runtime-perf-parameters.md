@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-16
 decision-makers: "@agnaldo4j"
 ---
@@ -35,7 +35,9 @@ produção?
 
 - Recuperar parte do throughput perdido na migração para o nativo, sem abrir mão de startup/memória.
 - Right-size honesto ao artefato real (o nativo, não a JVM), liberando capacidade e corrigindo o HPA.
-- **Validação empírica** — qualquer parâmetro só entra com medição k6 no mesmo ambiente (ADR-0027).
+- **Validação empírica** — qualquer parâmetro só entra com medição k6 no mesmo ambiente (ADR-0027),
+  **e sob o envelope de recursos do pod** (memória **e** CPU): um número medido em host livre não
+  descreve produção.
 - Oracle GraalVM já é a edição em uso (`container-registry.oracle.com/graalvm/native-image:25`) →
   **G1 e PGO estão disponíveis** sem troca de licença/edição (na CE só haveria Serial/Epsilon).
 - Respeitar a imutabilidade por política de `build.gradle.kts`/`Dockerfile` (mudança só via ADR).
@@ -53,8 +55,14 @@ produção?
 **Opção escolhida: 3 — perfil de runtime nativo tunado.** Produção passa a rodar um runtime
 deliberado e medido, não os defaults:
 
-- ✅ **GC da API: `--gc=G1`** (Oracle GraalVM, build-time em `graalvmNative.buildArgs`) — ataca
-  diretamente os −7% em nós multi-core, onde o G1 paralelo bate o Serial single-threaded.
+- ✅ **GC da API: `--gc=G1`** (Oracle GraalVM, build-time em `graalvmNative.buildArgs`) — o G1
+  paralelo bate o Serial single-threaded **quando há núcleos para paralelizar**.
+  ⚠️ **Isto é hipótese a provar, não premissa.** O `k8s/03-deployment.yml` limita o pod a
+  `limits.cpu: 500m`, e sob essa quota o runtime reporta **`Effective CPU Count: 1`** (medido:
+  `java -XshowSettings:system` com `--cpus=0.5` → CPU Quota 50000us / Period 100000us). Com 1 CPU
+  efetiva o G1 roda com ~1 thread de GC e **pode ser mais lento que o Serial** — paga o overhead do
+  coletor paralelo sem receber o paralelismo. Por isso o G1 só entra se a Confirmation abaixo provar
+  ganho **sob o cap de CPU de produção**; medição em host sem limite não autoriza esta decisão.
 - ✅ **PGO** (`--pgo`) — a maior alavanca de throughput do nativo: *instrumented build* → captura
   de perfil com workload representativo (k6) → *optimized build*.
 - ✅ **Binário de migração: `--gc=epsilon`** (no-op) — carga bounded e curta; nunca para a API
@@ -80,14 +88,20 @@ A Confirmation se cumpre quando a implementação (GAP-BR) documentar, **no mesm
 `docs/quality/performance-baseline-YYYY-MM-native-tuned.md` provando:
 
 - **(a) Throughput ≥** o nativo atual e recuperando em direção ao JIT — senão G1/PGO não se
-  justificam e uma ADR superseding reverte a decisão;
+  justificam e uma ADR superseding reverte a decisão. ⚠️ **Medido sob o envelope de CPU do pod**
+  (`limits.cpu: 500m` → `cpus: 0.5`), não em host livre: a justificativa do G1 é paralelismo, e sob
+  a quota de produção o runtime vê **1 CPU efetiva**. Um ganho medido em host irrestrito **não**
+  satisfaz este critério — mediria uma configuração que não existe em produção. O control (Serial)
+  roda sob o mesmo cap, na mesma sessão;
 - **(b) Memória sob limite real:** o app precisa rodar **com o `limit` de memória alvo aplicado ao
   container** (não desbloqueado), e a medição registrar `container_memory_working_set_bytes` sob o
   baseline k6 **dentro** desse limite, **sem OOMKill nem throttle**, com margem de spike observada.
-  ⚠️ O `load-test.yml` atual sobe `docker compose` **sem** `--memory` e o Prometheus raspa só o
-  `/metrics` do app — isso valida (a)/(c) mas **não** exercita o limite do pod. Portanto GAP-BR
-  **deve** incluir um run com o container limitado ao alvo (`docker run --memory=256Mi` /
-  `compose` com `mem_limit`, ou um run k8s/kind) coletando o working-set via cgroup/cAdvisor;
+  ⚠️ O `load-test.yml` atual sobe `docker compose` **sem `--memory` nem `--cpus`** e o Prometheus
+  raspa só o `/metrics` do app — isso valida (c) mas **não** exercita o envelope do pod. Portanto
+  GAP-BR **deve** incluir um run com o container limitado ao alvo **nas duas dimensões** — memória
+  **e** CPU (`compose` com `mem_limit` + `cpus`, `docker run --memory=256Mi --cpus=0.5`, ou um run
+  k8s/kind) — coletando o working-set via cgroup/cAdvisor. O envelope de CPU não é detalhe de
+  sizing: é o que decide (a), porque governa quantas threads o G1 tem;
 - **(c)** p95 por-endpoint dentro do baseline vigente.
 
 O gate de **throughput/p95** continua sendo o workflow manual k6 (`.github/workflows/load-test.yml`,
@@ -129,6 +143,11 @@ medição documentada é rejeitada no review.
 - **Critério de reavaliação:** se o baseline k6 do GAP-BR mostrar que G1/PGO **não** recuperam
   throughput material **ou** estouram o budget de memória right-sized, abrir uma ADR superseding
   que reverte para **Serial GC + apenas right-size** (equivalente à Opção 2).
+- **Ramificação prevista (cap de CPU):** se o G1 ganhar **sem** limite de CPU mas empatar/perder sob
+  `cpus: 0.5`, a conclusão não é "o G1 é ruim" — é que **o lever é `limits.cpu`**, não o GC. Elevar a
+  CPU do pod é outra decisão (custo de cluster, densidade, HPA) e exige **ADR própria**; não pode ser
+  contrabandeada no GAP-BR. Neste cenário o GAP-BR entrega right-size + epsilon e a superseding
+  documenta o resultado negativo **medido** do G1.
 
 ## Related
 
