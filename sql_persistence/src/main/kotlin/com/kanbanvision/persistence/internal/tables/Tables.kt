@@ -1,4 +1,4 @@
-package com.kanbanvision.persistence.tables
+package com.kanbanvision.persistence.internal.tables
 
 import org.jetbrains.exposed.v1.core.Table
 

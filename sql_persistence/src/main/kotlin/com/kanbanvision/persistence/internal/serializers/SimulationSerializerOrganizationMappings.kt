@@ -1,4 +1,4 @@
-package com.kanbanvision.persistence.serializers
+package com.kanbanvision.persistence.internal.serializers
 
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName

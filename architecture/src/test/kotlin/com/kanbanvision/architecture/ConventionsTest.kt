@@ -12,23 +12,10 @@ import org.junit.jupiter.api.Test
  * com nomes descritivos (convenção de testing.md).
  */
 class ConventionsTest {
-    @Test
-    fun `repositorios concretos so sao importados no AppModule`() {
-        // ADR-0028: regra migrada do ForbiddenImport do Detekt — o excludes do
-        // Detekt é rule-level e isentaria o AppModule também dos imports de
-        // segurança. Konsist expressa a exceção por arquivo sem abrir esse furo.
-        // Cobre Jdbc* e Exposed* (intenção já documentada em architecture.md).
-        Konsist
-            .scopeFromProduction()
-            .files
-            .filter { !it.path.endsWith("di/AppModule.kt") }
-            .assertFalse { file ->
-                file.imports.any {
-                    it.name.startsWith("com.kanbanvision.persistence.repositories.Jdbc") ||
-                        it.name.startsWith("com.kanbanvision.persistence.repositories.Exposed")
-                }
-            }
-    }
+    // A regra "repositórios concretos (Jdbc*/Exposed*) só no AppModule" (ADR-0028) foi
+    // subsumida pela `ContractPackageTest` (GAP-BS/ADR-0033): os Jdbc* vivem em
+    // `persistence.internal.repositories`, e nenhum pacote `*.internal` pode ser importado
+    // cross-module exceto pelo AppModule (seam de DI) — cobertura mais ampla e self-service.
 
     @Test
     fun `rotas nao importam a camada de persistencia`() {

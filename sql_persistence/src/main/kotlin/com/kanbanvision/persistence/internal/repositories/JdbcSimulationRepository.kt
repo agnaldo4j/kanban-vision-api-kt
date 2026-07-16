@@ -1,4 +1,4 @@
-package com.kanbanvision.persistence.repositories
+package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.Either
 import arrow.core.left
@@ -10,10 +10,10 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.persistence.dbQuery
-import com.kanbanvision.persistence.serializers.SimulationSerializer
-import com.kanbanvision.persistence.tables.OrganizationsTable
-import com.kanbanvision.persistence.tables.SimulationStatesTable
-import com.kanbanvision.persistence.tables.SimulationsTable
+import com.kanbanvision.persistence.internal.serializers.SimulationSerializer
+import com.kanbanvision.persistence.internal.tables.OrganizationsTable
+import com.kanbanvision.persistence.internal.tables.SimulationStatesTable
+import com.kanbanvision.persistence.internal.tables.SimulationsTable
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
