@@ -15,8 +15,9 @@ services:
   app:
     mem_limit: 256m # k8s limits.memory
     mem_reservation: 128m # k8s requests.memory
-    # limits.cpu: 500m. Load-bearing para a decisão do GC: sob quota CFS de 0,5 o
-    # availableProcessors vira 1 e o G1 roda com ~1 thread — a tese de "G1 paralelo bate
-    # o Serial em nó multi-core" NÃO se aplica ao pod. Medir sem este cap mediria uma
-    # configuração que não existe em produção.
-    cpus: 0.5
+    # ESPELHA k8s/03-deployment.yml limits.cpu: 1000m (ADR-0036).
+    # Manter os dois em sincronia é o ponto inteiro deste arquivo: se ele divergir do
+    # manifesto, o workflow de medição aprova regressão e reprova mudança boa contra o
+    # envelope errado — que foi exatamente como o G1 virou decisão na ADR-0035 antes de
+    # a medição o refutar. Ao mexer no limits.cpu do pod, mexa aqui no mesmo PR.
+    cpus: 1.0

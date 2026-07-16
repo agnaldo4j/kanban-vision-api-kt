@@ -640,7 +640,7 @@ spec:
               memory: "256Mi"           # 256MB garantido
             limits:
               cpu: "1000m"              # max 1 vCPU
-              memory: "512Mi"           # cap atual; o Native usa ~80MiB (superdimensionado) — ver subseção abaixo
+              memory: "256Mi"           # right-sized por medição (ADR-0036): pico 80–92 MiB ⇒ ~2,8× de folga
 
       # Distribui pods entre nós disponíveis (alta disponibilidade)
       topologySpreadConstraints:
@@ -669,14 +669,35 @@ skill `/graalvm` seção 8.
 512Mi). O pico *sem limite* medido foi ~640 MiB; sob o cap de 512Mi é obrigatório
 `MaxRAMPercentage≈75` (via `JAVA_TOOL_OPTIONS`) ou há risco de OOM.
 
-**Sizing do container.** Native e JVM diferem ~5–8× de footprint → `requests`/`limits` do k8s têm
-de refletir o **artefato real**. Os `256Mi`/`512Mi` atuais foram dimensionados para JVM e ficam
-**superdimensionados** para o nativo (~80 MiB de pico). Right-size é candidato — mas exige validar
-headroom sob carga + margem de spike, e por ser NFR passa por **ADR** (card GAP-BR). Método: medir
-`container_memory_working_set_bytes` sob o baseline k6 (ADR-0027) + margem.
+**Sizing do container (medido — ADR-0036/GAP-BR).** Native e JVM diferem ~5–8× de footprint → o k8s
+tem de refletir o **artefato real**. Feito: `request 128Mi` / `limit 256Mi` (era `256Mi`/`512Mi`,
+dimensionado para JVM). Pico medido de **80–92 MiB** sob carga, estável em qualquer nível de CPU, com
+`oom_kill 0` e `max 0` — a memória **nunca encostou** no limite, então o right-size custa **zero**
+throughput.
 
-**HPA.** Com o nativo, a memória fica ~15 % de 512Mi e quase não dispara o autoscaler de memória
-(target 80 %) — na prática **a CPU (target 70 %) é quem escala**. Reavaliar os targets ao right-size.
+> ⚠️ **Meça sob o envelope real, memória E CPU** (`docker-compose.limits.yml`). O `docker compose`
+> normal sobe **sem** limite algum, e o Prometheus raspa só o `/metrics` do app — não há cAdvisor.
+> Colete do **cgroup v2** dentro do container: `cat /sys/fs/cgroup/memory.peak` (marca d'água exata do
+> kernel, cumulativa — ler uma vez no fim) e `memory.events` (`oom_kill`/`max`). **Não** amostre RSS
+> post-hoc: foi o que produziu o impossível `41,5 < 73,6` dos baselines antigos. `docker stats` só
+> recomputa `memory.current − inactive_file` — o kernel já dá o número exato.
+
+**CPU — o gargalo que ninguém tinha medido.** O `limits.cpu: 500m` custava **−69%** de throughput
+(2197 → 673 req/s) e +423% de p95: sob quota CFS de 0,5 o runtime vê **`Effective CPU Count: 1`**.
+Elevado para **`1000m`**: +153% de throughput, p95 −60%. É o joelho da curva (1→2 CPUs rende só +31%).
+**`requests.cpu` fica em 100m** — é ele que o scheduler reserva, então o limit maior **não** consome
+capacidade de cluster; o custo é contenção no nó.
+
+**HPA.** Escala **só por CPU** (target 70%). A métrica de memória foi **removida** (ADR-0036): num
+runtime de heap pequeno e não devolvido ao SO, utilização de memória não acompanha carga — com
+`request 128Mi`, 80% = 102Mi contra um pico de ~92 MiB, ou seja, ela viraria **latch** de réplicas em
+vez de sinal. Antes do right-size era só inerte (80% de 256Mi = 205Mi, nunca atingido).
+⚠️ **Dívida conhecida:** `Utilization` é medida contra o **request**, então o alvo de CPU 70% de 100m
+= **70m** — gatilho muito abaixo do teto de 1000m. Rever `requests.cpu` é decisão de densidade e pede
+ADR própria.
+
+**JVM (fat-jar).** Atenção: o Temurin usa **G1**, cujo knob é `-XX:MaxRAMPercentage`. No **nativo** o
+GC é **Serial**, cujo knob é `-XX:MaximumHeapSizePercent` — não são intercambiáveis (skill `/graalvm` §8).
 
 ### service.yml
 

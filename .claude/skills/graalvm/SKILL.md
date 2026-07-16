@@ -136,41 +136,89 @@ java -agentlib:native-image-agent=config-output-dir=http_api/src/main/resources/
 > validar*. Mudar de fato a config de produção (GC, heap, right-size do container) é uma decisão de
 > requisito não-funcional → exige **ADR nova** (ADR-0023). Nada aqui altera a config por si só.
 
-### Footprint atual (medido — nenhum tuning aplicado hoje)
+### Runtime atual (medido — ADR-0036)
 
-O binário nativo roda com **defaults do SubstrateVM** (Serial GC), sem `-Xmx`/`--gc`/`-R:MaxHeapSize`.
-Baseline `docs/quality/performance-baseline-2026-07-native.md`: startup **0,12 s**, RSS **73,6 MiB**
-pós-boot → **41,5 MiB** pós-baseline, throughput **−7,1 %** e p95 **+5,7 %** vs o fat JAR JIT. Ou
-seja: memória e startup são o ganho; throughput de pico é o trade-off aceito (ADR-0032).
+Produção roda **Serial GC + PGO**, sem `-Xmx`. Baseline:
+`docs/quality/performance-baseline-2026-07-native-tuned.md`.
+
+> **A lição mais cara desta seção: medir sob o envelope do pod, nunca em host livre.**
+> Sob `limits.cpu: 500m` o runtime reporta **`Effective CPU Count: 1`**. Um host de 4+ núcleos mede
+> uma configuração que **não existe em produção** — foi assim que o G1 pareceu bom e virou decisão
+> (ADR-0035) antes de a medição o refutar em −22,4% (ADR-0036). Use `docker-compose.limits.yml`.
 
 ### Garbage collector (SubstrateVM)
 
-| GC | Como ligar | Quando |
+| GC | Como ligar | Veredito **medido** (ADR-0036) |
 |---|---|---|
-| **Serial** (default) | — | Single-threaded, overhead mínimo. Ideal para o nosso heap pequeno (~40–82 MiB). É o que roda hoje. |
-| **G1** | build-time `--gc=G1` (**só Oracle GraalVM**) | Mais throughput em heaps maiores — candidato a recuperar parte dos −7 %. Custa imagem maior + mais memória base. **Só adotar com medição k6.** |
-| **Epsilon** | build-time `--gc=epsilon` (no-op) | Cargas curtas/bounded (ex.: o binário de migração). **Nunca** para a API long-running. |
+| **Serial** (default) | — | ✅ **É o que roda em produção.** Single-threaded, overhead mínimo — casa com heap pequeno (~80–92 MiB). |
+| **G1** | build-time `--gc=G1` (**só Oracle GraalVM**; Linux AMD64/AArch64) | ❌ **−22,4% sob `cpus: 0.5`** — 1 thread de GC ⇒ overhead do coletor paralelo sem paralelismo. ✅ +4,8% com 4 CPUs. Custa +8% de imagem, +18% de memória. Dobrar o heap não salva (ainda −7,8%). **Só reconsiderar se o `limits.cpu` subir muito — com nova medição.** |
+| **Epsilon** | build-time `--gc=epsilon` (no-op) | ✅ **No binário de migração** (bounded e curto). ⚠️ Nunca libera ⇒ o pico é a alocação **TOTAL**, não o live set. **Nunca** para a API long-running. |
 
 ### Heap em runtime
 
-O binário nativo honra, em runtime, as mesmas flags da JVM: `-Xmx`/`-XX:MaxHeapSize` e
-`-XX:MaximumHeapSizePercent=N` (relativo ao cgroup). O SubstrateVM **já lê o limite do cgroup** —
-como o footprint estabiliza em ~40–82 MiB, um `-Xmx` explícito costuma ser **desnecessário**;
-defina só para (a) capar um container muito apertado ou (b) tornar o headroom explícito. `-Xms`/heap
-mínimo não se aplica da mesma forma (não há warm-up de JIT no AOT).
+⚠️ **O knob depende do GC — não são intercambiáveis:**
 
-### Flags de build (throughput/tamanho)
+| GC | Knob | Default |
+|---|---|---|
+| **Serial** | `-XX:MaximumHeapSizePercent=N` | 80% da memória disponível |
+| **G1** | `-XX:MaxRAMPercentage=N` | **25%** |
+
+`-XX:MaximumHeapSizePercent` **não ajusta o heap de um binário G1** — é opção do Serial (Oracle,
+*Memory Management*). Consequência: trocar Serial→G1 sem tocar no k8s derruba o max heap de 80%→25%
+do limite **silenciosamente** (sob 512Mi: 410Mi → 128Mi). `-Xmx` vale nos dois; `-Xms` não faz sentido
+no AOT (não há warm-up de JIT). O SubstrateVM **lê o cgroup**; hoje não há `-Xmx` fixo e a medição não
+indicou necessidade.
+
+### PGO — procedimento de 3 passos (ADR-0036)
+
+**+16,7% de throughput sob o envelope do pod, imagem −8,6%, memória menor.** Ganha no eixo **oposto**
+ao do G1: reduz CPU *por request*, e a 0,5 CPU o app é CPU-bound.
+
+**Não há `buildArgs` de PGO — de propósito.** O plugin acha o perfil pela convenção
+`http_api/src/pgo-profiles/main/*.iprof` e só então passa `--pgo`; sem o diretório, build normal
+(degradação suave é do plugin). O perfil é versionado **gzipado** (5,1 MB vs 39,6 MB crus, num repo de
+8,9 MB) e o Dockerfile faz `gunzip` antes do `nativeCompile`.
+
+Capturar **não roda dentro de `docker build`** — exige Postgres e k6:
+
+```bash
+# 1. instrumentar: buildArgs.add("--pgo-instrument") TEMPORÁRIO em named("main")
+docker build -t kanban-vision-api:instr . && docker tag kanban-vision-api:instr kanban-vision-api:local
+# 2. subir com o dump em /tmp — o appuser NÃO escreve em /app. Via `command:` no compose,
+#    anexado ao ENTRYPOINT (exec form):  command: ["-XX:ProfilesDumpFile=/tmp/default.iprof"]
+# 3. dirigir com workload REPRESENTATIVO (perfil não-representativo é contraproducente):
+k6 run -e PROFILE=baseline load/simulation-journey.js
+# 4. parar GRACIOSAMENTE — o dump só sai no shutdown; o default de 10s manda SIGKILL antes:
+docker stop -t 60 kanban-vision-app
+# 5. extrair, comprimir, versionar:
+docker cp kanban-vision-app:/tmp/default.iprof . && gzip -9 default.iprof
+mv default.iprof.gz http_api/src/pgo-profiles/main/
+# 6. remover o --pgo-instrument e rebuildar — o plugin acha o perfil sozinho.
+#    Sanidade: a imagem com PGO fica MENOR que a sem (296 vs 324 MB).
+```
+
+**Pegadinhas:** o perfil é capturado em **arm64** (Mac) e o CI builda **amd64** — o `.iprof` é baseado
+em contadores (frequências de branch/chamada), então deve portar; conferir o log por warning de
+rejeição. Se não portar, capturar sob `--platform linux/amd64` (QEMU): frequências são invariantes à
+emulação, mas **nunca** medir *throughput* sob emulação. Perfil obsoleto **degrada suavemente** (o
+native-image ignora métodos que não casam); recapturar é raro — cada recaptura soma ~5 MB ao histórico.
+
+### Outras flags de build
 
 `-O2` (default) vs `-Ob` (quick build — só custo de CI, ADR-0032) · `-march=native`/`-march=x86-64-v3`
-(throughput vs portabilidade — o binário passa a ser por CPU-arch) · **PGO** (`--pgo`, só Oracle —
-melhor throughput, exige um profiling run). **Onde ficam:** `http_api/build.gradle.kts`
-(`graalvmNative.buildArgs`) — arquivo **imutável por política**; mexer exige o fluxo de 2 PRs para
-config imutável + ADR.
+(throughput vs portabilidade — o binário passa a ser por CPU-arch). **Onde ficam:**
+`http_api/build.gradle.kts` (`graalvmNative.buildArgs`) — arquivo **imutável por política**; mexer
+exige ADR + PR de execução.
 
 ### Loop de validação (obrigatório antes de cravar qualquer valor)
 
-1. Medir com o **baseline k6** (`/load-testing`, ADR-0027) — comparação **na mesma sessão** (números
-   entre docs diferentes não são comparáveis).
-2. Observar métricas OTel/Micrometer: `jvm_memory_used_bytes`, `jvm_gc_pause_seconds_count`, e
-   `container_memory_working_set_bytes` no pod.
+1. Medir com o **baseline k6** (`/load-testing`, ADR-0027) — **na mesma sessão** (números entre docs
+   diferentes não são comparáveis) **e sob o envelope do pod**, memória **e** CPU
+   (`docker compose -f docker-compose.yml -f docker-compose.limits.yml`). Host livre **não** autoriza
+   decisão de runtime.
+2. Coletar memória do **cgroup v2**, não por amostragem: `cat /sys/fs/cgroup/memory.peak` (marca
+   d'água exata, cumulativa desde o start — ler uma vez no fim, não pode perder spike) e
+   `memory.events` (`oom_kill`/`max`; mais forte que `docker inspect .State.OOMKilled`, que só dispara
+   se o PID 1 morrer). Amostrar RSS post-hoc foi o que produziu o impossível `41,5 < 73,6` dos
+   baselines antigos — não repetir.
 3. Só então abrir a ADR fixando o parâmetro, com Confirmation amarrada ao baseline.

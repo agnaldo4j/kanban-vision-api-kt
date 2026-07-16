@@ -36,6 +36,11 @@ graalvmNative {
     binaries {
         named("main") {
             imageName.set("kanban-vision-api")
+            // PGO (ADR-0036): +16,7% de throughput sob o envelope do pod, imagem −8,6%. NÃO há
+            // buildArg aqui de propósito — o plugin acha o perfil pela convenção
+            // src/pgo-profiles/main/*.iprof e só então passa --pgo; sem o diretório, build normal.
+            // O Dockerfile descomprime o .gz para lá antes do nativeCompile.
+            // G1 NÃO entra: medido −22,4% sob cpus=0.5 (Effective CPU Count=1 ⇒ 1 thread de GC).
         }
         // Binário dedicado do Job k8s de migração (ADR-0032): preserva o procedimento
         // pré-rollout em duas fases da ADR-0013 no mundo nativo. Classpath ENXUTO
@@ -55,6 +60,12 @@ graalvmNative {
             // O static init do Flyway monta URLs https (links de docs) — no binário main
             // o protocolo vem habilitado pela metadata do exporter OTLP.
             buildArgs.add("--enable-url-protocols=https")
+            // ADR-0036: epsilon (no-op) — a migração é bounded e curta, o processo sai e o SO
+            // recupera tudo. Validado em DB virgem sob 256Mi/0.5cpu: 2 migrações, exit 0, sem OOM.
+            // ATENÇÃO: epsilon NUNCA libera, então o pico é função da alocação TOTAL do Job, não
+            // do live set — um backfill de dados grande pode estourar. Reavaliar ao adicionar
+            // migração que mova volume.
+            buildArgs.add("--gc=epsilon")
         }
     }
 }
