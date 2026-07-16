@@ -634,13 +634,14 @@ spec:
             timeoutSeconds: 5
 
           # ── Recursos ────────────────────────────────────────────────────────────
+          # Espelha k8s/03-deployment.yml (ADR-0037). requests = declaração factual ao scheduler.
           resources:
             requests:
-              cpu: "250m"               # 0.25 vCPU garantido
-              memory: "256Mi"           # 256MB garantido
+              cpu: "500m"               # razão 2:1 com o limit; é o denominador do HPA (70% = 350m)
+              memory: "128Mi"           # working set: p50 55 MiB, máx 92 MiB ⇒ cobre 1,4× o pico
             limits:
-              cpu: "1000m"              # max 1 vCPU
-              memory: "256Mi"           # right-sized por medição (ADR-0036): pico 80–92 MiB ⇒ ~2,8× de folga
+              cpu: "1000m"              # +153% de throughput vs 500m; joelho real da curva
+              memory: "256Mi"           # 2,8× de folga sobre o WORKING SET de pico (não sobre memory.peak)
 
       # Distribui pods entre nós disponíveis (alta disponibilidade)
       topologySpreadConstraints:
@@ -669,32 +670,51 @@ skill `/graalvm` seção 8.
 512Mi). O pico *sem limite* medido foi ~640 MiB; sob o cap de 512Mi é obrigatório
 `MaxRAMPercentage≈75` (via `JAVA_TOOL_OPTIONS`) ou há risco de OOM.
 
-**Sizing do container (medido — ADR-0036/GAP-BR).** Native e JVM diferem ~5–8× de footprint → o k8s
+**Sizing do container (medido — ADR-0037/GAP-BU).** Native e JVM diferem ~5–8× de footprint → o k8s
 tem de refletir o **artefato real**. Feito: `request 128Mi` / `limit 256Mi` (era `256Mi`/`512Mi`,
-dimensionado para JVM). Pico medido de **80–92 MiB** sob carga, estável em qualquer nível de CPU, com
-`oom_kill 0` e `max 0` — a memória **nunca encostou** no limite, então o right-size custa **zero**
-throughput.
+dimensionado para JVM). **Working set** medido sob carga: **p50 55 MiB, máx 92 MiB** ⇒ o request cobre
+1,4× o pico e o limit dá **2,8×** de folga, com `oom_kill 0` e `max 0`.
 
-> ⚠️ **Meça sob o envelope real, memória E CPU** (`docker-compose.limits.yml`). O `docker compose`
-> normal sobe **sem** limite algum, e o Prometheus raspa só o `/metrics` do app — não há cAdvisor.
-> Colete do **cgroup v2** dentro do container: `cat /sys/fs/cgroup/memory.peak` (marca d'água exata do
-> kernel, cumulativa — ler uma vez no fim) e `memory.events` (`oom_kill`/`max`). **Não** amostre RSS
-> post-hoc: foi o que produziu o impossível `41,5 < 73,6` dos baselines antigos. `docker stats` só
-> recomputa `memory.current − inactive_file` — o kernel já dá o número exato.
+> ⚠️ **Duas métricas, duas perguntas — não as troque.** `memory.peak` (cgroup v2) é a marca d'água
+> cumulativa e **inclui page cache reclaimável**: serve para provar que o limite **nunca foi
+> encostado**. O **working set** (`memory.current − inactive_file`, a fórmula do
+> `container_memory_working_set_bytes`) é o que governa **eviction** e portanto **dimensiona o
+> `request`**. Trocá-los dá conclusões **opostas dos mesmos bytes**: dois runs da mesma config deram
+> peak de **93** e **152** MiB enquanto o working set ficava estável em ~92 — e comparar 256Mi contra o
+> peak de 152 produziu a conclusão falsa de que a folga era "1,7×" (é 2,8×).
+>
+> **Amostre o working set DURANTE a carga** (o peak basta ler uma vez no fim):
+> ```bash
+> docker exec kanban-vision-app sh -c \
+>   'cur=$(cat /sys/fs/cgroup/memory.current); inact=$(grep "^inactive_file " /sys/fs/cgroup/memory.stat | cut -d" " -f2); echo $((cur-inact))'
+> ```
+> E **meça sob o envelope real, memória E CPU** (`docker-compose.limits.yml`): o `docker compose` normal
+> sobe **sem** limite algum, e o Prometheus raspa só o `/metrics` do app — não há cAdvisor. **Nunca**
+> amostre RSS post-hoc: foi o que produziu o impossível `41,5 < 73,6` dos baselines antigos.
 
 **CPU — o gargalo que ninguém tinha medido.** O `limits.cpu: 500m` custava **−69%** de throughput
 (2197 → 673 req/s) e +423% de p95: sob quota CFS de 0,5 o runtime vê **`Effective CPU Count: 1`**.
-Elevado para **`1000m`**: +153% de throughput, p95 −60%. É o joelho da curva (1→2 CPUs rende só +31%).
-**`requests.cpu` fica em 100m** — é ele que o scheduler reserva, então o limit maior **não** consome
-capacidade de cluster; o custo é contenção no nó.
+Elevado para **`1000m`**: +153% de throughput, p95 −60%. Joelho **real** da curva — 1→2 CPUs rende só
++31%, e isso **não** é artefato de thread pool: o `Effective CPU Count` é 2 a partir de `cpus: 2.0`
+(0.5→1 · 1.0→1 · 2.0→2 · 4.0→4), logo o Netty já tinha as threads. Dar threads extras a 1 CPU
+(`-XX:ActiveProcessorCount=2`) deixa o throughput **flat** e **piora o p95**: a 1 CPU o limite é a
+**quota**, não as threads.
 
 **HPA.** Escala **só por CPU** (target 70%). A métrica de memória foi **removida** (ADR-0036): num
 runtime de heap pequeno e não devolvido ao SO, utilização de memória não acompanha carga — com
 `request 128Mi`, 80% = 102Mi contra um pico de ~92 MiB, ou seja, ela viraria **latch** de réplicas em
 vez de sinal. Antes do right-size era só inerte (80% de 256Mi = 205Mi, nunca atingido).
-⚠️ **Dívida conhecida:** `Utilization` é medida contra o **request**, então o alvo de CPU 70% de 100m
-= **70m** — gatilho muito abaixo do teto de 1000m. Rever `requests.cpu` é decisão de densidade e pede
-ADR própria.
+**`requests` é declaração factual, não botão de custo (ADR-0037).** `requests.cpu: 500m` (razão 2:1 com
+o limit de 1000m) porque o request governa **duas** coisas: o scheduler acredita nele para empacotar
+(com 100m o k8s punha ~10 pods por core, e sob carga cada um queria 1000m ⇒ estrangulamento mútuo) e o
+HPA o usa como **denominador** (70% de 100m = gatilho de **70m** contra teto de 1000m ⇒ o HPA media
+"está servindo tráfego", não saturação). Com 500m o gatilho é **350m** e significa algo.
+
+**Invariante de conexões (ADR-0037):** `maxReplicas × poolSize ≤ max_connections`, com folga. O pool é
+**fixo em 10** por pod (`application.conf:34`, único valor sem `${?ENV}` ⇒ mudar exige rebuild). Daí
+`maxReplicas: 8` (8×10 + 2 do Job = 82, seguro sob um Postgres **default** de 100). Com 10 o HPA podia
+escalar até **esgotar o banco** — e o alerta `HikariPoolExhaustion` mede por instância, logo é cego
+para a exaustão de frota.
 
 **JVM (fat-jar).** Atenção: o Temurin usa **G1**, cujo knob é `-XX:MaxRAMPercentage`. No **nativo** o
 GC é **Serial**, cujo knob é `-XX:MaximumHeapSizePercent` — não são intercambiáveis (skill `/graalvm` §8).
@@ -767,26 +787,29 @@ spec:
     kind: Deployment
     name: kanban-vision-api
   minReplicas: 2
-  maxReplicas: 10
+  # maxReplicas × poolSize <= max_connections (ADR-0037): pool fixo em 10/pod, +2 do Job
+  # de migração ⇒ 8×10+2 = 82, seguro sob um Postgres default (100, menos 3 de superuser).
+  maxReplicas: 8
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70        # escala quando CPU média > 70%
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 80        # escala quando memória média > 80%
+          # Utilization é contra o REQUEST (500m), não o limit ⇒ gatilho = 350m.
+          averageUtilization: 70
+    # SEM métrica de memória (ADR-0036): heap pequeno e não devolvido ao SO não acompanha
+    # carga — seria latch de réplicas, não sinal.
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 30   # aguarda 30s antes de escalar para cima
+      stabilizationWindowSeconds: 30   # sem isto o default é 0: dobra réplicas a cada 15s
     scaleDown:
-      stabilizationWindowSeconds: 300  # aguarda 5min antes de reduzir réplicas
+      stabilizationWindowSeconds: 300  # 5min: desescalar cedo demais faz thrash
 ```
+
+> Este exemplo **espelha `k8s/06-hpa.yml`**. Mantenha-os iguais: exemplo divergente do manifesto vira
+> a próxima decisão errada — foi o que quase aconteceu com o `docker-compose.limits.yml` parado em
+> `cpus: 0.5` enquanto o pod ia a 1000m.
 
 ### pdb.yml — Protege contra interrupções
 

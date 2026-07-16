@@ -216,9 +216,16 @@ exige ADR + PR de execução.
    diferentes não são comparáveis) **e sob o envelope do pod**, memória **e** CPU
    (`docker compose -f docker-compose.yml -f docker-compose.limits.yml`). Host livre **não** autoriza
    decisão de runtime.
-2. Coletar memória do **cgroup v2**, não por amostragem: `cat /sys/fs/cgroup/memory.peak` (marca
-   d'água exata, cumulativa desde o start — ler uma vez no fim, não pode perder spike) e
-   `memory.events` (`oom_kill`/`max`; mais forte que `docker inspect .State.OOMKilled`, que só dispara
-   se o PID 1 morrer). Amostrar RSS post-hoc foi o que produziu o impossível `41,5 < 73,6` dos
-   baselines antigos — não repetir.
+2. Coletar memória do **cgroup v2** — **duas métricas, duas perguntas, não as troque**:
+   - **`memory.peak`** + **`memory.events`** (`oom_kill`/`max`) — provam que **o limite nunca foi
+     encostado**. Cumulativo desde o start ⇒ ler **uma vez no fim**, impossível perder spike; e
+     `memory.events` é mais forte que `docker inspect .State.OOMKilled`, que só dispara se o PID 1
+     morrer. ⚠️ `memory.peak` **inclui page cache reclaimável** ⇒ **não** use para dimensionar.
+   - **Working set** (`memory.current − inactive_file`) — é o que governa **eviction** e portanto
+     **dimensiona `requests.memory`**. **Amostrar durante a carga**, não no fim.
+
+   Trocá-los dá conclusões **opostas dos mesmos bytes**: dois runs da mesma config deram `memory.peak`
+   de **93** e **152** MiB com working set estável em ~92 — e comparar o limite contra o peak de 152
+   produziu a conclusão falsa de "folga 1,7×" (é 2,8×). Amostrar RSS post-hoc é pior ainda: foi o que
+   produziu o impossível `41,5 < 73,6` dos baselines antigos.
 3. Só então abrir a ADR fixando o parâmetro, com Confirmation amarrada ao baseline.

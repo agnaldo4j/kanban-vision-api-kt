@@ -94,9 +94,13 @@ spec:
           # de fundir — este limite não tem a folga que a API tem.
           resources:
             requests:
-              cpu: "100m"
+              # 100m → 250m (ADR-0037, mesmo princípio da API): o request é declaração factual ao
+              # scheduler. Razão 2:1 com o limit abaixo.
+              cpu: "250m"
               memory: "128Mi"
             limits:
+              # Fica em 500m — NÃO segue o 1000m da API de propósito: o Job é bounded, roda uma
+              # vez no pré-rollout e não tem SLA de latência. O throughput da API não se aplica.
               cpu: "500m"
               memory: "256Mi"
           volumeMounts:

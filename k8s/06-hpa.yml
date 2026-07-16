@@ -11,19 +11,40 @@ spec:
     kind: Deployment
     name: kanban-vision-api
   minReplicas: 2
-  maxReplicas: 10
-  # Escala SÓ por CPU (ADR-0036 / GAP-BR). A métrica de memória foi removida: num binário nativo
-  # o heap é pequeno e não é devolvido ao SO, então utilização de memória não acompanha carga —
-  # ela é LATCH de réplicas, não sinal. Com request 128Mi, 80% = 102Mi contra um pico medido de
-  # ~92 MiB: a métrica dispararia perto do repouso e, como a memória não volta no scale-down,
-  # travaria réplicas no alto para sempre. Antes do right-size ela era só inerte (80% de 256Mi =
-  # 205Mi, nunca atingido) — o right-size a tornaria ativa e errada.
-  # A CPU é quem escala de fato: throughput e p95 respondem linearmente a ela
-  # (docs/quality/performance-baseline-2026-07-native-tuned.md).
+  # INVARIANTE (ADR-0037): maxReplicas × poolSize ≤ max_connections, com folga.
+  # O pool Hikari é FIXO em 10 conexões por pod (http_api/src/main/resources/application.conf:34;
+  # minimumIdle não é setado ⇒ Hikari o iguala ao máximo). É o ÚNICO valor daquele arquivo sem
+  # override ${?ENV} — mudá-lo exige rebuild da imagem.
+  #   8 réplicas × 10 = 80, + 2 do Job de migração = 82.
+  #   Postgres default: max_connections=100, menos 3 reservadas para superuser ⇒ ~95 utilizáveis.
+  #   Sobram ~13 para psql/backup/monitoring.
+  # Era 10: 10 × 10 + 2 = 102 > 95 ⇒ o HPA podia escalar até ESGOTAR o banco. E o alerta
+  # HikariPoolExhaustion mede active/max POR INSTÂNCIA: 10 pods a 30% cada não disparam nada
+  # enquanto o banco satura — o alerta é estruturalmente cego para a falha de frota.
+  # ⚠️ O max_connections real é inverificável deste repo (não há Postgres nos manifestos —
+  # 01-configmap.yml aponta para um postgres-svc externo). 8 é o teto seguro contra um banco
+  # DEFAULT. Com max_connections maior, subir conscientemente — refazendo a conta acima.
+  maxReplicas: 8
+  # Escala SÓ por CPU (ADR-0036, confirmado pela ADR-0037). A métrica de memória foi removida:
+  # num binário nativo o heap é pequeno e não é devolvido ao SO, então utilização de memória não
+  # acompanha carga — seria LATCH de réplicas, não sinal (a memória não volta no scale-down).
+  # A CPU é quem escala de fato: throughput e p95 respondem a ela
+  # (docs/quality/performance-baseline-2026-07-envelope-medido.md).
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
+          # Utilization é medida contra o REQUEST (500m), não contra o limit ⇒ gatilho = 350m.
+          # Com o request anterior de 100m o gatilho era 70m contra um teto de 1000m: o HPA ia a
+          # maxReplicas sob qualquer carga real. Ver ADR-0037.
           averageUtilization: 70
+  # behavior (ADR-0037): sem este bloco valem os defaults do k8s — scale-up com janela de
+  # estabilização ZERO, dobrando réplicas a cada 15s (2→4→8 em ~45s). Com o gatilho antigo de 70m
+  # isso era um gerador de réplicas ociosas.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30 # absorve picos curtos antes de escalar
+    scaleDown:
+      stabilizationWindowSeconds: 300 # 5min: desescalar cedo demais faz thrash
