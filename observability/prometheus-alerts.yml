@@ -17,29 +17,36 @@ groups:
         annotations:
           summary: "High HTTP 5xx error rate on {{ $labels.instance }}"
           description: >
-            HTTP 5xx error rate is {{ printf "%.1f" (mul $value 100) }}%
+            HTTP 5xx error rate is {{ $value | humanizePercentage }}
             (threshold: 5%) over the last 5 minutes.
 
-      # Alert when the 95th-percentile HTTP response latency exceeds 2 seconds.
-      # Uses the histogram_quantile function on the ktor request histogram.
+      # Alerta de P95 alto. Threshold ancorado no orçamento de latência JÁ documentado do k6
+      # (load/simulation-journey.js: create/snapshot/cfd/list p95 < 300ms, run_day < 500ms) —
+      # não num SLO inventado, que este projeto não tem.
+      # Era 2s contra um p95 medido de 31ms (docs/quality/performance-baseline-2026-07-envelope-medido.md):
+      # ~60x de folga, ou seja, nunca dispararia antes do usuário reclamar (GAP-BW).
+      # 500ms = o teto do endpoint mais lento do orçamento; acima disso algo saiu do envelope medido.
       - alert: HighHttpLatencyP95
         expr: |
           histogram_quantile(0.95,
             sum by (le, instance) (
               rate(ktor_http_server_requests_seconds_bucket[5m])
             )
-          ) > 2
+          ) > 0.5
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "High HTTP P95 latency on {{ $labels.instance }}"
           description: >
-            P95 HTTP response latency is {{ printf "%.2f" $value }}s
-            (threshold: 2s) over the last 5 minutes.
+            P95 HTTP response latency is {{ printf "%.3f" $value }}s
+            (threshold: 0.5s = orçamento k6 do run_day; p95 medido no envelope: 0.031s)
+            over the last 5 minutes.
 
-      # Alert when the HikariCP connection pool is more than 90% utilised.
-      # Prolonged pool exhaustion leads to connection-timeout errors.
+      # Pool de conexões por instância acima de 90%.
+      # ⚠️ Este alerta existe desde o GAP-U mas NUNCA pôde disparar: o Hikari não estava bindado
+      # ao Micrometer, então hikaricp_connections_active/_max não existiam e a expressão avaliava
+      # vetor vazio. Corrigido no GAP-BW (DatabaseFactory.init recebe o MeterRegistry).
       - alert: HikariPoolExhaustion
         expr: |
           (
@@ -53,8 +60,94 @@ groups:
         annotations:
           summary: "HikariCP connection pool near exhaustion on {{ $labels.instance }}"
           description: >
-            HikariCP pool is {{ printf "%.0f" (mul $value 100) }}% utilised
+            HikariCP pool is {{ $value | humanizePercentage }} utilised
             (threshold: 90%) for more than 2 minutes.
+
+      # Exaustão de conexões da FROTA — o modo de falha que o alerta por instância acima NÃO vê:
+      # 8 pods a 30% cada não disparam nada enquanto o banco satura. É a razão de o GAP-BU/ADR-0037
+      # ter amarrado maxReplicas ao pool (invariante: maxReplicas × poolSize <= max_connections).
+      # 82 = 8 réplicas × 10 (pool fixo, application.conf:34) + 2 do Job de migração; o alerta
+      # dispara em ~80% disso.
+      # ⚠️ Limitação honesta: localmente há UMA instância e o prometheus.yml fixa `instance` numa
+      # constante, então este sum() não é testável aqui contra o conjunto de labels de produção —
+      # num cluster o Prometheus externo põe instance=podIP:port. A regra está certa; a validação
+      # de frota depende do Prometheus em k8s, que este repo ainda não define.
+      - alert: DbConnectionFleetExhaustion
+        expr: sum(hikaricp_connections_active) > 65
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Conexões da frota perto do teto do banco"
+          description: >
+            {{ printf "%.0f" $value }} conexões ativas somadas na frota
+            (teto do invariante: 82 = maxReplicas 8 × poolSize 10 + 2 do Job de migração;
+            max_connections default do PostgreSQL: 100, menos 3 de superuser).
+
+      # ── Camada de CONTAINER (cAdvisor — GAP-BW) ────────────────────────────────────────
+      # Até aqui NENHUM alerta enxergava esta camada: um pod estrangulado pelo CFS ou perto do
+      # limite de memória não gera 5xx nem latência acima do threshold — queima capacidade em
+      # silêncio. Foi exatamente o modo de falha que custou −69% de throughput sem ninguém ver
+      # (docs/quality/performance-baseline-2026-07-envelope-medido.md).
+
+      # CPU throttling: o kernel tirando o app da CPU por estourar a quota do cgroup.
+      # ⚠️ Só tem sinal quando há LIMITE de cpu aplicado. O `docker compose` normal sobe sem
+      # limite ⇒ leitura constante em zero; use o overlay docker-compose.limits.yml. Em k8s o
+      # limits.cpu do pod (1000m, ADR-0037) está sempre lá.
+      # O `> 0` no denominador NÃO é cosmético: é um filtro. Container sem limite de CPU não tem
+      # períodos de CFS, e dividir por zero/clamp faria a regra disparar para todo container
+      # irrestrito do stack (validado: um clamp_min ingênuo produziu 5 falsos positivos).
+      - alert: ContainerCpuThrottling
+        expr: |
+          (
+            rate(container_cpu_cfs_throttled_periods_total{name!=""}[5m])
+            /
+            (rate(container_cpu_cfs_periods_total{name!=""}[5m]) > 0)
+          ) > 0.25
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU throttling em {{ $labels.name }}"
+          description: >
+            {{ $value | humanizePercentage }} dos períodos de CFS foram estrangulados
+            (threshold: 25%) nos últimos 5min — o container está pedindo mais CPU que a quota.
+
+      # Working set perto do limite do container. É a métrica que dimensiona requests.memory
+      # (ADR-0037) — e NÃO memory.peak, que inclui page cache reclaimável e chega a variar
+      # 93↔152 MiB na mesma config.
+      # `(limite > 0)` é FILTRO, não comparação: container sem limite reporta
+      # container_spec_memory_limit_bytes = 0, e um clamp_min(.., 1) faria a razão virar
+      # working_set/1 ≈ 10^8 ⇒ a regra dispararia para TODO container irrestrito do stack.
+      # Verificado ao rodar: grafana/postgres/prometheus/tempo/cadvisor davam falso positivo,
+      # enquanto o app (único com limite) estava correto em 36%. Só alerta quem tem limite.
+      - alert: ContainerMemoryNearLimit
+        expr: |
+          (
+            container_memory_working_set_bytes{name!=""}
+            /
+            (container_spec_memory_limit_bytes{name!=""} > 0)
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Working set perto do limite em {{ $labels.name }}"
+          description: >
+            Working set em {{ $value | humanizePercentage }} do limite do container
+            (threshold: 85%). Memória é incompressível: acima do limite o kernel mata o processo.
+
+      # OOMKill: o kernel matou o processo por estourar a memória. Nunca houve alerta disso.
+      - alert: ContainerOomKilled
+        expr: increase(container_oom_events_total{name!=""}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OOMKill em {{ $labels.name }}"
+          description: >
+            O container {{ $labels.name }} sofreu OOMKill nos últimos 5min — o limite de
+            memória foi estourado e o kernel matou o processo.
 
       # Alert when the scrape target disappears (up metric equals 0).
       # This fires within 1 minute of the service becoming unreachable.

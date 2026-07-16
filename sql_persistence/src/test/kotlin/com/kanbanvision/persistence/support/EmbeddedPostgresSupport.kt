@@ -31,6 +31,7 @@ import com.kanbanvision.persistence.DatabaseConfig
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.internal.tables.OrganizationsTable
 import com.kanbanvision.persistence.internal.tables.SimulationsTable
+import io.micrometer.core.instrument.MeterRegistry
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -57,6 +58,12 @@ internal object EmbeddedPostgresSupport {
     fun refreshDataSource() {
         ensureStarted()
         DatabaseFactory.init(databaseConfig())
+    }
+
+    /** Recria o pool publicando `hikaricp_*` no registry — usado para provar o binding (GAP-BW). */
+    fun refreshDataSourceWithMetrics(meterRegistry: MeterRegistry) {
+        ensureStarted()
+        DatabaseFactory.init(databaseConfig(), meterRegistry = meterRegistry)
     }
 
     fun resetDatabase() {

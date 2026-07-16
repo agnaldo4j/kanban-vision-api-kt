@@ -1,6 +1,7 @@
 package com.kanbanvision.persistence
 
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -12,6 +13,27 @@ class DatabaseFactoryTest {
         EmbeddedPostgresSupport.resetDatabase()
 
         assertTrue(DatabaseFactory.isReady())
+    }
+
+    // GAP-BW: o alerta HikariPoolExhaustion consultava hikaricp_connections_active desde o GAP-U,
+    // mas o pool NUNCA foi bindado ao Micrometer — a métrica não existia e o alerta jamais pôde
+    // disparar. Este teste é a rede que impede a regressão silenciosa voltar.
+    @Test
+    fun `given meter registry when initializing datasource then hikaricp metrics are published`() {
+        val registry = SimpleMeterRegistry()
+        EmbeddedPostgresSupport.refreshDataSourceWithMetrics(registry)
+        DatabaseFactory.isReady() // força a criação de uma conexão ⇒ o pool registra os medidores
+
+        val hikariMeters = registry.meters.map { it.id.name }.filter { it.startsWith("hikaricp") }
+
+        assertTrue(
+            hikariMeters.any { it == "hikaricp.connections.active" },
+            "esperava hikaricp.connections.active publicado; veio: $hikariMeters",
+        )
+        assertTrue(
+            hikariMeters.any { it == "hikaricp.connections.max" },
+            "esperava hikaricp.connections.max (denominador do alerta); veio: $hikariMeters",
+        )
     }
 
     @Test

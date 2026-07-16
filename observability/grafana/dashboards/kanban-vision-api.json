@@ -9,7 +9,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Golden signals dashboard for kanban-vision-api: request rate, error rate, latency, HikariCP, JVM memory and simulation throughput.",
+  "description": "Golden signals + camada de container para kanban-vision-api: request rate, error rate, latency, pool HikariCP, working set/throttle do container e simulation throughput. O heap (JVM Memory) mede o runtime; o pod e dimensionado pelo working set (ADR-0037).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -138,6 +138,7 @@
         },
         "overrides": []
       },
+      "description": "Utilizacao do pool por instancia. A metrica hikaricp_* so passou a EXISTIR no GAP-BW: o Hikari nunca fora bindado ao Micrometer, entao este painel exibia \"No data\" e o alerta HikariPoolExhaustion nunca podia disparar. NAO ve exaustao de frota -- e por instancia (ver alerta DbConnectionFleetExhaustion).",
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
       "id": 4,
       "options": {
@@ -167,6 +168,7 @@
         },
         "overrides": []
       },
+      "description": "Heap/non-heap do runtime. NAO e o sinal de capacidade do pod: no binario nativo o heap e pequeno e nao e devolvido ao SO (ADR-0037). Para dimensionar, use o painel Container Memory -- Working Set.",
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
       "id": 5,
       "options": {
@@ -242,6 +244,68 @@
         }
       ],
       "title": "Card Completion Throughput (cards/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Working set (memory.current - inactive_file) do container contra o limite. E esta metrica -- e NAO memory.peak, que inclui page cache reclaimavel e variou 93<->152 MiB na mesma config -- que governa eviction e dimensiona requests.memory (ADR-0037: p50 55 MiB, max 92 MiB).",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "id": 8,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "container_memory_working_set_bytes{name=\"kanban-vision-app\"}",
+          "legendFormat": "Working set",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "container_spec_memory_limit_bytes{name=\"kanban-vision-app\"}",
+          "legendFormat": "Limite do container",
+          "refId": "B"
+        }
+      ],
+      "title": "Container Memory — Working Set vs Limit",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Fracao dos periodos de CFS estrangulados pelo kernel. Foi o gargalo real do envelope antigo (limits.cpu 500m custava -69% de throughput) e NENHUM alerta o enxergava: throttle nao gera 5xx nem latencia acima do threshold. So tem sinal com limite de CPU aplicado (docker-compose.limits.yml localmente; em k8s o limits.cpu esta sempre la).",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "id": 9,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(container_cpu_cfs_throttled_periods_total{name=\"kanban-vision-app\"}[1m]) / (rate(container_cpu_cfs_periods_total{name=\"kanban-vision-app\"}[1m]) > 0)",
+          "legendFormat": "Periodos estrangulados",
+          "refId": "A"
+        }
+      ],
+      "title": "Container CPU — Throttled Periods",
       "type": "timeseries"
     }
   ],

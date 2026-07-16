@@ -10,7 +10,17 @@ scrape_configs:
     metrics_path: "/metrics"
     static_configs:
       - targets: ["app:8080"]
+    # ⚠️ Fixa `instance` numa constante. Inócuo aqui (um alvo só), mas os alertas que usam
+    # `sum by (instance)` colapsam tudo numa série — e em k8s um Prometheus externo descobre
+    # pods pelas anotações prometheus.io/scrape e põe instance=podIP:port. Ou seja: semântica
+    # de label desenvolvida contra o compose NÃO reproduz a de produção (GAP-BW).
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "kanban-vision-api"
+
+  # Métricas de container (GAP-BW): container_cpu_cfs_throttled_*, container_memory_working_set_bytes,
+  # OOM. É o que faltava para enxergar throttle e working set sem ler cgroup na mão.
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]

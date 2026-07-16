@@ -21,6 +21,8 @@ import com.kanbanvision.persistence.DatabaseFactory
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.routing.routing
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
@@ -43,9 +45,13 @@ fun Application.module() {
     val telemetry = configureTelemetry()
 
     val migrationsEnabled = System.getenv("FLYWAY_ENABLED")?.lowercase() != "false"
+    // meterRegistry: o pool publica hikaricp_* (GAP-BW). Passado no init porque o tracker tem de
+    // existir quando as primeiras conexões nascem — e porque assim não há como criar pool sem métrica.
+    val meterRegistry: PrometheusMeterRegistry by inject()
     DatabaseFactory.init(
         instrumentDatabaseConfig(buildDatabaseConfig(), telemetryEnabled = telemetry != null),
         migrationsEnabled = migrationsEnabled,
+        meterRegistry = meterRegistry,
     )
 
     configureMetrics()
