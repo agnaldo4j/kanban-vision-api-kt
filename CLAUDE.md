@@ -67,6 +67,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/load-testing` | k6 load tests — baseline p95, perfis, thresholds e workflow manual (ADR-0027) |
 | `/local-and-production-environment` | Dockerfile, docker-compose, Kubernetes manifests |
 | `/graalvm` | GraalVM em produção — JIT vs Native Image, fases, reachability metadata (ADR-0030) |
+| `/github-ci-health` | "O build quebrou" — separar defeito nosso de indisponibilidade do GitHub (githubstatus.com) |
 | `/evolutionary-change` | Plan incremental changes, J-Curve, 1-gap-per-session protocol |
 | `/xp-kanban` | XP + Kanban practices — **includes Board Protocol** (pull/push GitHub Project) |
 | `/circular-dependency-control` | Detect, classify and eliminate circular dependencies (class, package, Gradle module) |
