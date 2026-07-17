@@ -11,6 +11,15 @@ data:
   PORT: "8080"
   DATABASE_URL: "jdbc:postgresql://postgres-svc:5432/kanbanvision"
   DATABASE_USER: "kanban"
+  # Pool Hikari (GAP-BX) — todos os knobs são configuráveis por env, defaults = valores históricos.
+  # DATABASE_POOL_SIZE está amarrado ao invariante do HPA (06-hpa.yml: maxReplicas × poolSize ≤
+  # max_connections) — ao SUBI-lo, refaça a conta lá. Overrides adicionais (descomente p/ ajustar):
+  #   DATABASE_MIN_IDLE: "10"                    # ausente ⇒ = DATABASE_POOL_SIZE (pool fixo). Menor ⇒ elástico.
+  #   DATABASE_CONNECTION_TIMEOUT_MS: "30000"
+  #   DATABASE_MAX_LIFETIME_MS: "1800000"
+  #   DATABASE_KEEPALIVE_TIME_MS: "120000"
+  #   DATABASE_LEAK_DETECTION_THRESHOLD_MS: "60000"
+  DATABASE_POOL_SIZE: "10"
   JWT_ISSUER: "kanban-vision-api"
   JWT_AUDIENCE: "kanban-vision-clients"
   JWT_TTL_MS: "86400000"

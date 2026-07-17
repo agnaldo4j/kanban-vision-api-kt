@@ -14,19 +14,34 @@ data class DatabaseConfig(
     val driver: String,
     val user: String,
     val password: String,
-    val poolSize: Int = 10,
+    // Parâmetros do pool Hikari — todos configuráveis por env (GAP-BX). Defaults = valores
+    // históricos, então nenhum ambiente muda de comportamento se as DATABASE_* não forem setadas.
+    val poolSize: Int = DEFAULT_POOL_SIZE,
+    // minimumIdle default = poolSize ⇒ pool de tamanho FIXO (o comportamento implícito de antes,
+    // quando o Hikari igualava minimumIdle ao máximo). Setar < poolSize torna o pool elástico.
+    val minimumIdle: Int = poolSize,
+    val connectionTimeoutMs: Long = DEFAULT_CONNECTION_TIMEOUT_MS,
+    val maxLifetimeMs: Long = DEFAULT_MAX_LIFETIME_MS,
+    val keepaliveTimeMs: Long = DEFAULT_KEEPALIVE_TIME_MS,
+    val leakDetectionThresholdMs: Long = DEFAULT_LEAK_DETECTION_THRESHOLD_MS,
     val baselineOnMigrate: Boolean = false,
     // Native Image (ADR-0032): o ClassPathScanner do Flyway não suporta o protocolo
     // "resource" do binário — a imagem nativa usa "filesystem:/app/db/migration"
     // (migrations copiadas como arquivos). Na JVM o default classpath permanece.
     val migrationsLocation: String = "classpath:db/migration",
-)
+) {
+    companion object {
+        const val DEFAULT_POOL_SIZE = 10
+        const val DEFAULT_CONNECTION_TIMEOUT_MS = 30_000L
+        const val DEFAULT_MAX_LIFETIME_MS = 1_800_000L
+        const val DEFAULT_KEEPALIVE_TIME_MS = 120_000L
+        const val DEFAULT_LEAK_DETECTION_THRESHOLD_MS = 60_000L
+    }
+}
 
 object DatabaseFactory {
-    private const val CONNECTION_TIMEOUT_MS = 30_000L
-    private const val MAX_LIFETIME_MS = 1_800_000L
-    private const val KEEPALIVE_TIME_MS = 120_000L
-    private const val LEAK_DETECTION_THRESHOLD_MS = 60_000L
+    // Timeouts do pool migraram para DatabaseConfig (campos com default) — GAP-BX os tornou
+    // configuráveis por env. POOL_NAME (identidade da métrica) e os de readiness ficam fixos.
     private const val POOL_NAME = "KanbanVisionPool"
     private const val READINESS_VALIDATION_TIMEOUT_SECS = 2
     private const val READINESS_CHECK_TIMEOUT_MS = 3_000L
@@ -109,12 +124,13 @@ object DatabaseFactory {
             username = config.user
             password = config.password
             maximumPoolSize = config.poolSize
-            connectionTimeout = CONNECTION_TIMEOUT_MS
-            maxLifetime = MAX_LIFETIME_MS
-            keepaliveTime = KEEPALIVE_TIME_MS
+            minimumIdle = config.minimumIdle
+            connectionTimeout = config.connectionTimeoutMs
+            maxLifetime = config.maxLifetimeMs
+            keepaliveTime = config.keepaliveTimeMs
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-            leakDetectionThreshold = LEAK_DETECTION_THRESHOLD_MS
+            leakDetectionThreshold = config.leakDetectionThresholdMs
             poolName = POOL_NAME
             // Antes do HikariDataSource ser construído: o tracker precisa existir quando as
             // primeiras conexões nascem, senão os contadores começam incompletos.
