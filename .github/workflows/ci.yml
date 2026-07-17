@@ -1,5 +1,10 @@
 name: CI
 
+# Só gate reprova (GAP-CC): os passos que publicam relatório no PR (find-comment /
+# create-or-update-comment) levam `continue-on-error: true`. Um 500 da API de comentários
+# não tem o direito de reprovar um job cujos gates passaram. Sem o comment-id do find, o
+# post cria um comentário novo em vez de editar — degradação aceita de propósito.
+
 on:
   push:
     branches: [main]
@@ -147,6 +152,7 @@ jobs:
         id: find-pitest
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -155,6 +161,7 @@ jobs:
       - name: Post PITest report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-pitest.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -205,6 +212,7 @@ jobs:
         id: find-architecture
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -213,6 +221,7 @@ jobs:
       - name: Post architecture fitness report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-architecture.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -267,6 +276,7 @@ jobs:
         id: find-detekt
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -275,6 +285,7 @@ jobs:
       - name: Post Detekt report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-detekt.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -397,6 +408,7 @@ jobs:
         id: find-supply-chain
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -405,6 +417,7 @@ jobs:
       - name: Post supply chain report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-supply-chain.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -429,9 +442,24 @@ jobs:
           # Count changed lines (additions + deletions) via the GitHub API — no checkout needed.
           # Committed GraalVM reachability metadata is auto-generated and excluded from the count.
           # Soft-gate (GAP-BH): warn only, never fail the build.
-          gh api --paginate \
+          # Falha do gh api — ou resposta vazia com exit 0, que o #288 provou ser possível quando a
+          # API do GitHub degrada — vira "unavailable" (GAP-CC). Nunca reprova o job, e nunca deixa
+          # uma contagem ausente virar um "✅ Within the 400-line heuristic" fabricado: um ✅ falso
+          # é pior que a ausência do sinal. Um PR real sempre muda ao menos um arquivo.
+          if ! gh api --paginate \
             "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
-            --jq '.[] | [.filename, (.additions + .deletions)] | @tsv' > files.tsv
+            --jq '.[] | [.filename, (.additions + .deletions)] | @tsv' > files.tsv \
+             || [ ! -s files.tsv ]
+          then
+            {
+              echo 'body<<PR_SIZE_REPORT'
+              echo '## PR Size Report'
+              echo ''
+              echo '_PR size unavailable for this run._'
+              echo 'PR_SIZE_REPORT'
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           counted=$(awk -F'\t' '$1 !~ /\/META-INF\/native-image\// {s+=$2} END {print s+0}' files.tsv)
           excluded=$(awk -F'\t' '$1 ~ /\/META-INF\/native-image\// {s+=$2} END {print s+0}' files.tsv)
           threshold=400
@@ -456,6 +484,7 @@ jobs:
       - name: Find existing PR size comment
         id: find-pr-size
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -463,6 +492,7 @@ jobs:
 
       - name: Post PR size report on PR
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-pr-size.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -506,6 +536,7 @@ jobs:
       - name: Find existing flow metrics comment
         id: find-flow
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -513,6 +544,7 @@ jobs:
 
       - name: Post flow metrics report on PR
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-flow.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -655,6 +687,7 @@ jobs:
         if: always() && github.event_name == 'pull_request'
         id: find-smoke
         uses: peter-evans/find-comment@v4
+        continue-on-error: true
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
@@ -663,6 +696,7 @@ jobs:
       - name: Post smoke test report on PR
         if: always() && github.event_name == 'pull_request' && steps.smoke.outputs.body != ''
         uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
         with:
           comment-id: ${{ steps.find-smoke.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
