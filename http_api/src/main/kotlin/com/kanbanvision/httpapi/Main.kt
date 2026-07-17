@@ -71,13 +71,27 @@ fun Application.module() {
 
 private fun Application.buildDatabaseConfig(): DatabaseConfig {
     val dbConfig = environment.config.config("database")
+    val poolSize = dbConfig.property("poolSize").getString().toInt()
     val base =
         DatabaseConfig(
             url = dbConfig.property("url").getString(),
             driver = dbConfig.property("driver").getString(),
             user = dbConfig.property("user").getString(),
             password = dbConfig.property("password").getString(),
-            poolSize = dbConfig.property("poolSize").getString().toInt(),
+            poolSize = poolSize,
+            // minimumIdle sem base no .conf: ausente OU vazio ⇒ = poolSize (pool fixo, comportamento
+            // atual). O isNotBlank() blinda o boot contra um DATABASE_MIN_IDLE="" (passthrough do
+            // Compose com host unset, ou configmap mal preenchido): "".toInt() derrubaria o startup.
+            minimumIdle =
+                dbConfig
+                    .propertyOrNull("minimumIdle")
+                    ?.getString()
+                    ?.takeIf { it.isNotBlank() }
+                    ?.toInt() ?: poolSize,
+            connectionTimeoutMs = dbConfig.property("connectionTimeoutMs").getString().toLong(),
+            maxLifetimeMs = dbConfig.property("maxLifetimeMs").getString().toLong(),
+            keepaliveTimeMs = dbConfig.property("keepaliveTimeMs").getString().toLong(),
+            leakDetectionThresholdMs = dbConfig.property("leakDetectionThresholdMs").getString().toLong(),
         )
     // Native Image (ADR-0032): a imagem nativa seta FLYWAY_LOCATIONS=filesystem:/app/db/migration
     // porque o ClassPathScanner do Flyway não lê resources do binário; JVM usa o default.

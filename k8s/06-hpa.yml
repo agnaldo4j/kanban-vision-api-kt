@@ -12,9 +12,10 @@ spec:
     name: kanban-vision-api
   minReplicas: 2
   # INVARIANTE (ADR-0037): maxReplicas × poolSize ≤ max_connections, com folga.
-  # O pool Hikari é FIXO em 10 conexões por pod (http_api/src/main/resources/application.conf:34;
-  # minimumIdle não é setado ⇒ Hikari o iguala ao máximo). É o ÚNICO valor daquele arquivo sem
-  # override ${?ENV} — mudá-lo exige rebuild da imagem.
+  # O pool Hikari tem DEFAULT 10 conexões por pod (minimumIdle default = poolSize ⇒ pool fixo).
+  # Desde o GAP-BX o poolSize é configurável por env (DATABASE_POOL_SIZE, em 01-configmap.yml) —
+  # não exige mais rebuild da imagem. A conta abaixo vale para o default 10; ao SUBIR
+  # DATABASE_POOL_SIZE, REFAÇA este invariante (e ajuste maxReplicas) antes de aplicar.
   #   8 réplicas × 10 = 80, + 2 do Job de migração = 82.
   #   Postgres default: max_connections=100, menos 3 reservadas para superuser ⇒ ~95 utilizáveis.
   #   Sobram ~13 para psql/backup/monitoring.

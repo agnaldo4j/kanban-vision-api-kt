@@ -94,7 +94,7 @@ class DatabaseFactoryTest {
     }
 
     @Test
-    fun `given database config created with default constructor values then pool size defaults to ten`() {
+    fun `given database config created with default constructor values then pool defaults match the historical values`() {
         val config =
             DatabaseConfig(
                 url = "jdbc:postgresql://localhost:5432/test",
@@ -104,7 +104,27 @@ class DatabaseFactoryTest {
             )
 
         assertTrue(config.poolSize == 10)
+        // GAP-BX: minimumIdle default = poolSize ⇒ pool fixo (o comportamento implícito de antes).
+        assertTrue(config.minimumIdle == config.poolSize)
+        assertTrue(config.connectionTimeoutMs == 30_000L)
+        assertTrue(config.maxLifetimeMs == 1_800_000L)
+        assertTrue(config.keepaliveTimeMs == 120_000L)
+        assertTrue(config.leakDetectionThresholdMs == 60_000L)
         assertTrue(config.migrationsLocation == "classpath:db/migration")
+    }
+
+    @Test
+    fun `given explicit pool size when minimum idle is not set then it defaults to the pool size`() {
+        val config =
+            DatabaseConfig(
+                url = "jdbc:postgresql://localhost:5432/test",
+                driver = "org.postgresql.Driver",
+                user = "postgres",
+                password = "postgres",
+                poolSize = 25,
+            )
+
+        assertTrue(config.minimumIdle == 25)
     }
 
     @Test
