@@ -88,16 +88,25 @@ domain-simulation ───┘  ← model/simulation/* + simulation/* + Scenario
 **Migração evolutiva** (o plano de execução vive no board #6, não aqui): (1) destrançar dentro do
 módulo único — mover `Scenario`/`ScenarioRules` para pacotes de Simulation, dividir `DomainError`,
 mover `DomainEvent`, dividir `Refs.kt`, isolar a base — mantendo CI verde a cada passo; (2) extrair os
-três módulos Gradle e religar `usecases`/`sql_persistence`/`http_api`, aposentando o `:domain`.
+três módulos Gradle e religar `usecases`/`sql_persistence`/`http_api`, aposentando o `:domain`. Ao
+aposentar o `:domain`, a fase (2) **precisa migrar junto as referências hard-coded ao módulo**, senão
+a configuração do Gradle quebra os gates: o `pitestAll` na raiz declara
+`dependsOn(":domain:pitest", …)` (`build.gradle.kts:26`) e a task `test` do módulo `architecture`
+lista `"domain"` nos inputs de fontes para cache-correctness (`architecture/build.gradle.kts:26-34`).
+Ambos passam a apontar para `domain-common`/`domain-kanban`/`domain-simulation`.
 
 ### Confirmation
 
 Fitness functions Konsist no módulo `architecture/` (ADR-0026), verdes no `testAll` a cada fase:
 `ContextBoundaryTest` reclassifica `Scenario`/`ScenarioRules` para o lado Simulation e, após a extração,
-passa a verificar a fronteira como dependência de módulo Gradle; `HexagonalArchitectureTest` codifica o
-novo grafo `simulation → kanban → common` (e a não-inversão); `DomainPurityTest` passa a valer para os
-três módulos; `PackageCycleTest` e `ContractPackageTest` seguem valendo. A não-inversão da regra de
-dependência é garantida pelo escopo `implementation` do Gradle (ADR-0033 — sem JPMS).
+passa a verificar a fronteira como dependência de módulo Gradle; `DomainPurityTest` passa a valer para os
+três módulos; `PackageCycleTest` e `ContractPackageTest` seguem valendo. **A não-inversão do grafo
+`simulation → kanban → common` exige uma fitness function nova que asserte o grafo de dependências de
+projeto do Gradle** (as `project` deps de cada módulo, via API do Gradle ou um teste equivalente): o
+escopo `implementation` (ADR-0033) só limita a *exposição transitiva* — não impede alguém de declarar
+`domain-kanban implementation(project(":domain-simulation"))`, e o `HexagonalArchitectureTest` atual
+verifica dependências de pacote/fonte, não as `project` deps. A direção do grafo só fica garantida por
+essa asserção explícita, verde no `testAll`.
 
 ## Consequences
 
