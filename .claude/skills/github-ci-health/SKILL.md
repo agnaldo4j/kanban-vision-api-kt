@@ -70,24 +70,26 @@ Leia a lista inteira. As perguntas que resolvem:
 | **Quality Gates** | ✅ | `Run quality gates` (Detekt/KtLint/JaCoCo/testes/Konsist) · `Run PITest mutation testing` |
 | **Supply Chain (SBOM + SCA)** | ✅ | `Scan SBOM for known vulnerabilities (osv-scanner)` — ADR-0025 |
 | **Build & Push Image** | ✅ | build da imagem nativa + **smoke test** (readiness/liveness/401) |
-| **Test Results** | ✅ | publicação do resultado dos testes |
+| **Test Results** | ❌ **nunca** | Publica o check `Test Results` (EnricoMi). Falso em dois sentidos: `action_fail` default `false` (teste quebrado reprova via `./gradlew testAll`, não aqui) **e** não é branch-protected. Não bloqueia merge |
 | **PR Size Soft-Gate** | ❌ **nunca** | *"warn only, never fail the build"* — promessa agora **honrada em código** (GAP-CC), não só no comentário |
 | **Flow Metrics** | ❌ **nunca** | não-bloqueante por design (GAP-BI) |
 
 **Corolário:** `PR Size Soft-Gate` ou `Flow Metrics` vermelhos são, **por definição do próprio
 workflow**, infraestrutura — eles não têm o direito de reprovar. Se estão vermelhos, comece pelo §1.
 
-✅ **Desde o GAP-CC, a camada de comentário é tolerante a falha.** Os 14 passos `find-comment` /
-`create-or-update-comment` levam `continue-on-error: true`, e o `gh api` do `pr-size` degrada para
-*"PR size unavailable for this run."*. **Um job vermelho agora implica gate real vermelho** — não
-presuma mais que é a API de comentários. Efeito colateral esperado durante uma queda do GitHub: o
-`find` não acha o comentário anterior, então o relatório aparece **duplicado** em vez de editado.
-Isso é a degradação escolhida, não um bug.
+✅ **A camada de relatório inteira é tolerante a falha (GAP-CC + GAP-CD).** Os 23 passos que publicam
+relatório — comentários (`find-comment` / `create-or-update-comment`), check de testes (`EnricoMi`),
+cobertura no PR (`madrapps`), `upload-artifact` e Codecov — levam `continue-on-error: true`, e o
+`gh api` do `pr-size` degrada para *"PR size unavailable for this run."*. **Um job vermelho agora
+implica gate real vermelho** — não presuma mais que é a API de comentários. Efeito colateral esperado
+durante uma queda do GitHub: o `find` não acha o comentário anterior, então o relatório aparece
+**duplicado** em vez de editado. Isso é a degradação escolhida, não um bug.
 
-⚠️ **Lacuna residual:** dentro de `Quality Gates` seguem sem proteção
-`EnricoMi/publish-unit-test-result-action` (publica o check `Test Results`),
-`madrapps/jacoco-report` e os `upload-artifact`. São os únicos passos cosméticos que ainda podem
-reprovar um check obrigatório.
+✅ **A lacuna residual do GAP-CC foi fechada no GAP-CD.** `EnricoMi`, `madrapps` e os `upload-artifact`
+— que antes podiam reprovar um check obrigatório mesmo sem serem gate — agora estão protegidos. A
+invariante (**passo protegido ⟺ o `uses:` é action de publicação de relatório**) é verificada em CI
+por `scripts/assert-ci-protection.py`, um step-gate do job `quality`: nenhum gate real ou passo de
+setup pode ganhar `continue-on-error`, e nenhum passo de relatório pode perdê-lo.
 
 ## 4. Assinaturas de falha conhecidas
 
@@ -146,8 +148,9 @@ se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no có
 - `gh run rerun --failed` **exige o run completo**; com um job `pending` dá
   *"This workflow is already running"*.
 - **Branch protection** (3 checks obrigatórios + `enforce_admins`, sem approvals — repo solo): um 500
-  na camada de comentário já não bloqueia merge (GAP-CC), mas uma queda de **Actions** ou dos passos
-  da lacuna residual ainda bloqueia. É desconforto esperado, não motivo para afrouxar proteção.
+  na camada de relatório já não bloqueia merge (GAP-CC + GAP-CD — a camada inteira é tolerante a
+  falha), mas uma queda de **Actions** (os runners não executam os gates reais) ainda bloqueia. É
+  desconforto esperado, não motivo para afrouxar proteção.
 - `gh run view --log-failed` só serve com o run **terminado** (*"still in progress"*).
 - O status page tem **latência**: um 500 já acontecendo pode ainda não estar publicado. Ausência de
   incidente **não** prova que é culpa nossa — use o §4 (reproduzir fora do CI).
@@ -158,5 +161,6 @@ se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no có
 
 - **Status**: https://www.githubstatus.com · API: `/api/v2/{status,summary,components,incidents/unresolved}.json`
 - Workflow: `.github/workflows/ci.yml` · política: `docs/politicas-explicitas.md` §6
-- Cards relacionados: **GAP-CC** (tolerância a falha da camada de comentário — entregue) · GAP-BH
-  (pr-size) · GAP-BI (flow-metrics)
+- Cards relacionados: **GAP-CC** (tolerância a falha da camada de comentário — entregue) ·
+  **GAP-CD** (camada de relatório inteira + guard `scripts/assert-ci-protection.py` — entregue) ·
+  GAP-BH (pr-size) · GAP-BI (flow-metrics)
