@@ -60,8 +60,10 @@ a `TESTER` worker also implies `DEPLOYER`.
 
 ### 2. Simulation
 
-**Packages:** `domain/…/model/simulation/` (entities) + `domain/…/simulation/SimulationEngine.kt`
-(domain service). `Scenario`, `ScenarioRules` and `PolicySet` live in `domain/…/model/organization/`.
+**Packages:** `domain/…/model/simulation/` (entities, incl. `Scenario` + `ScenarioRules` — GAP-CE) +
+`domain/…/simulation/SimulationEngine.kt` (domain service). `PolicySet` permanece em
+`domain/…/model/organization/` (Kanban Management); `ScenarioRules` o referencia como aresta
+`simulation → kanban` (customer-supplier, ADR-0038).
 **Aggregate roots:** `Simulation`, `Scenario`
 
 | Entity / VO | Type | Responsibility |

@@ -11,8 +11,8 @@ import com.kanbanvision.domain.model.kanban.CardState
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.kanban.Step
 import com.kanbanvision.domain.model.organization.PolicySet
-import com.kanbanvision.domain.model.organization.Scenario
-import com.kanbanvision.domain.model.organization.ScenarioRules
+import com.kanbanvision.domain.model.simulation.Scenario
+import com.kanbanvision.domain.model.simulation.ScenarioRules
 
 internal fun Scenario.toSurrogate() =
     ScenarioSurrogate(
