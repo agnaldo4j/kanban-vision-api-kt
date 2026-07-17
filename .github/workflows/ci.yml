@@ -1,9 +1,14 @@
 name: CI
 
-# Só gate reprova (GAP-CC): os passos que publicam relatório no PR (find-comment /
-# create-or-update-comment) levam `continue-on-error: true`. Um 500 da API de comentários
-# não tem o direito de reprovar um job cujos gates passaram. Sem o comment-id do find, o
-# post cria um comentário novo em vez de editar — degradação aceita de propósito.
+# Só gate reprova (GAP-CC + GAP-CD): TODO passo que publica relatório — comentário de PR
+# (find-comment / create-or-update-comment), check de testes (EnricoMi), cobertura no PR
+# (madrapps), upload de artefato (upload-artifact) e Codecov — leva `continue-on-error: true`.
+# Nenhum é gate; nenhum tem o direito de reprovar um job cujos gates reais passaram quando a
+# própria action erra contra a API do GitHub (o modo de falha do #288, com todos os gates
+# verdes). A invariante é verificada por scripts/assert-ci-protection.py (step do job quality):
+# passo protegido ⟺ o `uses:` dele é action de publicação de relatório. Gates reais
+# (testAll, PITest, osv-scanner, build, smoke) e passos de setup NUNCA levam continue-on-error.
+# Sem o comment-id do find, o post cria um comentário novo em vez de editar — degradação aceita.
 
 on:
   push:
@@ -30,6 +35,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Assert CI protection invariant
+        # Gate (GAP-CD): report-publishing steps must carry continue-on-error; gates/setup
+        # must not. Fails fast, before Java/Gradle. It is `run:`, not a reporting action —
+        # so by its own rule it stays UNprotected.
+        run: |
+          python3 -m pip install --quiet pyyaml || pip install --quiet pyyaml
+          python3 scripts/assert-ci-protection.py
+
       - name: Set up Java 25 (Gradle daemon)
         uses: actions/setup-java@v5
         with:
@@ -51,6 +64,7 @@ jobs:
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: test-reports
           path: |
@@ -60,6 +74,7 @@ jobs:
       - name: Upload Detekt reports
         if: always()
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: detekt-reports
           path: |
@@ -69,6 +84,7 @@ jobs:
       - name: Upload JaCoCo coverage reports
         if: always()
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: coverage-reports
           path: |
@@ -78,6 +94,7 @@ jobs:
       - name: Upload Pact contract files
         if: always()
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: pact-contracts
           path: |
@@ -91,6 +108,7 @@ jobs:
       - name: Upload PITest mutation reports
         if: always()
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: pitest-mutation-reports
           path: '**/build/reports/pitest/'
@@ -231,6 +249,7 @@ jobs:
       - name: Test results report on PR
         if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: EnricoMi/publish-unit-test-result-action@v2
+        continue-on-error: true
         with:
           files: '**/build/test-results/test/*.xml'
           comment_title: 'Test Results'
@@ -295,6 +314,7 @@ jobs:
       - name: Upload coverage to Codecov
         if: always() && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request')
         uses: codecov/codecov-action@v7
+        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           # Linha única: o bloco YAML ">-" junta linhas com espaço e o action
@@ -310,6 +330,7 @@ jobs:
       - name: JaCoCo coverage report on PR
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: madrapps/jacoco-report@v1.8.0
+        continue-on-error: true
         with:
           paths: |
             ${{ github.workspace }}/domain/build/reports/jacoco/test/jacocoTestReport.xml,
@@ -350,6 +371,7 @@ jobs:
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: sbom-cyclonedx
           path: build/reports/cyclonedx/
