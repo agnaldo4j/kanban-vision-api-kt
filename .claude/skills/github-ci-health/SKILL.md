@@ -28,7 +28,7 @@ curl -s https://www.githubstatus.com/api/v2/components.json | jq -r '.components
 
 | Componente | O que quebra aqui quando degrada |
 |---|---|
-| **API Requests** | `find-comment`, `gh api`, comentários de PR, `gh run view` — **a causa mais comum de job vermelho sem defeito de código** |
+| **API Requests** | `find-comment`, `gh api`, comentários de PR, `gh run view`. Desde o GAP-CC a camada de comentário não reprova mais o job — mas ainda **degrada o relatório** (duplicado, ou *"unavailable"*) |
 | **Actions** | runners, execução dos jobs |
 | **Packages** | push/pull do `ghcr.io` (job `build`) |
 | **Webhooks** | o run nem dispara no push |
@@ -71,16 +71,23 @@ Leia a lista inteira. As perguntas que resolvem:
 | **Supply Chain (SBOM + SCA)** | ✅ | `Scan SBOM for known vulnerabilities (osv-scanner)` — ADR-0025 |
 | **Build & Push Image** | ✅ | build da imagem nativa + **smoke test** (readiness/liveness/401) |
 | **Test Results** | ✅ | publicação do resultado dos testes |
-| **PR Size Soft-Gate** | ❌ **nunca** | `ci.yml:431`: *"warn only, never fail the build"* |
+| **PR Size Soft-Gate** | ❌ **nunca** | *"warn only, never fail the build"* — promessa agora **honrada em código** (GAP-CC), não só no comentário |
 | **Flow Metrics** | ❌ **nunca** | não-bloqueante por design (GAP-BI) |
 
 **Corolário:** `PR Size Soft-Gate` ou `Flow Metrics` vermelhos são, **por definição do próprio
 workflow**, infraestrutura — eles não têm o direito de reprovar. Se estão vermelhos, comece pelo §1.
 
-⚠️ **Dívida conhecida (GAP-CC):** os 7 passos `peter-evans/find-comment@v4` **não têm
-`continue-on-error`**. Um 500 da API neles reprova o job inteiro — inclusive o `pr-size`, que promete
-nunca reprovar. Enquanto o GAP-CC não entrar, **isto é a explicação mais provável de job vermelho com
-gates verdes**.
+✅ **Desde o GAP-CC, a camada de comentário é tolerante a falha.** Os 14 passos `find-comment` /
+`create-or-update-comment` levam `continue-on-error: true`, e o `gh api` do `pr-size` degrada para
+*"PR size unavailable for this run."*. **Um job vermelho agora implica gate real vermelho** — não
+presuma mais que é a API de comentários. Efeito colateral esperado durante uma queda do GitHub: o
+`find` não acha o comentário anterior, então o relatório aparece **duplicado** em vez de editado.
+Isso é a degradação escolhida, não um bug.
+
+⚠️ **Lacuna residual:** dentro de `Quality Gates` seguem sem proteção
+`EnricoMi/publish-unit-test-result-action` (publica o check `Test Results`),
+`madrapps/jacoco-report` e os `upload-artifact`. São os únicos passos cosméticos que ainda podem
+reprovar um check obrigatório.
 
 ## 4. Assinaturas de falha conhecidas
 
@@ -131,23 +138,25 @@ Gate real falhou (testAll/osv-scanner/smoke)?
 ```
 
 **Nunca** altere `ci.yml` para contornar indisponibilidade transitória: é tratar sintoma e deixa
-dívida permanente num arquivo que governa todos os PRs. A correção estrutural é o **GAP-CC**.
+dívida permanente num arquivo que governa todos os PRs. A tolerância estrutural já existe (GAP-CC) —
+se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no código, não no workflow.
 
 ## 7. Pitfalls
 
 - `gh run rerun --failed` **exige o run completo**; com um job `pending` dá
   *"This workflow is already running"*.
-- **Branch protection** (3 checks obrigatórios + `enforce_admins`, sem approvals — repo solo)
-  significa que um 500 transitório **bloqueia merge de código correto**. É desconforto esperado, não
-  motivo para afrouxar proteção.
+- **Branch protection** (3 checks obrigatórios + `enforce_admins`, sem approvals — repo solo): um 500
+  na camada de comentário já não bloqueia merge (GAP-CC), mas uma queda de **Actions** ou dos passos
+  da lacuna residual ainda bloqueia. É desconforto esperado, não motivo para afrouxar proteção.
 - `gh run view --log-failed` só serve com o run **terminado** (*"still in progress"*).
 - O status page tem **latência**: um 500 já acontecendo pode ainda não estar publicado. Ausência de
   incidente **não** prova que é culpa nossa — use o §4 (reproduzir fora do CI).
-- `gh pr checks` mostra `fail` para jobs não-bloqueantes: o "soft" do `pr-size` é sobre **não reprovar
-  por tamanho**, e não o protege de falhar por infra (GAP-CC).
+- `## PR Size Report` dizendo *"unavailable"* **não é bug**: é o `pr-size` admitindo que o `gh api` não
+  respondeu (ou voltou vazio, como no #288) em vez de fabricar um `✅` a partir de contagem ausente.
 
 ## 8. Referências
 
 - **Status**: https://www.githubstatus.com · API: `/api/v2/{status,summary,components,incidents/unresolved}.json`
 - Workflow: `.github/workflows/ci.yml` · política: `docs/politicas-explicitas.md` §6
-- Cards relacionados: **GAP-CC** (fragilidade do `find-comment`) · GAP-BH (pr-size) · GAP-BI (flow-metrics)
+- Cards relacionados: **GAP-CC** (tolerância a falha da camada de comentário — entregue) · GAP-BH
+  (pr-size) · GAP-BI (flow-metrics)
