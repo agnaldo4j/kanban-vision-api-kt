@@ -85,11 +85,34 @@ services:
     restart: unless-stopped
 
   # ── Prometheus ───────────────────────────────────────────────────────────────
+  # Métricas de CONTAINER (GAP-BW): throttle de CPU, working set, OOM — a camada que o
+  # /metrics do app não vê. Foi a ausência dela que obrigou a medir o envelope na mão via
+  # cgroup (ADR-0037) e que tornou a mitigação da ADR-0036 inobservável.
+  #
+  # Mounts calibrados para Docker Desktop/macOS (validado nesta máquina):
+  #   - NÃO montar /var/lib/docker: o filesystem da VM é read-only ⇒ o container nem sobe.
+  #   - Montar o docker.sock DIRETO, não /var/run inteiro: /var/run/docker.sock é um symlink
+  #     para um caminho do macOS host que não resolve dentro da VM Linux ⇒ o cAdvisor não fala
+  #     com o daemon e emite séries SEM os labels name= e image=, só id="/docker/<hash>" —
+  #     inúteis para alerta, porque o hash muda a cada run.
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: kanban-vision-cadvisor
+    privileged: true
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: kanban-vision-prometheus
     depends_on:
       - app
+      - cadvisor
     ports:
       - "9090:9090"
     volumes:

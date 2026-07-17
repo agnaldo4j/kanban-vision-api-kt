@@ -2,6 +2,8 @@ package com.kanbanvision.persistence
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
+import io.micrometer.core.instrument.MeterRegistry
 import org.flywaydb.core.Flyway
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -63,14 +65,23 @@ object DatabaseFactory {
         if (::dataSource.isInitialized) dataSource.close()
     }
 
+    /**
+     * @param meterRegistry quando presente, o pool publica `hikaricp_*` nele. O binding vive AQUI, no
+     * nascimento do pool, e não num `bindMetrics()` posterior: pool e suas métricas têm o mesmo ciclo
+     * de vida, então é impossível criar um sem o outro. O alerta `HikariPoolExhaustion` existia desde
+     * o GAP-U consultando `hikaricp_connections_active`, que NUNCA foi exposto — a métrica nunca foi
+     * bindada e o alerta nunca pôde disparar (GAP-BW). Um `bindMetrics()` opcional reabriria essa
+     * porta. Null só nos casos sem Micrometer (Job de migração, testes de unidade).
+     */
     fun init(
         config: DatabaseConfig,
         migrationsEnabled: Boolean = true,
+        meterRegistry: MeterRegistry? = null,
     ) {
         if (::dataSource.isInitialized) {
             dataSource.close()
         }
-        dataSource = HikariDataSource(buildHikariConfig(config))
+        dataSource = HikariDataSource(buildHikariConfig(config, meterRegistry))
         DbCircuitBreaker.reset()
         org.jetbrains.exposed.v1.jdbc.Database
             .connect(datasource = CircuitBreakerDataSource(dataSource, DbCircuitBreaker.circuitBreaker))
@@ -88,7 +99,10 @@ object DatabaseFactory {
             .migrate()
     }
 
-    private fun buildHikariConfig(config: DatabaseConfig): HikariConfig =
+    private fun buildHikariConfig(
+        config: DatabaseConfig,
+        meterRegistry: MeterRegistry?,
+    ): HikariConfig =
         HikariConfig().apply {
             jdbcUrl = config.url
             driverClassName = config.driver
@@ -102,6 +116,9 @@ object DatabaseFactory {
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             leakDetectionThreshold = LEAK_DETECTION_THRESHOLD_MS
             poolName = POOL_NAME
+            // Antes do HikariDataSource ser construído: o tracker precisa existir quando as
+            // primeiras conexões nascem, senão os contadores começam incompletos.
+            meterRegistry?.let { metricsTrackerFactory = MicrometerMetricsTrackerFactory(it) }
             validate()
         }
 }
