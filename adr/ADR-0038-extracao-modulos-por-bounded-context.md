@@ -132,7 +132,7 @@ dependência é garantida pelo escopo `implementation` do Gradle (ADR-0033 — s
 
 ## More Information
 
-- Branch: `docs/adr-0038-context-module-extraction` · PR: (preencher após abrir)
+- Branch: `docs/adr-0038-context-module-extraction` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/293
 - Board #6: **GAP-BQ** — o plano de implementação faseada (os gaps que nascem após o aceite) vive lá, não nesta ADR.
 - Referências: ADR-0021 (context map), ADR-0026 (fitness functions Konsist), ADR-0033 (limites entre
   módulos sem JPMS), ADR-0034 (IDs value-class); `docs/context-map.md`; skills
