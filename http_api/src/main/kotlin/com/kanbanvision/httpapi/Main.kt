@@ -79,8 +79,15 @@ private fun Application.buildDatabaseConfig(): DatabaseConfig {
             user = dbConfig.property("user").getString(),
             password = dbConfig.property("password").getString(),
             poolSize = poolSize,
-            // minimumIdle sem base no .conf: ausente ⇒ = poolSize (pool fixo, comportamento atual).
-            minimumIdle = dbConfig.propertyOrNull("minimumIdle")?.getString()?.toInt() ?: poolSize,
+            // minimumIdle sem base no .conf: ausente OU vazio ⇒ = poolSize (pool fixo, comportamento
+            // atual). O isNotBlank() blinda o boot contra um DATABASE_MIN_IDLE="" (passthrough do
+            // Compose com host unset, ou configmap mal preenchido): "".toInt() derrubaria o startup.
+            minimumIdle =
+                dbConfig
+                    .propertyOrNull("minimumIdle")
+                    ?.getString()
+                    ?.takeIf { it.isNotBlank() }
+                    ?.toInt() ?: poolSize,
             connectionTimeoutMs = dbConfig.property("connectionTimeoutMs").getString().toLong(),
             maxLifetimeMs = dbConfig.property("maxLifetimeMs").getString().toLong(),
             keepaliveTimeMs = dbConfig.property("keepaliveTimeMs").getString().toLong(),
