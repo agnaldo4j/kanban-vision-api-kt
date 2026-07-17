@@ -8,10 +8,10 @@ import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.organization.Organization
-import com.kanbanvision.domain.model.organization.Scenario
-import com.kanbanvision.domain.model.organization.ScenarioRules
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.domain.model.simulation.Scenario
+import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationStatus

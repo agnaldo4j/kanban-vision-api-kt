@@ -1,7 +1,8 @@
-package com.kanbanvision.domain.model.organization
+package com.kanbanvision.domain.model.simulation
 
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.model.organization.PolicySet
 import java.util.UUID
 
 data class ScenarioRules(
