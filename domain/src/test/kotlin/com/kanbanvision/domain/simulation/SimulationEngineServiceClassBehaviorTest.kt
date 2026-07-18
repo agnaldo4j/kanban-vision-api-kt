@@ -1,9 +1,9 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.CardState
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.organization.Organization

@@ -4,7 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.SimulationError
-import com.kanbanvision.domain.model.SimulationId
+import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationQuery
 import io.mockk.coEvery

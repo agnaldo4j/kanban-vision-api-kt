@@ -1,6 +1,5 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Seniority
@@ -10,6 +9,7 @@ import com.kanbanvision.domain.model.organization.Squad
 import com.kanbanvision.domain.model.organization.Tribe
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 
 internal fun Simulation.toSurrogate() =

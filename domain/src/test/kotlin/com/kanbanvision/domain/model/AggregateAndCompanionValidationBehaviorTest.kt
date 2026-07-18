@@ -4,6 +4,7 @@ import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Seniority
+import com.kanbanvision.domain.model.kanban.StepId
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.PolicySet
 import com.kanbanvision.domain.model.organization.Squad

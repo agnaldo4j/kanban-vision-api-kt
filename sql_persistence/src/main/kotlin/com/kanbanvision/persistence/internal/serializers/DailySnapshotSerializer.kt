@@ -1,13 +1,13 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.CardId
-import com.kanbanvision.domain.model.ScenarioId
-import com.kanbanvision.domain.model.SimulationId
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
+import com.kanbanvision.domain.model.simulation.ScenarioId
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString

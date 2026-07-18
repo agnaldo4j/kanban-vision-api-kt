@@ -1,12 +1,12 @@
 package com.kanbanvision.domain.simulation
 
-import com.kanbanvision.domain.model.CardId
-import com.kanbanvision.domain.model.StepId
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.CardState
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.kanban.StepId
 import com.kanbanvision.domain.model.kanban.Worker
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision

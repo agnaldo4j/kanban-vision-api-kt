@@ -1,17 +1,17 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.BoardId
-import com.kanbanvision.domain.model.CardId
-import com.kanbanvision.domain.model.ScenarioId
-import com.kanbanvision.domain.model.StepId
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.BoardId
 import com.kanbanvision.domain.model.kanban.Card
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.CardState
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.kanban.Step
+import com.kanbanvision.domain.model.kanban.StepId
 import com.kanbanvision.domain.model.organization.PolicySet
 import com.kanbanvision.domain.model.simulation.Scenario
+import com.kanbanvision.domain.model.simulation.ScenarioId
 import com.kanbanvision.domain.model.simulation.ScenarioRules
 
 internal fun Scenario.toSurrogate() =

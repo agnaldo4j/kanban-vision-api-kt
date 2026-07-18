@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision

@@ -2,8 +2,6 @@ package com.kanbanvision.domain.model.simulation
 
 import com.kanbanvision.domain.model.Audit
 import com.kanbanvision.domain.model.Domain
-import com.kanbanvision.domain.model.ScenarioId
-import com.kanbanvision.domain.model.SimulationId
 import java.util.UUID
 
 data class DailySnapshot(

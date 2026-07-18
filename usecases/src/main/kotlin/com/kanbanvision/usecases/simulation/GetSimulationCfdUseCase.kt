@@ -5,8 +5,8 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
-import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationCfdQuery
