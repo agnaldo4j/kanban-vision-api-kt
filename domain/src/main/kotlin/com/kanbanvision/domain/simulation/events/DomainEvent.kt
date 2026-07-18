@@ -1,4 +1,4 @@
-package com.kanbanvision.domain.events
+package com.kanbanvision.domain.simulation.events
 
 import java.time.Instant
 

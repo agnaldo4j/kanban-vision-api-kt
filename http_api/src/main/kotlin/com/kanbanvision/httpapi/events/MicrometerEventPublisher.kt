@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.events
 
-import com.kanbanvision.domain.events.DomainEvent
+import com.kanbanvision.domain.simulation.events.DomainEvent
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import io.micrometer.core.instrument.MeterRegistry
 

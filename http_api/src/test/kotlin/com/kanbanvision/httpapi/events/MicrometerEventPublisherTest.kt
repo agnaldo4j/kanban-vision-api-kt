@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.events
 
-import com.kanbanvision.domain.events.DomainEvent
+import com.kanbanvision.domain.simulation.events.DomainEvent
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
