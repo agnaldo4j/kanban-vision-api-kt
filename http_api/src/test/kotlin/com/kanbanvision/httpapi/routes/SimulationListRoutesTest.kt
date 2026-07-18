@@ -4,7 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
 import com.kanbanvision.httpapi.TEST_JWT_ISSUER
@@ -109,7 +109,7 @@ class SimulationListRoutesTest {
         testApplication {
             val mocks = SimulationApiMocks()
             coEvery { mocks.listSimulationsUseCase.execute(any()) } returns
-                DomainError.ValidationError("Page must be at least 1").left()
+                CommonError.ValidationError("Page must be at least 1").left()
 
             application { configureSimulationApi(mocks) }
 

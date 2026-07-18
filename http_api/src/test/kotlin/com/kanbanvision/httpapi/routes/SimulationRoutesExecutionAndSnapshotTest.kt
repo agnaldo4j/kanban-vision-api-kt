@@ -2,7 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.httpapi.fixtureSnapshot
 import com.kanbanvision.httpapi.withJwt
 import io.ktor.client.request.get
@@ -101,7 +101,7 @@ class SimulationRoutesExecutionAndSnapshotTest {
             val mocks = SimulationApiMocks()
             coEvery {
                 mocks.getDailySnapshotUseCase.execute(any())
-            } returns DomainError.SimulationNotFound("sim-1").left()
+            } returns SimulationError.SimulationNotFound("sim-1").left()
 
             application { configureSimulationApi(mocks) }
 
@@ -115,7 +115,7 @@ class SimulationRoutesExecutionAndSnapshotTest {
     fun `given run day conflict when executing current day then api returns conflict`() =
         testApplication {
             val mocks = SimulationApiMocks()
-            coEvery { mocks.runDayUseCase.execute(any()) } returns DomainError.DayAlreadyExecuted(2).left()
+            coEvery { mocks.runDayUseCase.execute(any()) } returns SimulationError.DayAlreadyExecuted(2).left()
 
             application { configureSimulationApi(mocks) }
 

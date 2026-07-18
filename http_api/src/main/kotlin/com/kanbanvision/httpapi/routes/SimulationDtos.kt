@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
@@ -314,7 +315,7 @@ internal fun DecisionRequest.toDomain(): Either<DomainError, Decision> =
         "BLOCK_ITEM" -> toBlockDecision()
         "UNBLOCK_ITEM" -> toUnblockDecision()
         "ADD_ITEM" -> toAddDecision()
-        else -> DomainError.InvalidDecision("Unknown decision type: $type").left()
+        else -> SimulationError.InvalidDecision("Unknown decision type: $type").left()
     }
 
 // Valida ANTES de construir CardId: o guard isNotBlank do value class lançaria
@@ -323,7 +324,7 @@ private fun DecisionRequest.requireCardId(type: String): Either<DomainError, Car
     payload["cardId"]
         ?.takeIf { it.isNotBlank() }
         ?.let { CardId(it).right() }
-        ?: DomainError.InvalidDecision("Missing or blank required field 'cardId' for $type").left()
+        ?: SimulationError.InvalidDecision("Missing or blank required field 'cardId' for $type").left()
 
 private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveItem> =
     requireCardId("MOVE_ITEM").map { Decision.MoveItem(it) }
@@ -337,7 +338,7 @@ private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.Un
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
     payload["title"]
         ?.let { Decision.AddItem(it, decisionServiceClass(payload["serviceClass"])).right() }
-        ?: DomainError.InvalidDecision("Missing required field 'title' for ADD_ITEM").left()
+        ?: SimulationError.InvalidDecision("Missing required field 'title' for ADD_ITEM").left()
 
 private fun decisionServiceClass(value: String?): ServiceClass =
     value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD

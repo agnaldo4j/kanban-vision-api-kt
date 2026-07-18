@@ -2,7 +2,8 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.events.DomainEvent
 import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.SimulationId
@@ -45,7 +46,7 @@ class RunDayUseCaseTest {
 
             assertTrue(result.isLeft())
             val error = result.leftOrNull()
-            assertIs<DomainError.DayAlreadyExecuted>(error)
+            assertIs<SimulationError.DayAlreadyExecuted>(error)
             assertEquals(3, error.day)
 
             coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any()) }
@@ -123,7 +124,7 @@ class RunDayUseCaseTest {
             val result = useCase.execute(RunDayCommand(simulationId = "", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
 
             coVerify(exactly = 0) { simulationRepository.findById(any()) }
         }
@@ -138,7 +139,7 @@ class RunDayUseCaseTest {
                 useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-attacker"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.Forbidden>(result.leftOrNull())
+            assertIs<CommonError.Forbidden>(result.leftOrNull())
 
             // wasNot Called evita any() no value class SimulationDay (pitfall MockK, testing.md).
             coVerify { snapshotRepository wasNot Called }
@@ -149,12 +150,12 @@ class RunDayUseCaseTest {
     @Test
     fun `given repository failure when loading simulation then error is propagated without side effects`() =
         runTest {
-            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns DomainError.PersistenceError("db unavailable").left()
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns CommonError.PersistenceError("db unavailable").left()
 
             val result = useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            assertIs<CommonError.PersistenceError>(result.leftOrNull())
 
             coVerify(exactly = 0) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) }
             coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any()) }

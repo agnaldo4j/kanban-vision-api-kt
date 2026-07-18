@@ -2,7 +2,8 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.usecases.repositories.SimulationRepository
@@ -48,7 +49,7 @@ class GetDailySnapshotUseCaseTest {
             val result = useCase.execute(GetDailySnapshotQuery(simulationId = "sim-1", day = 2, callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.SimulationNotFound>(result.leftOrNull())
+            assertIs<SimulationError.SimulationNotFound>(result.leftOrNull())
             coVerify(exactly = 1) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(2)) }
         }
 
@@ -58,7 +59,7 @@ class GetDailySnapshotUseCaseTest {
             val result = useCase.execute(GetDailySnapshotQuery(simulationId = "", day = 0, callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
             coVerify { simulationRepository wasNot Called }
             coVerify { snapshotRepository wasNot Called }
         }
@@ -72,7 +73,7 @@ class GetDailySnapshotUseCaseTest {
             val result = useCase.execute(GetDailySnapshotQuery(simulationId = "sim-1", day = 2, callerOrganizationId = "org-attacker"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.Forbidden>(result.leftOrNull())
+            assertIs<CommonError.Forbidden>(result.leftOrNull())
             coVerify { snapshotRepository wasNot Called }
         }
 
@@ -83,11 +84,11 @@ class GetDailySnapshotUseCaseTest {
                 fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
             coEvery {
                 snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1))
-            } returns DomainError.PersistenceError("db unavailable").left()
+            } returns CommonError.PersistenceError("db unavailable").left()
 
             val result = useCase.execute(GetDailySnapshotQuery(simulationId = "sim-1", day = 1, callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            assertIs<CommonError.PersistenceError>(result.leftOrNull())
         }
 }

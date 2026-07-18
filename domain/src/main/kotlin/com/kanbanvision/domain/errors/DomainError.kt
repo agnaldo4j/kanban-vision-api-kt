@@ -1,60 +1,10 @@
 package com.kanbanvision.domain.errors
 
-sealed class DomainError {
-    data class ValidationError(
-        val messages: List<String>,
-    ) : DomainError() {
-        init {
-            require(messages.isNotEmpty()) { "ValidationError must have at least one message" }
-        }
-
-        constructor(message: String) : this(listOf(message))
-
-        val message: String get() = messages.joinToString("; ")
-    }
-
-    data class BoardNotFound(
-        val id: String,
-    ) : DomainError()
-
-    data class CardNotFound(
-        val id: String,
-    ) : DomainError()
-
-    data class StepNotFound(
-        val id: String,
-    ) : DomainError()
-
-    data class PersistenceError(
-        val message: String,
-    ) : DomainError()
-
-    data class OrganizationNotFound(
-        val id: String,
-    ) : DomainError()
-
-    data class SimulationNotFound(
-        val id: String,
-    ) : DomainError()
-
-    data class InvalidDecision(
-        val reason: String,
-    ) : DomainError()
-
-    data class DayAlreadyExecuted(
-        val day: Int,
-    ) : DomainError() {
-        init {
-            require(day >= 1) { "DayAlreadyExecuted day must be at least 1" }
-        }
-    }
-
-    data class ServiceUnavailable(
-        val service: String,
-        val reason: String,
-    ) : DomainError()
-
-    data class Forbidden(
-        val reason: String,
-    ) : DomainError()
-}
+/**
+ * Contrato de erro de domínio (ADR-0038). Interface NÃO-sealed de propósito: os grupos por contexto
+ * ([CommonError], [KanbanError], [SimulationError]) são `sealed` e exaustivos, mas o topo é aberto —
+ * o que (a) força o mapper HTTP a ser total com `else` fail-closed (security.md §Fail Closed) e
+ * (b) permite extrair os grupos em módulos por bounded context na Fase 2, já que Kotlin não admite
+ * subtipos `sealed` cross-módulo.
+ */
+interface DomainError

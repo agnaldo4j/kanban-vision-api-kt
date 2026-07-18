@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.httpapi.adapters.callerOrganizationId
 import com.kanbanvision.httpapi.adapters.requiredPathParam
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
@@ -160,7 +160,7 @@ internal suspend fun ApplicationCall.handleListSimulations(listSimulations: List
             DEFAULT_PAGE
         } else {
             pageParam.toIntOrNull()
-                ?: return respondWithDomainError(DomainError.ValidationError("Invalid page parameter"))
+                ?: return respondWithDomainError(CommonError.ValidationError("Invalid page parameter"))
         }
     val sizeParam = request.queryParameters["size"]
     val size =
@@ -168,7 +168,7 @@ internal suspend fun ApplicationCall.handleListSimulations(listSimulations: List
             DEFAULT_PAGE_SIZE
         } else {
             sizeParam.toIntOrNull()
-                ?: return respondWithDomainError(DomainError.ValidationError("Invalid size parameter"))
+                ?: return respondWithDomainError(CommonError.ValidationError("Invalid size parameter"))
         }
     listSimulations.execute(ListSimulationsQuery(organizationId = organizationId, page = page, size = size)).fold(
         ifLeft = { error -> respondWithDomainError(error) },

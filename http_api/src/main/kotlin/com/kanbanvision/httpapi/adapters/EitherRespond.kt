@@ -1,6 +1,9 @@
 package com.kanbanvision.httpapi.adapters
 
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.KanbanError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.httpapi.support.REQUEST_ID_KEY
@@ -22,7 +25,7 @@ suspend fun ApplicationCall.requiredPathParam(
 ): String? {
     val value = parameters[name]
     if (value == null) {
-        respondWithDomainError(DomainError.ValidationError(message))
+        respondWithDomainError(CommonError.ValidationError(message))
         return null
     }
     return value
@@ -60,35 +63,44 @@ private suspend fun ApplicationCall.respondMissingOrganization() {
 suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
     val requestId = attributes.getOrNull(REQUEST_ID_KEY) ?: "unknown"
     return when (error) {
-        is DomainError.ValidationError ->
+        is CommonError.ValidationError ->
             respond(HttpStatusCode.BadRequest, ValidationErrorResponse(errors = error.messages, requestId = requestId))
-        is DomainError.BoardNotFound, is DomainError.CardNotFound,
-        is DomainError.StepNotFound,
-        is DomainError.OrganizationNotFound, is DomainError.SimulationNotFound,
+        is KanbanError.BoardNotFound, is KanbanError.CardNotFound,
+        is KanbanError.StepNotFound,
+        is KanbanError.OrganizationNotFound, is SimulationError.SimulationNotFound,
         ->
             respond(HttpStatusCode.NotFound, DomainErrorResponse(error = notFoundMessage(error), requestId = requestId))
-        is DomainError.PersistenceError ->
+        is CommonError.PersistenceError ->
             respond(HttpStatusCode.InternalServerError, DomainErrorResponse(error = "Internal server error", requestId = requestId))
-        is DomainError.InvalidDecision ->
+        is SimulationError.InvalidDecision ->
             respond(HttpStatusCode.BadRequest, DomainErrorResponse(error = error.reason, requestId = requestId))
-        is DomainError.Forbidden ->
+        is CommonError.Forbidden ->
             respond(HttpStatusCode.Forbidden, DomainErrorResponse(error = "Forbidden", requestId = requestId))
-        is DomainError.DayAlreadyExecuted ->
+        is SimulationError.DayAlreadyExecuted ->
             respond(HttpStatusCode.Conflict, DomainErrorResponse(error = "Day ${error.day} was already executed", requestId = requestId))
-        is DomainError.ServiceUnavailable ->
+        is CommonError.ServiceUnavailable ->
             respond(
                 HttpStatusCode.ServiceUnavailable,
                 DomainErrorResponse(error = "Service temporarily unavailable", requestId = requestId),
+            )
+        // Fail-closed (ADR-0038 / security.md §Fail Closed): DomainError é interface aberta, então um
+        // erro não previsto vira 500 genérico em vez de vazar detalhe ou escapar sem resposta. Cada
+        // grupo (CommonError/KanbanError/SimulationError) é sealed, então uma variante nova dentro de
+        // um grupo é pega no code review; um erro fora dos grupos cai aqui, seguro.
+        else ->
+            respond(
+                HttpStatusCode.InternalServerError,
+                DomainErrorResponse(error = "Internal server error", requestId = requestId),
             )
     }
 }
 
 private fun notFoundMessage(error: DomainError): String =
     when (error) {
-        is DomainError.BoardNotFound -> "Board not found"
-        is DomainError.CardNotFound -> "Card not found"
-        is DomainError.StepNotFound -> "Step not found"
-        is DomainError.OrganizationNotFound -> "Organization not found"
-        is DomainError.SimulationNotFound -> "Simulation not found"
+        is KanbanError.BoardNotFound -> "Board not found"
+        is KanbanError.CardNotFound -> "Card not found"
+        is KanbanError.StepNotFound -> "Step not found"
+        is KanbanError.OrganizationNotFound -> "Organization not found"
+        is SimulationError.SimulationNotFound -> "Simulation not found"
         else -> "Resource not found"
     }

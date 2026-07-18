@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.repositories
 
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.persistence.DatabaseFactory
@@ -51,6 +52,6 @@ class RepositoriesErrorHandlingTest {
         }
 
     private fun assertPersistenceError(error: DomainError?) {
-        assertIs<DomainError.PersistenceError>(error)
+        assertIs<CommonError.PersistenceError>(error)
     }
 }

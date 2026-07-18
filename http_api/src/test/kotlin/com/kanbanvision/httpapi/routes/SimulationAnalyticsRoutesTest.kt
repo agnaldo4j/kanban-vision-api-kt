@@ -2,7 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
 import com.kanbanvision.httpapi.TEST_JWT_ISSUER
@@ -63,7 +63,7 @@ class SimulationAnalyticsRoutesTest {
         testApplication {
             val mocks = SimulationApiMocks()
             coEvery { mocks.getSimulationDaysUseCase.execute(any()) } returns
-                DomainError.PersistenceError("db error").left()
+                CommonError.PersistenceError("db error").left()
 
             application { configureSimulationApi(mocks) }
 
@@ -110,7 +110,7 @@ class SimulationAnalyticsRoutesTest {
         testApplication {
             val mocks = SimulationApiMocks()
             coEvery { mocks.getSimulationCfdUseCase.execute(any()) } returns
-                DomainError.PersistenceError("db error").left()
+                CommonError.PersistenceError("db error").left()
 
             application { configureSimulationApi(mocks) }
 

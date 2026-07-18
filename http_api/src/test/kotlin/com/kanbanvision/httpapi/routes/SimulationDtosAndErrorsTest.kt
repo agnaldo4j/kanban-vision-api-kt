@@ -1,6 +1,9 @@
 package com.kanbanvision.httpapi.routes
 
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.KanbanError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
@@ -55,7 +58,7 @@ class SimulationDtosAndErrorsTest {
     @Test
     fun `given not found domain error when responding from adapter then route returns 404 with domain message`() =
         testApplication {
-            application { configureErrorRoute("/error/not-found", DomainError.SimulationNotFound("sim-1"), "req-1") }
+            application { configureErrorRoute("/error/not-found", SimulationError.SimulationNotFound("sim-1"), "req-1") }
 
             val response = client.get("/error/not-found")
 
@@ -66,7 +69,7 @@ class SimulationDtosAndErrorsTest {
     @Test
     fun `given validation domain error when responding from adapter then route returns 400 with validation message`() =
         testApplication {
-            application { configureErrorRoute("/error/validation", DomainError.ValidationError("invalid"), "req-2") }
+            application { configureErrorRoute("/error/validation", CommonError.ValidationError("invalid"), "req-2") }
 
             val response = client.get("/error/validation")
 
@@ -82,11 +85,11 @@ class SimulationDtosAndErrorsTest {
                 routing {
                     get("/error/conflict") {
                         call.attributes.put(REQUEST_ID_KEY, "req-3")
-                        call.respondWithDomainError(DomainError.DayAlreadyExecuted(1))
+                        call.respondWithDomainError(SimulationError.DayAlreadyExecuted(1))
                     }
                     get("/error/internal") {
                         call.attributes.put(REQUEST_ID_KEY, "req-4")
-                        call.respondWithDomainError(DomainError.PersistenceError("db"))
+                        call.respondWithDomainError(CommonError.PersistenceError("db"))
                     }
                 }
             }
@@ -103,7 +106,7 @@ class SimulationDtosAndErrorsTest {
     @Test
     fun `given board not found error when responding from adapter then fallback not found message is returned`() =
         testApplication {
-            application { configureErrorRoute("/error/fallback", DomainError.BoardNotFound("b-1"), "req-5") }
+            application { configureErrorRoute("/error/fallback", KanbanError.BoardNotFound("b-1"), "req-5") }
 
             val response = client.get("/error/fallback")
 
@@ -119,11 +122,11 @@ class SimulationDtosAndErrorsTest {
                 routing {
                     get("/error/step-not-found") {
                         call.attributes.put(REQUEST_ID_KEY, "req-6")
-                        call.respondWithDomainError(DomainError.StepNotFound("s-1"))
+                        call.respondWithDomainError(KanbanError.StepNotFound("s-1"))
                     }
                     get("/error/card-not-found") {
                         call.attributes.put(REQUEST_ID_KEY, "req-7")
-                        call.respondWithDomainError(DomainError.CardNotFound("c-1"))
+                        call.respondWithDomainError(KanbanError.CardNotFound("c-1"))
                     }
                 }
             }
@@ -145,11 +148,11 @@ class SimulationDtosAndErrorsTest {
                 routing {
                     get("/error/organization-not-found") {
                         call.attributes.put(REQUEST_ID_KEY, "req-8")
-                        call.respondWithDomainError(DomainError.OrganizationNotFound("o-1"))
+                        call.respondWithDomainError(KanbanError.OrganizationNotFound("o-1"))
                     }
                     get("/error/invalid-decision") {
                         call.attributes.put(REQUEST_ID_KEY, "req-9")
-                        call.respondWithDomainError(DomainError.InvalidDecision("decision is invalid"))
+                        call.respondWithDomainError(SimulationError.InvalidDecision("decision is invalid"))
                     }
                 }
             }
@@ -171,7 +174,7 @@ class SimulationDtosAndErrorsTest {
                 routing {
                     get("/error/no-request-id") {
                         // Deliberately do NOT set REQUEST_ID_KEY
-                        call.respondWithDomainError(DomainError.ValidationError("missing id"))
+                        call.respondWithDomainError(CommonError.ValidationError("missing id"))
                     }
                 }
             }

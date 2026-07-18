@@ -8,17 +8,17 @@ import kotlin.test.assertIs
 class DomainErrorVariantsBehaviorTest {
     @Test
     fun `given each domain error variant when created then payload is preserved`() {
-        val board = DomainError.BoardNotFound(id = "b-1")
-        val card = DomainError.CardNotFound(id = "c-1")
-        val step = DomainError.StepNotFound(id = "s-1")
-        val org = DomainError.OrganizationNotFound(id = "o-1")
-        val simulation = DomainError.SimulationNotFound(id = "sim-1")
-        val persistence = DomainError.PersistenceError(message = "db")
-        val invalidDecision = DomainError.InvalidDecision(reason = "invalid")
-        val serviceUnavailable = DomainError.ServiceUnavailable(service = "database", reason = "circuit breaker open")
-        val forbidden = DomainError.Forbidden(reason = "cross-tenant access denied")
+        val board = KanbanError.BoardNotFound(id = "b-1")
+        val card = KanbanError.CardNotFound(id = "c-1")
+        val step = KanbanError.StepNotFound(id = "s-1")
+        val org = KanbanError.OrganizationNotFound(id = "o-1")
+        val simulation = SimulationError.SimulationNotFound(id = "sim-1")
+        val persistence = CommonError.PersistenceError(message = "db")
+        val invalidDecision = SimulationError.InvalidDecision(reason = "invalid")
+        val serviceUnavailable = CommonError.ServiceUnavailable(service = "database", reason = "circuit breaker open")
+        val forbidden = CommonError.Forbidden(reason = "cross-tenant access denied")
 
-        assertIs<DomainError.BoardNotFound>(board)
+        assertIs<KanbanError.BoardNotFound>(board)
         assertEquals("b-1", board.id)
         assertEquals("c-1", card.id)
         assertEquals("s-1", step.id)
@@ -28,14 +28,14 @@ class DomainErrorVariantsBehaviorTest {
         assertEquals("invalid", invalidDecision.reason)
         assertEquals("database", serviceUnavailable.service)
         assertEquals("circuit breaker open", serviceUnavailable.reason)
-        assertIs<DomainError.Forbidden>(forbidden)
+        assertIs<CommonError.Forbidden>(forbidden)
         assertEquals("cross-tenant access denied", forbidden.reason)
     }
 
     @Test
     fun `given validation error variants when building then message list contracts are preserved`() {
-        val fromMessages = DomainError.ValidationError(messages = listOf("a", "b"))
-        val fromSingleMessage = DomainError.ValidationError(message = "single")
+        val fromMessages = CommonError.ValidationError(messages = listOf("a", "b"))
+        val fromSingleMessage = CommonError.ValidationError(message = "single")
 
         assertEquals(listOf("a", "b"), fromMessages.messages)
         assertEquals("a; b", fromMessages.message)
@@ -43,7 +43,7 @@ class DomainErrorVariantsBehaviorTest {
         assertEquals("single", fromSingleMessage.message)
 
         assertFailsWith<IllegalArgumentException> {
-            DomainError.ValidationError(messages = emptyList())
+            CommonError.ValidationError(messages = emptyList())
         }
     }
 }

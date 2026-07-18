@@ -3,7 +3,8 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.errors.KanbanError
 import com.kanbanvision.domain.events.DomainEvent
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.usecases.ports.EventPublisherPort
@@ -73,7 +74,7 @@ class CreateSimulationUseCaseTest {
 
             assertTrue(result.isLeft())
             val error = result.leftOrNull()
-            assertIs<DomainError.ValidationError>(error)
+            assertIs<CommonError.ValidationError>(error)
 
             coVerify(exactly = 0) { organizationRepository.findById(any()) }
             coVerify(exactly = 0) { simulationRepository.save(any()) }
@@ -82,7 +83,7 @@ class CreateSimulationUseCaseTest {
     @Test
     fun `given missing organization when simulation creation is requested then not found error is propagated`() =
         runTest {
-            coEvery { organizationRepository.findById("org-missing") } returns DomainError.OrganizationNotFound("org-missing").left()
+            coEvery { organizationRepository.findById("org-missing") } returns KanbanError.OrganizationNotFound("org-missing").left()
 
             val result =
                 useCase.execute(
@@ -95,7 +96,7 @@ class CreateSimulationUseCaseTest {
                 )
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.OrganizationNotFound>(result.leftOrNull())
+            assertIs<KanbanError.OrganizationNotFound>(result.leftOrNull())
 
             coVerify(exactly = 1) { organizationRepository.findById("org-missing") }
             coVerify(exactly = 0) { simulationRepository.save(any()) }
