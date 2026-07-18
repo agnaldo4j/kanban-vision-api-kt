@@ -1,8 +1,8 @@
 package com.kanbanvision.persistence
 
 import arrow.core.Either
-import com.kanbanvision.domain.errors.CommonError
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.CommonError
+import com.kanbanvision.domain.common.errors.DomainError
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers

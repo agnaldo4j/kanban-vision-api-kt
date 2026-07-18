@@ -1,4 +1,4 @@
-package com.kanbanvision.domain.errors
+package com.kanbanvision.domain.common.errors
 
 /**
  * Contrato de erro de domínio (ADR-0038). Interface NÃO-sealed de propósito: os grupos por contexto

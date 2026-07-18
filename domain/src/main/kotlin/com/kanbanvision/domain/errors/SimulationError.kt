@@ -1,5 +1,7 @@
 package com.kanbanvision.domain.errors
 
+import com.kanbanvision.domain.common.errors.DomainError
+
 /**
  * Erros do Simulation BC (futuro `domain-simulation` — ADR-0038).
  */

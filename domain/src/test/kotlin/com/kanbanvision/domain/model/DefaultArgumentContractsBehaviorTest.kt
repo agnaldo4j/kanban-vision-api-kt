@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board

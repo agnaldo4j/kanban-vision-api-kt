@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.common.errors.CommonError
+import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board

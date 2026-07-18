@@ -1,7 +1,7 @@
 package com.kanbanvision.persistence
 
 import arrow.core.getOrElse
-import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking

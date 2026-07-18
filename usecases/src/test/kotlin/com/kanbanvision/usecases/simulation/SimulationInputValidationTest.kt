@@ -1,6 +1,6 @@
 package com.kanbanvision.usecases.simulation
 
-import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
