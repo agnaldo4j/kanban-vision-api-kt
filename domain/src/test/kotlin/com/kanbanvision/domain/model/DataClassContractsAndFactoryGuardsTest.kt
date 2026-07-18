@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -81,8 +82,8 @@ class DataClassContractsAndFactoryGuardsTest {
 
     @Test
     fun `given valid values when creating day already executed and validation errors then payload remains accessible`() {
-        val dayError = DomainError.DayAlreadyExecuted(day = 1)
-        val validation = DomainError.ValidationError(messages = listOf("a", "b"))
+        val dayError = SimulationError.DayAlreadyExecuted(day = 1)
+        val validation = CommonError.ValidationError(messages = listOf("a", "b"))
 
         assertEquals(1, dayError.day)
         assertEquals("a; b", validation.message)

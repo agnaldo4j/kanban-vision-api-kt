@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.httpapi.adapters.callerOrganizationId
 import com.kanbanvision.httpapi.adapters.requiredPathParam
@@ -314,7 +314,7 @@ private suspend fun ApplicationCall.requiredDayParam(): Int? {
     val dayStr = requiredPathParam("day", "Missing day") ?: return null
     val day = dayStr.toIntOrNull()
     if (day == null) {
-        respondWithDomainError(DomainError.ValidationError("Day must be an integer"))
+        respondWithDomainError(CommonError.ValidationError("Day must be an integer"))
     }
     return day
 }

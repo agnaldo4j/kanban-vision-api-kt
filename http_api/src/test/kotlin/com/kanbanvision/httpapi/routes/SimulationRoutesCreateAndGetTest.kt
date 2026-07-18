@@ -2,7 +2,8 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.httpapi.issueTestJwt
 import com.kanbanvision.httpapi.withJwt
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
@@ -76,7 +77,7 @@ class SimulationRoutesCreateAndGetTest {
             val mocks = SimulationApiMocks()
             coEvery {
                 mocks.createSimulationUseCase.execute(any())
-            } returns DomainError.ValidationError("WIP limit must be at least 1").left()
+            } returns CommonError.ValidationError("WIP limit must be at least 1").left()
 
             application { configureSimulationApi(mocks) }
 
@@ -134,7 +135,7 @@ class SimulationRoutesCreateAndGetTest {
             val mocks = SimulationApiMocks()
             coEvery {
                 mocks.getSimulationUseCase.execute(any())
-            } returns DomainError.SimulationNotFound("sim-missing").left()
+            } returns SimulationError.SimulationNotFound("sim-missing").left()
 
             application { configureSimulationApi(mocks) }
 
@@ -150,7 +151,7 @@ class SimulationRoutesCreateAndGetTest {
             val mocks = SimulationApiMocks()
             coEvery {
                 mocks.getSimulationUseCase.execute(any())
-            } returns DomainError.Forbidden("Simulation does not belong to the caller's organization").left()
+            } returns CommonError.Forbidden("Simulation does not belong to the caller's organization").left()
 
             application { configureSimulationApi(mocks) }
 

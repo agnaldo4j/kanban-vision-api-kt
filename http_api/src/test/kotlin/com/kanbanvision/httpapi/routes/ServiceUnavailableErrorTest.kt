@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.support.REQUEST_ID_KEY
@@ -25,7 +25,7 @@ class ServiceUnavailableErrorTest {
                     get("/error/unavailable") {
                         call.attributes.put(REQUEST_ID_KEY, "req-503")
                         call.respondWithDomainError(
-                            DomainError.ServiceUnavailable(service = "database", reason = "circuit breaker open"),
+                            CommonError.ServiceUnavailable(service = "database", reason = "circuit breaker open"),
                         )
                     }
                 }

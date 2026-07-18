@@ -1,6 +1,6 @@
 package com.kanbanvision.usecases.simulation
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery
@@ -26,7 +26,7 @@ class SimulationInputValidationTest {
 
         assertTrue(result.isLeft())
         val error = result.leftOrNull()
-        assertIs<DomainError.ValidationError>(error)
+        assertIs<CommonError.ValidationError>(error)
         assertTrue(error.messages.size >= 3)
         assertContains(error.messages, "Organization id must not be blank")
         assertContains(error.messages, "WIP limit must be at least 1")
@@ -43,7 +43,7 @@ class SimulationInputValidationTest {
             ).validate()
 
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertIs<CommonError.ValidationError>(result.leftOrNull())
     }
 
     @Test
@@ -51,7 +51,7 @@ class SimulationInputValidationTest {
         val result = GetSimulationQuery(simulationId = "", callerOrganizationId = FIXTURE_ORGANIZATION_ID).validate()
 
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertIs<CommonError.ValidationError>(result.leftOrNull())
     }
 
     @Test
@@ -59,7 +59,7 @@ class SimulationInputValidationTest {
         val result = GetSimulationQuery(simulationId = "sim-1", callerOrganizationId = "").validate()
 
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertIs<CommonError.ValidationError>(result.leftOrNull())
     }
 
     @Test
@@ -68,7 +68,7 @@ class SimulationInputValidationTest {
 
         assertTrue(result.isLeft())
         val error = result.leftOrNull()
-        assertIs<DomainError.ValidationError>(error)
+        assertIs<CommonError.ValidationError>(error)
         assertContains(error.messages, "Simulation id must not be blank")
         assertContains(error.messages, "Day must be at least 1")
         assertContains(error.messages, "Caller organization id must not be blank")
@@ -80,7 +80,7 @@ class SimulationInputValidationTest {
 
         assertTrue(result.isLeft())
         val error = result.leftOrNull()
-        assertIs<DomainError.ValidationError>(error)
+        assertIs<CommonError.ValidationError>(error)
         assertContains(error.messages, "Organization id must not be blank")
         assertContains(error.messages, "Page must be at least 1")
         assertContains(error.messages, "Size must be between 1 and 100")
@@ -91,7 +91,7 @@ class SimulationInputValidationTest {
         val result = ListSimulationsQuery(organizationId = "org-1", size = 101).validate()
 
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertIs<CommonError.ValidationError>(result.leftOrNull())
     }
 
     @Test
@@ -99,7 +99,7 @@ class SimulationInputValidationTest {
         val result = GetSimulationDaysQuery(simulationId = "", callerOrganizationId = FIXTURE_ORGANIZATION_ID).validate()
 
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertIs<CommonError.ValidationError>(result.leftOrNull())
     }
 
     @Test
@@ -107,6 +107,6 @@ class SimulationInputValidationTest {
         val result = GetSimulationCfdQuery(simulationId = "", callerOrganizationId = FIXTURE_ORGANIZATION_ID).validate()
 
         assertTrue(result.isLeft())
-        assertIs<DomainError.ValidationError>(result.leftOrNull())
+        assertIs<CommonError.ValidationError>(result.leftOrNull())
     }
 }

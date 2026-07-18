@@ -1,7 +1,8 @@
 package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.getOrElse
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.KanbanError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationStatus
@@ -106,7 +107,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given unknown simulation id when finding by id then repository returns simulation not found domain error`() =
         runBlocking {
             val result = simulationRepository.findById(SimulationId("04000000-0000-0000-0000-000000009999"))
-            assertIs<DomainError.SimulationNotFound>(result.leftOrNull())
+            assertIs<SimulationError.SimulationNotFound>(result.leftOrNull())
         }
 
     @Test
@@ -186,7 +187,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given unknown organization id when finding organization then repository returns organization not found domain error`() =
         runBlocking {
             val result = organizationRepository.findById("05000000-0000-0000-0000-000000009999")
-            assertIs<DomainError.OrganizationNotFound>(result.leftOrNull())
+            assertIs<KanbanError.OrganizationNotFound>(result.leftOrNull())
         }
 
     @Test

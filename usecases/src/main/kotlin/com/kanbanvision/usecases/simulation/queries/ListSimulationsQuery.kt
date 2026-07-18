@@ -5,7 +5,7 @@ import arrow.core.NonEmptyList
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.usecases.cqs.Query
 
 private const val MIN_PAGE = 1
@@ -19,12 +19,12 @@ data class ListSimulationsQuery(
     val page: Int = DEFAULT_PAGE,
     val size: Int = DEFAULT_SIZE,
 ) : Query {
-    override fun validate(): Either<DomainError.ValidationError, Unit> =
-        either<NonEmptyList<DomainError.ValidationError>, Unit> {
+    override fun validate(): Either<CommonError.ValidationError, Unit> =
+        either<NonEmptyList<CommonError.ValidationError>, Unit> {
             zipOrAccumulate(
-                { ensure(organizationId.isNotBlank()) { DomainError.ValidationError("Organization id must not be blank") } },
-                { ensure(page >= MIN_PAGE) { DomainError.ValidationError("Page must be at least 1") } },
-                { ensure(size in MIN_SIZE..MAX_SIZE) { DomainError.ValidationError("Size must be between 1 and 100") } },
+                { ensure(organizationId.isNotBlank()) { CommonError.ValidationError("Organization id must not be blank") } },
+                { ensure(page >= MIN_PAGE) { CommonError.ValidationError("Page must be at least 1") } },
+                { ensure(size in MIN_SIZE..MAX_SIZE) { CommonError.ValidationError("Size must be between 1 and 100") } },
             ) { _, _, _ -> }
-        }.mapLeft { errors -> DomainError.ValidationError(errors.map { it.message }) }
+        }.mapLeft { errors -> CommonError.ValidationError(errors.map { it.message }) }
 }

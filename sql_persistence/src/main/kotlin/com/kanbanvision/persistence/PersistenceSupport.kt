@@ -1,6 +1,7 @@
 package com.kanbanvision.persistence
 
 import arrow.core.Either
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
 import kotlinx.coroutines.CancellationException
@@ -35,9 +36,9 @@ private fun toDomainError(
     if (e is CancellationException) throw e
     return if (e is CallNotPermittedException) {
         log.warn("Database circuit breaker open — call rejected")
-        DomainError.ServiceUnavailable(service = "database", reason = "circuit breaker open")
+        CommonError.ServiceUnavailable(service = "database", reason = "circuit breaker open")
     } else {
         log.error("Persistence error", e)
-        DomainError.PersistenceError(e.message ?: "Database error")
+        CommonError.PersistenceError(e.message ?: "Database error")
     }
 }

@@ -3,7 +3,9 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.events.DomainEvent
 import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
@@ -31,7 +33,7 @@ class RunDayUseCase(
             command.validate().bind()
             val simulation = simulationRepository.findById(SimulationId(command.simulationId)).bind()
             ensure(simulation.organization.id == command.callerOrganizationId) {
-                DomainError.Forbidden("Simulation does not belong to the caller's organization")
+                CommonError.Forbidden("Simulation does not belong to the caller's organization")
             }
             guardDuplicate(simulation.id, simulation.currentDay.value).bind()
 
@@ -55,7 +57,7 @@ class RunDayUseCase(
                 snapshotRepository
                     .findByDay(simulationId, SimulationDay(currentDay))
                     .bind()
-            ensure(existing == null) { DomainError.DayAlreadyExecuted(currentDay) }
+            ensure(existing == null) { SimulationError.DayAlreadyExecuted(currentDay) }
         }
 
     private suspend fun persistResult(

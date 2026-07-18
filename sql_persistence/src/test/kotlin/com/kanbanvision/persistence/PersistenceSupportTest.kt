@@ -1,7 +1,7 @@
 package com.kanbanvision.persistence
 
 import arrow.core.getOrElse
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
@@ -35,7 +35,7 @@ class PersistenceSupportTest {
 
             val error = dbQuery(log) { error("boom") }.leftOrNull()
 
-            assertIs<DomainError.PersistenceError>(error)
+            assertIs<CommonError.PersistenceError>(error)
             assertEquals("boom", error.message)
         }
 
@@ -47,7 +47,7 @@ class PersistenceSupportTest {
 
             val error = dbQuery(log) { throw NullMessageException() }.leftOrNull()
 
-            assertIs<DomainError.PersistenceError>(error)
+            assertIs<CommonError.PersistenceError>(error)
             assertEquals("Database error", error.message)
         }
 
@@ -73,7 +73,7 @@ class PersistenceSupportTest {
 
                 val error = dbQuery(log) { executed = true }.leftOrNull()
 
-                assertIs<DomainError.ServiceUnavailable>(error)
+                assertIs<CommonError.ServiceUnavailable>(error)
                 assertEquals("database", error.service)
                 assertEquals("circuit breaker open", error.reason)
                 assertEquals(false, executed)

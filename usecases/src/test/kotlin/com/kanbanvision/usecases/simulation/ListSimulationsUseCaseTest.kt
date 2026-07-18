@@ -2,7 +2,7 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.simulation.queries.ListSimulationsQuery
@@ -44,7 +44,7 @@ class ListSimulationsUseCaseTest {
             val result = useCase.execute(ListSimulationsQuery(organizationId = ""))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { simulationRepository.findAll(any(), any(), any()) }
         }
 
@@ -54,7 +54,7 @@ class ListSimulationsUseCaseTest {
             val result = useCase.execute(ListSimulationsQuery(organizationId = "org-1", page = 0))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
         }
 
     @Test
@@ -63,20 +63,20 @@ class ListSimulationsUseCaseTest {
             val result = useCase.execute(ListSimulationsQuery(organizationId = "org-1", size = 101))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
         }
 
     @Test
     fun `given persistence error when listing simulations then error is propagated`() =
         runTest {
             coEvery { simulationRepository.findAll("org-1", 1, 20) } returns
-                DomainError.PersistenceError("db error").left()
+                CommonError.PersistenceError("db error").left()
             coEvery { simulationRepository.countByOrganization("org-1") } returns 0L.right()
 
             val result = useCase.execute(ListSimulationsQuery(organizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            assertIs<CommonError.PersistenceError>(result.leftOrNull())
         }
 
     @Test

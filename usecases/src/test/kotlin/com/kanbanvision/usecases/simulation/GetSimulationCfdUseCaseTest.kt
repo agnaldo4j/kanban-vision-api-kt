@@ -2,7 +2,7 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.FlowMetrics
@@ -106,7 +106,7 @@ class GetSimulationCfdUseCaseTest {
             val result = useCase.execute(GetSimulationCfdQuery(simulationId = "", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { snapshotRepository.findAllBySimulation(any()) }
         }
 
@@ -119,7 +119,7 @@ class GetSimulationCfdUseCaseTest {
             val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = "org-attacker"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.Forbidden>(result.leftOrNull())
+            assertIs<CommonError.Forbidden>(result.leftOrNull())
             coVerify(exactly = 0) { snapshotRepository.findAllBySimulation(any()) }
         }
 
@@ -129,11 +129,11 @@ class GetSimulationCfdUseCaseTest {
             coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns
                 fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
             coEvery { snapshotRepository.findAllBySimulation(SimulationId("sim-1")) } returns
-                DomainError.PersistenceError("db error").left()
+                CommonError.PersistenceError("db error").left()
 
             val result = useCase.execute(GetSimulationCfdQuery(simulationId = "sim-1", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.PersistenceError>(result.leftOrNull())
+            assertIs<CommonError.PersistenceError>(result.leftOrNull())
         }
 }

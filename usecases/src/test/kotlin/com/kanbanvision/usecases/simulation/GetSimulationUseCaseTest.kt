@@ -2,7 +2,8 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationQuery
@@ -36,7 +37,7 @@ class GetSimulationUseCaseTest {
             val result = useCase.execute(GetSimulationQuery(simulationId = "", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.ValidationError>(result.leftOrNull())
+            assertIs<CommonError.ValidationError>(result.leftOrNull())
             coVerify(exactly = 0) { simulationRepository.findById(any()) }
         }
 
@@ -44,12 +45,12 @@ class GetSimulationUseCaseTest {
     fun `given unknown simulation id when loading simulation then not found error is propagated`() =
         runTest {
             coEvery { simulationRepository.findById(SimulationId("sim-missing")) } returns
-                DomainError.SimulationNotFound("sim-missing").left()
+                SimulationError.SimulationNotFound("sim-missing").left()
 
             val result = useCase.execute(GetSimulationQuery(simulationId = "sim-missing", callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.SimulationNotFound>(result.leftOrNull())
+            assertIs<SimulationError.SimulationNotFound>(result.leftOrNull())
             coVerify(exactly = 1) { simulationRepository.findById(SimulationId("sim-missing")) }
         }
 
@@ -62,7 +63,7 @@ class GetSimulationUseCaseTest {
             val result = useCase.execute(GetSimulationQuery(simulationId = "sim-1", callerOrganizationId = "org-attacker"))
 
             assertTrue(result.isLeft())
-            assertIs<DomainError.Forbidden>(result.leftOrNull())
+            assertIs<CommonError.Forbidden>(result.leftOrNull())
             coVerify(exactly = 1) { simulationRepository.findById(SimulationId("sim-1")) }
         }
 }

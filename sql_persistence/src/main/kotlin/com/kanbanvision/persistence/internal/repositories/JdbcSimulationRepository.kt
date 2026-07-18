@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.internal.repositories
 import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.simulation.Scenario
@@ -61,7 +62,7 @@ class JdbcSimulationRepository : SimulationRepository {
         }.fold(
             ifLeft = { it.left() },
             ifRight = { simulation ->
-                simulation?.let { Either.Right(it) } ?: DomainError.SimulationNotFound(id.value).left()
+                simulation?.let { Either.Right(it) } ?: SimulationError.SimulationNotFound(id.value).left()
             },
         )
 

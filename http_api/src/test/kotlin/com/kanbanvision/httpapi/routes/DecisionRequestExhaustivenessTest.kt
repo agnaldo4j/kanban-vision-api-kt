@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
  * OCP safety net for the [Decision] sealed hierarchy on the HTTP boundary.
  *
  * `DecisionRequest.toDomain` decodes the request's `type` `String` and therefore keeps a
- * fail-closed `else` (an unknown type returns `DomainError.InvalidDecision`). That decode
+ * fail-closed `else` (an unknown type returns `SimulationError.InvalidDecision`). That decode
  * cannot be made compiler-exhaustive over the sealed type. This test provides the missing
  * guarantee: the `when (original)` below is exhaustive over [Decision], so adding a new
  * variant stops this file compiling until the variant is added here — which then forces it
@@ -60,7 +60,7 @@ class DecisionRequestExhaustivenessTest {
         listOf("MOVE_ITEM", "BLOCK_ITEM", "UNBLOCK_ITEM").forEach { type ->
             val decoded = DecisionRequest(type, mapOf("cardId" to "   ")).toDomain()
             assertTrue(decoded.isLeft(), "$type with blank cardId must be Left")
-            assertIs<DomainError.InvalidDecision>(decoded.leftOrNull())
+            assertIs<SimulationError.InvalidDecision>(decoded.leftOrNull())
         }
     }
 }
