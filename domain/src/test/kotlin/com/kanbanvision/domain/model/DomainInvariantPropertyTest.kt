@@ -2,8 +2,12 @@ package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.BoardId
+import com.kanbanvision.domain.model.kanban.StepId
 import com.kanbanvision.domain.model.simulation.FlowMetrics
+import com.kanbanvision.domain.model.simulation.ScenarioId
 import com.kanbanvision.domain.model.simulation.ScenarioRules
+import com.kanbanvision.domain.model.simulation.SimulationId
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.int

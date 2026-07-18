@@ -7,9 +7,9 @@ import arrow.core.raise.ensureNotNull
 import com.kanbanvision.domain.errors.CommonError
 import com.kanbanvision.domain.errors.DomainError
 import com.kanbanvision.domain.errors.SimulationError
-import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetDailySnapshotQuery

@@ -1,10 +1,9 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.CardId
-import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.Worker
 import com.kanbanvision.domain.model.organization.Organization
@@ -13,9 +12,11 @@ import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.Scenario
+import com.kanbanvision.domain.model.simulation.ScenarioId
 import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationId
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.enum
@@ -86,9 +87,7 @@ class SerializationRoundTripPropertyTest {
         arbitrary {
             DailySnapshot(
                 simulation = SimulationId("sim-${Arb.int(1..999).bind()}"),
-                scenario =
-                    com.kanbanvision.domain.model
-                        .ScenarioId("sc-${Arb.int(1..999).bind()}"),
+                scenario = ScenarioId("sc-${Arb.int(1..999).bind()}"),
                 day = SimulationDay(Arb.int(1..365).bind()),
                 metrics =
                     FlowMetrics(

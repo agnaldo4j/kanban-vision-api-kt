@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.model.simulation
 
-import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 
 sealed interface Decision {

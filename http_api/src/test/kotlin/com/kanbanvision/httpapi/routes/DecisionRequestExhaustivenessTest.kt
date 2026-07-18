@@ -1,7 +1,7 @@
 package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.errors.SimulationError
-import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
 import kotlin.test.Test

@@ -1,6 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.CardId
+import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.Simulation

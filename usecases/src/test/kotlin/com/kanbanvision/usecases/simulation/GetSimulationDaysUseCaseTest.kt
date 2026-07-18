@@ -3,8 +3,8 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.errors.CommonError
-import com.kanbanvision.domain.model.SimulationId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
+import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.queries.GetSimulationDaysQuery
