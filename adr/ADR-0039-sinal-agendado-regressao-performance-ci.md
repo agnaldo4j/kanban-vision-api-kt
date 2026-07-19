@@ -93,7 +93,7 @@ larga, o step do `perf-regression.sh` sai não-zero e a run agendada fica vermel
 
 ## More Information
 
-- Branch: `feat/gap-cn-perf-regression-signal` · PR: (link após abrir)
+- Branch: `feat/gap-cn-perf-regression-signal` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/305
 - Item no board #6: **GAP-CN [M]** — o plano de implementação vive lá e no PR, não aqui.
 - Evolui (não supersede) o **ADR-0027** (baseline k6 manual). Relacionado: ADR-0036 (runtime nativo
   medido, usa `perf-regression.sh`). Skill `/load-testing`; `scripts/perf-regression.sh`;
