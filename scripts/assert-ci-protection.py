@@ -21,9 +21,9 @@
 # must fail the job. This script is itself a gate: it is `run:`, not a reporting action, so
 # it wires in without continue-on-error, consistent with its own rule.
 #
-# Scope: ci.yml ONLY. load-test.yml also uploads an artifact, but it is a manual workflow
-# with no branch-protected check — the reason for the rule (don't fail a mandatory check)
-# does not apply there.
+# Scope: ci.yml ONLY. load-test.yml (manual) and perf-regression.yml (scheduled, ADR-0039)
+# also run steps that may fail, but they are not branch-protected checks — the reason for the
+# rule (don't fail a mandatory PR check) does not apply to on-demand/scheduled workflows.
 #
 # Usage:   python3 scripts/assert-ci-protection.py
 # Exit 0:  invariant holds (prints "<n> protected / <m> gate-side" for visibility).

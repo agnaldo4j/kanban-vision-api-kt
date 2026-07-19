@@ -21,7 +21,7 @@
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 + JUnit — módulo test-only `architecture/` (ADR-0026); 19 fitness tests, incl. o grafo de `project` deps `simulation → kanban → common` (`ProjectDependencyGraphTest`, ADR-0038); roda no `testAll` |
-| Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, nunca gate de PR |
+| Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, **nunca gate de PR**. Sinal agendado de regressão (`perf-regression.yml`, cron semanal) compara CI-vs-referência-de-CI com tolerância larga — tripwire não-bloqueante (ADR-0039) |
 | SBOM | CycloneDX Gradle plugin 3.3.0 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
 | SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |

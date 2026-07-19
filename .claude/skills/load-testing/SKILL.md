@@ -28,8 +28,10 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 | Script de jornada | `load/simulation-journey.js` |
 | Baseline vigente | `docs/quality/performance-baseline-2026-07.md` (1.644 req/s, 0% falhas, p95 22ms) |
 | Workflow manual | `.github/workflows/load-test.yml` (`workflow_dispatch`, perfis smoke/baseline/stress/soak/spike) |
-| Sinal de regressão | `scripts/perf-regression.sh` (diff de dois `--summary-export`) |
-| Decisão | `adr/ADR-0027-load-tests-k6-baseline-p95.md` |
+| Sinal de regressão | `scripts/perf-regression.sh` (diff de dois `--summary-export`; tolerâncias override por env) |
+| Sinal agendado (CI) | `.github/workflows/perf-regression.yml` (`schedule` semanal + dispatch, tripwire não-bloqueante) |
+| Referência de CI | `load/ci-reference-summary.json` (medida no CI; tripwire grosseiro, NÃO o baseline oficial) |
+| Decisões | `adr/ADR-0027-load-tests-k6-baseline-p95.md` (baseline manual) · `adr/ADR-0039-...ci.md` (sinal agendado) |
 | Wiki | [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) |
 
 ## 2. Como rodar
@@ -113,6 +115,22 @@ você fornece os dois JSONs.
 Usar antes de release/tag como smoke de performance. **Nunca** transformar em gate de PR (ADR-0027).
 A regressão (`scripts/perf-regression.sh`) roda **localmente** — runners de CI têm latência ruidosa;
 a comparação válida é sempre no mesmo ambiente.
+
+## 6.1 Sinal agendado no CI — tripwire (ADR-0039)
+
+`Actions → Performance Regression (scheduled)`: roda **semanalmente** (cron) e sob demanda. Sobe o mesmo
+compose, roda o perfil `baseline`, e compara o summary contra a **referência de CI**
+`load/ci-reference-summary.json` via `perf-regression.sh` com **tolerâncias largas**
+(`THROUGHPUT_DROP_PCT=25 P95_RISE_PCT=50 ERROR_RISE_ABS=0.02`, para o ruído de runner). Reporta no **job
+summary**; uma regressão além da tolerância larga deixa a run **vermelha** (tripwire visível).
+
+- **Não-bloqueante:** o workflow só dispara em `schedule`/`workflow_dispatch` — nunca em `pull_request`,
+  logo não pode bloquear merge (invariante do ADR-0027 preservado por construção).
+- **CI-vs-CI:** compara CI contra referência-de-CI (mesmo ambiente). O baseline **oficial** continua o
+  número **local** em `docs/quality/` — a referência de CI é um tripwire grosseiro, não a fonte da verdade.
+- **Bootstrap / atualização da referência:** dispare o workflow, baixe o artifact `k6-summary`, revise, e
+  commite-o como `load/ci-reference-summary.json`. Enquanto ela não existir, o workflow apenas reporta os
+  números (não falha). Re-commite quando a performance mudar de forma legítima (drift controlado por diff).
 
 ## 7. Pitfalls conhecidos
 
