@@ -39,9 +39,26 @@ successfully at `20:17Z`, so this is a regression/environmental change since the
 
 ## Outcome
 
-_(Filled in from the controlled GAP-CW test run — see PR that carries this doc.)_
+The controlled GAP-CW run (`29707608434`, `workflow_run` over this PR's CI) reproduced the defect
+deterministically and revealed the root cause.
 
-- Controlled run id: _pending_
-- `is_error` root cause: _pending_
-- Fix applied (if code): _pending_ — otherwise flagged as operational (account-owner action on `ANTHROPIC_API_KEY`).
-- Visibility hardening (make a masked harness failure visible without becoming a gate): _decided per diagnosis_.
+- **Controlled run**: `29707608434` — resolved `#315` correctly, app token obtained, then
+  `is_error: true` (`duration_ms: 324`, `num_turns: 1`, `total_cost_usd: 0`). Persistent, not transient.
+- **Root cause (code, not operational)**: the action's init logged
+  `"model": "claude-opus-4-8[1m]"`. The `[1m]` (1M-context) suffix is a Claude Code **session**
+  annotation, **not a valid API model id**, and the three `ANTHROPIC_DEFAULT_*_MODEL` envs were empty —
+  so every first API call was rejected instantly (`$0`, ~300 ms). Quota/credit was **not** the cause
+  (the OIDC→app-token exchange succeeded and the key was present).
+- **Fix**: pin a valid model in `claude_args` — `--model claude-sonnet-5` (strong for the rubric,
+  cost-effective for a per-PR advisory job).
+- **Visibility hardening**: new non-blocking step `Surface harness failure` emits a `::warning::` when
+  `steps.harness.outcome == 'failure'`, so a masked harness failure never again goes silently green
+  (the "✅ fabricado" class of GAP-CC/#288). The job stays advisory / non-blocking.
+
+**Post-fix confirmation is bootstrap-gated** (same caveat as GAP-CT/GAP-CS): `workflow_run` always runs
+the workflow definition from the **default branch**, so the `--model` pin and the visibility step take
+effect only **after this PR merges**. The harness run on this PR still uses `main`'s pre-fix definition
+and will error again (now surfaced as a `::warning::` once the visibility step is on `main`). Criterion 3
+("harness posts a `## PR Review Harness` bot comment") is therefore confirmed on the **first PR after this
+one merges** — watch that PR's Actions + comments; if it still errors, the key lacks `claude-sonnet-5`
+access and a different `--model` is needed.

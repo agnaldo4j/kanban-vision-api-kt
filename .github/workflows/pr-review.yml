@@ -101,6 +101,7 @@ jobs:
           # head antes de postar — nunca o head atual do PR, que pode ter avançado (corrida stale, P2).
 
       - name: Run PR harness
+        id: harness
         if: env.HAS_KEY == 'true' && steps.pr.outputs.number != ''
         continue-on-error: true # advisory: um erro transitório da API não derruba o PR
         uses: anthropics/claude-code-action@v1
@@ -136,9 +137,23 @@ jobs:
           # lacuna quebraria o harness em silêncio. A superfície de prompt-injection (diff untrusted →
           # LLM com token de escrita) é mitigada por: (1) rubric confiável (vem da default branch),
           # (2) o prompt trata o diff como DADO e não instrução, (3) `--max-turns` limita o loop.
+          # --model: fixa um ID de modelo VÁLIDO. Sem isto a action herdava `claude-opus-4-8[1m]` — o
+          # sufixo `[1m]` (contexto de 1M) é anotação de sessão do Claude Code, NÃO um ID de API válido:
+          # a 1ª chamada falhava na hora (`is_error`, $0, ~300 ms) e o harness não postava nada (GAP-CW,
+          # verificado nas runs 29707063995/29707608434). Sonnet 5 = forte para a rubrica + custo baixo p/
+          # um job advisory por PR.
           claude_args: |
+            --model claude-sonnet-5
             --max-turns 25
             --allowedTools Bash,Read,Grep,Glob
+
+      - name: Surface harness failure (visible, non-blocking)
+        if: env.HAS_KEY == 'true' && steps.pr.outputs.number != '' && steps.harness.outcome == 'failure'
+        run: |
+          # O harness acima leva `continue-on-error` (advisory), mas uma falha NUNCA pode sumir
+          # verde-mascarada — é o anti-padrão "✅ fabricado" do #288 (GAP-CC). Emite um warning visível
+          # na aba Actions apontando para os logs; segue non-blocking (echo sai 0, não reprova o job).
+          echo "::warning title=PR harness advisory falhou::A claude-code-action não completou (ex.: is_error / modelo inválido). O parecer NÃO foi postado. Veja os logs do passo 'Run PR harness'. Non-blocking."
 
       - name: Skipped (no API key)
         if: env.HAS_KEY != 'true'
