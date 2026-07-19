@@ -11,6 +11,8 @@ allowed-tools: Read, Grep, Glob, Bash
 
 # OpenTelemetry, Prometheus & Grafana
 
+> 📖 **Wiki:** ao evoluir observabilidade, atualize a página `Observability` — mecânica na skill `/wiki-maintenance` (diagramas via `/c4-model`).
+
 > *"Observability is not about collecting data — it's about being able to ask new questions
 > of your system without deploying new code."*
 > — Charity Majors

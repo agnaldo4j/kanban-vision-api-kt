@@ -11,6 +11,8 @@ allowed-tools: Read, Grep, Glob, Edit
 
 # OpenAPI Quality — Ktor + ktor-openapi
 
+> 📖 **Wiki:** ao adicionar/alterar rotas ou a spec, atualize as páginas `API-Reference` e `Architecture-HTTP-API` — mecânica na skill `/wiki-maintenance`.
+
 Você é um especialista em documentação OpenAPI 3.x aplicada ao stack deste
 projeto: **Kotlin + Ktor 3 + ktor-openapi 5 + Swagger UI**.
 

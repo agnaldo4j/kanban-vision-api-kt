@@ -12,6 +12,8 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 
 # Load Testing — k6 (ADR-0027)
 
+> 📖 **Wiki:** ao mudar perfis/baselines/thresholds, atualize a página `Performance-Load-Testing` — mecânica na skill `/wiki-maintenance`.
+
 > **Política central**: thresholds de performance são **sinal executável, nunca gate de
 > PR** — runner compartilhado dá latência ruidosa e gate flaky corrói a confiança no CI.
 > O baseline oficial é medido **localmente** contra o docker compose e versionado em

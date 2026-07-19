@@ -60,7 +60,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/kotlin-quality-pipeline` | Fix Detekt/KtLint violations, adjust JaCoCo |
 | `/openapi-quality` | Audit and improve OpenAPI/Swagger specs |
 | `/db-migrations` | Flyway migrations and PostgreSQL schema |
-| `/c4-model` | Update C4 diagrams in README after architecture changes |
+| `/c4-model` | Update C4 diagrams in the wiki after architecture changes |
 | `/definition-of-done` | Verify DoD before marking any task complete |
 | `/microservices-modular-monolith` | Evaluate module boundaries, plan extraction |
 | `/opentelemetry` | JSON logs, Prometheus metrics, OTel SDK traces (ADR-0031), Grafana stack |
@@ -71,6 +71,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/evolutionary-change` | Plan incremental changes, J-Curve, 1-gap-per-session protocol |
 | `/xp-kanban` | XP + Kanban practices — **includes Board Protocol** (pull/push GitHub Project) |
 | `/circular-dependency-control` | Detect, classify and eliminate circular dependencies (class, package, Gradle module) |
+| `/wiki-maintenance` | Update the wiki (separate repo) — edit mechanics + page↔skill map; diagrams via `/c4-model` |
 
 ## Docs
 

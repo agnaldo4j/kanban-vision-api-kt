@@ -11,6 +11,8 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 
 # GraalVM — produção (ADR-0030)
 
+> 📖 **Wiki:** ao mexer no runtime nativo/JIT, atualize as páginas `GraalVM` e `JVM` — mecânica na skill `/wiki-maintenance` (pipeline de build via `/c4-model`).
+
 > **Política central**: produção roda GraalVM; desenvolvimento e testes continuam na
 > **JVM Temurin 25** (`.sdkmanrc` e toolchain 25 intocados — ADR-0024; `testAll` sempre em
 > Temurin). Este skill é o guia; a **execução acontece só via card no board #6** — nada aqui
