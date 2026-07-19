@@ -1,0 +1,313 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "checks": {
+                    "auth token issued": {
+                        "path": "::setup::auth token issued",
+                        "id": "704ceed5287aaef7b4a1ac27428ac343",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "auth token issued"
+                    }
+                },
+                "name": "setup",
+                "path": "::setup",
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {}
+            },
+            "create simulation": {
+                "path": "::create simulation",
+                "id": "3941b903fd799f0fdfd867c76491f4b1",
+                "groups": {},
+                "checks": {
+                        "simulation created": {
+                            "id": "84964ba929c6c8cf18aab014861df624",
+                            "passes": 22918,
+                            "fails": 0,
+                            "name": "simulation created",
+                            "path": "::create simulation::simulation created"
+                        }
+                    },
+                "name": "create simulation"
+            },
+            "run days": {
+                "path": "::run days",
+                "id": "930447dd6a2434b165c0938dad604d77",
+                "groups": {},
+                "checks": {
+                        "day executed": {
+                            "passes": 114590,
+                            "fails": 0,
+                            "name": "day executed",
+                            "path": "::run days::day executed",
+                            "id": "782da021482d6adc9a9d1ccce52023a1"
+                        }
+                    },
+                "name": "run days"
+            },
+            "query results": {
+                "id": "c9e61a0ec941dbe1eb70b1a86a98cb68",
+                "groups": {},
+                "checks": {
+                        "days listed": {
+                            "path": "::query results::days listed",
+                            "id": "418b303686226819d8524e5a9bf12598",
+                            "passes": 22918,
+                            "fails": 0,
+                            "name": "days listed"
+                        },
+                        "days tem exatamente 5 dias apos 5 runs": {
+                            "path": "::query results::days tem exatamente 5 dias apos 5 runs",
+                            "id": "065081822c75754f0545d89fb20d00ec",
+                            "passes": 22918,
+                            "fails": 0,
+                            "name": "days tem exatamente 5 dias apos 5 runs"
+                        },
+                        "days pertence a simulacao criada": {
+                            "name": "days pertence a simulacao criada",
+                            "path": "::query results::days pertence a simulacao criada",
+                            "id": "e3edafbd9aea8b3280998caa24346f26",
+                            "passes": 22918,
+                            "fails": 0
+                        },
+                        "snapshot returned": {
+                            "passes": 22918,
+                            "fails": 0,
+                            "name": "snapshot returned",
+                            "path": "::query results::snapshot returned",
+                            "id": "9f2687eeca45c49ba76e0d7cd91a6286"
+                        },
+                        "snapshot responde o dia pedido (day == 1)": {
+                            "name": "snapshot responde o dia pedido (day == 1)",
+                            "path": "::query results::snapshot responde o dia pedido (day == 1)",
+                            "id": "aebc89f2a8961b05e5e8e272d6bd33ba",
+                            "passes": 22918,
+                            "fails": 0
+                        },
+                        "snapshot pertence a simulacao criada": {
+                            "name": "snapshot pertence a simulacao criada",
+                            "path": "::query results::snapshot pertence a simulacao criada",
+                            "id": "52897fa28bd517637e22b7f689b188d8",
+                            "passes": 22918,
+                            "fails": 0
+                        },
+                        "cfd returned": {
+                            "fails": 0,
+                            "name": "cfd returned",
+                            "path": "::query results::cfd returned",
+                            "id": "bc6fac924f9097a2e2050cb80ade6ef1",
+                            "passes": 22918
+                        },
+                        "cfd tem serie consistente com os 5 dias": {
+                            "fails": 0,
+                            "name": "cfd tem serie consistente com os 5 dias",
+                            "path": "::query results::cfd tem serie consistente com os 5 dias",
+                            "id": "6a931ce58c14649fc96376c1ba9bd2b6",
+                            "passes": 22918
+                        },
+                        "simulations listed": {
+                            "path": "::query results::simulations listed",
+                            "id": "34baececb37bd8e8d429608b1a674dc3",
+                            "passes": 22918,
+                            "fails": 0,
+                            "name": "simulations listed"
+                        },
+                        "list da organizacao nao esta vazio": {
+                            "passes": 22918,
+                            "fails": 0,
+                            "name": "list da organizacao nao esta vazio",
+                            "path": "::query results::list da organizacao nao esta vazio",
+                            "id": "5c5c003637a066b4f4fb71fd6be5e871"
+                        }
+                    },
+                "name": "query results",
+                "path": "::query results"
+            }
+        },
+        "checks": {}
+    },
+    "metrics": {
+        "http_req_duration{expected_response:true}": {
+            "avg": 15.095609900013432,
+            "min": 1.123793,
+            "med": 12.836013,
+            "max": 305.172605,
+            "p(90)": 28.051958,
+            "p(95)": 32.939049
+        },
+        "http_req_duration{endpoint:create}": {
+            "avg": 10.623642685967406,
+            "min": 1.458583,
+            "med": 10.4474715,
+            "max": 190.670797,
+            "p(90)": 17.4113404,
+            "p(95)": 20.2551284,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_req_blocked": {
+            "p(95)": 0.005871,
+            "avg": 0.00588832747915407,
+            "min": 0.001333,
+            "med": 0.003196,
+            "max": 28.904706,
+            "p(90)": 0.004338
+        },
+        "iteration_duration": {
+            "avg": 153.19687850807202,
+            "min": 20.555682,
+            "med": 177.4935685,
+            "max": 518.665428,
+            "p(90)": 221.2262363,
+            "p(95)": 239.5177985499999
+        },
+        "http_req_duration{endpoint:run_day}": {
+            "avg": 18.160430729068878,
+            "min": 2.24687,
+            "med": 19.0161555,
+            "max": 216.234856,
+            "p(90)": 29.0888608,
+            "p(95)": 33.042648949999986,
+            "thresholds": {
+                "p(95)<500": false
+            }
+        },
+        "http_req_sending": {
+            "p(95)": 0.045886,
+            "avg": 0.02373406474358767,
+            "min": 0.004678,
+            "med": 0.011963,
+            "max": 29.026859,
+            "p(90)": 0.026279
+        },
+        "iterations": {
+            "count": 22918,
+            "rate": 95.47941482732438
+        },
+        "http_req_connecting": {
+            "min": 0,
+            "med": 0,
+            "max": 7.208876,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.000053385372260353177
+        },
+        "group_duration": {
+            "p(90)": 118.20216660000001,
+            "p(95)": 129.05121799999998,
+            "avg": 51.021615426593506,
+            "min": 1.541334,
+            "med": 40.762219,
+            "max": 354.30325
+        },
+        "http_req_waiting": {
+            "p(90)": 27.957032,
+            "p(95)": 32.812759,
+            "avg": 15.003759195290934,
+            "min": 1.07409,
+            "med": 12.74192,
+            "max": 302.168325
+        },
+        "data_received": {
+            "count": 196880788,
+            "rate": 820231.3652579853
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 20
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 229181,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_duration{endpoint:cfd}": {
+            "p(95)": 17.226026899999994,
+            "avg": 8.780541291997544,
+            "min": 1.182547,
+            "med": 8.521333,
+            "max": 181.557294,
+            "p(90)": 14.4229066,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "http_req_duration{endpoint:list}": {
+            "avg": 23.481566644122548,
+            "min": 1.853632,
+            "med": 23.413425,
+            "max": 305.172605,
+            "p(90)": 39.930148199999984,
+            "p(95)": 45.49833655,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "checks": {
+            "passes": 366689,
+            "fails": 0,
+            "value": 1
+        },
+        "data_sent": {
+            "count": 120676393,
+            "rate": 502753.7912170444
+        },
+        "http_reqs": {
+            "count": 229181,
+            "rate": 954.7983144053159
+        },
+        "http_req_receiving": {
+            "avg": 0.0681166399788819,
+            "min": 0.014567,
+            "med": 0.039795,
+            "max": 59.314927,
+            "p(90)": 0.073338,
+            "p(95)": 0.097372
+        },
+        "http_req_duration": {
+            "avg": 15.095609900013432,
+            "min": 1.123793,
+            "med": 12.836013,
+            "max": 305.172605,
+            "p(90)": 28.051958,
+            "p(95)": 32.939049
+        },
+        "http_req_duration{endpoint:snapshot}": {
+            "med": 8.196283,
+            "max": 166.33026,
+            "p(90)": 14.0699969,
+            "p(95)": 16.830975449999997,
+            "avg": 8.458531266428135,
+            "min": 1.123793,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        }
+    },
+    "setup_data": {
+        "organizationId": "11111111-1111-4111-8111-111111111111",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYW5iYW4tdmlzaW9uLWNsaWVudHMiLCJpc3MiOiJrYW5iYW4tdmlzaW9uLWFwaSIsInN1YiI6Ims2LWxvYWQtdGVzdCIsIm9yZ2FuaXphdGlvbklkIjoiMTExMTExMTEtMTExMS00MTExLTgxMTEtMTExMTExMTExMTExIiwiZXhwIjoxNzg0NTc1Nzc5fQ.S0ncFjvsZ6xVC6zndvCgPqSg6eIBsVtrVyEZsfnXKC8"
+    }
+}
