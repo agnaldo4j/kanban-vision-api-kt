@@ -32,7 +32,7 @@
 - **Kanban flow simulation** — model boards, steps, cards and workers (abilities, seniority, WIP limits); run day-by-day simulations with per-day decisions, flow metrics and cumulative flow (CFD)
 - **Organization-scoped** — boards and scenarios are isolated per organization
 - **Versioned REST API** — business routes under `/api/v1`, documented with OpenAPI 3 + Swagger UI (ADR-0022)
-- **Clean Architecture** — pure domain layer, ports-and-adapters, strict dependency rule enforced by Konsist
+- **Clean Architecture** — pure domain layer split by bounded context into three Gradle modules (`domain-simulation` → `domain-kanban` → `domain-common`, dependency direction enforced by a fitness function), ports-and-adapters, strict dependency rule enforced by Konsist
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
 - **Production-ready** — JWT auth, rate limiting, Prometheus metrics, Grafana dashboards, OTel SDK traces; runs in production as a GraalVM Native Image (≈9× faster startup, −79% memory — ADR-0032) and ships with Kubernetes manifests
 - **Quality gates** — Detekt + KtLint + JaCoCo ≥ 98% + PITest mutation testing + Konsist architecture fitness functions enforced on every PR
@@ -86,7 +86,7 @@ JWT_DEV_MODE=true ENABLE_SWAGGER=true GRAFANA_ADMIN_PASSWORD=admin docker compos
 | [GraalVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM) | Native Image in production, reachability metadata, AOT trade-offs |
 | [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel SDK traces, structured logs |
 | [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Native Docker image, Kubernetes manifests, CI/CD, env vars |
-| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 22-skill scorecard (9.12/10, transparent mean), gap roadmap |
+| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 22-skill scorecard (9.28/10, transparent mean), gap roadmap |
 | [Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) | CycloneDX SBOM, osv-scanner CVE gate, exception policy, red-gate runbook |
 | [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions) | Konsist rules enforcing the hexagonal architecture in CI |
 | [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) | k6 journey, profiles, and baselines (JVM JIT → GraalVM → Native, ~2,300 req/s in production) |
