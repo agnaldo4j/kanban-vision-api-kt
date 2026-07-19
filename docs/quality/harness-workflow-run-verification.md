@@ -4,8 +4,12 @@
 **Subject**: `.github/workflows/pr-review.yml` · **Type**: advisory, non-blocking (never a merge gate)
 
 > The `workflow_run` trigger can only be exercised **after** it lands on the default branch — `workflow_run`
-> always runs the workflow definition from `main`. This doc turns that bootstrap caveat into evidence: the
-> four acceptance criteria, confirmed against real Actions runs, plus one **defect found** during verification.
+> always runs the workflow definition from `main`. This doc records the evidence gathered so far and is
+> **not yet complete**: criteria **1, 2, 4 and the stale-head guard are confirmed** against real Actions
+> runs, and a **defect was found and fixed** (the harness errored and posted nothing). Criterion **3 (the
+> harness actually posting) is NOT yet observed** — it is bootstrap-gated by the fix (the `--model` pin
+> only takes effect once this PR merges) and will be confirmed on the first PR after merge (see Outcome).
+> Until that box is checked, do **not** read this file as certifying that the harness posts in CI.
 
 ## Acceptance criteria
 
