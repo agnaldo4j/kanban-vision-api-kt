@@ -29,8 +29,11 @@ class ContextBoundaryTest {
 
     @Test
     fun `kanban management BC nao depende do simulation BC`() {
+        // scopeFromProduction() (todos os módulos) e não por nome de módulo: pós-extração faseada
+        // (ADR-0038), o Kanban Management BC vive em :domain-kanban e a simulação em :domain. O filtro
+        // por pacote abaixo mantém a regra correta e module-agnostic ao longo de CK/CL.
         Konsist
-            .scopeFromProduction("domain")
+            .scopeFromProduction()
             .files
             .filter { file -> kanbanManagementPackages.any { file.packagee?.name?.startsWith(it) == true } }
             .assertFalse { file ->

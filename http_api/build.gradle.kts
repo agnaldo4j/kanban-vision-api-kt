@@ -192,6 +192,7 @@ dependencies {
     }
 
     implementation(project(":domain-common"))
+    implementation(project(":domain-kanban"))
     implementation(project(":usecases"))
     implementation(project(":sql_persistence"))
 

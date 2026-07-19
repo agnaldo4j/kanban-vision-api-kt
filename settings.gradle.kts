@@ -6,6 +6,7 @@ rootProject.name = "kanban-vision-api"
 
 include(
     ":domain-common",
+    ":domain-kanban",
     ":domain",
     ":usecases",
     ":sql_persistence",

@@ -2,9 +2,9 @@ package com.kanbanvision.httpapi.routes
 
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.errors.KanbanError
 import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.CardId
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.SimulationDay

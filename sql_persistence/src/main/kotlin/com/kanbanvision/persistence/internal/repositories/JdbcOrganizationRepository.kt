@@ -3,7 +3,7 @@ package com.kanbanvision.persistence.internal.repositories
 import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.errors.KanbanError
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.persistence.dbQuery
 import com.kanbanvision.persistence.internal.tables.OrganizationsTable

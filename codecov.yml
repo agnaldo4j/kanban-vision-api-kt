@@ -20,8 +20,10 @@ coverage:
         threshold: 2%
 
 fixes:
-  # Mais específico primeiro: :domain-common (GAP-CJ) mora em domain-common/src, não domain/src.
+  # Mais específico primeiro: módulos extraídos (GAP-CJ/CK) moram em seus próprios src, não domain/src.
   - "com/kanbanvision/domain/common/::domain-common/src/main/kotlin/com/kanbanvision/domain/common/"
+  - "com/kanbanvision/domain/model/kanban/::domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/kanban/"
+  - "com/kanbanvision/domain/model/organization/::domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/organization/"
   - "com/kanbanvision/domain/::domain/src/main/kotlin/com/kanbanvision/domain/"
   - "com/kanbanvision/usecases/::usecases/src/main/kotlin/com/kanbanvision/usecases/"
   - "com/kanbanvision/httpapi/::http_api/src/main/kotlin/com/kanbanvision/httpapi/"

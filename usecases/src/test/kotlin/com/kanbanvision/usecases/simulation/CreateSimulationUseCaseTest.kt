@@ -4,7 +4,7 @@ import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.CommonError
-import com.kanbanvision.domain.errors.KanbanError
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.simulation.events.DomainEvent
 import com.kanbanvision.usecases.ports.EventPublisherPort

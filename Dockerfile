@@ -21,6 +21,7 @@ COPY build.gradle.kts build.gradle.kts
 COPY buildSrc buildSrc
 
 COPY domain-common/build.gradle.kts domain-common/build.gradle.kts
+COPY domain-kanban/build.gradle.kts domain-kanban/build.gradle.kts
 COPY domain/build.gradle.kts domain/build.gradle.kts
 COPY usecases/build.gradle.kts usecases/build.gradle.kts
 COPY sql_persistence/build.gradle.kts sql_persistence/build.gradle.kts
@@ -38,6 +39,7 @@ RUN sed -i '/^org\.gradle\.java\.home/d' gradle.properties && \
 # GRAALVM_HOME: o build.gradle.kts usa toolchainDetection=false e resolve o compilador
 # pelo env. --no-configuration-cache: tasks nativas fora do cache de configuração.
 COPY domain-common/src domain-common/src
+COPY domain-kanban/src domain-kanban/src
 COPY domain/src domain/src
 COPY usecases/src usecases/src
 COPY sql_persistence/src sql_persistence/src

@@ -4,10 +4,8 @@ plugins {
 }
 
 dependencies {
+    // Sem arrow: os agregados kanban/organization não usam Either/Raise.
     implementation(project(":domain-common"))
-    implementation(project(":domain-kanban"))
-
-    implementation("io.arrow-kt:arrow-core:2.2.3")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.2")
@@ -22,24 +20,29 @@ pitest {
     // The Gradle plugin (1.19.0) is pinned but pitestVersion overrides the core JAR used.
     pitestVersion.set("1.25.3")
     junit5PluginVersion.set("1.2.3")
-    targetClasses.set(setOf("com.kanbanvision.domain.*"))
-    targetTests.set(setOf("com.kanbanvision.domain.*"))
+    targetClasses.set(
+        setOf(
+            "com.kanbanvision.domain.model.kanban.*",
+            "com.kanbanvision.domain.model.organization.*",
+        ),
+    )
+    // Os testes comportamentais movidos vivem no pacote-pai flat `com.kanbanvision.domain.model`
+    // (não em `model.kanban`); o glob precisa incluí-lo, senão o pitest roda só os testes novos.
+    targetTests.set(setOf("com.kanbanvision.domain.model.*"))
     mutators.set(setOf("STRONGER"))
-    // GAP-CK (Fase 2.2, ADR-0038): o Kanban Management BC saiu para :domain-kanban. O pool caiu para
-    // simulation-only (337 mutantes) e o score para 77% — os testes do SimulationEngine que matavam
-    // mutantes de kanban não contam mais (PITest não cruza módulo). Gate rebaselinado 78 → 73 (4pp).
-    // Histórico anterior (módulo inteiro, GAP-AT): 715 mutantes, 82%, gate 78.
-    mutationThreshold.set(73)
+    // GAP-CK (Fase 2.2): Kanban Management BC isolado. 352 mutantes, 82% (288) — as suítes
+    // comportamentais/property movidas (94 testes) cobrem card/step/worker/organization. Gate 78 (4pp),
+    // mesmo patamar do :domain no escopo do módulo inteiro.
+    mutationThreshold.set(78)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)
     threads.set(minOf(4, Runtime.getRuntime().availableProcessors()))
 }
 
-// PitestTask extends JavaExec and uses the Gradle daemon JVM (Java 21 via org.gradle.java.home)
-// by default. With jvmToolchain(25), compiled bytecode targets Java 25 (major version 69).
-// Java 21 cannot read Java 25 class files — both the orchestrator and forked mutation
-// processes must run on Java 25.
+// PitestTask extends JavaExec and uses the Gradle daemon JVM by default. With
+// jvmToolchain(25), compiled bytecode targets Java 25 (major version 69) — both the
+// orchestrator and forked mutation processes must run on Java 25.
 tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
     javaLauncher.set(
         javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) },

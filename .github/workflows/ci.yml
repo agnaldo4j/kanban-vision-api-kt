@@ -124,7 +124,9 @@ jobs:
             echo '## PITest Mutation Report'
             # module|display threshold|target — thresholds mirror the gradle gates
             for spec in \
-              'domain|78|com.kanbanvision.domain.*' \
+              'domain-common|90|com.kanbanvision.domain.common.*' \
+              'domain-kanban|78|com.kanbanvision.domain.model.{kanban,organization}.*' \
+              'domain|73|com.kanbanvision.domain.*' \
               'usecases|55|com.kanbanvision.usecases.*' \
               'sql_persistence|65|com.kanbanvision.persistence.*' \
               'http_api|45|com.kanbanvision.httpapi.{plugins,adapters,events}.*'; do
@@ -320,7 +322,7 @@ jobs:
           # Linha única: o bloco YAML ">-" junta linhas com espaço e o action
           # separa por vírgula — paths com espaço inicial não são encontrados
           # (só o domain subia; usecases/sql_persistence/http_api eram ignorados).
-          files: domain/build/reports/jacoco/test/jacocoTestReport.xml,usecases/build/reports/jacoco/test/jacocoTestReport.xml,sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          files: domain-common/build/reports/jacoco/test/jacocoTestReport.xml,domain-kanban/build/reports/jacoco/test/jacocoTestReport.xml,domain/build/reports/jacoco/test/jacocoTestReport.xml,usecases/build/reports/jacoco/test/jacocoTestReport.xml,sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,http_api/build/reports/jacoco/test/jacocoTestReport.xml
           disable_search: true
           codecov_yml_path: ./codecov.yml
           flags: unittests
@@ -333,6 +335,8 @@ jobs:
         continue-on-error: true
         with:
           paths: |
+            ${{ github.workspace }}/domain-common/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/domain-kanban/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/domain/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/usecases/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
