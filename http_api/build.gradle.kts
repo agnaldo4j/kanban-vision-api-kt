@@ -191,6 +191,7 @@ dependencies {
         }
     }
 
+    implementation(project(":domain-common"))
     implementation(project(":usecases"))
     implementation(project(":sql_persistence"))
 
