@@ -65,8 +65,13 @@ jobs:
             nas skills, nos guards de qualidade, na Dependency Rule/fronteiras de contexto, no gap-type,
             no DoD e na coerência de negócio. NÃO re-rode os gates de CI (Detekt/JaCoCo/PITest/Konsist/
             osv) — cruze os resultados já postados. Ranqueie os achados P1/P2/P3 e dê um veredito
-            (BLOCK/CHANGES-REQUESTED/APPROVE). Poste o parecer como um comentário do PR começando com
-            o título exato "## PR Review Harness".
+            (BLOCK/CHANGES-REQUESTED/APPROVE). Inclua também, quando houver algo fundamentado, as seções
+            "Melhorias sugeridas" e "Direcionamento estratégico" (§3.5 do rubric): ancore em artefatos
+            in-repo — ADR-0038, docs/context-map.md (seams ACL/OHS), docs/quality/scorecard-*.md; sobre o
+            board, você aqui NÃO tem token de projeto, então sugira próximos passos como candidatos ao
+            Todo sem afirmar o estado do board. Ambas as seções são OPCIONAIS e NÃO mudam o veredito —
+            omita-as se nada substantivo. Poste o parecer como um comentário do PR começando com o título
+            exato "## PR Review Harness".
           claude_args: |
             --max-turns 25
             --allowedTools Bash,Read,Grep,Glob
