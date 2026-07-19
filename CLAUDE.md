@@ -72,9 +72,12 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/xp-kanban` | XP + Kanban practices — **includes Board Protocol** (pull/push GitHub Project) |
 | `/circular-dependency-control` | Detect, classify and eliminate circular dependencies (class, package, Gradle module) |
 | `/wiki-maintenance` | Update the wiki (separate repo) — edit mechanics + page↔skill map; diagrams via `/c4-model` |
+| `/pr-review` | Review a PR/branch diff with the project harness — consistency with skills, guards, dependency rule, gap-type, DoD, business coherence |
+
+> **PR review harness**: `/pr-review` dispatches the read-only agent `.claude/agents/pr-harness.md` (the rubric). It also runs in CI on each PR via `.github/workflows/pr-review.yml` (advisory, never a merge gate; needs the `ANTHROPIC_API_KEY` secret). It complements — never re-runs — the CI gates and the Codex review.
 
 ## Docs
 
 - **Explicit policies**: `docs/politicas-explicitas.md` — step criteria, pull policy, quality gates, ADR rules, branch naming.
-- **Quality analysis**: [Wiki — Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) — 22-skill scorecard (9.12/10, transparent mean; see `docs/quality/scorecard-2026-07.md`).
+- **Quality analysis**: [Wiki — Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) — 22-skill scorecard (9.28/10, transparent mean; see `docs/quality/scorecard-2026-08.md`).
 - **Backlog de gaps**: [GitHub Project #6](https://github.com/users/agnaldo4j/projects/6) — única fonte de progresso (ADR-0023). Medição de qualidade: `docs/quality/`.

@@ -1,0 +1,78 @@
+name: PR Review Harness (advisory)
+
+# Revisão criteriosa de PR pelo harness do projeto (skill /pr-review → agente pr-harness), GAP-CS.
+# Advisory: NUNCA entra em branch-protection; complementa o Codex e os gates de CI — NÃO os re-roda.
+# Requer o secret ANTHROPIC_API_KEY; sem ele o job é pulado com aviso (jamais derruba o PR).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write # a claude-code-action@v1 troca um OIDC token pelo token de app do GitHub
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  harness:
+    name: pr-harness review
+    runs-on: ubuntu-latest
+    # Só PRs do próprio repo (nunca forks): num pull_request, o rubric do revisor viria do head do PR —
+    # excluir forks impede que um contribuidor externo reescreva as instruções do revisor (revisão do
+    # Codex). PRs de fork ficam com o Codex + gates de CI; o harness roda só onde o head é confiável.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    # HAS_KEY: secrets só podem ser lidos no contexto env (não em `if:` de job) — este seam permite
+    # pular graciosamente quando ANTHROPIC_API_KEY não está configurado.
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: Checkout
+        if: env.HAS_KEY == 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Pin reviewer rubric to the default branch (trusted revision)
+        if: env.HAS_KEY == 'true'
+        run: |
+          # A rubrica do revisor (agente/skill/regras) vem de origin/<default> — CONFIÁVEL — nunca do
+          # head do PR (untrusted): senão um PR poderia reescrever o próprio revisor (revisão Codex).
+          # O diff do PR é lido como INPUT (via `gh pr diff`), não como instrução. Em PRs que ainda não
+          # têm esses arquivos na default (ex.: o PR que introduz o harness), mantém-se o head — mas a
+          # action já pula por "workflow must match default branch", então não há exposição.
+          git fetch origin "${{ github.event.repository.default_branch }}" --depth=1
+          for p in .claude/agents/pr-harness.md .claude/skills/pr-review .claude/rules CLAUDE.md docs/politicas-explicitas.md; do
+            if git checkout FETCH_HEAD -- "$p" 2>/dev/null; then
+              echo "pinned $p from default branch"
+            else
+              echo "keep head (not on default branch yet): $p"
+            fi
+          done
+
+      - name: Run PR harness
+        if: env.HAS_KEY == 'true'
+        continue-on-error: true # advisory: um erro transitório da API não derruba o PR
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Rode a skill /pr-review sobre este pull request (#${{ github.event.pull_request.number }}),
+            atuando como o agente pr-harness (.claude/agents/pr-harness.md): parecer criterioso ancorado
+            nas skills, nos guards de qualidade, na Dependency Rule/fronteiras de contexto, no gap-type,
+            no DoD e na coerência de negócio. NÃO re-rode os gates de CI (Detekt/JaCoCo/PITest/Konsist/
+            osv) — cruze os resultados já postados. Ranqueie os achados P1/P2/P3 e dê um veredito
+            (BLOCK/CHANGES-REQUESTED/APPROVE). Poste o parecer como um comentário do PR começando com
+            o título exato "## PR Review Harness".
+          claude_args: |
+            --max-turns 25
+            --allowedTools Bash,Read,Grep,Glob
+
+      - name: Skipped (no API key)
+        if: env.HAS_KEY != 'true'
+        run: |
+          echo "ANTHROPIC_API_KEY não configurado no repo — harness advisory pulado." >&2
+          echo "Adicione o secret (Settings → Secrets → Actions) para ativar. Não bloqueia o PR."
