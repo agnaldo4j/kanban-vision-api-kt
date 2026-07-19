@@ -53,6 +53,7 @@ tasks.withType<info.solidsoft.gradle.pitest.PitestTask>().configureEach {
 }
 
 dependencies {
+    implementation(project(":domain-common"))
     api(project(":domain"))
 
     api("io.arrow-kt:arrow-core:2.2.3")

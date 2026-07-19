@@ -1,6 +1,5 @@
 package com.kanbanvision.domain.model
 
-import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
 import com.kanbanvision.domain.model.organization.Organization
@@ -11,56 +10,10 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationStatus
-import java.time.Instant
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotEquals
 
-class AuditAndIdentityBehaviorTest {
-    @Test
-    fun `given fresh audit when created with now then created and updated timestamps are equal`() {
-        val instant = Instant.parse("2026-03-20T00:00:00Z")
-
-        val audit = Audit.now(instant)
-
-        assertEquals(instant, audit.createdAt)
-        assertEquals(instant, audit.updatedAt)
-    }
-
-    @Test
-    fun `given existing audit when touched then updated timestamp changes while created is preserved`() {
-        val createdAt = Instant.parse("2026-03-20T00:00:00Z")
-        val touchedAt = Instant.parse("2026-03-21T00:00:00Z")
-        val audit = Audit(createdAt = createdAt, updatedAt = createdAt)
-
-        val touched = audit.touch(touchedAt)
-
-        assertEquals(createdAt, touched.createdAt)
-        assertEquals(touchedAt, touched.updatedAt)
-        assertNotEquals(audit.updatedAt, touched.updatedAt)
-    }
-
-    @Test
-    fun `given invalid audit ordering when updated precedes created then validation fails`() {
-        val createdAt = Instant.parse("2026-03-21T00:00:00Z")
-        val updatedAt = Instant.parse("2026-03-20T00:00:00Z")
-
-        assertFailsWith<IllegalArgumentException> {
-            Audit(createdAt = createdAt, updatedAt = updatedAt)
-        }
-    }
-
-    @Test
-    fun `given invalid audit deletion ordering when deleted precedes created then validation fails`() {
-        val createdAt = Instant.parse("2026-03-21T00:00:00Z")
-        val deletedAt = Instant.parse("2026-03-20T00:00:00Z")
-
-        assertFailsWith<IllegalArgumentException> {
-            Audit(createdAt = createdAt, updatedAt = createdAt, deletedAt = deletedAt)
-        }
-    }
-
+class EntityIdentityBehaviorTest {
     @Test
     fun `given blank ids in domain entities when constructing then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { Organization(id = "", name = "Org") }
@@ -99,16 +52,6 @@ class AuditAndIdentityBehaviorTest {
                 scenario = scenario(),
             )
         }
-    }
-
-    @Test
-    fun `given valid non-null deletedAt when constructing audit then creation succeeds`() {
-        val createdAt = Instant.parse("2026-03-20T00:00:00Z")
-        val deletedAt = Instant.parse("2026-03-21T00:00:00Z")
-
-        val audit = Audit(createdAt = createdAt, updatedAt = createdAt, deletedAt = deletedAt)
-
-        assertEquals(deletedAt, audit.deletedAt)
     }
 
     private fun organization(): Organization = Organization.create(name = "Org")

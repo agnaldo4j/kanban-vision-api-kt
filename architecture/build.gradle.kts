@@ -23,7 +23,7 @@ dependencies {
 // a violação. src/main (scopeFromProduction) E src/test (scopeFromTest — regra de
 // nomenclatura de testes) são declarados como inputs.
 tasks.test {
-    listOf("domain", "usecases", "sql_persistence", "http_api").forEach { module ->
+    listOf("domain-common", "domain", "usecases", "sql_persistence", "http_api").forEach { module ->
         inputs
             .dir(rootDir.resolve("$module/src/main/kotlin"))
             .withPropertyName("analyzedSources_$module")

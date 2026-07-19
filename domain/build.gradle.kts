@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":domain-common"))
+
     implementation("io.arrow-kt:arrow-core:2.2.3")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")

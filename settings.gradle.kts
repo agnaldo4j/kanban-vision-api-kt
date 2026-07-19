@@ -5,6 +5,7 @@ plugins {
 rootProject.name = "kanban-vision-api"
 
 include(
+    ":domain-common",
     ":domain",
     ":usecases",
     ":sql_persistence",
