@@ -23,15 +23,21 @@ jobs:
     permissions:
       contents: read
 
+    # env no nível do job: TODO comando `docker compose` re-interpola o arquivo inteiro (o serviço
+    # grafana exige GRAFANA_ADMIN_PASSWORD), então boot/seed/teardown precisam da var — não só o boot.
+    # TRUSTED_PROXY_COUNT=1: o k6 manda um X-Forwarded-For único por iteração para simular clientes
+    # distintos; pós-GAP-BL a API só confia nesse XFF com 1 proxy declarado (senão 429 em massa).
+    env:
+      JWT_DEV_MODE: "true"
+      TRUSTED_PROXY_COUNT: "1"
+      GRAFANA_ADMIN_PASSWORD: ci-only
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Boot stack (docker compose)
-        # TRUSTED_PROXY_COUNT=1: o k6 manda um X-Forwarded-For único por iteração para simular
-        # clientes distintos; pós-GAP-BL a API só confia nesse XFF com 1 proxy declarado —
-        # sem isso todo o tráfego colapsa numa única cota de rate limit (429 em massa).
-        run: JWT_DEV_MODE=true TRUSTED_PROXY_COUNT=1 GRAFANA_ADMIN_PASSWORD=ci-only docker compose up --build -d
+        run: docker compose up --build -d
 
       - name: Wait for API health
         run: |
