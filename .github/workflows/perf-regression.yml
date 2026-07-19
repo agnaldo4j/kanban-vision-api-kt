@@ -76,7 +76,7 @@ jobs:
               echo ""
               echo "throughput (req/s): $(jq -r '.metrics.http_reqs.rate // "n/a"' k6-summary.json)"
               echo "error rate:         $(jq -r '.metrics.http_req_failed.value // "n/a"' k6-summary.json)"
-              for ep in create run_day days snapshot cfd list; do
+              for ep in create run_day snapshot cfd list; do
                 echo "p95 $ep (ms):       $(jq -r ".metrics[\"http_req_duration{endpoint:$ep}\"][\"p(95)\"] // \"n/a\"" k6-summary.json)"
               done
             } | tee report.txt
