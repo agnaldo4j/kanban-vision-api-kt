@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  id-token: write # a claude-code-action@v1 troca um OIDC token pelo token de app do GitHub
 
 concurrency:
   group: pr-review-${{ github.event.pull_request.number }}
@@ -20,6 +21,10 @@ jobs:
   harness:
     name: pr-harness review
     runs-on: ubuntu-latest
+    # Só PRs do próprio repo (nunca forks): num pull_request, o rubric do revisor viria do head do PR —
+    # excluir forks impede que um contribuidor externo reescreva as instruções do revisor (revisão do
+    # Codex). PRs de fork ficam com o Codex + gates de CI; o harness roda só onde o head é confiável.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     # HAS_KEY: secrets só podem ser lidos no contexto env (não em `if:` de job) — este seam permite
     # pular graciosamente quando ANTHROPIC_API_KEY não está configurado.
     env:
