@@ -102,6 +102,49 @@ Leia os arquivos alterados por inteiro quando o diff sozinho não der contexto. 
   **Simulation mutável (currentDay/status/decisions/history)** — é o que mantém `SimulationEngine.runDay`
   puro e determinístico. Uma mudança que quebre isso é P1.
 
+## 3.5. Para frente: melhorias & direcionamento (não-bloqueante)
+
+Além de apontar o que está errado, agregue valor olhando **para frente** — mas com o mesmo rigor
+anti-nit: fundamentado em artefato real, ou omitido. Estas duas dimensões **nunca** mudam o veredito
+(que é decidido só por P1/P2/P3) e são **opcionais** — "sem melhorias adicionais" / "sem direcionamento
+adicional" é resposta válida e honesta. Não invente para parecer útil.
+
+### Melhorias (oportunidades, não defeitos)
+
+Refactors e reforços rumo aos **próprios padrões do projeto**, cada um ancorado numa skill:
+- Domínio/FP: `Either`/`Raise` em vez de exceção, value-class IDs (ADR-0034), `sealed` exaustivo,
+  imutabilidade — `/fp-oo-kotlin`, `/ddd`.
+- Estrutura: coesão/responsabilidade única, extração de função/serviço de domínio — `/solid-principles`,
+  `/refactoring`, `/clean-architecture`.
+- Teste/observabilidade: caminho de erro sem teste, propriedade não coberta, MDC/trace ausente —
+  `/testing-and-observability`.
+
+**Distinto de P3:** P3 é um pequeno **defeito NESTE diff**; uma Melhoria é uma **oportunidade** que não
+bloqueia. Se é defeito, é achado (P1/P2/P3); se é "daria pra ficar melhor assim", é Melhoria.
+
+### Direcionamento estratégico
+
+Dê zoom out: como este PR **avança ou tensiona** o roadmap? Respeite a separação de 3 camadas
+(ADR-0023): **direção = ADRs + context-map**, **sequência = board #6 Todo**, **estado = `docs/quality/`**.
+Ancore em artefato real (cite o arquivo):
+- **Direção:** `adr/ADR-0038` (split de domínio; a **Opção 4 / independência grau-microserviço via seam
+  ACL é deferida por design** — não a antecipe sem demanda); `docs/context-map.md` (Planned ACL
+  Analytics→Simulation, Future OHS Simulation→Policy, Forecasting) — **não acoplar prematuramente**;
+  arcos GraalVM `ADR-0030→0032` e performance `ADR-0027→0039`.
+- **Backlog de melhoria:** os residuais do scorecard (`docs/quality/scorecard-2026-08.md`) — Performance
+  8.7, Circular-dep 8.3, Security 9.0 (HS256 sem rotação; sem DAST), Microservices 9.4 (`[E]`/Opção 4),
+  GraalVM 9.1. Trate o scorecard como **estado datado**: "records state, does not schedule work" —
+  cross-checar contra merges recentes (uma dimensão pode já ter sido tratada por um gap posterior ao
+  snapshot).
+- **Guardrail de acoplamento:** um PR que fia Analytics no modelo de execução, ou aprofunda política no
+  `SimulationEngine`, acopla a um seam que o mapa mantém frouxo — sinalize.
+
+**Próximos passos = candidatos**, nunca ordem autoritativa: o board #6 Todo é o dono da sequência
+(top = próximo, ADR-0023). Enquadre como "candidato ao Todo", não como "faça X em seguida".
+**Board capability-aware:** se você tiver acesso ao board (`gh project`/GraphQL — caso da invocação local
+`/pr-review`), cite o topo do Todo como contexto; se não (job de CI, sem token de projeto), ancore só nos
+artefatos in-repo — nunca afirme o estado do board sem tê-lo lido.
+
 ## 4. Processo (gap-type + J-Curve)
 
 - **Gap-type** (`.claude/rules/workflow.md`): o `[N]/[M]/[E]` declarado bate com o tamanho real? `[N]` não
@@ -132,7 +175,16 @@ Comece com 1–2 linhas de escopo ("o PR faz X; toca os módulos/skills Y"). Dep
 
 ### Coerência de negócio
 - <alinhamento com o objetivo, linguagem ubíqua, fronteiras, invariantes>
+
+### Melhorias sugeridas (não-bloqueantes)   ← omita a seção inteira se nada substantivo
+- <oportunidade> — ancora: <skill>; por que agrega
+
+### Direcionamento estratégico              ← omita se o PR é mecânico/isolado
+- <posição no roadmap: ADR / context-map / scorecard que o PR avança ou tensiona>
+- <próximos passos naturais — candidatos ao Todo #6, nunca ordem autoritativa>
 ```
 
-Sem achados reais: `APPROVE` com uma frase de por quê, e os pontos que você verificou. Nunca encha o
-parecer de nits para justificar existência.
+Sem achados reais: `APPROVE` com uma frase de por quê, e os pontos que você verificou. As duas últimas
+seções (Melhorias, Direcionamento) são **opcionais e não mudam o veredito** — omita-as quando não houver
+nada fundamentado a dizer. Nunca encha o parecer de nits, melhorias vagas ou estratégia inventada para
+justificar existência.

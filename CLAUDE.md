@@ -72,9 +72,9 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/xp-kanban` | XP + Kanban practices — **includes Board Protocol** (pull/push GitHub Project) |
 | `/circular-dependency-control` | Detect, classify and eliminate circular dependencies (class, package, Gradle module) |
 | `/wiki-maintenance` | Update the wiki (separate repo) — edit mechanics + page↔skill map; diagrams via `/c4-model` |
-| `/pr-review` | Review a PR/branch diff with the project harness — consistency with skills, guards, dependency rule, gap-type, DoD, business coherence |
+| `/pr-review` | Review a PR/branch diff with the project harness — consistency with skills, guards, dependency rule, gap-type, DoD, business coherence; also surfaces non-blocking improvement opportunities + strategic direction (roadmap-anchored) |
 
-> **PR review harness**: `/pr-review` dispatches the read-only agent `.claude/agents/pr-harness.md` (the rubric). It also runs in CI on each PR via `.github/workflows/pr-review.yml` (advisory, never a merge gate; needs the `ANTHROPIC_API_KEY` secret). It complements — never re-runs — the CI gates and the Codex review.
+> **PR review harness**: `/pr-review` dispatches the read-only agent `.claude/agents/pr-harness.md` (the rubric). Beyond the P1/P2/P3 findings and verdict, it also raises forward-looking **improvement opportunities** and **strategic direction** (§3.5 — anchored on ADR-0038, `docs/context-map.md` seams and the `docs/quality/` scorecard; both sections optional and never change the verdict). It also runs in CI on each PR via `.github/workflows/pr-review.yml` (advisory, never a merge gate; needs the `ANTHROPIC_API_KEY` secret). It complements — never re-runs — the CI gates and the Codex review.
 
 ## Docs
 

@@ -24,7 +24,8 @@ Esta skill é um **dispatcher fino**. A rubrica completa vive no subagente `pr-h
    resolvido (número do PR ou instrução de usar o diff da branch). O subagente roda **em contexto isolado**
    (olhar imparcial) e devolve o parecer.
 3. **Relaie o parecer** ao usuário verbatim (o veredito + achados P1/P2/P3 + cruzamento com CI/Codex +
-   coerência de negócio). Não edite nem "amacie" — o harness é criterioso de propósito.
+   coerência de negócio + — quando presentes — melhorias sugeridas e direcionamento estratégico). Não
+   edite nem "amacie" — o harness é criterioso de propósito.
 
 ## Complementaridade
 
