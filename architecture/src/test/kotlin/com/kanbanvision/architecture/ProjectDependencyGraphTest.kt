@@ -52,15 +52,40 @@ class ProjectDependencyGraphTest {
         )
     }
 
-    /** `project(":X")` deps de um módulo, restritas aos módulos de domínio (rank conhecido). */
-    private fun domainProjectDepsOf(module: String): Set<String> {
-        val text = stripComments(buildScriptOf(module))
-        return PROJECT_DEP
-            .findAll(text)
-            .map { it.groupValues[1] }
-            .filter { rank.containsKey(it) }
-            .toSet()
+    @Test
+    fun `o parser reconhece as formas validas do DSL Gradle - single-line, multiline e path nomeado`() {
+        val script =
+            """
+            dependencies {
+                implementation(project(":domain-common"))
+                implementation(
+                    project(":domain-kanban"),
+                )
+                api(project(path = ":domain-simulation"))
+                testImplementation("io.kotest:kotest-property:6.2.2") // não é project dep
+                // implementation(project(":comentado")) — não deve contar
+            }
+            """.trimIndent()
+
+        val deps = projectDepsIn(script)
+
+        assertEquals(
+            setOf("domain-common", "domain-kanban", "domain-simulation"),
+            deps.toSet(),
+            "parser deve reconhecer single-line, multiline e path nomeado; ignorar comentário e lib externa: $deps",
+        )
     }
+
+    /** `project(":X")` deps de um módulo, restritas aos módulos de domínio (rank conhecido). */
+    private fun domainProjectDepsOf(module: String): Set<String> =
+        projectDepsIn(buildScriptOf(module)).filter { rank.containsKey(it) }.toSet()
+
+    /**
+     * Todos os `project(":X")` declarados no texto, tolerante às formas válidas do DSL: qualquer
+     * configuração (`implementation`/`api`/`testImplementation`/…), espaços/quebras de linha, e o
+     * argumento nomeado `project(path = ":X")`. Comentários são removidos antes.
+     */
+    private fun projectDepsIn(text: String): List<String> = PROJECT_DEP.findAll(stripComments(text)).map { it.groupValues[1] }.toList()
 
     private fun buildScriptOf(module: String): String {
         val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
@@ -77,9 +102,11 @@ class ProjectDependencyGraphTest {
             .joinToString("\n")
 
     private companion object {
-        // Casa api/implementation/compileOnly/runtimeOnly(project(":<modulo>")) — captura o alvo no grupo 1.
+        // Casa QUALQUER configuração seguida de project(":<modulo>") — captura o alvo no grupo 1.
+        // Tolerante a espaços/quebras de linha e ao argumento nomeado `project(path = ":X")`, senão
+        // uma dep invertida escrita em forma multiline ou nomeada driblaria o gate (revisão PR #302).
         private val PROJECT_DEP =
-            Regex("""(?:api|implementation|compileOnly|runtimeOnly)\(project\(":([\w-]+)"\)\)""")
+            Regex("""\w+\s*\(\s*project\s*\(\s*(?:path\s*=\s*)?":([\w-]+)"""")
         private val BLOCK_COMMENT = Regex("""/\*.*?\*/""", setOf(RegexOption.DOT_MATCHES_ALL))
     }
 }
