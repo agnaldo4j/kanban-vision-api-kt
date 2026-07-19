@@ -22,7 +22,7 @@ COPY buildSrc buildSrc
 
 COPY domain-common/build.gradle.kts domain-common/build.gradle.kts
 COPY domain-kanban/build.gradle.kts domain-kanban/build.gradle.kts
-COPY domain/build.gradle.kts domain/build.gradle.kts
+COPY domain-simulation/build.gradle.kts domain-simulation/build.gradle.kts
 COPY usecases/build.gradle.kts usecases/build.gradle.kts
 COPY sql_persistence/build.gradle.kts sql_persistence/build.gradle.kts
 COPY http_api/build.gradle.kts http_api/build.gradle.kts
@@ -40,7 +40,7 @@ RUN sed -i '/^org\.gradle\.java\.home/d' gradle.properties && \
 # pelo env. --no-configuration-cache: tasks nativas fora do cache de configuração.
 COPY domain-common/src domain-common/src
 COPY domain-kanban/src domain-kanban/src
-COPY domain/src domain/src
+COPY domain-simulation/src domain-simulation/src
 COPY usecases/src usecases/src
 COPY sql_persistence/src sql_persistence/src
 COPY http_api/src http_api/src

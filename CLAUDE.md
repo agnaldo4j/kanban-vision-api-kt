@@ -7,8 +7,8 @@ Detailed rules are organized in `.claude/rules/` (loaded automatically).
 
 ```bash
 ./gradlew testAll                                        # all tests + quality gates
-./gradlew :domain:test                                   # per-module
-./gradlew :domain:test --tests "*.BoardTest"             # single class
+./gradlew :domain-simulation:test                        # per-module
+./gradlew :domain-kanban:test --tests "*.BoardTest"      # single class
 ./gradlew :http_api:buildFatJar                          # fat JAR
 JWT_DEV_MODE=true ./gradlew :http_api:run                # run (dev mode)
 ./gradlew ktlintFormat                                   # auto-fix formatting

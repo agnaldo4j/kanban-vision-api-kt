@@ -4,12 +4,12 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.usecases.Page
 import com.kanbanvision.usecases.simulation.CfdResult
 import kotlinx.serialization.Serializable

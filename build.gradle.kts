@@ -26,7 +26,7 @@ tasks.register("pitestAll") {
     dependsOn(
         ":domain-common:pitest",
         ":domain-kanban:pitest",
-        ":domain:pitest",
+        ":domain-simulation:pitest",
         ":usecases:pitest",
         ":sql_persistence:pitest",
         ":http_api:pitest",

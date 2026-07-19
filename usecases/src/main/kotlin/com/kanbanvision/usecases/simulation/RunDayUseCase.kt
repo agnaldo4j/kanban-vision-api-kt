@@ -5,11 +5,11 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.simulation.events.DomainEvent
 import com.kanbanvision.usecases.ports.EventPublisherPort

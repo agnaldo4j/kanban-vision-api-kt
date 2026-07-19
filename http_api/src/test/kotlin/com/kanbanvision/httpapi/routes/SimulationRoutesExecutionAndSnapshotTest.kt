@@ -2,7 +2,7 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.SimulationError
+import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.httpapi.fixtureSnapshot
 import com.kanbanvision.httpapi.withJwt
 import io.ktor.client.request.get

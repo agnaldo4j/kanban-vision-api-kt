@@ -3,10 +3,10 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.CommonError
-import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationResult
 import com.kanbanvision.domain.simulation.events.DomainEvent
