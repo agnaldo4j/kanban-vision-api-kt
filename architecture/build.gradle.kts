@@ -23,7 +23,10 @@ dependencies {
 // a violação. src/main (scopeFromProduction) E src/test (scopeFromTest — regra de
 // nomenclatura de testes) são declarados como inputs.
 tasks.test {
-    listOf("domain-common", "domain-kanban", "domain", "usecases", "sql_persistence", "http_api").forEach { module ->
+    // ProjectDependencyGraphTest (GAP-CL/ADR-0038) lê os build.gradle.kts em runtime para asserir o
+    // grafo de `project` deps — passa a raiz explicitamente (workingDir do teste = projectDir do módulo).
+    systemProperty("rootDir", rootProject.projectDir.absolutePath)
+    listOf("domain-common", "domain-kanban", "domain-simulation", "usecases", "sql_persistence", "http_api").forEach { module ->
         inputs
             .dir(rootDir.resolve("$module/src/main/kotlin"))
             .withPropertyName("analyzedSources_$module")
@@ -31,6 +34,12 @@ tasks.test {
         inputs
             .dir(rootDir.resolve("$module/src/test/kotlin"))
             .withPropertyName("analyzedTestSources_$module")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        // build.gradle.kts como input: o ProjectDependencyGraphTest o lê em runtime (invisível ao
+        // Gradle), então uma mudança de deps deve re-rodar o gate em vez de servir verde stale do cache.
+        inputs
+            .file(rootDir.resolve("$module/build.gradle.kts"))
+            .withPropertyName("buildScript_$module")
             .withPathSensitivity(PathSensitivity.RELATIVE)
     }
 }

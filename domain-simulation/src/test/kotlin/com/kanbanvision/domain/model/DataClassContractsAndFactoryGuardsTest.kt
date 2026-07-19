@@ -2,7 +2,6 @@ package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.model.Audit
-import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -19,6 +18,7 @@ import com.kanbanvision.domain.model.simulation.Scenario
 import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationError
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals

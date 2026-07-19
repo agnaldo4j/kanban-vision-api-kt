@@ -3,7 +3,7 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.CommonError
-import com.kanbanvision.domain.errors.SimulationError
+import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.httpapi.issueTestJwt
 import com.kanbanvision.httpapi.withJwt
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand

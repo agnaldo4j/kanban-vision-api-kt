@@ -47,7 +47,7 @@ val resilience4jVersion = "2.4.0"
 dependencies {
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))
-    implementation(project(":domain"))
+    implementation(project(":domain-simulation"))
     implementation(project(":usecases"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")

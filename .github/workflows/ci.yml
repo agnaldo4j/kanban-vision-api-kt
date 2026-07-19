@@ -126,7 +126,7 @@ jobs:
             for spec in \
               'domain-common|90|com.kanbanvision.domain.common.*' \
               'domain-kanban|78|com.kanbanvision.domain.model.{kanban,organization}.*' \
-              'domain|73|com.kanbanvision.domain.*' \
+              'domain-simulation|73|com.kanbanvision.domain.*' \
               'usecases|55|com.kanbanvision.usecases.*' \
               'sql_persistence|65|com.kanbanvision.persistence.*' \
               'http_api|45|com.kanbanvision.httpapi.{plugins,adapters,events}.*'; do
@@ -268,7 +268,7 @@ jobs:
             echo '| Module | main | test |'
             echo '|--------|------|------|'
             total=0
-            for module in domain usecases sql_persistence http_api; do
+            for module in domain-simulation usecases sql_persistence http_api; do
               xml="${module}/build/reports/detekt/detekt.xml"
               xml_test="${module}/build/reports/detekt/test.xml"
               if [ -f "$xml" ]; then
@@ -322,7 +322,7 @@ jobs:
           # Linha única: o bloco YAML ">-" junta linhas com espaço e o action
           # separa por vírgula — paths com espaço inicial não são encontrados
           # (só o domain subia; usecases/sql_persistence/http_api eram ignorados).
-          files: domain-common/build/reports/jacoco/test/jacocoTestReport.xml,domain-kanban/build/reports/jacoco/test/jacocoTestReport.xml,domain/build/reports/jacoco/test/jacocoTestReport.xml,usecases/build/reports/jacoco/test/jacocoTestReport.xml,sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,http_api/build/reports/jacoco/test/jacocoTestReport.xml
+          files: domain-common/build/reports/jacoco/test/jacocoTestReport.xml,domain-kanban/build/reports/jacoco/test/jacocoTestReport.xml,domain-simulation/build/reports/jacoco/test/jacocoTestReport.xml,usecases/build/reports/jacoco/test/jacocoTestReport.xml,sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,http_api/build/reports/jacoco/test/jacocoTestReport.xml
           disable_search: true
           codecov_yml_path: ./codecov.yml
           flags: unittests
@@ -337,7 +337,7 @@ jobs:
           paths: |
             ${{ github.workspace }}/domain-common/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/domain-kanban/build/reports/jacoco/test/jacocoTestReport.xml,
-            ${{ github.workspace }}/domain/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/domain-simulation/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/usecases/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/sql_persistence/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/http_api/build/reports/jacoco/test/jacocoTestReport.xml

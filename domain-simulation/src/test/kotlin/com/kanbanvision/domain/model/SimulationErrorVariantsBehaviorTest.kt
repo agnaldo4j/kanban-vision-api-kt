@@ -1,10 +1,11 @@
-package com.kanbanvision.domain.errors
+package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.simulation.SimulationError
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class DomainErrorVariantsBehaviorTest {
+class SimulationErrorVariantsBehaviorTest {
     @Test
     fun `given each simulation error variant when created then payload is preserved`() {
         val simulation = SimulationError.SimulationNotFound(id = "sim-1")

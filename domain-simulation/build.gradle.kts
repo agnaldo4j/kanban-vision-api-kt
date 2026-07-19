@@ -25,10 +25,10 @@ pitest {
     targetClasses.set(setOf("com.kanbanvision.domain.*"))
     targetTests.set(setOf("com.kanbanvision.domain.*"))
     mutators.set(setOf("STRONGER"))
-    // GAP-CK (Fase 2.2, ADR-0038): o Kanban Management BC saiu para :domain-kanban. O pool caiu para
-    // simulation-only (337 mutantes) e o score para 77% — os testes do SimulationEngine que matavam
-    // mutantes de kanban não contam mais (PITest não cruza módulo). Gate rebaselinado 78 → 73 (4pp).
-    // Histórico anterior (módulo inteiro, GAP-AT): 715 mutantes, 82%, gate 78.
+    // GAP-CL (Fase 2.3): este é o módulo :domain-simulation (o :domain foi renomeado ao ser aposentado).
+    // GAP-CK: o Kanban Management BC saiu para :domain-kanban; o pool caiu para simulation-only (337
+    // mutantes, 77%) — os testes do SimulationEngine que matavam mutantes de kanban não contam mais
+    // (PITest não cruza módulo). Gate 78 → 73 (4pp). Histórico (módulo inteiro, GAP-AT): 715 mutantes, 82%.
     mutationThreshold.set(73)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)

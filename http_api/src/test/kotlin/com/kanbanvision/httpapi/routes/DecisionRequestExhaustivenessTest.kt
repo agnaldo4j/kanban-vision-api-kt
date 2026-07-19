@@ -1,9 +1,9 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.SimulationError
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

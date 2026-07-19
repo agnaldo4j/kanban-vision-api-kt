@@ -44,7 +44,7 @@ qualities" map — use it to decide what to study or where to contribute.
 | Quality | What to learn | Where to look |
 |---|---|---|
 | **Clean / Hexagonal Architecture** | Strict Dependency Rule, ports & adapters, layer boundaries that don't erode | `architecture/` fitness tests · [Wiki → Architecture](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture) |
-| **Domain-Driven Design** | Rich aggregates with invariants, value objects, a pure domain service, sealed domain errors/events, ubiquitous language | `domain/src/main/…/model/` · [Wiki → Architecture Domain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Domain) · `/ddd` skill |
+| **Domain-Driven Design** | Rich aggregates with invariants, value objects, a pure domain service, sealed domain errors/events, ubiquitous language | `domain-{common,kanban,simulation}/src/main/…/model/` · [Wiki → Architecture Domain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Domain) · `/ddd` skill |
 | **Functional + OO Kotlin** | `Either`/`Raise`, immutability, pure functions, sealed hierarchies over null-guards, deterministic engine pipeline | Arrow-kt usage across `usecases/` and `domain/` · ADR-0018 · `/fp-oo-kotlin` skill |
 | **Testing rigour** | A real test pyramid: pure unit, property-based (Kotest), integration (embedded Postgres), route (`testApplication`), contract (Pact) | `*/src/test/` · [Wiki → Development Guide](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Development-Guide) |
 | **Mutation testing** | Using PITest to measure *test effectiveness*, not just coverage | `*/build.gradle.kts` PITest config · [Wiki → Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) |
