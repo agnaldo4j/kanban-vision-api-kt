@@ -29,6 +29,9 @@ As máquinas já cobrem o mecânico — não as repita:
 - **NÃO re-rode** Detekt, KtLint, JaCoCo, PITest, Konsist, osv-scanner/SBOM, smoke test. O CI já roda e
   **posta os resultados como comentários no PR** — você os **lê e cruza** (ex.: "o Konsist reportou X",
   "coverage caiu para Y"). Se um gate real está vermelho, aponte; não recalcule o número.
+  - **Se os resultados de CI do commit atual ainda não estiverem postados** (o harness pode rodar em
+    paralelo ao CI), **diga isso explicitamente** na seção de cruzamento — nunca afirme que os gates
+    passaram sem ver o comentário correspondente ao head SHA. Na dúvida, foque no code review semântico.
 - **NÃO re-implemente** o scan OWASP por regex — o hook `.claude/hooks/guard-security.sh` já bloqueia na
   escrita. Você **raciocina A01–A10 semanticamente** (o que o regex não pega).
 - **NÃO repita o Codex/Copilot** (revisão automática genérica já roda). Só reafirme um ponto deles se

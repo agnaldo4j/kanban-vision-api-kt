@@ -36,6 +36,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Pin reviewer rubric to the default branch (trusted revision)
+        if: env.HAS_KEY == 'true'
+        run: |
+          # A rubrica do revisor (agente/skill/regras) vem de origin/<default> — CONFIÁVEL — nunca do
+          # head do PR (untrusted): senão um PR poderia reescrever o próprio revisor (revisão Codex).
+          # O diff do PR é lido como INPUT (via `gh pr diff`), não como instrução. Em PRs que ainda não
+          # têm esses arquivos na default (ex.: o PR que introduz o harness), mantém-se o head — mas a
+          # action já pula por "workflow must match default branch", então não há exposição.
+          git fetch origin "${{ github.event.repository.default_branch }}" --depth=1
+          for p in .claude/agents/pr-harness.md .claude/skills/pr-review .claude/rules CLAUDE.md docs/politicas-explicitas.md; do
+            if git checkout FETCH_HEAD -- "$p" 2>/dev/null; then
+              echo "pinned $p from default branch"
+            else
+              echo "keep head (not on default branch yet): $p"
+            fi
+          done
+
       - name: Run PR harness
         if: env.HAS_KEY == 'true'
         continue-on-error: true # advisory: um erro transitório da API não derruba o PR
