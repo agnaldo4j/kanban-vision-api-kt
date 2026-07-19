@@ -26,19 +26,14 @@ pitest {
             "com.kanbanvision.domain.model.organization.*",
         ),
     )
-    targetTests.set(
-        setOf(
-            "com.kanbanvision.domain.model.kanban.*",
-            "com.kanbanvision.domain.model.organization.*",
-        ),
-    )
+    // Os testes comportamentais movidos vivem no pacote-pai flat `com.kanbanvision.domain.model`
+    // (não em `model.kanban`); o glob precisa incluí-lo, senão o pitest roda só os testes novos.
+    targetTests.set(setOf("com.kanbanvision.domain.model.*"))
     mutators.set(setOf("STRONGER"))
-    // GAP-CK (Fase 2.2): Kanban Management BC recém-isolado. Baseline 41% (144/352) — a verificação
-    // comportamental profunda de kanban (movimentação de card, consumo de esforço, alocação de worker)
-    // vivia nos testes do SimulationEngine, que ficaram no :domain e não contam mais (PITest não cruza
-    // módulo). Gate inicial 38 (3pp de margem), a subir por J-Curve em gaps futuros — mesmo caminho do
-    // :domain (38 → 54 → 63 → 68 → 69; gates 35 → 45 → 58 → 65).
-    mutationThreshold.set(38)
+    // GAP-CK (Fase 2.2): Kanban Management BC isolado. 352 mutantes, 82% (288) — as suítes
+    // comportamentais/property movidas (94 testes) cobrem card/step/worker/organization. Gate 78 (4pp),
+    // mesmo patamar do :domain no escopo do módulo inteiro.
+    mutationThreshold.set(78)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)
