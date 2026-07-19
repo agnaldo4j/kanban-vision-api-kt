@@ -22,9 +22,10 @@ P95_RISE_PCT=${P95_RISE_PCT:-20}                 # regressão se p95 de um endpo
 ERROR_RISE_ABS=${ERROR_RISE_ABS:-0.01}           # regressão se a taxa de erro subir mais que isto (absoluto)
 
 # Só endpoints com threshold no journey (baseThresholds) — o k6 só materializa o submétrico
-# tagueado no --summary-export quando há threshold para a tag. `days` não tem threshold, então
-# ficaria n/a; cobri-lo exige antes uma medição documentada + threshold (ADR-0027).
-ENDPOINTS=(create run_day snapshot cfd list)
+# tagueado no --summary-export quando há threshold para a tag. `days` foi coberto no GAP-CR:
+# ganhou threshold (classe GET-read p(95)<300, base em docs/quality/performance-baseline-2026-07-days.md,
+# ADR-0027). Uma submetric ausente de um lado é pulada graciosamente abaixo (não erra).
+ENDPOINTS=(create run_day days snapshot cfd list)
 
 if [[ $# -ne 2 ]]; then
   echo "uso: $0 <referencia.json> <atual.json>" >&2

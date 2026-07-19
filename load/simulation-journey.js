@@ -37,6 +37,11 @@ const baseThresholds = {
   http_req_failed: ['rate<0.01'],
   'http_req_duration{endpoint:create}': ['p(95)<300'],
   'http_req_duration{endpoint:run_day}': ['p(95)<500'],
+  // days: leitura GET (série do dia) da mesma classe de cfd/snapshot (p95 7–8ms no baseline
+  // 2026-07, << 300ms; ver docs/quality/performance-baseline-2026-07-days.md). O threshold
+  // materializa a submetric p/ o sinal de regressão (GAP-CR); o número empírico específico do
+  // days vem do bootstrap da referência de CI (ADR-0039).
+  'http_req_duration{endpoint:days}': ['p(95)<300'],
   'http_req_duration{endpoint:snapshot}': ['p(95)<300'],
   'http_req_duration{endpoint:cfd}': ['p(95)<300'],
   'http_req_duration{endpoint:list}': ['p(95)<300'],
