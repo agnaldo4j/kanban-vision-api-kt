@@ -2,8 +2,8 @@ package com.kanbanvision.httpapi.adapters
 
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.errors.KanbanError
 import com.kanbanvision.domain.errors.SimulationError
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
 import com.kanbanvision.httpapi.dtos.ValidationErrorResponse
 import com.kanbanvision.httpapi.support.REQUEST_ID_KEY

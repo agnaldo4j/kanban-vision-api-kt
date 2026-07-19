@@ -25,6 +25,7 @@ tasks.register("pitestAll") {
     group = "verification"
     dependsOn(
         ":domain-common:pitest",
+        ":domain-kanban:pitest",
         ":domain:pitest",
         ":usecases:pitest",
         ":sql_persistence:pitest",

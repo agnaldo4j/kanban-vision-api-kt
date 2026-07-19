@@ -1,9 +1,9 @@
-package com.kanbanvision.domain.errors
+package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.common.errors.DomainError
 
 /**
- * Erros do Kanban Management BC (futuro `domain-kanban` — ADR-0038).
+ * Erros do Kanban Management BC (`:domain-kanban` — GAP-CK/ADR-0038), co-localizados com o agregado.
  */
 sealed interface KanbanError : DomainError {
     data class BoardNotFound(

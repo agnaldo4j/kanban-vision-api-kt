@@ -46,6 +46,7 @@ val resilience4jVersion = "2.4.0"
 
 dependencies {
     implementation(project(":domain-common"))
+    implementation(project(":domain-kanban"))
     implementation(project(":domain"))
     implementation(project(":usecases"))
 

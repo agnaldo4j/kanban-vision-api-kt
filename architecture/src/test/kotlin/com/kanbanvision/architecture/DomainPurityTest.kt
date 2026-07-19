@@ -27,9 +27,14 @@ class DomainPurityTest {
 
     @Test
     fun `domain nao importa frameworks nem infraestrutura`() {
+        // scopeFromProduction() + filtro por prefixo de pacote (não por nome de módulo): pós-extração
+        // faseada (ADR-0038) o domínio se espalha por :domain-common/:domain-kanban/:domain. Só esses
+        // três usam o prefixo com.kanbanvision.domain (usecases/persistence/httpapi têm prefixos próprios),
+        // então o filtro cobre exatamente os módulos de domínio e sobrevive a CK/CL.
         Konsist
-            .scopeFromProduction("domain")
+            .scopeFromProduction()
             .files
+            .filter { file -> file.packagee?.name?.startsWith("com.kanbanvision.domain") == true }
             .assertFalse { file ->
                 file.imports.any { import ->
                     forbiddenImportPrefixes.any { prefix -> import.name.startsWith(prefix) }
