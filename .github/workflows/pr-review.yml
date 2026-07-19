@@ -1,0 +1,56 @@
+name: PR Review Harness (advisory)
+
+# Revisão criteriosa de PR pelo harness do projeto (skill /pr-review → agente pr-harness), GAP-CS.
+# Advisory: NUNCA entra em branch-protection; complementa o Codex e os gates de CI — NÃO os re-roda.
+# Requer o secret ANTHROPIC_API_KEY; sem ele o job é pulado com aviso (jamais derruba o PR).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  harness:
+    name: pr-harness review
+    runs-on: ubuntu-latest
+    # HAS_KEY: secrets só podem ser lidos no contexto env (não em `if:` de job) — este seam permite
+    # pular graciosamente quando ANTHROPIC_API_KEY não está configurado.
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: Checkout
+        if: env.HAS_KEY == 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run PR harness
+        if: env.HAS_KEY == 'true'
+        continue-on-error: true # advisory: um erro transitório da API não derruba o PR
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Rode a skill /pr-review sobre este pull request (#${{ github.event.pull_request.number }}),
+            atuando como o agente pr-harness (.claude/agents/pr-harness.md): parecer criterioso ancorado
+            nas skills, nos guards de qualidade, na Dependency Rule/fronteiras de contexto, no gap-type,
+            no DoD e na coerência de negócio. NÃO re-rode os gates de CI (Detekt/JaCoCo/PITest/Konsist/
+            osv) — cruze os resultados já postados. Ranqueie os achados P1/P2/P3 e dê um veredito
+            (BLOCK/CHANGES-REQUESTED/APPROVE). Poste o parecer como um comentário do PR começando com
+            o título exato "## PR Review Harness".
+          claude_args: |
+            --max-turns 25
+            --allowedTools Bash,Read,Grep,Glob
+
+      - name: Skipped (no API key)
+        if: env.HAS_KEY != 'true'
+        run: |
+          echo "ANTHROPIC_API_KEY não configurado no repo — harness advisory pulado." >&2
+          echo "Adicione o secret (Settings → Secrets → Actions) para ativar. Não bloqueia o PR."
