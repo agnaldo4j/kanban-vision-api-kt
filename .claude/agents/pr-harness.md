@@ -239,25 +239,32 @@ Quando o alvo é um PR real (número disponível), **todo achado P1/P2/P3 vira t
 `## PR Review Harness` continua como comentário-resumo (veredito + cruzamento + negócio + seções opcionais).
 Ao revisar um diff de branch local sem PR, só devolva o parecer (não há onde postar inline).
 
-**Como postar cada achado** (pinado ao commit revisado; revalide o head antes — cf. corrida stale, §2.5):
+**Como postar cada achado.** Fixe o commit revisado **no início** (antes de ler o diff) e ancore *tudo* —
+`commit_id`, marcador de dedup e revalidação — nesse SHA. Nunca reamostre o head na hora de postar: se ele
+avançou entre revisar e postar, você ancoraria achados do diff velho no commit novo (TOCTOU, §2.5).
 ```bash
-COMMIT=$(gh pr view <n> --json headRefOid -q .headRefOid)   # commit_id p/ ancorar a linha
+# 1) No INÍCIO da review (antes de `gh pr diff`): fixe e revise ESTE commit.
+REVIEWED=$(gh pr view <n> --json headRefOid -q .headRefOid)
+# 2) … leia `gh pr diff <n>` e analise o diff DESTE sha …
+# 3) IMEDIATAMENTE antes de postar, revalide: head mudou ⇒ NÃO poste, reinicie a review no novo sha.
+[ "$(gh pr view <n> --json headRefOid -q .headRefOid)" = "$REVIEWED" ] || { echo "head avançou — abortar"; exit 0; }
+# 4) poste cada achado, ancorado e deduplicado PELO commit revisado ($REVIEWED expande no marcador):
 gh api repos/<owner>/<repo>/pulls/<n>/comments \
-  -f body="$(cat <<'MD'
-<!-- pr-harness:<P?>:<path>:<line> -->
+  -f body="<!-- pr-harness:$REVIEWED:<P?>:<path>:<line> -->
 <sub><sub>![P1 Badge](https://img.shields.io/badge/P1-red?style=flat)</sub></sub>  **<título curto e acionável>**
 
 <cenário de falha concreto: inputs → estado → saída errada>
 
-**Correção:** <objetiva>. **Âncora:** <skill/regra/ADR/§2.5-classe>.
-MD
-)" -f commit_id="$COMMIT" -f path="<path>" -F line=<line> -f side=RIGHT
+**Correção:** <objetiva>. **Âncora:** <skill/regra/ADR/§2.5-classe>." \
+  -f commit_id="$REVIEWED" -f path="<path>" -F line=<line> -f side=RIGHT
 ```
 - **`-f` vs `-F`:** só `line` é inteiro (use `-F`, que coage a número JSON); `commit_id`/`path`/`side`/`body`
   são strings (`-f`). SHA passa com qualquer um, mas o exemplo é cânone — mantenha `-f commit_id`.
 - **Badge por severidade** (cores iguais às do Codex): `P1-red`, `P2-yellow`, `P3-lightgrey`.
-- **Idempotência:** antes de postar, liste os comentários existentes (`gh api .../pulls/<n>/comments`) e
-  **pule** os que já têm o marcador `<!-- pr-harness:<P?>:<path>:<line> -->` — não duplique em re-run.
+- **Idempotência escopada ao commit revisado:** o marcador inclui `$REVIEWED`; antes de postar, pule só os
+  comentários que já têm `<!-- pr-harness:$REVIEWED:<P?>:<path>:<line> -->`. Num `synchronize` (novo head) o
+  SHA muda → você re-posta para o diff atual e os comentários do head antigo ficam *outdated* naturalmente,
+  em vez de um comentário de outra revisão (mesma prioridade/linha) suprimir o achado atual.
 - **Linha removida** (achado numa linha que o diff apaga): use `side=LEFT` (a linha vive no lado base).
   Para linha adicionada/alterada, `side=RIGHT`.
 - **Linha fora do diff?** Se o `line` não pertence ao hunk, ancore no arquivo (comentário do PR referenciando
