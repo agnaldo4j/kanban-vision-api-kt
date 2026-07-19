@@ -22,10 +22,14 @@ Esta skill é um **dispatcher fino**. A rubrica completa vive no subagente `pr-h
      o diff `git diff main...HEAD`.
 2. **Delegue ao subagente `pr-harness`** via a Agent tool (`subagent_type: pr-harness`), passando o alvo
    resolvido (número do PR ou instrução de usar o diff da branch). O subagente roda **em contexto isolado**
-   (olhar imparcial) e devolve o parecer.
-3. **Relaie o parecer** ao usuário verbatim (o veredito + achados P1/P2/P3 + cruzamento com CI/Codex +
-   coerência de negócio + — quando presentes — melhorias sugeridas e direcionamento estratégico). Não
-   edite nem "amacie" — o harness é criterioso de propósito.
+   (olhar imparcial), afere consistência/guards/negócio **e faz sua própria caça a bugs de implementação**
+   (§2.5 do rubric — concorrência/TOCTOU, Either/Raise, bordas, injeção, armadilhas de CI), e devolve o parecer.
+3. **Postagem (quando o alvo é um PR real):** o harness publica **cada achado P1/P2/P3 como comentário
+   inline** no `arquivo:linha` (estilo Codex, com badge de severidade — §5.5 do rubric) **além** do report
+   `## PR Review Harness`. Num diff de branch local sem PR, só há o parecer.
+4. **Relaie o parecer** ao usuário verbatim (veredito + achados P1/P2/P3 + cruzamento com CI/Codex +
+   coerência de negócio + — quando presentes — melhorias, direcionamento estratégico e **lições aprendidas**
+   para as skills/o rubric). Não edite nem "amacie" — o harness é criterioso de propósito.
 
 ## Complementaridade
 
