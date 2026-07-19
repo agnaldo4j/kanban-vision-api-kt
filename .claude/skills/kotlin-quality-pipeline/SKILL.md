@@ -12,6 +12,8 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 
 # Pipeline de Qualidade Kotlin — Detekt · KtLint · JaCoCo · PITest · Konsist · Gradle 9
 
+> 📖 **Wiki:** ao mudar gates/ferramentas de qualidade, atualize as páginas `Development-Guide` e `Architecture-Fitness-Functions` — mecânica na skill `/wiki-maintenance`.
+
 > **Princípio central**: qualidade não é opcional. Cada ferramenta protege um aspecto
 > diferente do código. O pipeline é o contrato que garante que nenhuma entrega degrada
 > o projeto. Se o build quebra, corrija a causa — nunca bypasse com `--no-verify`,

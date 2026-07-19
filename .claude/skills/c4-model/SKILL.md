@@ -11,6 +11,8 @@ allowed-tools: Read, Grep, Glob, Edit
 
 # C4 Model — Diagramas de Arquitetura
 
+> 📖 **Wiki:** esta skill é dona dos **diagramas** das páginas Architecture\*, Observability, Operations e GraalVM. A mecânica de edição do wiki (clone, `docs(wiki):`, o mantenedor faz o push) está centralizada na skill `/wiki-maintenance`.
+
 Você é um arquiteto de software especialista em C4 Model (Simon Brown).
 Quando esta skill for invocada, você deve **explorar o estado atual do código** e
 **atualizar os diagramas nas páginas do wiki** com diagramas Mermaid precisos e fiéis ao código.

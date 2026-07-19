@@ -12,6 +12,8 @@ allowed-tools: Read, Grep, Glob, Bash
 
 # OWASP Top 10 — 2025 Security Guide
 
+> 📖 **Wiki:** ao mudar SBOM/SCA/postura de segurança, atualize a página `Security-Supply-Chain` — mecânica na skill `/wiki-maintenance`.
+
 > Referência oficial: https://owasp.org/Top10/2025/
 >
 > Este skill aplica os 10 riscos mais críticos de segurança ao stack deste projeto:

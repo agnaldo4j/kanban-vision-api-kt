@@ -12,6 +12,8 @@ allowed-tools: Read, Grep, Glob, Bash
 
 # Ambiente Local e Produção: Docker, Podman, Minikube e Kubernetes
 
+> 📖 **Wiki:** ao mexer em Docker/compose/k8s/CI-CD, atualize a página `Operations` — mecânica na skill `/wiki-maintenance` (topologia via `/c4-model`).
+
 > *"Build once, run anywhere."*
 > — Docker
 
