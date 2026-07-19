@@ -10,11 +10,12 @@ import org.junit.jupiter.api.Test
  * (`HexagonalArchitectureTest`) já garantem ausência de ciclo ENTRE módulos, mas não pegam
  * ciclos entre pacotes dentro de um mesmo módulo (ex.: `httpapi.routes ↔ httpapi.plugins`).
  * Konsist 0.17.3 não tem primitivo de ciclo de pacote — o grafo import→pacote é construído
- * manualmente e percorrido por DFS.
+ * manualmente e percorrido pelo DFS compartilhado [findCycle].
  *
  * Trade-off (igual às demais fitness functions): a detecção é baseada em `import` directives —
  * referências totalmente qualificadas sem import não entram no grafo. A granularidade é o
- * pacote FQN: cada sub-pacote é um nó distinto.
+ * pacote FQN: cada sub-pacote é um nó distinto. Ciclos classe↔classe DENTRO de um mesmo pacote
+ * (sem import) são cobertos, um nível abaixo, por [ClassCycleTest].
  */
 class PackageCycleTest {
     @Test
@@ -49,32 +50,6 @@ class PackageCycleTest {
         return knownPackages
             .filter { importName.startsWith("$it.") }
             .maxByOrNull { it.length }
-    }
-
-    /** DFS com coloração; retorna o primeiro ciclo encontrado (caminho fechado) ou null. */
-    private fun findCycle(graph: Map<String, Set<String>>): List<String>? {
-        val visited = mutableSetOf<String>()
-        val stack = mutableListOf<String>()
-        for (node in graph.keys) {
-            val cycle = walk(node, graph, visited, stack)
-            if (cycle != null) return cycle
-        }
-        return null
-    }
-
-    private fun walk(
-        node: String,
-        graph: Map<String, Set<String>>,
-        visited: MutableSet<String>,
-        stack: MutableList<String>,
-    ): List<String>? {
-        if (node in stack) return stack.subList(stack.indexOf(node), stack.size) + node
-        if (node in visited) return null
-        visited.add(node)
-        stack.add(node)
-        val cycle = graph[node].orEmpty().firstNotNullOfOrNull { walk(it, graph, visited, stack) }
-        stack.removeAt(stack.size - 1)
-        return cycle
     }
 
     private companion object {
