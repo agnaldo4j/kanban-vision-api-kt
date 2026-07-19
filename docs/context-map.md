@@ -14,8 +14,8 @@ if the monolith is ever split.
 ```mermaid
 graph LR
     subgraph EST["Established Bounded Contexts"]
-        KM["Kanban Management BC<br/>Board · Step · Card · Organization<br/>domain/model/kanban · domain/model/organization<br/>Practice 1 — Visualize"]
-        SIM["Simulation BC<br/>Simulation · Scenario · SimulationEngine · DailySnapshot<br/>domain/model/simulation · domain/simulation<br/>Practice 3 — Manage Flow"]
+        KM["Kanban Management BC<br/>Board · Step · Card · Organization<br/>:domain-kanban (model.kanban · model.organization)<br/>Practice 1 — Visualize"]
+        SIM["Simulation BC<br/>Simulation · Scenario · SimulationEngine · DailySnapshot<br/>:domain-simulation (model.simulation · simulation)<br/>Practice 3 — Manage Flow"]
         ANA["Analytics BC (logical)<br/>FlowMetrics · CFD · time series<br/>usecases queries · GET /api/v1/simulations…<br/>Practice 5 — Feedback Loops"]
     end
     subgraph FUT["Future Extraction Candidates"]
@@ -29,8 +29,11 @@ graph LR
 ```
 
 > Solid arrows = relationships that exist today in the modular monolith; dashed arrows =
-> planned/future relationships. The three established BCs share the **Shared Kernel** (`domain/` —
-> entities, value objects, `DomainError`), detailed in [Integration Patterns](#integration-patterns).
+> planned/future relationships. Since ADR-0038 the shared base lives in its own module
+> **`:domain-common`** (base `Domain`/`Audit`, `DomainError`/`CommonError`); Kanban Management is
+> **`:domain-kanban`** and Simulation is **`:domain-simulation`**, with the Gradle dependency graph
+> `domain-simulation → domain-kanban → domain-common` enforced by a fitness function
+> (`ProjectDependencyGraphTest`). Detailed in [Integration Patterns](#integration-patterns).
 
 ---
 
@@ -38,7 +41,8 @@ graph LR
 
 ### 1. Kanban Management
 
-**Packages:** `domain/…/model/kanban/` + `domain/…/model/organization/`
+**Module:** `:domain-kanban` — packages `com.kanbanvision.domain.model.kanban` +
+`com.kanbanvision.domain.model.organization` (incl. `KanbanError`).
 **Aggregate roots:** `Board`, `Organization`
 
 | Entity / VO | Type | Responsibility |
@@ -60,10 +64,11 @@ a `TESTER` worker also implies `DEPLOYER`.
 
 ### 2. Simulation
 
-**Packages:** `domain/…/model/simulation/` (entities, incl. `Scenario` + `ScenarioRules` — GAP-CE) +
-`domain/…/simulation/SimulationEngine.kt` (domain service). `PolicySet` permanece em
-`domain/…/model/organization/` (Kanban Management); `ScenarioRules` o referencia como aresta
-`simulation → kanban` (customer-supplier, ADR-0038).
+**Module:** `:domain-simulation` — packages `com.kanbanvision.domain.model.simulation` (entities, incl.
+`Scenario` + `ScenarioRules` and `SimulationError`) + `com.kanbanvision.domain.simulation` (the
+`SimulationEngine` domain service) + `com.kanbanvision.domain.simulation.events` (`DomainEvent`).
+`PolicySet` stays in `:domain-kanban` (`model.organization`); `ScenarioRules` references it as the
+`simulation → kanban` edge (customer-supplier, ADR-0038) — a real Gradle `project` dependency.
 **Aggregate roots:** `Simulation`, `Scenario`
 
 | Entity / VO | Type | Responsibility |
@@ -115,9 +120,10 @@ cases and the read endpoints.
 
 | Relationship | DDD pattern | State | Description |
 |---|---|---|---|
-| `domain/` → all modules | **Shared Kernel** | Current | Shared entities, VOs and `DomainError` — changes need cross-module coordination |
+| `:domain-common` → all modules | **Shared Kernel** | Current | Base `Domain`/`Audit`, `DomainError`/`CommonError` — the neutral kernel; changes need cross-module coordination |
+| `:domain-simulation` → `:domain-kanban` | **Customer-Supplier** | Current | Simulation (customer) consumes the Kanban `Board`/`Card`/`Step`/`Worker` structure (supplier); real Gradle `project` dep, direction fitness-enforced |
 | `http_api` → `usecases` | **Customer-Supplier** | Current | `http_api` (customer) consumes CQS use cases (supplier); the supplier owns the contract |
-| `sql_persistence` → `domain` | **Conformist** | Current | Persistence accepts the domain model without translation — tables mirror entities |
+| `sql_persistence` → domain modules | **Conformist** | Current | Persistence accepts the domain model without translation — tables mirror entities |
 | `Simulation` → `Analytics` | **Customer-Supplier** | Current | Simulation (supplier) produces `DailySnapshot`/`FlowMetrics` that Analytics queries read directly in the monolith |
 | `Analytics` → `Simulation` | **Anti-Corruption Layer** | Planned | Analytics should read `DailySnapshot` through an ACL to isolate its read model from the execution model |
 | `Simulation` → `Policy Engine` | **Open Host Service** | Future | A Policy Engine exposes a stable protocol so Simulation can resolve decisions automatically |

@@ -2,21 +2,30 @@
 
 Dependency flow (Dependency Rule — never invert):
 ```
-http_api → usecases → domain
-sql_persistence → domain
-sql_persistence → usecases
+http_api → usecases → domain-simulation → domain-kanban → domain-common
+sql_persistence → (domain-simulation · domain-kanban · domain-common) + usecases
 http_api → sql_persistence   (wiring only, via Koin DI)
 ```
 
-> **Enforced by Konsist** (ADR-0026): the Dependency Rule, domain purity, ports placement, the
+> **Domain split by bounded context (ADR-0038):** the old single `:domain` module is three modules —
+> `:domain-common` (base kernel), `:domain-kanban` (Kanban Management BC), `:domain-simulation`
+> (Simulation BC) — with the graph `domain-simulation → domain-kanban → domain-common`. Package FQNs
+> are unchanged (`com.kanbanvision.domain.*`); only the Gradle module boundaries are new.
+
+> **Enforced by Konsist + JUnit** (ADR-0026): the Dependency Rule, domain purity, ports placement, the
 > bounded-context boundaries (Kanban Management BC ↛ Simulation BC, per `docs/context-map.md`),
-> whole-graph package acyclicity (`PackageCycleTest`, GAP-BN) and the contract-package rule
-> (`ContractPackageTest`, GAP-BS/ADR-0033 — no cross-module import of `*.internal`) are fitness functions in
-> `architecture/src/test/kotlin/` — they run in `testAll` and fail CI.
+> whole-graph package acyclicity (`PackageCycleTest`, GAP-BN), the contract-package rule
+> (`ContractPackageTest`, GAP-BS/ADR-0033 — no cross-module import of `*.internal`) and the
+> **project-dependency graph** `simulation → kanban → common` (`ProjectDependencyGraphTest`,
+> GAP-CL/ADR-0038 — parses the `build.gradle.kts`, since Konsist can't see Gradle `project` deps) are
+> fitness functions in `architecture/src/test/kotlin/` — they run in `testAll` and fail CI.
 
 ## Modules
 
-- **domain** — Pure Kotlin. Zero framework dependencies. `Board` is the Aggregate Root for Board Management: `Board.addStep(name, requiredAbility)` enforces unique **step** name per board; `Board.addCard(step, title, description)` validates the step belongs to the board. Contains board entities (`Board`, `Card`, `Step`), simulation entities (`Simulation`, `Scenario`, `DailySnapshot`, sealed `Decision`), and opaque value-class IDs in `Refs.kt` (`@JvmInline value class BoardId/StepId/CardId/SimulationId/ScenarioId` — GAP-BT/ADR-0034; framework-free, serialized as `String` at the boundary). The 5 in-scope entities are `Domain<XId>`; the others keep `Domain<String>`.
+- **The domain is three pure-Kotlin modules (ADR-0038), zero framework dependencies:**
+  - **domain-common** — the neutral base kernel: `Domain<ID>`, `Audit`, the open `DomainError` interface and the generic `CommonError` sealed group (`ValidationError`/`PersistenceError`/`ServiceUnavailable`/`Forbidden`). Depends on nothing.
+  - **domain-kanban** — Kanban Management BC. `Board` is the Aggregate Root: `Board.addStep(name, requiredAbility)` enforces unique **step** name per board; `Board.addCard(step, title, description)` validates the step belongs to the board. Contains `Board`/`Card`/`Step`/`Worker`/`Ability`, the `Organization`/`Tribe`/`Squad`/`PolicySet` topology, the `KanbanError` sealed group, and the kanban IDs (`@JvmInline value class BoardId/StepId/CardId` — ADR-0034). Depends on `domain-common`.
+  - **domain-simulation** — Simulation BC. `Simulation`/`Scenario`/`SimulationEngine`/`DailySnapshot`/sealed `Decision`, `DomainEvent`, the `SimulationError` sealed group, and the simulation IDs (`SimulationId`/`ScenarioId`). Depends on `domain-kanban` (customer-supplier: `Scenario` holds a `Board`, `SimulationEngine` drives kanban entities) and `domain-common`.
 - **usecases** — Application layer. CQS pattern: each use case accepts one `Command` (mutates) or `Query` (reads). Repository interfaces (ports) live under `repositories/` — NOT in domain.
 - **sql_persistence** — **Exposed DSL** + HikariCP (no raw JDBC). Implements the three repository ports (`Organization`, `Simulation`, `Snapshot` — the Board/Card/Step ports were removed in GAP-BF). Flyway migrations: `V1__initial_schema.sql` (all tables + FK indexes + CHECK constraints, incl. `UNIQUE(steps.board_id, steps.name)`) and `V2__jsonb_simulation_blobs.sql` (TEXT→JSONB, ADR-0013). There is no `V3`. JSON serialization via `kotlinx.serialization` surrogate classes in `internal/serializers/`. Integration tests use Embedded PostgreSQL (zonky). **Implementation packages** (`internal/repositories`, `internal/tables`, `internal/serializers`) are module-private by the `*.internal` contract-package rule (GAP-BS); only the root types (`DatabaseFactory`, `DatabaseConfig`, `DbCircuitBreaker`) are the public bootstrap contract.
 - **http_api** — Ktor (Netty) + Koin DI. `Main.kt` wires everything. Plugins: Observability, Authentication (JWT Bearer), Metrics (Micrometer), RateLimit (100 req/min), Serialization, StatusPages, Routing, OpenApi. `AppModule` binds implementations to ports.
@@ -26,7 +35,7 @@ http_api → sql_persistence   (wiring only, via Koin DI)
 - **Convention plugin**: `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` — Kotlin JVM, `jvmToolchain(25)`, Detekt 2.x (`dev.detekt`), KtLint, JaCoCo, JUnit for all modules.
 - **Versions**: Declared inline per `build.gradle.kts`. No `libs.versions.toml`.
 - **Kotlin serialization plugin**: applied in `http_api` and `sql_persistence` without version — already on classpath from `buildSrc`.
-- **Domain stays pure**: `:domain` must have zero framework imports.
+- **Domain stays pure**: the three domain modules (`:domain-common`/`:domain-kanban`/`:domain-simulation`) must have zero framework imports (`DomainPurityTest` scopes all `com.kanbanvision.domain` production files).
 - **Ports-and-adapters**: interfaces in `usecases/repositories/`; implementations in `sql_persistence/internal/repositories/`. Routes call use cases, never repositories.
 - **CQS**: `CreateBoardUseCase` ← `CreateBoardCommand`; `GetBoardUseCase` ← `GetBoardQuery`.
 - **Error handling**: `Either<DomainError, T>` via Arrow-kt. `either { ensure(...) {} }` + `zipOrAccumulate` for multi-field validation. Routes use `.fold(ifLeft = { respondWithDomainError(it) }, ifRight = { ... })`.
