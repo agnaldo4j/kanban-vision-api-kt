@@ -86,7 +86,7 @@ JWT_DEV_MODE=true ENABLE_SWAGGER=true GRAFANA_ADMIN_PASSWORD=admin docker compos
 | [GraalVM](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM) | Native Image in production, reachability metadata, AOT trade-offs |
 | [Observability](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Observability) | Prometheus, Grafana dashboards, OTel SDK traces, structured logs |
 | [Operations](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Operations) | Native Docker image, Kubernetes manifests, CI/CD, env vars |
-| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 22-skill scorecard (9.22/10, transparent mean), gap roadmap |
+| [Quality Analysis](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Quality-Analysis) | 22-skill scorecard (9.28/10, transparent mean), gap roadmap |
 | [Security Supply Chain](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain) | CycloneDX SBOM, osv-scanner CVE gate, exception policy, red-gate runbook |
 | [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions) | Konsist rules enforcing the hexagonal architecture in CI |
 | [Performance Load Testing](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Performance-Load-Testing) | k6 journey, profiles, and baselines (JVM JIT → GraalVM → Native, ~2,300 req/s in production) |

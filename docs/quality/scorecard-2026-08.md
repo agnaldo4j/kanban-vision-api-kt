@@ -8,24 +8,34 @@ corresponding `/skill` rubric and the live CI signals. This file is the in-repo,
 (ADR-0023) and the source for the wiki `Quality-Analysis` page. It supersedes `scorecard-2026-07.md`
 (it does not edit it).
 
-## Overall — 9.22 / 10  (was 9.12)
+## Overall — 9.28 / 10  (was 9.12)
 
 **Method (reproducible):** the overall is the **simple arithmetic mean of the dimension scores** —
-recomputable from the table (`202.9 / 22 = 9.22`).
+recomputable from the table (`204.2 / 22 = 9.28`).
 
-What moved the headline this cycle is a single structural change realised across eight small PRs:
+Two things move the headline, and honesty demands both:
 - **Microservices / Modular Monolith 8.8 → 9.4** — the intentional `[E]` structural debt named in the
   previous scorecard ("the two contexts share one `domain` module … raising it needs an ADR-approved
-  extraction, not a quick fix") is **resolved**. The context boundary is now a physical Gradle-module
-  boundary, and the `simulation → kanban → common` direction is machine-enforced. **It crosses 9.0 for
-  the first time — no scorecard dimension is now below the 8.0 line, and only three sit below 9.0.**
-- The extraction rippled honest, evidence-backed gains into **Circular-dependency control (7.8 → 8.3)**,
-  **Screaming Architecture (9.0 → 9.3)**, and small bumps to DDD, Clean Architecture, Refactoring, ADR,
-  c4-model and Evolutionary Change.
+  extraction, not a quick fix") is **resolved** by ADR-0038 (GAP-CE..CL): the context boundary is now a
+  physical Gradle-module boundary, and the `simulation → kanban → common` direction is machine-enforced.
+  It crosses 9.0 for the first time. This rippled honest gains into **Circular-dependency control
+  (7.8 → 8.3)**, **Screaming Architecture (9.0 → 9.3)**, and small bumps to DDD, Clean Architecture,
+  Refactoring, ADR, c4-model and Evolutionary Change.
+- **A genuine full re-score corrected three dimensions the previous scorecard held stale.** The July
+  scorecard (`f157674`) predated a run of hardening gaps that landed before `bb190c0`: **Security
+  8.5 → 9.0** (GAP-BK gated Swagger behind `ENABLE_SWAGGER`; GAP-BL added HSTS, a stricter `/auth`
+  rate limit and spoof-resistant `X-Forwarded-For` keying; the JWT now requires a non-blank
+  `organizationId` claim that tenant-scopes the queries), **Performance 8.0 → 8.7** (GAP-BO added k6
+  stress/soak/spike profiles and the `perf-regression.sh` comparator), **GraalVM 9.0 → 9.1** (GAP-BM
+  closed the native error-path `DomainErrorResponse` serialization; the CI smoke test now probes it).
+  These gains are **not** ADR-0038's — they are earlier work this re-score verified against the code
+  instead of carrying the stale July notes forward.
+
+**Only two dimensions now sit below 9.0** (Performance 8.7, Circular-dependency 8.3).
 
 > Overlap note (unchanged): **GraalVM** overlaps Infra + Performance, and **Circular-dependency control**
 > overlaps Clean Architecture + Refactoring. Excluding those two overlapping rows, the **20-skill** mean
-> is **9.28** (`185.6 / 20`).
+> is **9.34** (`186.8 / 20`).
 
 ## 22-skill scorecard
 
@@ -49,12 +59,12 @@ What moved the headline this cycle is a single structural change realised across
 | 16 | c4-model | Architecture docs | 9.0 | **9.2** | +0.2 |
 | 17 | xp-kanban | Engineering practices | 9.4 | 9.4 | — |
 | 18 | definition-of-done | DoD | 9.2 | 9.2 | — |
-| 19 | owasp | Security | 8.5 | 8.5 | — |
-| 20 | load-testing | Performance efficiency | 8.0 | 8.0 | — |
-| 21 | graalvm | GraalVM / Native runtime | 9.0 | 9.0 | — |
+| 19 | owasp | Security | 8.5 | **9.0** | +0.5 |
+| 20 | load-testing | Performance efficiency | 8.0 | **8.7** | +0.7 |
+| 21 | graalvm | GraalVM / Native runtime | 9.0 | **9.1** | +0.1 |
 | 22 | circular-dependency-control | Circular-dependency control | 7.8 | **8.3** | +0.5 |
 
-**Mean = 202.9 / 22 = 9.22.** Nine dimensions rose; thirteen held; none regressed.
+**Mean = 204.2 / 22 = 9.28.** Twelve dimensions rose; ten held; none regressed.
 
 ## What moved, and why (evidence)
 
@@ -88,10 +98,26 @@ What moved the headline this cycle is a single structural change realised across
   even predicted the hard-coded module refs and the graph fitness function it now needs; the architecture
   diagrams (wiki `Architecture`/`Architecture-Domain`, `docs/context-map.md`) were updated this cycle.
 
-### Held (extraction does not touch them)
-Security 8.5, Performance efficiency 8.0, GraalVM 9.0, SOLID 9.4, Functional Kotlin 9.5, OpenAPI 9.0,
-Schema 9.1, Infra 9.3, Observability 9.2, XP/Kanban 9.4, DoD 9.2, Test quality 9.7, CI gates 9.7 —
-no code in these areas changed materially; scores carry forward from `scorecard-2026-07.md`.
+### Corrected by the full re-score (fixed by intervening gaps, not by ADR-0038)
+The July scorecard held these on stale evidence; verified against the code at `bb190c0`:
+- **Security 8.5 → 9.0** — the named residuals are closed: JWT `validate{}` requires a non-blank
+  `organizationId` claim and the simulation use cases tenant-scope by it (`ListSimulationsQuery`,
+  `CreateSimulationCommand`); `configureOpenApiRoutes` is gated behind `ENABLE_SWAGGER` (GAP-BK);
+  `SecurityHeaders` adds HSTS + `X-Frame-Options`/`nosniff`/CSP; `RateLimit` registers a stricter
+  `/auth` limit (5/min) with spoof-resistant `X-Forwarded-For` keying, spoof-proof by default when
+  `TRUSTED_PROXY_COUNT=0` (GAP-BL). Held below 9.5: HS256 symmetric JWT and no automated DAST.
+- **Performance efficiency 8.0 → 8.7** — `load/simulation-journey.js` ships smoke/baseline/**stress/
+  soak/spike** profiles exposed through `.github/workflows/load-test.yml` (workflow_dispatch), plus the
+  executable `scripts/perf-regression.sh` comparator that fails on regression beyond tolerance
+  (GAP-BO). Held below 9.0 **by design**: the baseline is machine-dependent so the run stays **manual,
+  not a PR gate** (ADR-0027 — shared CI runners are too noisy); it is a single reference environment.
+- **GraalVM 9.0 → 9.1** — the native error-path `DomainErrorResponse` serialization is fixed with
+  committed reachability metadata, and the CI **smoke test now probes a no-token `401`** that
+  serialises it in the Native Image (GAP-BM). Native all-route smoke is still a subset.
+
+### Held (unchanged, no material change since July)
+SOLID 9.4, Functional Kotlin 9.5, OpenAPI 9.0, Schema 9.1, Infra 9.3, Observability 9.2, XP/Kanban 9.4,
+DoD 9.2, Test quality 9.7, CI gates 9.7 — scores carry forward from `scorecard-2026-07.md`.
 
 ## Key metrics (current)
 
@@ -117,16 +143,15 @@ no code in these areas changed materially; scores carry forward from `scorecard-
 The lowest dimensions are the honestly-surfaced ones — strong candidates for board #6 (ADR-0023: the
 board is the single source of progress; this snapshot records state, it does not schedule work):
 
-- **Security (8.5) — highest-value:** JWT `validate{}` verifies only the audience, not an
-  `organizationId` claim, and use cases have **no caller-vs-resource ownership check** → IDOR /
-  cross-tenant risk. Swagger UI mounted unconditionally (not gated by `ENABLE_SWAGGER`). No HSTS. Rate
-  limit keyed on a spoofable first `X-Forwarded-For`; no stricter `/auth/*` limit.
-- **Performance (8.0):** single point-in-time k6 baseline, manual (not a PR gate); no stress/soak/spike
-  profiles, no automated regression signal.
+- **Performance (8.7):** the profiles and comparator exist (GAP-BO) but stay **manual by design**
+  (ADR-0027 — CI runners are too noisy for a stable machine-dependent baseline), so there is still no
+  automated per-PR regression gate; the reference is a single environment.
 - **Circular-dependency (8.3):** class↔class cycles within a single package are still not detected
   (analysis is import-based, package granularity).
+- **Security (9.0):** the concrete IDOR / header / rate-limit residuals are closed (GAP-BK/BL); what
+  remains is lower-leverage — HS256 symmetric JWT (no asymmetric rotation) and no automated DAST/pentest.
 - **Microservices (9.4):** the remaining cap is the **unified DB schema with cross-context FKs** —
   Database-per-context / published-language snapshot is ADR-0038's deferred Option 4, an `[E]` decision
   with no current demand.
-- **GraalVM (9.0):** `DomainErrorResponse` serialization on the native **error path** still relies on
-  reachability metadata (previously noted); native all-route smoke is manual.
+- **GraalVM (9.1):** the error-path serialization is fixed (GAP-BM); native all-route smoke is still a
+  probed subset rather than the full route surface.
