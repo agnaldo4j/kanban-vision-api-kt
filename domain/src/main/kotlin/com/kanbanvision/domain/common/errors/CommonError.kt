@@ -1,7 +1,8 @@
-package com.kanbanvision.domain.errors
+package com.kanbanvision.domain.common.errors
 
 /**
- * Erros genéricos, transversais aos bounded contexts (futuro `domain-common` — ADR-0038).
+ * Erros genéricos, transversais aos bounded contexts. Isolados no pacote `common` (Fase 1.5, ADR-0038);
+ * a extração para o módulo `domain-common` acontece na Fase 2.
  */
 sealed interface CommonError : DomainError {
     data class ValidationError(

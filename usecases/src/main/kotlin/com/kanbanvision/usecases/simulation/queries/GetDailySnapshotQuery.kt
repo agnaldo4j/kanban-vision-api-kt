@@ -5,7 +5,7 @@ import arrow.core.NonEmptyList
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
-import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.usecases.cqs.Query
 
 private const val MIN_DAY = 1

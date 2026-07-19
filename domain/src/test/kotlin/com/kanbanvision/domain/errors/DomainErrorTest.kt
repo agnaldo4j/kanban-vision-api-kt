@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.errors
 
+import com.kanbanvision.domain.common.errors.CommonError
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

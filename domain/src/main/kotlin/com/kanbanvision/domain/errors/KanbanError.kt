@@ -1,5 +1,7 @@
 package com.kanbanvision.domain.errors
 
+import com.kanbanvision.domain.common.errors.DomainError
+
 /**
  * Erros do Kanban Management BC (futuro `domain-kanban` — ADR-0038).
  */

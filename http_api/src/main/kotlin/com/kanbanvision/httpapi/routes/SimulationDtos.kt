@@ -3,7 +3,7 @@ package com.kanbanvision.httpapi.routes
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass

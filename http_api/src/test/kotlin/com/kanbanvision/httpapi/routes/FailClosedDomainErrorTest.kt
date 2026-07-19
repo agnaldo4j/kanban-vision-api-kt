@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.httpapi.adapters.respondWithDomainError
 import com.kanbanvision.httpapi.plugins.configureSerialization
 import com.kanbanvision.httpapi.support.REQUEST_ID_KEY

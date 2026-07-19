@@ -1,6 +1,6 @@
 package com.kanbanvision.domain.model.simulation
 
-import com.kanbanvision.domain.model.Audit
+import com.kanbanvision.domain.common.model.Audit
 
 data class SimulationResult(
     val simulation: Simulation,

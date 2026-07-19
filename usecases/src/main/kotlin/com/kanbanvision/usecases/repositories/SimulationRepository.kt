@@ -1,7 +1,7 @@
 package com.kanbanvision.usecases.repositories
 
 import arrow.core.Either
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationId
 

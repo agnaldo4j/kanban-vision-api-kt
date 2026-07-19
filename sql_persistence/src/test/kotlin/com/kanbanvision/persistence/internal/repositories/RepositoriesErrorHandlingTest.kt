@@ -1,7 +1,7 @@
 package com.kanbanvision.persistence.internal.repositories
 
-import com.kanbanvision.domain.errors.CommonError
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.CommonError
+import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.persistence.DatabaseFactory
 import com.kanbanvision.persistence.support.EmbeddedPostgresSupport

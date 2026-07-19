@@ -1,7 +1,7 @@
 package com.kanbanvision.domain.model.organization
 
-import com.kanbanvision.domain.model.Audit
-import com.kanbanvision.domain.model.Domain
+import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.Domain
 import com.kanbanvision.domain.model.kanban.Worker
 import java.util.UUID
 

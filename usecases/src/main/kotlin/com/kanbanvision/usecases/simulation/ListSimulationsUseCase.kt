@@ -2,7 +2,7 @@ package com.kanbanvision.usecases.simulation
 
 import arrow.core.Either
 import arrow.core.raise.either
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.usecases.Page
 import com.kanbanvision.usecases.repositories.SimulationRepository

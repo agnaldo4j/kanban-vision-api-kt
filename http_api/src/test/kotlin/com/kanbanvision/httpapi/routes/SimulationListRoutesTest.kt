@@ -4,7 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.httpapi.TEST_JWT_AUDIENCE
 import com.kanbanvision.httpapi.TEST_JWT_ISSUER

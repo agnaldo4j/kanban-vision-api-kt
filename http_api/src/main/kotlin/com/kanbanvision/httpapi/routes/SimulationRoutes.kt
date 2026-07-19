@@ -1,6 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
-import com.kanbanvision.domain.errors.CommonError
+import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.httpapi.adapters.callerOrganizationId
 import com.kanbanvision.httpapi.adapters.requiredPathParam

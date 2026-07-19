@@ -1,7 +1,7 @@
 package com.kanbanvision.httpapi.adapters
 
-import com.kanbanvision.domain.errors.CommonError
-import com.kanbanvision.domain.errors.DomainError
+import com.kanbanvision.domain.common.errors.CommonError
+import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.errors.KanbanError
 import com.kanbanvision.domain.errors.SimulationError
 import com.kanbanvision.httpapi.dtos.DomainErrorResponse
