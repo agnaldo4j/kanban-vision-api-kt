@@ -14,12 +14,14 @@
 
 set -euo pipefail
 
-# ── Tolerâncias (documentadas) ────────────────────────────────────────────────
-THROUGHPUT_DROP_PCT=10   # regressão se req/s cair mais que isto (%)
-P95_RISE_PCT=20          # regressão se p95 de um endpoint subir mais que isto (%)
-ERROR_RISE_ABS=0.01      # regressão se a taxa de erro subir mais que isto (absoluto)
+# ── Tolerâncias (documentadas; override por env para ambientes ruidosos) ──────
+# Defaults calibrados para runs LOCAIS (ADR-0027). O sinal agendado de CI (ADR-0039)
+# passa valores largos por env (runner compartilhado é ruidoso) sem mudar o uso local.
+THROUGHPUT_DROP_PCT=${THROUGHPUT_DROP_PCT:-10}   # regressão se req/s cair mais que isto (%)
+P95_RISE_PCT=${P95_RISE_PCT:-20}                 # regressão se p95 de um endpoint subir mais que isto (%)
+ERROR_RISE_ABS=${ERROR_RISE_ABS:-0.01}           # regressão se a taxa de erro subir mais que isto (absoluto)
 
-ENDPOINTS=(create run_day snapshot cfd list)
+ENDPOINTS=(create run_day days snapshot cfd list)
 
 if [[ $# -ne 2 ]]; then
   echo "uso: $0 <referencia.json> <atual.json>" >&2

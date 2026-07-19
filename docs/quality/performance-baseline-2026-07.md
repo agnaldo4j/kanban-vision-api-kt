@@ -55,3 +55,8 @@ k6 run -e PROFILE=baseline load/simulation-journey.js
 This first measurement required fixing the fat-JAR runtime, which was broken in local production without any gate catching it (CI builds the image but never runs it): OTel agent 2.14.0 incompatible with logback 1.5.37; the programmatic `embeddedServer` didn't read `application.conf`; Flyway with no plugins because `META-INF/services` wasn't merged (KTOR-8987); mute logback (logback 1.5.x removed `<if>`/Janino); Koin with no `MeterRegistry` binding. Fixes in the GAP-AR PR — details live in each fix's commits.
 
 > Policy (ADR-0027): k6 thresholds are an executable signal, not a PR gate. Changing a threshold requires a new measurement documented here.
+>
+> Policy (ADR-0039): this **local** measurement is the authoritative baseline. A separate **scheduled** CI
+> workflow (`.github/workflows/perf-regression.yml`) compares CI runs against a distinct CI-measured
+> reference (`load/ci-reference-summary.json`) with wide tolerances — a coarse, non-blocking tripwire,
+> **not** this number. Never a PR gate.
