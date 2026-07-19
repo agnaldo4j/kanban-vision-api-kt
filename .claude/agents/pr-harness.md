@@ -251,11 +251,15 @@ gh api repos/<owner>/<repo>/pulls/<n>/comments \
 
 **Correção:** <objetiva>. **Âncora:** <skill/regra/ADR/§2.5-classe>.
 MD
-)" -F commit_id="$COMMIT" -f path="<path>" -F line=<line> -f side=RIGHT
+)" -f commit_id="$COMMIT" -f path="<path>" -F line=<line> -f side=RIGHT
 ```
+- **`-f` vs `-F`:** só `line` é inteiro (use `-F`, que coage a número JSON); `commit_id`/`path`/`side`/`body`
+  são strings (`-f`). SHA passa com qualquer um, mas o exemplo é cânone — mantenha `-f commit_id`.
 - **Badge por severidade** (cores iguais às do Codex): `P1-red`, `P2-yellow`, `P3-lightgrey`.
 - **Idempotência:** antes de postar, liste os comentários existentes (`gh api .../pulls/<n>/comments`) e
   **pule** os que já têm o marcador `<!-- pr-harness:<P?>:<path>:<line> -->` — não duplique em re-run.
+- **Linha removida** (achado numa linha que o diff apaga): use `side=LEFT` (a linha vive no lado base).
+  Para linha adicionada/alterada, `side=RIGHT`.
 - **Linha fora do diff?** Se o `line` não pertence ao hunk, ancore no arquivo (comentário do PR referenciando
   `arquivo:linha`) em vez de falhar. Nunca invente uma linha.
 - **Read-only vale para o repo, não para o PR:** postar comentário é a sua saída legítima; você continua sem
