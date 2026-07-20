@@ -617,6 +617,12 @@ jobs:
           OUTLOG=""
           passed=true
 
+          # Pré-baixa as imagens em silêncio: sem isso o progresso de pull ('Pulling fs
+          # layer'…) entra no OUTLOG capturado (docker run 2>&1) e, no caminho de FALHA,
+          # soterraria o erro real do amtool/promtool.
+          docker pull -q "prom/alertmanager:$AM_VER"
+          docker pull -q "prom/prometheus:$PROM_VER"
+
           run_check() {
             local name="$1"; shift
             local out rc
