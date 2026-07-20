@@ -248,9 +248,9 @@ REVIEWED=$(gh pr view <n> --json headRefOid -q .headRefOid)
 # 2) … leia `gh pr diff <n>` e analise o diff DESTE sha …
 # 3) IMEDIATAMENTE antes de postar, revalide: head mudou ⇒ NÃO poste, reinicie a review no novo sha.
 [ "$(gh pr view <n> --json headRefOid -q .headRefOid)" = "$REVIEWED" ] || { echo "head avançou — abortar"; exit 0; }
-# 4) poste cada achado, ancorado e deduplicado PELO commit revisado ($REVIEWED expande no marcador):
+# 4) poste cada achado, ancorado e deduplicado PELO commit revisado (${REVIEWED} expande no marcador):
 gh api repos/<owner>/<repo>/pulls/<n>/comments \
-  -f body="<!-- pr-harness:$REVIEWED:<P?>:<path>:<line> -->
+  -f body="<!-- pr-harness:${REVIEWED}:<P?>:<path>:<line> -->
 <sub><sub>![P1 Badge](https://img.shields.io/badge/P1-red?style=flat)</sub></sub>  **<título curto e acionável>**
 
 <cenário de falha concreto: inputs → estado → saída errada>
@@ -260,9 +260,13 @@ gh api repos/<owner>/<repo>/pulls/<n>/comments \
 ```
 - **`-f` vs `-F`:** só `line` é inteiro (use `-F`, que coage a número JSON); `commit_id`/`path`/`side`/`body`
   são strings (`-f`). SHA passa com qualquer um, mas o exemplo é cânone — mantenha `-f commit_id`.
+- **Chaves no marcador (armadilha zsh):** use SEMPRE `${REVIEWED}` com chaves no marcador — nunca `$REVIEWED:P3`.
+  Em zsh, `$var:P` aplica o **modificador `:P`** (realpath) ao parâmetro (idem `:h`/`:t`/`:r`/`:l`/`:u`), então
+  `pr-harness:$REVIEWED:P3:…` vira o realpath de `$REVIEWED` + `3:…`, corrompendo o marcador e quebrando a
+  dedup. As chaves terminam o nome do parâmetro, deixando `:P3` como texto literal.
 - **Badge por severidade** (cores iguais às do Codex): `P1-red`, `P2-yellow`, `P3-lightgrey`.
 - **Idempotência escopada ao commit revisado:** o marcador inclui `$REVIEWED`; antes de postar, pule só os
-  comentários que já têm `<!-- pr-harness:$REVIEWED:<P?>:<path>:<line> -->`. Num `synchronize` (novo head) o
+  comentários que já têm `<!-- pr-harness:${REVIEWED}:<P?>:<path>:<line> -->`. Num `synchronize` (novo head) o
   SHA muda → você re-posta para o diff atual e os comentários do head antigo ficam *outdated* naturalmente,
   em vez de um comentário de outra revisão (mesma prioridade/linha) suprimir o achado atual.
 - **Linha removida** (achado numa linha que o diff apaga): use `side=LEFT` (a linha vive no lado base).
