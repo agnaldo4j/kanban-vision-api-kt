@@ -645,11 +645,27 @@ spec:
               cpu: "1000m"              # +153% de throughput vs 500m; joelho real da curva
               memory: "256Mi"           # 2,8× de folga sobre o WORKING SET de pico (não sobre memory.peak)
 
-      # Distribui pods entre nós disponíveis (alta disponibilidade)
+      # Espalha réplicas entre nós/zonas — SOFT (ScheduleAnyway), não DoNotSchedule (ADR-0040):
+      # separa em prod multi-nó mas agenda em single-node (Minikube) sem deixar réplica Pending
+      # nem arriscar deadlock de drain com o PDB. O labelSelector casa os labels DESTE exemplo
+      # (`app: kanban-vision-api`, acima). No manifesto REAL (k8s/03-deployment.yml, convenção
+      # `app.kubernetes.io/*`) o selector é `app.kubernetes.io/name` + `app.kubernetes.io/component: api`
+      # — o `component` exclui o migration Job (que compartilha o name); `matchLabelKeys` já exclui
+      # Jobs de qualquer forma (não têm pod-template-hash).
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
+          matchLabelKeys:
+            - pod-template-hash   # escopa à revisão do rollout (k8s ≥1.27); exclui RS antigo e Jobs
+          labelSelector:
+            matchLabels:
+              app: kanban-vision-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          matchLabelKeys:
+            - pod-template-hash
           labelSelector:
             matchLabels:
               app: kanban-vision-api

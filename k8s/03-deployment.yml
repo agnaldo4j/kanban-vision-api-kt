@@ -21,6 +21,11 @@ spec:
       labels:
         app.kubernetes.io/name: kanban-vision-api
         app.kubernetes.io/version: "1.0.0"
+        # Distingue os pods da API dos do migration Job (que usa component: migration,
+        # 09-migration-job.yml) — o topologySpreadConstraints abaixo seleciona por este label
+        # para não contar o Job no cálculo de skew (ADR-0040). NÃO está no .spec.selector
+        # (imutável, segue por name); o pod continua superconjunto do selector.
+        app.kubernetes.io/component: api
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
@@ -30,6 +35,30 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      # Espalha réplicas entre nós (e zonas) — ADR-0040. SOFT (ScheduleAnyway): em prod multi-nó o
+      # scheduler separa as réplicas (a queda de um nó deixa de derrubar todas na prática); em
+      # single-node (Minikube) agenda mesmo assim, sem deixar a 2ª réplica Pending nem travar o
+      # rollout (maxSurge:1) — e sem arriscar deadlock de drain com o PDB. Soft REDUZ o ponto único,
+      # não o elimina (nó com taint/sem capacidade ainda co-localiza) — não é HA garantida.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          matchLabelKeys:
+            - pod-template-hash   # escopa o skew à revisão do rollout (exclui RS antigo e o Job)
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: kanban-vision-api
+              app.kubernetes.io/component: api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          matchLabelKeys:
+            - pod-template-hash
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: kanban-vision-api
+              app.kubernetes.io/component: api
       containers:
         - name: api
           # Image name is overridden by kustomization.yaml `images:` — set registry
