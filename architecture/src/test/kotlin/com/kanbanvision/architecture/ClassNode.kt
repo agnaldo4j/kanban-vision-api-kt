@@ -36,10 +36,12 @@ internal fun buildClassGraph(nodes: List<ClassNode>): Map<String, Set<String>> {
  * Resolve um nome simples referenciado a partir de [from] para o FQN de um nó do pacote:
  * - 0 candidatos → `null` (tipo externo/desconhecido: sem aresta);
  * - 1 candidato → aresta direta;
- * - >1 (homônimos) → o candidato visível do escopo do referente **mais próximo** (maior `enclosing` que
- *   é ancestral do `fqn` de [from]). Empate genuíno no escopo mais próximo, ou nenhum candidato em
- *   escopo → `null` (aresta pulada). O viés é a falso-negativo (resíduo documentado), NUNCA a
- *   falso-positivo — um gate que reprova código limpo é pior que um que perde um ciclo homônimo raro.
+ * - >1 (homônimos) → o candidato visível do escopo do referente **mais próximo** (maior `enclosing`).
+ *   "Visível de [from]" = o próprio [from] (self), um tipo aninhado DIRETO de [from] (a classe declarante
+ *   é o escopo do seu aninhado: `from.fqn == enclosing`), ou um tipo cujo `enclosing` é ancestral de
+ *   [from] (`from.fqn` começa com `enclosing + "."`). Empate genuíno no escopo mais próximo, ou nenhum
+ *   candidato em escopo → `null` (aresta pulada). O viés é a falso-negativo (resíduo documentado), NUNCA
+ *   a falso-positivo — um gate que reprova código limpo é pior que um que perde um ciclo homônimo raro.
  */
 private fun resolveRef(
     ref: String,
@@ -51,9 +53,13 @@ private fun resolveRef(
         0 -> null
         1 -> candidates.single().fqn
         else -> {
-            val inScope = candidates.filter { from.fqn == it.fqn || from.fqn.startsWith(it.enclosing + ".") }
+            val inScope = candidates.filter { from.visibleScopeOf(it) }
             val nearest = inScope.maxOfOrNull { it.enclosing.length }
             inScope.singleOrNull { it.enclosing.length == nearest }?.fqn
         }
     }
 }
+
+/** [candidate] é visível do escopo de `this` referente? (self · aninhado direto de this · ancestral). */
+private fun ClassNode.visibleScopeOf(candidate: ClassNode): Boolean =
+    fqn == candidate.fqn || fqn == candidate.enclosing || fqn.startsWith(candidate.enclosing + ".")

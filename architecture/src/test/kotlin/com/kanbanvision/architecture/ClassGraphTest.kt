@@ -95,6 +95,25 @@ class ClassGraphTest {
     }
 
     @Test
+    fun `classe declarante enxerga o proprio tipo aninhado mesmo com homonimo (ciclo Outer-Outer_State-Outer)`() {
+        // Outer(val state: State) + Outer.State(val owner: Outer), com Other.State homônima de isca.
+        // `from`=pkg.Outer e o alvo pkg.Outer.State: from.fqn == enclosing do alvo (não `startsWith`).
+        val graph =
+            buildClassGraph(
+                listOf(
+                    node("pkg.Outer", setOf("State")),
+                    node("pkg.Outer.State", setOf("Outer")),
+                    node("pkg.Other.State", emptySet()),
+                ),
+            )
+
+        assertEquals(setOf("pkg.Outer.State"), graph["pkg.Outer"]) {
+            "Outer referencia seu próprio aninhado Outer.State, não Other.State"
+        }
+        assertNotNull(findCycle(graph)) { "Outer -> Outer.State -> Outer fecha um ciclo real" }
+    }
+
+    @Test
     fun `ciclo real entre FQNs distintos e detectado apesar de um homonimo-isca`() {
         val graph =
             buildClassGraph(
