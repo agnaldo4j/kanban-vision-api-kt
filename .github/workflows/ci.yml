@@ -577,6 +577,133 @@ jobs:
           body: ${{ steps.flow-report.outputs.body }}
           edit-mode: replace
 
+  config-lint:
+    name: Config Lint (Alertmanager + Prometheus)
+    runs-on: ubuntu-latest
+
+    # Gate bloqueante (GAP-CY): valida o SCHEMA SEMÂNTICO dos configs de observabilidade —
+    # a classe de bug que um parser YAML genérico não pega (o P2 do PR #317: inhibit_rules
+    # com equal:['instance','name']). amtool/promtool entendem o schema; YAML puro não.
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve pinned tool versions from docker-compose
+        # Linta com as MESMAS versões fixadas no runtime (docker-compose.yml) — sem drift
+        # silencioso quando um bump mudar a imagem. Setup/gate step: sem continue-on-error.
+        run: |
+          AM_VER="$(grep -oE 'prom/alertmanager:[^"[:space:]]+' docker-compose.yml | head -1 | cut -d: -f2)"
+          PROM_VER="$(grep -oE 'prom/prometheus:[^"[:space:]]+' docker-compose.yml | head -1 | cut -d: -f2)"
+          if [ -z "$AM_VER" ] || [ -z "$PROM_VER" ]; then
+            echo "::error::Não foi possível resolver prom/alertmanager|prom/prometheus em docker-compose.yml"
+            exit 1
+          fi
+          echo "AM_VER=$AM_VER" >> "$GITHUB_ENV"
+          echo "PROM_VER=$PROM_VER" >> "$GITHUB_ENV"
+
+      - name: Lint observability configs (amtool + promtool)
+        id: lint
+        # Captura saída/status SEM derrubar o job aqui (padrão captura→report→gate do smoke
+        # test); quem reprova é o step 'Fail if any config is invalid'. Assim o comentário
+        # sticky é postado mesmo em falha. promtool check config exige que rule_files
+        # (/etc/prometheus/prometheus-alerts.yml) resolva — daí o segundo mount.
+        run: |
+          set +e
+          declare -a ROWS=()
+          OUTLOG=""
+          passed=true
+
+          run_check() {
+            local name="$1"; shift
+            local out rc
+            out="$(docker run --rm "$@" 2>&1)"; rc=$?
+            if [ "$rc" -eq 0 ]; then
+              ROWS+=("| $name | ✅ pass |")
+            else
+              ROWS+=("| $name | ❌ fail (exit $rc) |")
+              passed=false
+            fi
+            OUTLOG+=$'\n'"### $name"$'\n\n```\n'"$out"$'\n```\n'
+          }
+
+          run_check "amtool check-config · alertmanager.yml" \
+            --entrypoint amtool -v "$PWD/observability:/cfg" \
+            "prom/alertmanager:$AM_VER" check-config /cfg/alertmanager.yml
+
+          run_check "promtool check config · prometheus.yml" \
+            --entrypoint promtool \
+            -v "$PWD/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+            -v "$PWD/observability/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro" \
+            "prom/prometheus:$PROM_VER" check config /etc/prometheus/prometheus.yml
+
+          run_check "promtool check rules · prometheus-alerts.yml" \
+            --entrypoint promtool \
+            -v "$PWD/observability/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro" \
+            "prom/prometheus:$PROM_VER" check rules /etc/prometheus/prometheus-alerts.yml
+
+          {
+            echo 'body<<CONFIG_LINT_REPORT'
+            echo '## Config Lint Report'
+            echo ''
+            echo "Valida \`observability/*.yml\` com **amtool** (\`prom/alertmanager:$AM_VER\`) e **promtool** (\`prom/prometheus:$PROM_VER\`) — versões fixadas no \`docker-compose.yml\`."
+            echo ''
+            echo '| Check | Resultado |'
+            echo '|-------|-----------|'
+            printf '%s\n' "${ROWS[@]}"
+            echo ''
+            if [ "$passed" = true ]; then
+              echo '✅ Todos os configs de observabilidade são válidos.'
+            else
+              echo '❌ **Config de observabilidade inválida — este job reprova o CI.** Veja a saída abaixo.'
+            fi
+            echo ''
+            echo '<details><summary>Saída dos linters</summary>'
+            echo ''
+            echo "$OUTLOG"
+            echo '</details>'
+            echo ''
+            echo '> Gate bloqueante — config-lint (GAP-CY). Reproduza local: ver `.claude/skills/opentelemetry/SKILL.md`.'
+            echo 'CONFIG_LINT_REPORT'
+          } >> "$GITHUB_OUTPUT"
+          echo "passed=$passed" >> "$GITHUB_OUTPUT"
+
+          # Espelha no log do job — visibilidade independente do comentário.
+          printf '%s\n' "${ROWS[@]}"
+          printf '%s\n' "$OUTLOG"
+
+      - name: Find existing config lint comment
+        id: find-config-lint
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/find-comment@v4
+        continue-on-error: true
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Config Lint Report'
+
+      - name: Post config lint report on PR
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
+        with:
+          comment-id: ${{ steps.find-config-lint.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.lint.outputs.body }}
+          edit-mode: replace
+
+      - name: Fail if any config is invalid
+        # Gate real (bloqueante) — só depende do resultado do lint; `run:`, sem continue-on-error.
+        run: |
+          if [ "${{ steps.lint.outputs.passed }}" != "true" ]; then
+            echo "::error::Config de observabilidade inválida — veja o step 'Lint observability configs' e o comentário Config Lint Report."
+            exit 1
+          fi
+          echo "Todos os configs de observabilidade são válidos."
+
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
