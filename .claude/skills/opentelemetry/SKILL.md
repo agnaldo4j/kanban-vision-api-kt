@@ -842,7 +842,9 @@ de entrega. GAP-CA wireou o **Alertmanager** no stack docker-compose:
 - **`observability/alertmanager.yml`** — árvore de rotas ancorada no label `severity` que as regras
   já emitem: `critical` (pagina rápido, `group_wait 10s` / `repeat_interval 1h`) e `warning`
   (`repeat_interval 4h`), com catch-all `default`. `inhibit_rules`: um `critical` silencia os
-  `warning` da mesma `instance` (reduz ruído no incidente).
+  `warning` da mesma fonte via `equal: ['instance', 'name']` — `instance` casa app/frota; `name`
+  escopa os alertas de container por container (o job `cadvisor` compartilha um único
+  `instance="cadvisor:8080"`, então só `name` distingue containers).
 - **`observability/prometheus.yml`** — bloco `alerting.alertmanagers` apontando `alertmanager:9093`
   (é o que faltava para o Prometheus saber onde entregar).
 - **`docker-compose.yml`** — serviços `alertmanager` (`prom/alertmanager`, `:9093`) e `alert-sink`
