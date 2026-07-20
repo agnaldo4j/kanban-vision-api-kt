@@ -647,18 +647,20 @@ spec:
 
       # Espalha réplicas entre nós/zonas — SOFT (ScheduleAnyway), não DoNotSchedule (ADR-0040):
       # separa em prod multi-nó mas agenda em single-node (Minikube) sem deixar réplica Pending
-      # nem arriscar deadlock de drain com o PDB. Seleciona por component: api (o migration Job
-      # compartilha .../name, mas usa component: migration) para não entrar no cálculo de skew.
+      # nem arriscar deadlock de drain com o PDB. O labelSelector casa os labels DESTE exemplo
+      # (`app: kanban-vision-api`, acima). No manifesto REAL (k8s/03-deployment.yml, convenção
+      # `app.kubernetes.io/*`) o selector é `app.kubernetes.io/name` + `app.kubernetes.io/component: api`
+      # — o `component` exclui o migration Job (que compartilha o name); `matchLabelKeys` já exclui
+      # Jobs de qualquer forma (não têm pod-template-hash).
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: ScheduleAnyway
           matchLabelKeys:
-            - pod-template-hash   # escopa à revisão do rollout (k8s ≥1.27); exclui RS antigo e o Job
+            - pod-template-hash   # escopa à revisão do rollout (k8s ≥1.27); exclui RS antigo e Jobs
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: kanban-vision-api
-              app.kubernetes.io/component: api
+              app: kanban-vision-api
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: ScheduleAnyway
@@ -666,8 +668,7 @@ spec:
             - pod-template-hash
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: kanban-vision-api
-              app.kubernetes.io/component: api
+              app: kanban-vision-api
 ```
 
 ### Perf-parameters de runtime — Native (produção) vs JVM (dev/fallback)
