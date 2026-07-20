@@ -617,16 +617,17 @@ jobs:
           OUTLOG=""
           passed=true
 
+          # PyYAML para a asserção de invariante semântica (assert-observability-invariants.py).
+          python3 -m pip install --quiet pyyaml || pip install --quiet pyyaml || true
+
           # Pré-baixa as imagens em silêncio: sem isso o progresso de pull ('Pulling fs
           # layer'…) entra no OUTLOG capturado (docker run 2>&1) e, no caminho de FALHA,
           # soterraria o erro real do amtool/promtool.
           docker pull -q "prom/alertmanager:$AM_VER"
           docker pull -q "prom/prometheus:$PROM_VER"
 
-          run_check() {
-            local name="$1"; shift
-            local out rc
-            out="$(docker run --rm "$@" 2>&1)"; rc=$?
+          record() {
+            local name="$1" out="$2" rc="$3"
             if [ "$rc" -eq 0 ]; then
               ROWS+=("| $name | ✅ pass |")
             else
@@ -634,6 +635,13 @@ jobs:
               passed=false
             fi
             OUTLOG+=$'\n'"### $name"$'\n\n```\n'"$out"$'\n```\n'
+          }
+
+          run_check() {
+            local name="$1"; shift
+            local out rc
+            out="$(docker run --rm "$@" 2>&1)"; rc=$?
+            record "$name" "$out" "$rc"
           }
 
           run_check "amtool check-config · alertmanager.yml" \
@@ -650,6 +658,12 @@ jobs:
             --entrypoint promtool \
             -v "$PWD/observability/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro" \
             "prom/prometheus:$PROM_VER" check rules /etc/prometheus/prometheus-alerts.yml
+
+          # Invariante SEMÂNTICA que o amtool/promtool não expressa (Codex P2, PR #319): a
+          # inibição critical→warning tem de ser escopada por `instance` E `name`. Sem `name`
+          # o config continua schema-válido, então só um assert dedicado pega a regressão do #317.
+          inv_out="$(python3 scripts/assert-observability-invariants.py 2>&1)"; inv_rc=$?
+          record "inhibit-scope invariant · alertmanager.yml" "$inv_out" "$inv_rc"
 
           {
             echo 'body<<CONFIG_LINT_REPORT'

@@ -59,7 +59,7 @@
 3. WIP line needs a PAT with `read:project` in secret `FLOW_PROJECT_TOKEN`; without it the script degrades WIP to "unavailable" (cycle/lead/cadence/size still reported)
 
 **Job `config-lint`** — every PR and push to `main`, parallel to `quality` (GAP-CY):
-1. Lint `observability/*.yml` semantically: `amtool check-config` (`alertmanager.yml`) + `promtool check config`/`check rules` (`prometheus.yml` + `prometheus-alerts.yml`) — runs the containers directly, no JVM/Gradle
+1. Lint `observability/*.yml` semantically: `amtool check-config` (`alertmanager.yml`) + `promtool check config`/`check rules` (`prometheus.yml` + `prometheus-alerts.yml`) — runs the containers directly, no JVM/Gradle. Plus `scripts/assert-observability-invariants.py` — a semantic invariant the schema linters can't express: the critical→warning `inhibit_rule` must be scoped by both `instance` **and** `name` (dropping `name` stays schema-valid but is the exact PR #317 regression; Codex P2 on PR #319)
 2. Tool versions are resolved from `docker-compose.yml` (`prom/alertmanager` + `prom/prometheus` tags), so the lint always matches the pinned runtime — no silent drift on a bump
 3. **Blocking gate** — the `Fail if any config is invalid` step fails the job on any invalid config (the class of semantic bug a generic YAML parser misses, e.g. the PR #317 `inhibit_rules` P2). Follows the smoke-test **capture → report → gate** shape so the report still posts on failure
 4. Post PR comment: sticky **Config Lint Report** (per-check ✅/❌ + linter output). The gate itself is a `run:` step; only the `peter-evans/*` comment steps carry `continue-on-error` (per `scripts/assert-ci-protection.py`)
