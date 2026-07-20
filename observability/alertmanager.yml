@@ -1,0 +1,75 @@
+# Alertmanager — camada de ENTREGA dos alertas do Prometheus (GAP-CA).
+#
+# Até aqui os 8 alertas de observability/prometheus-alerts.yml eram AVALIADOS pelo Prometheus
+# mas disparavam "para o vazio": prometheus.yml não tinha bloco `alerting:` e não havia
+# Alertmanager. O GAP-U/ADR-0004 entregou as REGRAS (PR #64); esta é a entrega que faltava.
+#
+# Escopo: apenas o stack docker-compose (onde o Prometheus roda hoje). O Alertmanager
+# in-cluster (k8s) é o GAP-CB [E] — não há Prometheus in-cluster ainda, então manifesto k8s
+# aqui seria config morta.
+
+global:
+  resolve_timeout: 5m
+
+# Árvore de rotas ancorada nos labels `severity` que as regras JÁ emitem:
+#   critical → HighHttpErrorRate, DbConnectionFleetExhaustion, ContainerOomKilled, ServiceDown
+#   warning  → HighHttpLatencyP95, HikariPoolExhaustion, ContainerCpuThrottling, ContainerMemoryNearLimit
+route:
+  receiver: default                 # catch-all (qualquer alerta sem severity casada)
+  group_by: ['alertname', 'instance']
+  group_wait: 30s                   # buffer da rajada inicial antes da 1ª notificação
+  group_interval: 5m                # espera antes de notificar alertas novos num grupo existente
+  repeat_interval: 4h               # cadência de re-notificação padrão (tier warning)
+  routes:
+    - matchers: [ 'severity="critical"' ]
+      receiver: critical
+      group_wait: 10s               # pagina rápido
+      repeat_interval: 1h           # re-notifica agressivamente enquanto não resolve
+    - matchers: [ 'severity="warning"' ]
+      receiver: warning
+      repeat_interval: 4h
+
+# Receivers LOCAIS sem segredo: cada um posta num caminho distinto do echo sink (alert-sink),
+# então a DECISÃO de rota fica visível em `docker logs kanban-vision-alert-sink`. É a prova
+# ponta-a-ponta de que o alerta é roteado e ENTREGUE — não só recebido.
+receivers:
+  - name: default
+    webhook_configs:
+      - url: 'http://alert-sink:8080/default'
+        send_resolved: true
+  - name: critical
+    webhook_configs:
+      - url: 'http://alert-sink:8080/critical'
+        send_resolved: true
+  - name: warning
+    webhook_configs:
+      - url: 'http://alert-sink:8080/warning'
+        send_resolved: true
+
+  # ── COMO PLUGAR ENTREGA REAL (Slack/email) — desativado localmente: não se comita segredo ──
+  # O Alertmanager NÃO expande variáveis de ambiente no YAML. Para produção:
+  #   1. remova os webhook_configs do receiver `critical`/`warning` acima;
+  #   2. adicione slack_configs / email_configs referenciando o segredo por *_file
+  #      (o Alertmanager lê o segredo do arquivo em runtime, mantendo-o fora do config);
+  #   3. monte esse arquivo de um caminho NÃO versionado localmente, ou de um Secret do k8s (GAP-CB).
+  # Exemplo (comentado, placeholder — NUNCA uma URL real; guard-security.sh bloquearia):
+  #   - name: critical
+  #     slack_configs:
+  #       - channel: '#alerts'
+  #         api_url_file: /etc/alertmanager/secrets/slack_webhook_url
+  #         send_resolved: true
+
+# Um incidente crítico silencia os warnings da MESMA fonte (reduz ruído durante a falha).
+# `equal: ['instance', 'name']`:
+#   - `instance` casa os alertas de app/frota (job kanban-vision-api, instance="kanban-vision-api").
+#   - `name` é OBRIGATÓRIO para escopar os alertas de container por container: o job `cadvisor` em
+#     prometheus.yml tem alvo único (`targets: ["cadvisor:8080"]`, sem relabel), então TODAS as
+#     séries container_* compartilham `instance="cadvisor:8080"` — quem diferencia container é o
+#     label `name` (os expr usam `{name!=""}`). Sem `name`, um ContainerOomKilled do postgres
+#     inibiria CPU/memória de QUALQUER container (app, grafana). Os alertas de app/frota não têm
+#     label `name`: pela semântica "campo ausente = igual" do Alertmanager, sua inibição atual é
+#     preservada; `name` só restringe corretamente os pares de container ao container coincidente.
+inhibit_rules:
+  - source_matchers: [ 'severity="critical"' ]
+    target_matchers: [ 'severity="warning"' ]
+    equal: ['instance', 'name']

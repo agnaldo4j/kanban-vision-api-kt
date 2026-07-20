@@ -34,7 +34,7 @@ logback.xml           → <include> seleciona logback-{text,json}.xml por LOG_FO
 /metrics              → Micrometer + Prometheus (job quality do compose)
 Telemetry.kt (ADR-0031) → OTel SDK autoconfigure + libs (ktor-3.0, jdbc, logback-mdc) → traces OTLP gRPC → Tempo (trace_id/span_id no MDC, snake_case)
 /health /health/live /health/ready → readiness verifica o banco
-Alertas               → Prometheus rules + Grafana (GAP-U)
+Alertas               → Prometheus rules (observability/prometheus-alerts.yml, GAP-U) → Alertmanager (observability/alertmanager.yml, GAP-CA)
 ```
 
 Este skill serve para **evoluir e depurar** essa observabilidade — não para instalá-la
@@ -44,7 +44,7 @@ do zero. O modelo de camadas abaixo continua sendo o mapa conceitual:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  Camada 4 — Alertas (Grafana Alerting / Alertmanager)    │
+│  Camada 4 — Alertas (Prometheus rules → Alertmanager)    │
 ├──────────────────────────────────────────────────────────┤
 │  Camada 3 — Traces (OpenTelemetry → Grafana Tempo)       │
 ├──────────────────────────────────────────────────────────┤
@@ -782,10 +782,14 @@ hikaricp_connections_max{pool="HikariPool-1"}
 
 ## X. Alertas Recomendados
 
-Configure no Grafana Alerting ou Prometheus Alertmanager:
+> **Estado atual (entregue):** as regras vivem em **`observability/prometheus-alerts.yml`** (8 alertas
+> reais, GAP-U/GAP-BW) e a **entrega** está wireada via Alertmanager — ver *Alertmanager (entrega)*
+> abaixo. O bloco a seguir é apenas **ilustrativo** (thresholds simplificados); os thresholds de
+> produção estão calibrados no arquivo real (ex.: P95 no orçamento k6, exaustão de frota via
+> `sum(hikaricp_connections)`).
 
 ```yaml
-# config/prometheus-alerts.yml
+# observability/prometheus-alerts.yml (ilustrativo — ver o arquivo real p/ thresholds calibrados)
 groups:
   - name: kanban-vision-api
     rules:
@@ -829,6 +833,44 @@ groups:
         annotations:
           summary: "kanban-vision-api está fora do ar"
 ```
+
+### Alertmanager (entrega) — GAP-CA
+
+As regras acima eram AVALIADAS pelo Prometheus mas disparavam **para o vazio**: faltava a camada
+de entrega. GAP-CA wireou o **Alertmanager** no stack docker-compose:
+
+- **`observability/alertmanager.yml`** — árvore de rotas ancorada no label `severity` que as regras
+  já emitem: `critical` (pagina rápido, `group_wait 10s` / `repeat_interval 1h`) e `warning`
+  (`repeat_interval 4h`), com catch-all `default`. `inhibit_rules`: um `critical` silencia os
+  `warning` da mesma fonte via `equal: ['instance', 'name']` — `instance` casa app/frota; `name`
+  escopa os alertas de container por container (o job `cadvisor` compartilha um único
+  `instance="cadvisor:8080"`, então só `name` distingue containers).
+- **`observability/prometheus.yml`** — bloco `alerting.alertmanagers` apontando `alertmanager:9093`
+  (é o que faltava para o Prometheus saber onde entregar).
+- **`docker-compose.yml`** — serviços `alertmanager` (`prom/alertmanager`, `:9093`) e `alert-sink`
+  (echo container sem segredo): cada receiver posta num caminho distinto (`/critical`, `/warning`,
+  `/default`), então `docker logs kanban-vision-alert-sink` prova a entrega ponta-a-ponta.
+
+**Entrega real (Slack/email):** o Alertmanager NÃO expande env vars no YAML — referencie o segredo
+por `*_file` (ex.: `slack_configs[].api_url_file`) montado de um caminho não versionado ou de um
+Secret do k8s. Ver o comentário no topo de `observability/alertmanager.yml`. Nunca comitar URL real.
+
+**Escopo:** só compose (onde o Prometheus roda hoje). O Alertmanager **in-cluster** (manifestos k8s +
+Prometheus in-cluster) é o **GAP-CB [E]**.
+
+**Validar sem subir tudo** (precisa do daemon Docker):
+```bash
+docker run --rm --entrypoint amtool -v "$PWD/observability:/cfg" \
+  prom/alertmanager:v0.27.0 check-config /cfg/alertmanager.yml
+docker run --rm --entrypoint promtool \
+  -v "$PWD/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+  -v "$PWD/observability/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro" \
+  prom/prometheus:v2.54.1 check config /etc/prometheus/prometheus.yml
+```
+Ponta-a-ponta: `docker compose up -d` → Prometheus `:9090` → Status → Alertmanagers mostra
+`alertmanager:9093` ativo → `docker compose stop app` (dispara `ServiceDown` em ~1min) →
+Alertmanager `:9093` mostra o grupo → `docker logs kanban-vision-alert-sink` mostra o POST em
+`/critical`.
 
 ---
 
@@ -908,7 +950,7 @@ Passo 5 — Traces distribuídos (GAP-O)
 
 - [ ] Prometheus faz scraping do endpoint `/metrics` a cada 15s?
 - [ ] Grafana tem datasource configurado para Prometheus, Loki e Tempo?
-- [ ] Alertas críticos estão configurados (error rate, latência P95, pool esgotado, serviço fora)?
+- [ ] Alertas críticos estão configurados (error rate, latência P95, pool esgotado, serviço fora) em `observability/prometheus-alerts.yml` **e entregues** via Alertmanager (`observability/alertmanager.yml`), não só avaliados?
 - [ ] OTel Collector está configurado com `memory_limiter` para evitar OOM?
 - [ ] Java Agent está fixado em versão específica (não `latest`) para builds reproduzíveis?
 
