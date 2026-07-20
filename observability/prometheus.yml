@@ -5,6 +5,13 @@ global:
 rule_files:
   - "/etc/prometheus/prometheus-alerts.yml"
 
+# Entrega dos alertas ao Alertmanager (GAP-CA). Sem este bloco as regras acima disparavam
+# "para o vazio". Verificável em Prometheus → Status → Alertmanagers.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
 scrape_configs:
   - job_name: "kanban-vision-api"
     metrics_path: "/metrics"

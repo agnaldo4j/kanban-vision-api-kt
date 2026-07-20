@@ -123,6 +123,7 @@ services:
     depends_on:
       - app
       - cadvisor
+      - alertmanager
     ports:
       - "9090:9090"
     volumes:
@@ -155,8 +156,45 @@ services:
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     restart: unless-stopped
 
+  # ── Alertmanager (GAP-CA) — entrega dos alertas de observability/prometheus-alerts.yml ──
+  # Sem ele os 8 alertas disparavam para o vazio. Só compose: o Alertmanager in-cluster é o
+  # GAP-CB [E] (não há Prometheus in-cluster ainda).
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: kanban-vision-alertmanager
+    depends_on:
+      - alert-sink
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9093/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Alert webhook sink (GAP-CA) — receiver LOCAL sem segredo ───────────────────
+  # Ecoa cada POST recebido no stdout, então `docker logs kanban-vision-alert-sink` é a prova
+  # ponta-a-ponta da entrega. Troque por Slack/email conforme o comentário em
+  # observability/alertmanager.yml. É o default de dev/local (produção é k8s/nativo, GAP-CB).
+  alert-sink:
+    image: mendhak/http-https-echo:31
+    container_name: kanban-vision-alert-sink
+    environment:
+      HTTP_PORT: "8080"
+    ports:
+      - "8082:8080"   # 8081 já é do cadvisor; publish só para inspecionar o echo pelo host
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
   tempo_data:
+  alertmanager_data:
