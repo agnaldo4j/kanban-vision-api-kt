@@ -66,30 +66,49 @@ single-node (Minikube), que é um alvo de primeira classe da skill `/local-and-p
 follow-up — esta ADR é o gate `[E]`):
 
 ```yaml
+# Requer que o pod template do Deployment ganhe o label distintivo
+# `app.kubernetes.io/component: api`. O migration Job (k8s/09-migration-job.yml:52-54) compartilha
+# `.../name: kanban-vision-api`; sem o `component` distintivo o Job entraria na conta do skew
+# (ex.: migration no nó A + 2 réplicas no nó B ⇒ skew 1 "balanceado", anulando a separação).
 topologySpreadConstraints:
   # Espalha réplicas entre NÓS — soft (ScheduleAnyway): em prod multi-nó o scheduler separa;
   # em single-node (Minikube) agenda mesmo assim, sem deixar a 2ª réplica Pending (ADR-0040).
   - maxSkew: 1
     topologyKey: kubernetes.io/hostname
     whenUnsatisfiable: ScheduleAnyway
+    matchLabelKeys:
+      - pod-template-hash   # escopa o skew à revisão do rollout (exclui RS antigo e o Job)
     labelSelector:
       matchLabels:
         app.kubernetes.io/name: kanban-vision-api
+        app.kubernetes.io/component: api
   # Espalha entre ZONAS onde o cluster as expõe; também soft, inócuo num cluster sem zonas.
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: ScheduleAnyway
+    matchLabelKeys:
+      - pod-template-hash
     labelSelector:
       matchLabels:
         app.kubernetes.io/name: kanban-vision-api
+        app.kubernetes.io/component: api
 ```
 
 Decisões fixadas:
 
 - **`whenUnsatisfiable: ScheduleAnyway` (soft), não `DoNotSchedule`.** A separação é uma **preferência
   forte**, não um requisito — é o que reconcilia "espalhar em prod" com "agendar em single-node".
-- **`labelSelector` idêntico ao `selector.matchLabels` do Deployment** (`app.kubernetes.io/name:
-  kanban-vision-api`, `k8s/03-deployment.yml:12-13`) — o constraint conta o próprio conjunto de réplicas.
+- **`labelSelector` restrito aos pods do Deployment.** O migration Job
+  (`k8s/09-migration-job.yml:52-54`) compartilha `app.kubernetes.io/name: kanban-vision-api`, então
+  selecionar só por `name` o contaria no skew (`migration` no nó A + 2 réplicas no nó B ⇒ skew 1,
+  "balanceado" — anulando a separação). A implementação **adiciona `app.kubernetes.io/component: api`**
+  ao pod template do Deployment (o Job já usa `component: migration`) e o constraint seleciona por
+  `name` + `component: api`. Adicionar um label ao pod template é seguro: o `.spec.selector` do
+  Deployment (imutável) segue por `name`, e o pod continua superconjunto dele.
+- **`matchLabelKeys: [pod-template-hash]`** escopa o cálculo à **revisão do rollout** — num rolling
+  update não mistura pods do ReplicaSet antigo e novo (e, de quebra, exclui o Job, que não tem esse
+  label). Requer k8s ≥1.27 (beta ligado por default; estável 1.30); onde indisponível, o `component: api`
+  sozinho já exclui o Job.
 - **Dois topologyKeys:** `kubernetes.io/hostname` (o que resolve o defeito) e
   `topology.kubernetes.io/zone` (defesa em profundidade onde há zonas; sem custo onde não há).
 - **PDB permanece inalterado.** Spread (involuntário) e PDB (voluntário) são **ortogonais** e
@@ -97,13 +116,18 @@ Decisões fixadas:
 
 ## Consequences
 
-- **Bom:** num cluster multi-nó, a queda de um nó não pode mais derrubar todas as réplicas — as 2
-  réplicas passam a entregar a disponibilidade que o custo delas já paga, e o spread alinha-se ao PDB.
-  O manifesto de referência fica **seguro por default**, sem overlay.
-- **Trade-off (aceito):** soft **não garante** separação — num cluster com nós de menos, o scheduler
-  ainda pode co-localizar. É o preço de não quebrar o dev single-node nem arriscar deadlock de drain;
-  uma garantia dura é **incompatível** com os alvos deste repo. Quem operar um cluster grande e quiser
-  garantia pode endurecer para `DoNotSchedule` **via overlay** de ambiente — nunca no manifesto base.
+- **Bom:** num cluster multi-nó com nós viáveis, o scheduler passa a **separar** as réplicas, de modo
+  que a queda de um nó deixa de ser, **na prática**, um ponto único — as 2 réplicas passam a entregar a
+  disponibilidade que o custo delas já paga, e o spread alinha-se ao PDB. É uma **melhora forte da
+  postura por default** (não uma garantia — ver o trade-off abaixo), sem exigir overlay.
+- **Trade-off (aceito) — soft NÃO garante separação.** Sendo `ScheduleAnyway`, se não houver nó viável
+  o scheduler co-localiza assim mesmo, e aí a falha de um nó ainda derruba todas as réplicas. "Sem nó
+  viável" não é só "nós de menos": inclui nós com `taint`, sem capacidade, ou que percam no scoring do
+  scheduler. Logo o manifesto **reduz drasticamente** a probabilidade do ponto único, mas **não a
+  elimina** — operadores não devem tratar isto como HA garantida. É o preço de não quebrar o dev
+  single-node nem arriscar deadlock de drain; uma garantia dura é **incompatível** com os alvos deste
+  repo. Quem operar um cluster grande e quiser a garantia pode endurecer para `DoNotSchedule` **via
+  overlay** de ambiente — nunca no manifesto base.
 - **Custo zero em Minikube:** `ScheduleAnyway` não altera o comportamento single-node.
 - **Implementação:** ~10 linhas em `k8s/03-deployment.yml` (PR de follow-up). Sem código de app, sem
   impacto em gates de qualidade. Validar com `kustomize build k8s/` (+ `kubeconform` se disponível).
