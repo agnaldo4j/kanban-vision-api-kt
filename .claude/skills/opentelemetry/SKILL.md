@@ -858,7 +858,8 @@ Secret do k8s. Ver o comentário no topo de `observability/alertmanager.yml`. Nu
 **Escopo:** só compose (onde o Prometheus roda hoje). O Alertmanager **in-cluster** (manifestos k8s +
 Prometheus in-cluster) é o **GAP-CB [E]**.
 
-**Validar sem subir tudo** (precisa do daemon Docker):
+**Validar sem subir tudo** (precisa do daemon Docker) — este é o *mesmo* lint que o job
+**`config-lint`** do CI roda como gate bloqueante (GAP-CY); rode-o local antes de abrir PR:
 ```bash
 docker run --rm --entrypoint amtool -v "$PWD/observability:/cfg" \
   prom/alertmanager:v0.27.0 check-config /cfg/alertmanager.yml
@@ -867,6 +868,8 @@ docker run --rm --entrypoint promtool \
   -v "$PWD/observability/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro" \
   prom/prometheus:v2.54.1 check config /etc/prometheus/prometheus.yml
 ```
+> No CI as versões saem do `docker-compose.yml` (sem drift). O gate pega a classe de bug
+> semântico que um parser YAML genérico não vê — ex.: o P2 do PR #317 (`inhibit_rules`).
 Ponta-a-ponta: `docker compose up -d` → Prometheus `:9090` → Status → Alertmanagers mostra
 `alertmanager:9093` ativo → `docker compose stop app` (dispara `ServiceDown` em ~1min) →
 Alertmanager `:9093` mostra o grupo → `docker logs kanban-vision-alert-sink` mostra o POST em
