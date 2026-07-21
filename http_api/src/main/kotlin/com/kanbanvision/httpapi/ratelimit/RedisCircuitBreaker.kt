@@ -27,7 +27,11 @@ object RedisCircuitBreaker {
     private const val MINIMUM_NUMBER_OF_CALLS = 10
     private const val FAILURE_RATE_THRESHOLD_PCT = 50f
     private const val SLOW_CALL_RATE_THRESHOLD_PCT = 80f
-    private const val SLOW_CALL_DURATION_SECS = 1L
+
+    // Must be BELOW the Lettuce command timeout (250ms in redisBackedFactory): a call slower than that
+    // times out (a failure), so a 1s slow-call threshold would be dead config that never triggers.
+    // At 200ms a degraded-but-not-yet-failing Redis still trips the breaker into the local fallback.
+    private const val SLOW_CALL_DURATION_MILLIS = 200L
     private const val WAIT_IN_OPEN_STATE_SECS = 10L
     private const val PERMITTED_CALLS_IN_HALF_OPEN = 3
 
@@ -75,7 +79,7 @@ object RedisCircuitBreaker {
             .minimumNumberOfCalls(MINIMUM_NUMBER_OF_CALLS)
             .failureRateThreshold(FAILURE_RATE_THRESHOLD_PCT)
             .slowCallRateThreshold(SLOW_CALL_RATE_THRESHOLD_PCT)
-            .slowCallDurationThreshold(Duration.ofSeconds(SLOW_CALL_DURATION_SECS))
+            .slowCallDurationThreshold(Duration.ofMillis(SLOW_CALL_DURATION_MILLIS))
             .waitDurationInOpenState(Duration.ofSeconds(WAIT_IN_OPEN_STATE_SECS))
             .automaticTransitionFromOpenToHalfOpenEnabled(true)
             .permittedNumberOfCallsInHalfOpenState(PERMITTED_CALLS_IN_HALF_OPEN)
