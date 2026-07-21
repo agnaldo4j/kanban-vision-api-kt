@@ -4,6 +4,7 @@ import io.ktor.server.plugins.ratelimit.RateLimiter
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -73,6 +74,39 @@ class LocalTokenBucketRateLimiterTest {
             val under = limiter(limit = 2, periodMillis = 2_000, initialTokens = -5.0)
             assertIs<RateLimiter.State.Exhausted>(under.tryConsume(1))
         }
+
+    @Test
+    fun `given an idle bucket when a long time passes then refill is capped at the limit`() =
+        runTest {
+            val rateLimiter = limiter(limit = 2, periodMillis = 2_000)
+
+            // Idle for 10× the period: an uncapped refill would accrue ~20 tokens. The cap holds at 2,
+            // which is exactly what closes the boundary burst (kills the minOf→maxOf mutant).
+            nowMillis = 20_000
+            assertEquals(1, (rateLimiter.tryConsume(1) as RateLimiter.State.Available).remainingTokens)
+            assertEquals(0, (rateLimiter.tryConsume(1) as RateLimiter.State.Available).remainingTokens)
+            assertIs<RateLimiter.State.Exhausted>(rateLimiter.tryConsume(1))
+        }
+
+    @Test
+    fun `given a partial refill when reporting remaining then the fractional token is floored`() =
+        runTest {
+            val rateLimiter = limiter(limit = 10, periodMillis = 10_000, initialTokens = 0.0)
+
+            // 3_500 ms ⇒ 3.5 tokens refilled; consuming 1 leaves 2.5 ⇒ reported as floor(2.5) = 2.
+            nowMillis = 3_500
+            assertEquals(2, (rateLimiter.tryConsume(1) as RateLimiter.State.Available).remainingTokens)
+        }
+
+    @Test
+    fun `given non-positive limit or period when constructing then it rejects the arguments`() {
+        assertFailsWith<IllegalArgumentException> {
+            LocalTokenBucketRateLimiter(limit = 0, refillPeriodMillis = 1_000)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            LocalTokenBucketRateLimiter(limit = 5, refillPeriodMillis = 0)
+        }
+    }
 
     @Test
     fun `given the default system clock when consuming then it works without an injected clock`() =

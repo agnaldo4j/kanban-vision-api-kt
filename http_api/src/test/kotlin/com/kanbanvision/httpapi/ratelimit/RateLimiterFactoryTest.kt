@@ -41,8 +41,9 @@ class RateLimiterFactoryTest {
         assertNull(loadRedisUrl { "" })
         assertNull(loadRedisUrl { "   " })
         assertEquals("redis://cache:6379", loadRedisUrl { "redis://cache:6379" })
-        // No-arg path (default System::getenv); RATE_LIMIT_REDIS_URL is unset in CI/dev.
-        assertNull(loadRedisUrl())
+        // No-arg path (default System::getenv) — mirror the real env so the test never depends on
+        // whether RATE_LIMIT_REDIS_URL happens to be set in the dev/CI process.
+        assertEquals(System.getenv("RATE_LIMIT_REDIS_URL")?.takeIf { it.isNotBlank() }, loadRedisUrl())
     }
 
     @Test

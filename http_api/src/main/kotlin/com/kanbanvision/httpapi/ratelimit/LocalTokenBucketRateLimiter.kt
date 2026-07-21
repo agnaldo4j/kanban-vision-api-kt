@@ -34,6 +34,11 @@ class LocalTokenBucketRateLimiter(
         val timestampMillis: Long,
     )
 
+    init {
+        require(limit > 0) { "limit must be positive, was: $limit" }
+        require(refillPeriodMillis > 0) { "refillPeriodMillis must be positive, was: $refillPeriodMillis" }
+    }
+
     private val state = AtomicReference(Bucket(initialTokens.coerceIn(0.0, limit.toDouble()), clock()))
 
     override suspend fun tryConsume(tokens: Int): RateLimiter.State {
