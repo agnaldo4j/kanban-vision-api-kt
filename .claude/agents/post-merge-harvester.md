@@ -22,19 +22,31 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
 ## 0. Resolva o PR mergeado
 - Número no prompt → esse PR. Sem número → `gh pr list --state merged --limit 5 --json number,title,mergedAt`
   e confirme o mais recente (ou pergunte se ambíguo).
-- Guarde: `gh pr view <n> --json number,title,headRefName,mergeCommit,mergedAt`. Extraia o **gap** do título
-  (`GAP-XX`) para o board.
+- Guarde: `gh pr view <n> --json number,title,headRefName,mergeCommit,mergedAt,state`. Extraia o **gap** do
+  título (`GAP-XX`) para o board.
+- 🚫 **CONFIRME O MERGE ANTES DE QUALQUER COISA** (`docs/politicas-explicitas.md`): exija
+  `state == "MERGED"` **E** `mergedAt` não-nulo. Se não estiver mergeado (número errado, ou o usuário avisou
+  antes de concluir), **PARE e relate** — **nunca** apague a branch. Apagar a branch remota de um PR *aberto*
+  o **fecha sem merge**.
+  ```bash
+  gh pr view <n> --json state,mergedAt --jq 'if .state=="MERGED" and .mergedAt then "MERGED" else "NOT-MERGED — abortar" end'
+  ```
 
-## 1. Fechamento (git + board)
+## 1. Fechamento (git + board) — só após confirmar MERGED (§0)
 1. `git checkout main && git pull origin main` — confirme que o merge está na main (`git log --oneline -3`).
 2. Apague a branch: `git branch -d <headRefName>`; `git push origin --delete <headRefName> 2>/dev/null || true`
    (a remota costuma ser auto-deletada no merge — tolere "remote ref does not exist").
-3. **Board #6 → Done** (só se o item já estiver em Doing/Todo; nunca crie estado): ache o item pelo gap
+3. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
+   busque **filtrando pelo status**, e só mova se houver **exatamente 1** match:
    ```bash
    gh project item-list 6 --owner agnaldo4j --format json --limit 100 \
-     | jq -r '.items[] | select(.title|startswith("GAP-XX")) | .id'
+     | jq -r '[.items[] | select((.status=="Doing" or .status=="Todo") and (.title|startswith("GAP-XX")))]
+              | if length==1 then .[0].id
+                elif length==0 then "NENHUM em Doing/Todo — não mover, relatar"
+                else "AMBÍGUO (\(length) matches) — não mover, relatar" end'
    ```
-   e mova (Project `PVT_kwHNWUfOAUhH_w`, Field `PVTSSF_lAHNWUfOAUhH_84P7ZSQ`, Done `ca259842`):
+   (⚠️ o campo `.status` é uma **string**, não objeto.) Se vier NENHUM/AMBÍGUO, **não mova** — relate. Com 1 id,
+   mova (Project `PVT_kwHNWUfOAUhH_w`, Field `PVTSSF_lAHNWUfOAUhH_84P7ZSQ`, Done `ca259842`):
    ```bash
    gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
      projectId:"PVT_kwHNWUfOAUhH_w" itemId:"<ID>" fieldId:"PVTSSF_lAHNWUfOAUhH_84P7ZSQ"

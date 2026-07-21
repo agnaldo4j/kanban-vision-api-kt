@@ -51,12 +51,13 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 4. **Relaie o parecer** ao usuário verbatim (veredito + achados P1/P2/P3 + cruzamento com CI/Codex +
    coerência de negócio + — quando presentes — melhorias, direcionamento estratégico e **lições aprendidas**
    para as skills/o rubric). Não edite nem "amacie" — o harness é criterioso de propósito.
-5. **Capture as lições (obrigatório se houver sinal real):** depois de relayar e resolver/responder os
-   threads, pergunte *"algo aqui revelou lacuna numa skill, regra ou no rubric?"*. Se sim, **registre em
-   `docs/quality/lessons-learned.md`** (uma linha: PR · lição durável · onde aplicada) e **aplique a emenda**
-   na skill/regra/rubric no mesmo PR ou próximo (pequena), ou **abra um card** no #6 (grande). É o que fecha
-   o loop — nunca deixe um miss recorrente só no comentário do PR (que é efêmero). Não force lição: só
-   quando há sinal real (§6 do rubric).
+5. **PROPONHA as lições (não aplique aqui):** depois de relayar e resolver/responder os threads, pergunte
+   *"algo aqui revelou lacuna numa skill, regra ou no rubric?"*. Se sim, **inclua a lição no parecer** como
+   emenda concreta proposta (o que mudar e onde). **Esta skill é read-only** (frontmatter `allowed-tools`
+   sem write; no CI o `pr-review.yml` roda com `contents: read`) — ela **não edita arquivos**. Quem
+   **aplica** a lição é o agente `post-merge-harvester`, **após o merge de uma implementação real** (guard
+   anti-loop: `docs/quality/lessons-learned.md`), transformando-a em emenda + linha no log. Não force lição:
+   só quando há sinal real (§6 do rubric).
 
 ## Complementaridade
 
