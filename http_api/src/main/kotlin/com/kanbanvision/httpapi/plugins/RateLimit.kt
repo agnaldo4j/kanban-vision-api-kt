@@ -1,9 +1,12 @@
 package com.kanbanvision.httpapi.plugins
 
+import com.kanbanvision.httpapi.ratelimit.RateLimiterFactory
+import com.kanbanvision.httpapi.ratelimit.defaultRateLimiterFactory
 import com.kanbanvision.httpapi.support.AUTH_RATE_LIMIT_NAME
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.plugins.ratelimit.RateLimit
 import kotlin.time.Duration.Companion.minutes
@@ -15,18 +18,21 @@ private const val RATE_LIMIT_WINDOW_MINUTES = 1
 fun Application.configureRateLimit(
     limit: Int = DEFAULT_RATE_LIMIT,
     trustedProxyCount: Int = loadTrustedProxyCount(),
+    factory: RateLimiterFactory = defaultRateLimiterFactory(),
 ) {
     require(limit > 0) { "Rate limit must be positive, was: $limit" }
+    val windowMillis = RATE_LIMIT_WINDOW_MINUTES.minutes.inWholeMilliseconds
     install(RateLimit) {
         global {
-            rateLimiter(limit = limit, refillPeriod = RATE_LIMIT_WINDOW_MINUTES.minutes)
+            rateLimiter(factory.provider(limit, windowMillis))
             requestKey { call -> call.clientKey(trustedProxyCount) }
         }
         register(AUTH_RATE_LIMIT_NAME) {
-            rateLimiter(limit = AUTH_RATE_LIMIT, refillPeriod = RATE_LIMIT_WINDOW_MINUTES.minutes)
+            rateLimiter(factory.provider(AUTH_RATE_LIMIT, windowMillis))
             requestKey { call -> call.clientKey(trustedProxyCount) }
         }
     }
+    monitor.subscribe(ApplicationStopped) { factory.close() }
 }
 
 private fun ApplicationCall.clientKey(trustedProxyCount: Int): String =
