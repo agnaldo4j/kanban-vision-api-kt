@@ -5,13 +5,21 @@
 -- ARGV[1] = capacity (limit, whole tokens)
 -- ARGV[2] = refill period in millis (time to refill the whole bucket)
 -- ARGV[3] = requested tokens
+-- ARGV[4] = reset_clock (1 = first call after a local-fallback period)
 --
 -- Returns { allowed(0|1), remaining, limit, refillAtEpochMillis, waitMillis }.
 -- The Redis server clock (TIME) is authoritative, so per-pod clock skew cannot desync buckets.
+--
+-- reset_clock reconciles the degrade-to-local fallback (ADR-0041): during a Redis outage the pods
+-- served traffic from local buckets, so on recovery Redis must NOT also refill that same wall-clock
+-- window (it would double-count it). The first post-outage call passes reset_clock=1, which advances
+-- the bucket's timestamp to now WITHOUT accruing the elapsed refill — the outage window is accounted
+-- for by what local already granted, and Redis resumes refilling from recovery onward.
 
 local cap    = tonumber(ARGV[1])
 local period = tonumber(ARGV[2])
 local req    = tonumber(ARGV[3])
+local reset  = tonumber(ARGV[4])
 
 local t   = redis.call('TIME')
 local now = t[1] * 1000 + math.floor(t[2] / 1000)
@@ -26,6 +34,7 @@ end
 
 local elapsed = now - ts
 if elapsed < 0 then elapsed = 0 end
+if reset == 1 then elapsed = 0 end
 tokens = math.min(cap, tokens + elapsed * cap / period)
 
 local allowed = 0

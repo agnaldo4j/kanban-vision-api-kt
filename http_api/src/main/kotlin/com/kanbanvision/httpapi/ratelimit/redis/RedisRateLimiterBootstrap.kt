@@ -26,15 +26,29 @@ fun redisBackedFactory(url: String): RateLimiterFactory {
             .autoReconnect(true)
             .timeoutOptions(TimeoutOptions.enabled(Duration.ofMillis(COMMAND_TIMEOUT_MILLIS)))
             .build()
-    val connection = client.connect()
-    val sha = connection.sync().scriptLoad(script)
-    val gateway = LettuceRedisGateway(connection.async(), script, sha)
-    val closeable =
-        AutoCloseable {
-            connection.close()
-            client.shutdown()
-        }
-    return RateLimiterFactory(gateway = gateway, closeable = closeable)
+    // Close partially-initialised resources on ANY failure path (e.g. connect() succeeds but
+    // SCRIPT LOAD is denied by a Redis ACL): otherwise the Netty event loop + TCP socket leak for the
+    // process lifetime while the limiter silently runs local. runCatching avoids a generic catch.
+    return runCatching {
+        val connection = client.connect()
+        val sha =
+            runCatching { connection.sync().scriptLoad(script) }
+                .getOrElse { e ->
+                    connection.close()
+                    throw e
+                }
+        RateLimiterFactory(
+            gateway = LettuceRedisGateway(connection.async(), script, sha),
+            closeable =
+                AutoCloseable {
+                    connection.close()
+                    client.shutdown()
+                },
+        )
+    }.getOrElse { e ->
+        client.shutdown()
+        throw e
+    }
 }
 
 private fun loadLuaScript(): String =

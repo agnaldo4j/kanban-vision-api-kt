@@ -27,8 +27,15 @@ internal class LettuceRedisGateway(
         limit: Int,
         refillPeriodMillis: Long,
         tokens: Int,
+        resetClock: Boolean,
     ): TokenBucketResult {
-        val args = arrayOf(limit.toString(), refillPeriodMillis.toString(), tokens.toString())
+        val args =
+            arrayOf(
+                limit.toString(),
+                refillPeriodMillis.toString(),
+                tokens.toString(),
+                if (resetClock) "1" else "0",
+            )
 
         // NOSCRIPT is a control-flow signal, not an error to log: Redis dropped the cached script
         // (flush/restart), so reload it and retry once.

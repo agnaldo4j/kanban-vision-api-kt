@@ -21,14 +21,17 @@ class RedisRateLimiterTest {
         var error: Exception? = null,
     ) : RedisTokenBucketGateway {
         var calls = 0
+        var lastResetClock: Boolean? = null
 
         override suspend fun consume(
             key: String,
             limit: Int,
             refillPeriodMillis: Long,
             tokens: Int,
+            resetClock: Boolean,
         ): TokenBucketResult {
             calls++
+            lastResetClock = resetClock
             error?.let { throw it }
             return result ?: error("no result configured")
         }
@@ -81,6 +84,28 @@ class RedisRateLimiterTest {
 
             assertIs<RateLimiter.State.Available>(state) // local fallback seeded full (no observation yet)
             assertEquals(0, gateway.calls)
+        }
+
+    @Test
+    fun `given recovery after a fallback then the first Redis call resets the clock exactly once`() =
+        runTest {
+            val gateway = FakeGateway()
+            val limiter = RedisRateLimiter("ratelimit:global:ip", 10, 60_000, gateway)
+
+            // A failure degrades the limiter to local and marks it degraded.
+            gateway.error = RedisException("down")
+            limiter.tryConsume(1)
+
+            // Recovery: the first successful call must reset Redis's refill clock so it does not
+            // re-grant the outage window that local already served (ADR-0041 reconciliation).
+            gateway.error = null
+            gateway.result = TokenBucketResult(allowed = true, remaining = 5, limit = 10, refillAtEpochMillis = 100, waitMillis = 0)
+            limiter.tryConsume(1)
+            assertEquals(true, gateway.lastResetClock)
+
+            // A subsequent healthy call must NOT reset again.
+            limiter.tryConsume(1)
+            assertEquals(false, gateway.lastResetClock)
         }
 
     @Test

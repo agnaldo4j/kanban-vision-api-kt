@@ -194,22 +194,14 @@ dependencies {
                     "1.7.15.1 é a menor versão não vulnerável disponível",
             )
         }
-        // Lettuce (rate limit distribuído, GAP-BZ/ADR-0041) é compilada contra Netty 4.1.x; o Ktor
-        // 3.5.1 já traz 4.2.15.Final. A resolução sobe para 4.2.15 — este pin impede que um bump de
-        // Lettuce puxe o Netty de volta a 4.1 (drift de versão e da superfície nativa — ADR-0032).
-        listOf(
-            "netty-common",
-            "netty-handler",
-            "netty-transport",
-            "netty-buffer",
-            "netty-resolver",
-            "netty-codec",
-        ).forEach { module ->
-            implementation("io.netty:$module:4.2.15.Final") {
-                because("alinha o Netty da Lettuce ao do Ktor 3.5.1 (ADR-0041/ADR-0032)")
-            }
-        }
     }
+
+    // Lettuce (rate limit distribuído, GAP-BZ/ADR-0041) é compilada contra Netty 4.1.x e puxa módulos
+    // que o Ktor NÃO usa — netty-resolver-dns / netty-codec-dns (com CVEs na 4.1.118, GHSA-cm33/5pvg/
+    // 676x/xmv7). O BOM alinha TODA a família io.netty a 4.2.15.Final (a do Ktor 3.5.1), fechando o gate
+    // de SCA (ADR-0025) e evitando drift módulo-a-módulo. `platform` participa da resolução com a maior
+    // versão exigida (4.2.15 > 4.1.118).
+    implementation(platform("io.netty:netty-bom:4.2.15.Final"))
 
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))

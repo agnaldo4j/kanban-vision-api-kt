@@ -18,6 +18,7 @@ class RateLimiterFactoryTest {
             limit: Int,
             refillPeriodMillis: Long,
             tokens: Int,
+            resetClock: Boolean,
         ) = TokenBucketResult(allowed = true, remaining = 1, limit = limit, refillAtEpochMillis = 0, waitMillis = 0)
     }
 

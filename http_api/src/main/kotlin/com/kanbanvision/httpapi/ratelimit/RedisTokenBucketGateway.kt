@@ -10,11 +10,16 @@ import kotlin.time.Duration.Companion.milliseconds
  * exercised by the CI native smoke (there is no embedded Redis in the repo).
  */
 interface RedisTokenBucketGateway {
+    /**
+     * @param resetClock `true` only on the first call after a local-fallback period — tells Redis not
+     *   to re-grant the outage window that local already served (ADR-0041 reconciliation).
+     */
     suspend fun consume(
         key: String,
         limit: Int,
         refillPeriodMillis: Long,
         tokens: Int,
+        resetClock: Boolean,
     ): TokenBucketResult
 }
 
