@@ -6,6 +6,11 @@ decision-makers: "@agnaldo4j"
 
 # ADR-0041 — Rate limit distribuído: um contador compartilhado sob escala horizontal
 
+> **Correção (ADR-0042):** os bullets de *mecanismo* desta ADR foram corrigidos pela **ADR-0042** — o
+> limiter atual do Ktor (`DefaultRateLimiter`) é **janela fixa**, não token-bucket, então as alegações
+> "equivalente ao atual" e "sem mudança observável" estavam erradas. A decisão de *onde* (Redis) segue
+> válida; o *mecanismo* passa a ser um token-bucket verdadeiro (endurecimento intencional).
+
 > O rate limiter conta **na memória de cada pod**. Sob o HPA (2→8 réplicas) e um Service que faz
 > round-robin sem afinidade, o teto por IP de um cliente vira `limite × réplicas` — e **cresce
 > justamente quando o sistema está sob carga**, que é quando o limite deveria valer. Esta ADR decide
