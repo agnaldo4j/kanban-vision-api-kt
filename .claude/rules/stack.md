@@ -48,6 +48,13 @@
 3. osv-scanner scans the SBOM against OSV.dev — **fails the job on any known CVE**; documented exceptions only via `osv-scanner.toml`
 4. Post PR comment: Supply Chain Report (component count, active exceptions, findings table)
 
+> **Alinhar uma família de dependência transitiva com CVE via o BOM, não pin por-módulo** (GAP-BZ/#325).
+> Quando uma dep nova traz uma família em versão CVE'd (ex.: a Lettuce puxa vários `io.netty:*` numa 4.1.x
+> vulnerável), o pin por-módulo **esquece módulos** (`netty-resolver-dns`/`netty-codec-dns` ficaram para trás
+> → `supply-chain` vermelho, bloqueante). Use o BOM: `implementation(platform("io.netty:netty-bom:<v>"))`
+> alinha toda a família em uma linha. Verifique com `./gradlew :<mod>:dependencies --configuration
+> runtimeClasspath | grep io.netty` que nada resolve para a série antiga.
+
 **Job `pr-size`** — every PR (skips forks), parallel to `quality` (GAP-BH):
 1. Count changed lines (`additions + deletions`) via `gh api .../pulls/{n}/files` — no checkout
 2. Exclude committed GraalVM reachability metadata (`**/META-INF/native-image/**`) from the count

@@ -279,8 +279,14 @@ gh api repos/<owner>/<repo>/pulls/<n>/comments \
 ## 6. Lições aprendidas — loop de melhoria do harness e das skills
 
 Fechado o review, pergunte: **algum achado (ou algo que você quase deixou passar) revelou lacuna numa skill
-ou neste próprio rubric?** Se sim, proponha a **emenda concreta** como candidato ao Todo #6 — é assim que o
-harness e as skills evoluem (ex.: o P2 do #313 virou a dimensão §2.5 e esta seção). Critérios:
+ou neste próprio rubric?** Se sim, proponha a **emenda concreta** — é assim que o harness e as skills
+evoluem (ex.: o P2 do #313 virou a dimensão §2.5 e esta seção). Critérios:
 - Emenda **acionável e localizada** ("adicionar TOCTOU ao checklist de §2.5 de `pr-harness.md`"), não vaga.
 - Só quando há sinal real — um miss, um falso-negativo, um padrão recorrente. Sem lição forçada.
-- Nunca reescreva sozinho o rubric/skill (você é read-only): **proponha**; o mantenedor aplica via gap.
+- Nunca reescreva sozinho o rubric/skill (você é read-only): **proponha** a lição no parecer.
+
+**Onde a lição vira durável (o autor/mantenedor fecha o loop, não o harness read-only):** a lição
+**genérica** é registrada em **`docs/quality/lessons-learned.md`** (log append-only: PR · lição · onde
+aplicada) e aplicada na skill/regra/rubric no mesmo PR ou próximo, ou cardada no #6 se for grande. É esse
+passo — dirigido pelo passo 5 da skill `/pr-review` — que impede a lição de morrer no comentário efêmero do
+PR. Lição **específica da feature** (não generalizável) vai para a ADR / notas do gap, não para as skills.
