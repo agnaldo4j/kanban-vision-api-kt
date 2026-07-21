@@ -14,7 +14,28 @@ allowed-tools: Read, Grep, Glob, Bash
 Esta skill é um **dispatcher fino**. A rubrica completa vive no subagente `pr-harness`
 (`.claude/agents/pr-harness.md`) — não a repita aqui.
 
-## O que fazer ao invocar
+## Default: LEIA os reports do CI; dispatch manual é EXCEÇÃO
+
+O `.github/workflows/pr-review.yml` (GAP-CT) **já roda o mesmo `pr-harness` automaticamente** após o CI e
+posta o parecer como comentário **`[claude]`**. Então, num PR aberto, o **caminho padrão é VERIFICAR os
+reports já postados** — não redisparar o harness. Dispatchar `/pr-review` manualmente é **exceção**:
+quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-review pontual.
+
+> ⚠️ **Ao ler os reports, NUNCA confie só no RESUMO do parecer** — leia os **comentários inline reais**.
+> O resumo do harness pode dizer "APPROVE" enquanto os inline (e o Codex) carregam P1/P2 — inclusive
+> bloqueantes. Verifique com:
+> ```bash
+> gh api repos/<owner>/<repo>/pulls/<n>/comments --paginate --jq '.[] | {id, author:.user.login, path, line, body}'
+> gh api graphql -f query='{ repository(owner:"<owner>",name:"<repo>"){ pullRequest(number:<n>){ reviewThreads(first:40){ nodes { id isResolved comments(first:1){ nodes { databaseId author{login} } } } } } } }'
+> ```
+> Responder um thread: `POST .../pulls/<n>/comments/<id>/replies`. Resolver: GraphQL `resolveReviewThread`.
+
+> ⚠️ **Se dispatchar manual:** o subagente `pr-harness` roda Bash **no mesmo working dir** e pode dar
+> `git checkout` (já trocou de branch e reverteu arquivos mid-review — o commit pushado fica intacto pois
+> ele revisa o SHA remoto). **Confira `git branch --show-current` depois.** Preferir os reports do CI evita
+> isso de vez.
+
+## O que fazer ao invocar (dispatch manual — a exceção)
 
 1. **Resolva o alvo:**
    - Argumento numérico → esse PR (`gh pr diff <n>`, `gh pr view <n> ...`).
@@ -30,6 +51,13 @@ Esta skill é um **dispatcher fino**. A rubrica completa vive no subagente `pr-h
 4. **Relaie o parecer** ao usuário verbatim (veredito + achados P1/P2/P3 + cruzamento com CI/Codex +
    coerência de negócio + — quando presentes — melhorias, direcionamento estratégico e **lições aprendidas**
    para as skills/o rubric). Não edite nem "amacie" — o harness é criterioso de propósito.
+5. **PROPONHA as lições (não aplique aqui):** depois de relayar e resolver/responder os threads, pergunte
+   *"algo aqui revelou lacuna numa skill, regra ou no rubric?"*. Se sim, **inclua a lição no parecer** como
+   emenda concreta proposta (o que mudar e onde). **Esta skill é read-only** (frontmatter `allowed-tools`
+   sem write; no CI o `pr-review.yml` roda com `contents: read`) — ela **não edita arquivos**. Quem
+   **aplica** a lição é o agente `post-merge-harvester`, **após o merge de uma implementação real** (guard
+   anti-loop: `docs/quality/lessons-learned.md`), transformando-a em emenda + linha no log. Não force lição:
+   só quando há sinal real (§6 do rubric).
 
 ## Complementaridade
 
@@ -44,8 +72,17 @@ Esta skill é um **dispatcher fino**. A rubrica completa vive no subagente `pr-h
 | Dispara o `pr-harness` | `/definition-of-done` (checklist de completude), `/wiki-maintenance` (página do wiki atualizada?) |
 | Ancora nas rubricas | `/owasp`, `/ddd`, `/clean-architecture`, `/openapi-quality`, `/db-migrations`, `/adr` e demais skills de domínio |
 
+## Loop de lições aprendidas
+
+O que o review ensina não pode morrer no comentário do PR. O destino durável é
+**`docs/quality/lessons-learned.md`** (log append-only: PR · lição · onde aplicada) — a metade persistente
+do loop que o rubric §6 dispara. Lições **genéricas** viram emenda em skill/regra/rubric; lições
+**específicas da feature** ficam na ADR / nas notas do gap (não poluem as skills). Ver §6 do
+`.claude/agents/pr-harness.md`.
+
 ## Referências
 
 - Agente: `.claude/agents/pr-harness.md` (a rubrica)
+- Log de lições: `docs/quality/lessons-learned.md`
 - Política: `docs/politicas-explicitas.md` · regras: `.claude/rules/*`
 - Também roda no CI (advisory, não-bloqueante): `.github/workflows/pr-review.yml`
