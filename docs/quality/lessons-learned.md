@@ -11,9 +11,13 @@ time, a process gap. One entry per lesson. Keep it terse: what happened, the dur
 applied. **What does NOT belong:** feature-specific findings (those live in the ADR / the gap's notes),
 one-off nits, or lessons without a concrete "apply it here."
 
-**How to add an entry (every reviewer/author, on every PR):** after relaying the review verdict and
-resolving threads, ask *"did anything here reveal a gap in a skill, rule, or the rubric?"* If yes, append
-a row below and either apply the amendment in the same/near PR or open a card. Reference the PR.
+**How the loop runs (automated):** when the author tells the session a PR merged, the
+**`post-merge-harvester` agent** (`.claude/agents/post-merge-harvester.md`) does the closure AND harvests
+this file's lessons — reading the merged PR's *inline* review comments, distilling the durable ones, and
+**applying** them as amendments to the target skill/rule/rubric plus a row here, in a ready `[N]`
+process-PR. That is the point: lessons become *applied process for the next cycle*, not a task list. The
+`/pr-review` skill (step 5) and the pr-harness rubric §6 feed the same file. Feature-specific findings do
+NOT belong here — they live in the ADR / the gap's notes.
 
 | Date | PR(s) | Lesson (the durable rule) | Applied to |
 |---|---|---|---|
@@ -23,4 +27,5 @@ a row below and either apply the amendment in the same/near PR or open a card. R
 | 2026-07-21 | #325 | **Align a transitive dependency family for a CVE via its BOM, not per-module pins.** A per-module Netty pin missed `netty-resolver-dns`/`netty-codec-dns` (pulled at a CVE'd 4.1.x by Lettuce) → the blocking `supply-chain` gate went red. `platform("io.netty:netty-bom:<v>")` aligns the whole family in one line. | `.claude/rules/stack.md` |
 | 2026-07-21 | #325 | **Kotlin trap — explicit type args on a generic *Java* method break the lexer.** `commands.evalsha<List<Long>>(…)` parses `<` as comparison → a spurious "Unclosed comment" at EOF. Type via a variable instead: `val f: RedisFuture<List<Long>> = commands.evalsha(…)`. | `.claude/rules/kotlin-quality.md` (pitfalls) |
 | 2026-07-21 | #325 | **Kotlin trap — `/*` (e.g. inside a `` `glob/**` ``) within a KDoc opens a *nested* block comment** (Kotlin supports nesting) that never closes → "Unclosed comment". Avoid `/*` sequences in doc text (write `pkg.sub`, not `` `pkg/sub/**` ``). | `.claude/rules/kotlin-quality.md` (pitfalls) |
+| 2026-07-21 | GAP-CZ | **A lesson log is not enough — the loop must be *applied and automated*.** Documenting lessons in a file still relies on someone acting on them. Encoded the loop as the `post-merge-harvester` agent (closure + harvest + *apply* to skills/rules as a ready process-PR), triggered whenever the author says a PR merged. | `.claude/agents/post-merge-harvester.md`, `.claude/rules/workflow.md` (After-PR-Merge) |
 | 2026-07-21 | #324 | **Verify a library's internals from its source, not from assumption.** Ktor's `DefaultRateLimiter` turned out to be a *fixed-window* counter, not a token bucket — refuting a reviewer P2 and producing ADR-0042. A five-minute read of the jar source settled a claim two reviewers got wrong. | `feedback_full_rescore_verify_code` memory (reinforced) |

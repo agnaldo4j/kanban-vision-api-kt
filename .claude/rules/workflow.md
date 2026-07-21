@@ -26,20 +26,28 @@ gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
 git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
 ```
 
-## After PR Merge — mandatory closure
+## After PR Merge — invoke the `post-merge-harvester` agent
 
+**Quando o usuário avisar que mergeou um PR, dispare o agente `post-merge-harvester`**
+(`.claude/agents/post-merge-harvester.md`) via a Agent tool. Ele faz as duas metades do pós-merge:
+1. **Limpeza** — sincroniza a main, apaga a branch, e move o card do #6 para **Done** (⚠️ um `[E]` cujo ADR
+   mergeou mas a implementação não **fica em Doing**).
+2. **Colheita de lições, aplicada** — lê a revisão daquele PR (os comentários **inline**, não só o resumo),
+   destila as lições **duráveis/generalizáveis** e as **aplica** como emenda de skill/regra/rubric +
+   registro em `docs/quality/lessons-learned.md`, abrindo um PR de processo `[N]` pronto — não uma lista de
+   tarefas. É o loop que impede repetir os mesmos erros a cada ciclo.
+
+Fallback manual (se precisar fazer à mão o passo 1):
 ```bash
 git checkout main && git pull origin main
 git branch -d feat/gap-X-slug
 git push origin --delete feat/gap-X-slug 2>/dev/null || true
-
 gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
   projectId: "PVT_kwHNWUfOAUhH_w" itemId: "<ID>"
   fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"
   value: { singleSelectOptionId: "ca259842" }}) { projectV2Item { id } }}'
-# Board #6 is the ONLY source of truth for progress (ADR-0023).
-# Never record progress in ADRs — accepted ADRs are immutable.
 ```
+Board #6 é a ÚNICA fonte de progresso (ADR-0023); nunca registre progresso em ADRs (imutáveis).
 
 **WIP limit: 1** — never more than one item in Doing.
 
