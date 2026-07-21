@@ -1,5 +1,5 @@
 {
-  "comment": "Metadata MANUAL (revisável) complementar à gerada pelo tracing agent, compartilhada pelos DOIS binários (app e migração). Reflection: HikariConfig.copyStateTo/logConfiguration invocam getters por reflection — o agent não registra os métodos de forma confiável. Os $$serializer dos DTOs de ERRO (DomainErrorResponse/ValidationErrorResponse) só são alcançados no caminho de erro em runtime — o tracing agent registra o tipo mas não o acesso ao campo estático INSTANCE, que o GraalVM 25 exige explicitamente (GAP-BM; caçado pelo smoke test de contrato). Resources: configuração de logging, necessária ao binário de migração (que exclui a metadata do app do classpath).",
+  "comment": "Metadata MANUAL (revisável) complementar à gerada pelo tracing agent, compartilhada pelos DOIS binários (app e migração). Reflection: HikariConfig.copyStateTo/logConfiguration invocam getters por reflection — o agent não registra os métodos de forma confiável. Os $$serializer dos DTOs de ERRO (DomainErrorResponse/ValidationErrorResponse) só são alcançados no caminho de erro em runtime — o tracing agent registra o tipo mas não o acesso ao campo estático INSTANCE, que o GraalVM 25 exige explicitamente (GAP-BM; caçado pelo smoke test de contrato). Resources: configuração de logging, necessária ao binário de migração (que exclui a metadata do app do classpath); e o script Lua do rate limit distribuído (ADR-0041), carregado via getResourceAsStream — sem o registro o recurso some no Native Image. A reflection do Lettuce vem do metadataRepository; o smoke nativo com Redis (RATE_LIMIT_REDIS_URL) exercita o caminho e revela qualquer lacuna.",
   "reflection": [
     {
       "type": "com.kanbanvision.httpapi.dtos.DomainErrorResponse$$serializer",
@@ -43,6 +43,7 @@
   "resources": [
     { "glob": "logback.xml" },
     { "glob": "logback-text.xml" },
-    { "glob": "logback-json.xml" }
+    { "glob": "logback-json.xml" },
+    { "glob": "redis/token_bucket.lua" }
   ]
 }

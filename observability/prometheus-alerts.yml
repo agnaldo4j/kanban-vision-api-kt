@@ -63,6 +63,21 @@ groups:
             HikariCP pool is {{ $value | humanizePercentage }} utilised
             (threshold: 90%) for more than 2 minutes.
 
+      # Rate limit distribuído (GAP-BZ/ADR-0041): quando o circuit breaker do Redis abre, o limiter
+      # degrada para um bucket local POR POD — o teto por IP dilui sob o HPA (até maxReplicas×). O log
+      # WARN do RedisCircuitBreaker é o sinal pontual; este alerta é o sinal AGREGÁVEL de frota.
+      - alert: RateLimitRedisDegraded
+        expr: max(resilience4j_circuitbreaker_state{name="redis",state=~"open|forced_open"}) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limit degradado para local — Redis indisponível"
+          description: >
+            O circuit breaker do Redis (rate limit) está aberto há mais de 1min em ao menos um pod.
+            O limiter está servindo do bucket local por pod, então o teto por IP dilui sob o HPA
+            até o Redis voltar (ADR-0041). Verifique a disponibilidade do redis-svc.
+
       # Exaustão de conexões da FROTA — o modo de falha que o alerta por instância acima NÃO vê:
       # pods pouco utilizados não disparam nada enquanto o banco satura. É a razão de o
       # GAP-BU/ADR-0037 ter amarrado maxReplicas ao pool.
