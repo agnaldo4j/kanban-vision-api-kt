@@ -148,6 +148,11 @@ val jacocoExcludes =
         "**/routes/*Response.class",
         // Error DTO classes: same pattern as above for serialization-generated code.
         "**/dtos/**",
+        // Lettuce/Redis IO glue (ADR-0041): the real EVALSHA gateway and the RedisClient bootstrap
+        // can only run against a live Redis (no embedded Redis in the repo — cf. zonky for postgres),
+        // so they are exercised by the CI native smoke probe, not JVM unit tests. The pure limiter
+        // logic (RedisRateLimiter fallback/breaker, result mapping) stays fully covered.
+        "**/ratelimit/redis/**",
     )
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
@@ -189,6 +194,21 @@ dependencies {
                     "1.7.15.1 é a menor versão não vulnerável disponível",
             )
         }
+        // Lettuce (rate limit distribuído, GAP-BZ/ADR-0041) é compilada contra Netty 4.1.x; o Ktor
+        // 3.5.1 já traz 4.2.15.Final. A resolução sobe para 4.2.15 — este pin impede que um bump de
+        // Lettuce puxe o Netty de volta a 4.1 (drift de versão e da superfície nativa — ADR-0032).
+        listOf(
+            "netty-common",
+            "netty-handler",
+            "netty-transport",
+            "netty-buffer",
+            "netty-resolver",
+            "netty-codec",
+        ).forEach { module ->
+            implementation("io.netty:$module:4.2.15.Final") {
+                because("alinha o Netty da Lettuce ao do Ktor 3.5.1 (ADR-0041/ADR-0032)")
+            }
+        }
     }
 
     implementation(project(":domain-common"))
@@ -222,6 +242,12 @@ dependencies {
     implementation("io.github.smiley4:ktor-swagger-ui:5.7.0")
 
     implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.1")
+    // Rate limit distribuído (GAP-BZ/ADR-0041): contador compartilhado em Redis via Lettuce,
+    // com circuit-breaker resilience4j (mesmo idioma do DbCircuitBreaker do sql_persistence).
+    implementation("io.lettuce:lettuce-core:6.7.1.RELEASE")
+    implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
+    implementation("io.github.resilience4j:resilience4j-micrometer:2.4.0")
+    implementation("io.github.resilience4j:resilience4j-kotlin:2.4.0")
     implementation("io.ktor:ktor-server-cors-jvm:3.5.1")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.1")
     implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")

@@ -10,6 +10,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       tempo:
         condition: service_started
     ports:
@@ -45,6 +47,10 @@ services:
       # rate limit por IP real. 0 = ignora X-Forwarded-For e usa o peer do socket (seguro por
       # padrão). Aqui a API é acessada direto, então 0. Testes de carga k6 usam 1.
       TRUSTED_PROXY_COUNT: "${TRUSTED_PROXY_COUNT:-0}"
+      # RATE_LIMIT_REDIS_URL — backend distribuído do rate limit (GAP-BZ/ADR-0041). Presente ⇒ o
+      # contador é compartilhado em Redis (exato sob HPA); ausente ⇒ token bucket in-memory por pod.
+      # Em falha do Redis o limiter degrada para o bucket local semeado — nunca derruba a API.
+      RATE_LIMIT_REDIS_URL: "${RATE_LIMIT_REDIS_URL:-redis://redis:6379}"
       LOG_FORMAT: "json"
       # ── OpenTelemetry (traces exported to Grafana Tempo via OTLP gRPC) ──────
       OTEL_SERVICE_NAME: "kanban-vision-api"
@@ -78,6 +84,19 @@ services:
       test: ["CMD-SHELL", "pg_isready -U kanban -d kanbanvision"]
       interval: 5s
       timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Redis (backend distribuído do rate limit — GAP-BZ/ADR-0041) ──────────────
+  redis:
+    image: redis:7-alpine
+    container_name: kanban-vision-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 10
     restart: unless-stopped
 

@@ -50,3 +50,9 @@ data:
   # o rate limit pelo IP real do cliente (imune a spoofing de X-Forwarded-For). "1" assume um
   # único Ingress à frente; ajuste para a profundidade real da cadeia (Ingress + LB + mesh).
   TRUSTED_PROXY_COUNT: "1"
+  # RATE_LIMIT_REDIS_URL — backend distribuído do rate limit (GAP-BZ/ADR-0041). Aponta para um
+  # redis-svc EXTERNO (não definido neste repo — mesmo padrão do postgres-svc; os manifestos são
+  # referência, ADR-0037). Presente ⇒ contador compartilhado, exato sob o HPA (2→8 réplicas);
+  # em falha do Redis o limiter degrada para o token bucket local semeado (nunca derruba a API).
+  # Remova esta chave para voltar ao limiter in-memory por pod.
+  RATE_LIMIT_REDIS_URL: "redis://redis-svc:6379"

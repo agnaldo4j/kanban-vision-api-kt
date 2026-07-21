@@ -2,29 +2,38 @@ package com.kanbanvision.httpapi.ratelimit
 
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.ratelimit.RateLimiter
-import org.slf4j.LoggerFactory
-
-private val logger = LoggerFactory.getLogger("com.kanbanvision.httpapi.ratelimit.RateLimiterFactory")
 
 /**
  * Builds the provider lambda plugged into Ktor's RateLimit plugin via the custom-provider overload.
  *
- * In this slice it always yields the in-memory [LocalTokenBucketRateLimiter]; a follow-up adds a
- * Redis-backed limiter behind this same seam (distinct key namespaces per limiter, a shared store).
- * [close] is the shutdown hook for that future Redis client — a no-op until it exists.
+ * With no [gateway] it yields the in-memory [LocalTokenBucketRateLimiter]; with one it yields the
+ * Redis-backed [RedisRateLimiter] (distinct key namespace per limiter). [close] releases the Redis
+ * client (via [closeable]) on shutdown.
  *
- * Ktor already partitions its limiter registry by `RateLimitName` (global vs `auth`), so the two
- * `configureRateLimit` limiters never share an instance even for the same client key.
+ * Ktor partitions its limiter registry by `RateLimitName` (global vs `auth`), and the Redis key adds
+ * the `namespace`, so the two limiters never share a bucket even for the same client key.
  */
-class RateLimiterFactory : AutoCloseable {
+class RateLimiterFactory(
+    private val gateway: RedisTokenBucketGateway? = null,
+    private val closeable: AutoCloseable? = null,
+) : AutoCloseable {
     fun provider(
+        namespace: String,
         limit: Int,
         windowMillis: Long,
-    ): (ApplicationCall, Any) -> RateLimiter = { _, _ -> LocalTokenBucketRateLimiter(limit, windowMillis) }
+    ): (ApplicationCall, Any) -> RateLimiter {
+        val backend = gateway
+        return { _, key ->
+            if (backend == null) {
+                LocalTokenBucketRateLimiter(limit, windowMillis)
+            } else {
+                RedisRateLimiter("ratelimit:$namespace:$key", limit, windowMillis, backend)
+            }
+        }
+    }
 
     override fun close() {
-        // No resource to release until the Redis client arrives; kept so the wiring
-        // (monitor.subscribe(ApplicationStopped) { factory.close() }) is already in place.
+        closeable?.close()
     }
 }
 
@@ -34,18 +43,3 @@ class RateLimiterFactory : AutoCloseable {
  * parameter keeps it unit-testable.
  */
 internal fun loadRedisUrl(env: (String) -> String? = System::getenv): String? = env("RATE_LIMIT_REDIS_URL")?.takeIf { it.isNotBlank() }
-
-/**
- * The default factory resolved by `configureRateLimit`. If `RATE_LIMIT_REDIS_URL` is set it warns
- * that the distributed backend is not wired yet (it arrives in a follow-up) and still uses the
- * in-memory limiter — so setting the variable early is safe and visible in the logs.
- */
-fun defaultRateLimiterFactory(env: (String) -> String? = System::getenv): RateLimiterFactory {
-    if (loadRedisUrl(env) != null) {
-        logger.warn(
-            "RATE_LIMIT_REDIS_URL is set but the distributed Redis backend is not wired yet; " +
-                "using the in-memory token-bucket limiter.",
-        )
-    }
-    return RateLimiterFactory()
-}

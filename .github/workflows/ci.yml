@@ -795,10 +795,15 @@ jobs:
           done
           [ "$PG_READY" -eq 1 ] || { echo "Postgres não ficou pronto em 60s" >&2; docker logs smoke-pg >&2 || true; }
 
+          # Redis: exercita o backend distribuído do rate limit (GAP-BZ/ADR-0041) no binário nativo —
+          # senão a reflection/resources do Lettuce ficam sem cobertura (o mesmo ponto cego do GAP-AR).
+          docker run -d --name smoke-redis --network smoke redis:7-alpine
+
           START=$(date +%s)
           docker run -d --name smoke-app --network smoke -p 8080:8080 \
             -e DATABASE_URL=jdbc:postgresql://smoke-pg:5432/kanbanvision \
             -e DATABASE_USER=kanban -e DATABASE_PASSWORD=kanban \
+            -e RATE_LIMIT_REDIS_URL=redis://smoke-redis:6379 \
             -e OTEL_TRACES_EXPORTER=none -e OTEL_METRICS_EXPORTER=none -e OTEL_LOGS_EXPORTER=none \
             "$IMAGE"
           READY=0; READY_DETAIL="timeout após 120s"
@@ -830,6 +835,16 @@ jobs:
               add_row "Auth + serialização de erro (sem token → \`DomainErrorResponse\`)" "401 + JSON" "401 · corpo JSON com \`error\`" 0
             else
               add_row "Auth + serialização de erro (sem token → \`DomainErrorResponse\`)" "401 + JSON" "code=$CODE corpo=$(printf '%s' "$BODY" | head -c 60)" 1
+            fi
+
+            # Rate limit distribuído no nativo (GAP-BZ/ADR-0041): as requisições acima passaram pelo
+            # limiter global → o Lettuce deve ter escrito um bucket no Redis via EVALSHA. Se a chave
+            # existe, o caminho Lettuce→Netty→Lua rodou no Native Image (não caiu no fallback local).
+            RL_KEYS=$(docker exec smoke-redis redis-cli --scan --pattern 'ratelimit:*' 2>/dev/null | head -1)
+            if [ -n "$RL_KEYS" ]; then
+              add_row "Rate limit distribuído (Redis EVALSHA no nativo)" "chave \`ratelimit:*\`" "presente: \`$(printf '%s' "$RL_KEYS" | head -c 40)\`" 0
+            else
+              add_row "Rate limit distribuído (Redis EVALSHA no nativo)" "chave \`ratelimit:*\`" "nenhuma chave — Lettuce não alcançou o Redis (fallback?)" 1
             fi
           fi
 
@@ -879,7 +894,7 @@ jobs:
       - name: Smoke test teardown
         if: always() && github.event_name == 'pull_request'
         run: |
-          docker rm -f smoke-app smoke-pg 2>/dev/null || true
+          docker rm -f smoke-app smoke-pg smoke-redis 2>/dev/null || true
           docker network rm smoke 2>/dev/null || true
 
       - name: Build and push (main / tag)

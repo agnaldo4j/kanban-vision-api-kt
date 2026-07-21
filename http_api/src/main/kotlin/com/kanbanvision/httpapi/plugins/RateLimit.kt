@@ -1,7 +1,7 @@
 package com.kanbanvision.httpapi.plugins
 
 import com.kanbanvision.httpapi.ratelimit.RateLimiterFactory
-import com.kanbanvision.httpapi.ratelimit.defaultRateLimiterFactory
+import com.kanbanvision.httpapi.ratelimit.redis.defaultRateLimiterFactory
 import com.kanbanvision.httpapi.support.AUTH_RATE_LIMIT_NAME
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application
@@ -24,11 +24,11 @@ fun Application.configureRateLimit(
     val windowMillis = RATE_LIMIT_WINDOW_MINUTES.minutes.inWholeMilliseconds
     install(RateLimit) {
         global {
-            rateLimiter(factory.provider(limit, windowMillis))
+            rateLimiter(factory.provider("global", limit, windowMillis))
             requestKey { call -> call.clientKey(trustedProxyCount) }
         }
         register(AUTH_RATE_LIMIT_NAME) {
-            rateLimiter(factory.provider(AUTH_RATE_LIMIT, windowMillis))
+            rateLimiter(factory.provider("auth", AUTH_RATE_LIMIT, windowMillis))
             requestKey { call -> call.clientKey(trustedProxyCount) }
         }
     }

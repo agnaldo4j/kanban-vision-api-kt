@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi.plugins
 
+import com.kanbanvision.httpapi.ratelimit.RedisCircuitBreaker
 import com.kanbanvision.persistence.DbCircuitBreaker
 import io.ktor.http.ContentType
 import io.ktor.server.application.Application
@@ -19,6 +20,7 @@ fun Application.configureMetrics() {
         this.registry = registry
     }
     DbCircuitBreaker.bindMetrics(registry)
+    RedisCircuitBreaker.bindMetrics(registry)
     routing {
         get("/metrics") {
             call.respondText(registry.scrape(), PROMETHEUS_CONTENT_TYPE)
