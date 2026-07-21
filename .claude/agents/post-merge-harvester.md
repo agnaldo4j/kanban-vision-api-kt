@@ -2,10 +2,11 @@
 name: post-merge-harvester
 description: >
   Executa o pós-merge de um PR DESTE repositório assim que o usuário avisa que mergeou: faz a limpeza
-  (sincroniza main, apaga a branch, move o card do #6 para Done) E colhe as lições duráveis da revisão
-  daquele PR, transformando-as em PROCESSO APLICADO — edita as skills/regras/rubric e abre um PR de
-  processo pronto para o próximo ciclo (não uma lista de tarefas). Use SEMPRE que o usuário disser que
-  mergeou um PR. Pode editar, commitar e abrir PR (não é read-only).
+  (sincroniza main, apaga a branch, move o card do #6 para Done) E — SÓ se o PR for uma implementação real
+  (toca */src/main/**) — colhe as lições duráveis da revisão e as transforma em PROCESSO APLICADO (edita
+  skills/regras/rubric + abre um PR de processo pronto). PR de processo/doc/ADR gera fechamento-só (guard
+  anti-loop: melhoria nunca pede melhoria). Use SEMPRE que o usuário disser que mergeou um PR. Pode editar,
+  commitar e abrir PR (não é read-only).
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
@@ -42,7 +43,27 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    ⚠️ Um gap `[E]` cujo passo ADR mergeou mas a implementação NÃO — **fica em Doing** (não vá para Done).
    Cheque: o gap tem implementação pendente? Se sim, só feche a branch e relate.
 
-## 2. Colha as lições da revisão daquele PR
+## 2. GATE ANTI-LOOP — só colha de uma IMPLEMENTAÇÃO REAL
+**Antes de colher, decida se este PR merece colheita.** Colher só acontece **depois de uma implementação
+real** — nunca de um PR de processo/doc (senão um PR de melhoria pede outro, ao infinito).
+
+```bash
+gh pr diff <n> --name-only    # arquivos tocados
+```
+- **É implementação real** ⟺ o diff toca **código de produção**: `*/src/main/**` (qualquer `.kt` de módulo
+  de produto). Só então → **prossiga para colher (§2.1) e aplicar (§3)**.
+- **NÃO é implementação real** — PR **só** de `docs/**`, `.claude/**` (skills/regras/agentes/rubric), `adr/**`,
+  `*/src/test/**`, `.github/**`, YAML de infra, etc. → **é um PR de PROCESSO/doc**: faça **só o fechamento
+  (§1) e PARE**. Não colha, não abra outro PR de processo. É isto que garante a terminação do loop.
+- **Identificação redundante** (além do gate por código): os PRs de processo que ESTE agente abre usam a
+  branch `chore/lessons-<n>-<slug>` e o título `docs(process): lições do #<n>` — reconhecíveis à parte. Se o
+  PR mergeado for um desses (ou qualquer `docs(process):`/`chore(process):`), é fechamento-só por definição.
+
+> Exemplos: um PR que só mexe em `.claude/` ou `docs/quality/lessons-learned.md` → fechamento-só. Um ADR-only
+> (`adr/ADR-XXXX.md`) → fechamento-só (a colheita vem do PR de IMPLEMENTAÇÃO do gap, que toca `src/main`). Um
+> PR que mexe em `http_api/src/main/**` **e** docs → implementação real → colhe.
+
+## 2.1. Colha as lições da revisão daquele PR
 Leia os sinais reais de revisão do PR — **os comentários inline, não só o resumo** (o resumo do harness
 subestima; ver `docs/quality/lessons-learned.md`):
 ```bash
@@ -79,6 +100,10 @@ achou; (c) exatamente quais arquivos você editou e o link do PR de processo (ou
 qualquer coisa que virou card `[E]` em vez de aplicada. Não afirme ter feito o que não fez.
 
 ## Guarda-corpos
+- **ANTI-LOOP (o mais importante):** colher+aplicar SÓ depois de uma **implementação real** (PR que toca
+  `*/src/main/**`). PR de processo/doc/skill/ADR/test-only → **fechamento-só**. Assim um PR de melhoria
+  NUNCA gera outro PR de melhoria — o loop termina em 1 nível. Na dúvida sobre "é implementação real?",
+  trate como NÃO (fechamento-só).
 - **Read-first:** leia o arquivo-alvo antes de editar; case o estilo/idioma da vizinhança.
 - **Imutáveis por política** (nunca edite p/ contornar): `config/detekt/detekt.yml`, `.editorconfig`,
   `build.gradle.kts` (exceto adição legítima), `gradle.properties`, o convention plugin, ADRs aceitas,

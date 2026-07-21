@@ -19,6 +19,11 @@ process-PR. That is the point: lessons become *applied process for the next cycl
 `/pr-review` skill (step 5) and the pr-harness rubric §6 feed the same file. Feature-specific findings do
 NOT belong here — they live in the ADR / the gap's notes.
 
+**Anti-loop guard (why this doesn't spiral):** the harvester harvests **only after a *real implementation***
+— a merged PR that touches production source (`*/src/main/**`). A **process/doc/skill/ADR/test-only PR gets
+closure only, no harvest**, so an improvement-PR never spawns another improvement-PR (the loop terminates in
+one level). This file itself is process — merging it triggers closure only.
+
 | Date | PR(s) | Lesson (the durable rule) | Applied to |
 |---|---|---|---|
 | 2026-07-21 | #323 #324 #325 | **Read the raw inline review comments, never trust the harness *summary*.** The pr-harness report can say "APPROVE / low severity" while its own inline comments (and Codex) carry P1s — it happened 3× in one cycle, including a *blocking* supply-chain P1. Verify via `gh api .../pulls/N/comments` + the GraphQL `reviewThreads` (`isResolved`), not the prose summary. | `.claude/skills/pr-review` (hard-rule), `feedback_always_run_pr_review` memory |

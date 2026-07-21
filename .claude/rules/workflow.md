@@ -32,10 +32,12 @@ git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
 (`.claude/agents/post-merge-harvester.md`) via a Agent tool. Ele faz as duas metades do pós-merge:
 1. **Limpeza** — sincroniza a main, apaga a branch, e move o card do #6 para **Done** (⚠️ um `[E]` cujo ADR
    mergeou mas a implementação não **fica em Doing**).
-2. **Colheita de lições, aplicada** — lê a revisão daquele PR (os comentários **inline**, não só o resumo),
-   destila as lições **duráveis/generalizáveis** e as **aplica** como emenda de skill/regra/rubric +
-   registro em `docs/quality/lessons-learned.md`, abrindo um PR de processo `[N]` pronto — não uma lista de
-   tarefas. É o loop que impede repetir os mesmos erros a cada ciclo.
+2. **Colheita de lições, aplicada — SÓ após implementação real.** O agente colhe+aplica **apenas quando o
+   PR mergeado toca código de produção** (`*/src/main/**`). PR de **processo/doc/skill/ADR/test-only** →
+   **fechamento-só** (guard anti-loop: uma melhoria nunca dispara outra — o loop termina em 1 nível). Numa
+   implementação real, ele lê a revisão (comentários **inline**, não o resumo), destila as lições
+   **duráveis/generalizáveis** e as **aplica** como emenda de skill/regra/rubric + registro em
+   `docs/quality/lessons-learned.md`, abrindo um PR de processo `[N]` pronto — não uma lista de tarefas.
 
 Fallback manual (se precisar fazer à mão o passo 1):
 ```bash
