@@ -92,20 +92,31 @@ roubar do invariante de conexões Postgres** da ADR-0037?
   `RedisRateLimiter : RateLimiter`. A `key` recebida **já é** o `clientRateLimitKey` atual; global e
   `/auth` usam **namespaces distintos** de chave Redis. Os headers `X-RateLimit-*`/`Retry-After` saem de
   graça do `State` retornado — nenhum comportamento observável do cliente muda.
-- **Contador atômico.** O bucket vive numa operação **atômica** no Redis (script Lua de token-bucket, ou
-  `INCR`+`EXPIRE` de janela fixa). Atomicidade é obrigatória: sem ela, N pods lendo-e-escrevendo em
-  corrida reintroduzem a diluição por outra porta.
+- **Contador atômico e equivalente a token-bucket.** O bucket vive numa operação **atômica** no Redis —
+  um **script Lua de token-bucket** (ou GCRA/janela deslizante equivalente). Atomicidade é obrigatória:
+  sem ela, N pods lendo-e-escrevendo em corrida reintroduzem a diluição por outra porta. **`INCR`+`EXPIRE`
+  de janela fixa é rejeitado**: não é equivalente ao limiter atual (token-bucket) — admite **2× a cota na
+  virada da janela** (ex.: em `/auth`, 5 requests logo antes do expiry + 5 logo depois, o que o bucket de
+  hoje não permite no mesmo burst) e diverge os headers `remaining`/`reset`. Como a decisão promete
+  **comportamento observável inalterado** (bullet anterior), a semântica **tem de ser token-bucket**.
 - **Client: Lettuce.** Async e coroutine-friendly (casa com o `suspend fun tryConsume`), sobre Netty —
   que **já é transitivo** no projeto (`io.netty:*:4.2.15.Final`, via `ktor-server-netty`). ⚠️ Lettuce
   historicamente mira Netty **4.1.x**; a PR de dependência **valida o alinhamento** com o 4.2.15.Final
   (risco de conflito de versão / SBOM-drift) antes de fixar a versão.
-- **Resiliência — degrada para o limiter local (o ponto crítico).** Em erro ou timeout do Redis, o
-  `RedisRateLimiter` **cai para o token-bucket in-memory local** (timeout curto + circuit-breaker, no
-  idioma do `DbCircuitBreaker` do `sql_persistence`, para não martelar um Redis morto a cada request).
-  Isso não é *fail-open ilimitado* nem *fail-closed→outage*: é exatamente o **comportamento de hoje**
-  (por-pod, diluído) — **nunca pior que o status quo**, e o app segue servindo. Reconcilia com a
-  `security.md §6` (fail-closed): o controle **continua limitando**, apenas mais fraco — **jamais abre
-  para ilimitado**.
+- **Resiliência — degrada para um limiter local semeado (o ponto crítico).** Em erro ou timeout do
+  Redis, o `RedisRateLimiter` **cai para um token-bucket in-memory local** (timeout curto +
+  circuit-breaker, no idioma do `DbCircuitBreaker` do `sql_persistence`, para não martelar um Redis morto
+  a cada request). ⚠️ **O fallback NÃO pode ser um bucket vazio (cheio de tokens).** Cada `State.Available`
+  do Redis carrega `remainingTokens`; o pod **memoriza o último `remainingTokens` observado por chave** e,
+  ao entrar em fallback, **semeia o bucket local com esse valor** (init conservador). Sem isso, somam-se
+  a cota remota **e** a local: um cliente que esgotou o bucket compartilhado (100 já admitidos) ganharia
+  até +100 por pod × 8 pods = **+800**, totalizando ~900/min — **pior que o limite compartilhado e que os
+  800/min de hoje**. Com o seeding, a cota remota e a local **não se somam**: o modo degradado converge ao
+  **limite por-pod** (o comportamento de hoje), sem conceder uma janela local nova na transição. Não é
+  *fail-open ilimitado* nem *fail-closed→outage*: reconcilia com a `security.md §6` (fail-closed) — o
+  controle **continua limitando**, apenas mais fraco, e **jamais abre para ilimitado**; o app segue
+  servindo. A equivalência tem de ser **coberta por teste** (esgotar via Redis → derrubar o Redis →
+  assertar que o bucket local não readmite uma janela cheia).
 - **Invariante paralelo (à la ADR-0037): `maxReplicas × redisPoolSize ≤ redis maxclients`**, com folga
   para manutenção. Como a ADR-0037 fez com o Postgres, esta ADR fixa **a regra e a responsabilidade** —
   quem provisionar o Redis satisfaz o invariante — e **não finge** conhecer o `maxclients` de produção
@@ -127,8 +138,9 @@ roubar do invariante de conexões Postgres** da ADR-0037?
   `/metrics`, em vez de migrar para anotações de infra. E o Postgres fica **intocado** — a escolha do
   Redis é precisamente o que preserva o invariante zero-margem da ADR-0037.
 - **Trade-off (aceito):**
-  - **Novo componente stateful + novo modo de falha.** *Mitigação:* o degrade-to-local garante que a
-    queda do Redis nunca é pior que o comportamento de hoje; o app não depende do Redis para servir.
+  - **Novo componente stateful + novo modo de falha.** *Mitigação:* o degrade-to-local **semeado pelo
+    último `remainingTokens`** converge ao limite por-pod de hoje sem readmitir uma janela cheia na
+    transição (não soma cota remota + local); o app não depende do Redis para servir.
   - **Superfície nativa nova.** O Lettuce adiciona reachability metadata ao binário Native Image
     (ADR-0032); o Netty já está na superfície, então o custo incremental é dos codecs do Lettuce. *A PR
     de infra cura a metadata e exercita o caminho no smoke nativo.*
