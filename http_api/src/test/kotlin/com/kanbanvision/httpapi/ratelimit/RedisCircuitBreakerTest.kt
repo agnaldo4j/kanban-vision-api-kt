@@ -43,4 +43,12 @@ class RedisCircuitBreakerTest {
     fun `given a meter registry when binding metrics then it does not throw`() {
         RedisCircuitBreaker.bindMetrics(SimpleMeterRegistry())
     }
+
+    @Test
+    fun `given transitions across states then the state listener handles open recovered and transient`() {
+        // Drives the listener's three branches: OPEN (warn), a transient state (no-op), CLOSED (info).
+        RedisCircuitBreaker.forceOpen()
+        RedisCircuitBreaker.circuitBreaker.transitionToDisabledState()
+        RedisCircuitBreaker.reset()
+    }
 }

@@ -8,7 +8,10 @@ import io.github.resilience4j.kotlin.circuitbreaker.executeSuspendFunction
 import io.github.resilience4j.micrometer.tagged.TaggedCircuitBreakerMetrics
 import io.lettuce.core.RedisException
 import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.LoggerFactory
 import java.time.Duration
+
+private val logger = LoggerFactory.getLogger(RedisCircuitBreaker::class.java)
 
 /**
  * Circuit breaker around the Redis rate-limit backend — same idiom as `DbCircuitBreaker`
@@ -30,6 +33,23 @@ object RedisCircuitBreaker {
 
     val registry: CircuitBreakerRegistry = CircuitBreakerRegistry.of(buildConfig())
     val circuitBreaker: CircuitBreaker = registry.circuitBreaker(CIRCUIT_NAME)
+
+    init {
+        // Make the degradation visible: the breaker state is a metric, but an outage that flips the
+        // limiter to per-pod (up to the HPA's maxReplicas× the intended ceiling) deserves a log too.
+        circuitBreaker.eventPublisher.onStateTransition { event ->
+            when (event.stateTransition.toState) {
+                CircuitBreaker.State.OPEN, CircuitBreaker.State.FORCED_OPEN ->
+                    logger.warn(
+                        "Redis rate-limit backend unavailable — the limiter degraded to a per-pod " +
+                            "in-memory bucket; the shared ceiling is diluted under the HPA until Redis recovers.",
+                    )
+                CircuitBreaker.State.CLOSED ->
+                    logger.info("Redis rate-limit backend recovered — the limiter is shared again.")
+                else -> Unit // HALF_OPEN / DISABLED / METRICS_ONLY: transient probe states, no operator action
+            }
+        }
+    }
 
     fun isOpen(): Boolean =
         circuitBreaker.state == CircuitBreaker.State.OPEN ||

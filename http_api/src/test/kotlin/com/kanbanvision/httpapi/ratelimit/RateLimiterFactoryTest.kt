@@ -1,6 +1,5 @@
 package com.kanbanvision.httpapi.ratelimit
 
-import com.kanbanvision.httpapi.ratelimit.redis.defaultRateLimiterFactory
 import io.ktor.server.application.ApplicationCall
 import io.mockk.mockk
 import kotlin.test.Test
@@ -70,7 +69,7 @@ class RateLimiterFactoryTest {
 
     @Test
     fun `defaultRateLimiterFactory uses in-memory when no redis url is set`() {
-        val factory = defaultRateLimiterFactory(env = { null })
+        val factory = defaultRateLimiterFactory(redisFactory = { RateLimiterFactory() }, env = { null })
         assertIs<LocalTokenBucketRateLimiter>(factory.provider("global", 5, 60_000)(anyCall, "ip"))
     }
 
@@ -89,7 +88,7 @@ class RateLimiterFactoryTest {
     }
 
     @Test
-    fun `defaultRateLimiterFactory no-arg resolves from the process environment`() {
-        defaultRateLimiterFactory().close()
+    fun `defaultRateLimiterFactory resolves the env from the process by default`() {
+        defaultRateLimiterFactory(redisFactory = { RateLimiterFactory() }).close()
     }
 }

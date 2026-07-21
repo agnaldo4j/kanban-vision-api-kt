@@ -1,7 +1,8 @@
 package com.kanbanvision.httpapi.plugins
 
 import com.kanbanvision.httpapi.ratelimit.RateLimiterFactory
-import com.kanbanvision.httpapi.ratelimit.redis.defaultRateLimiterFactory
+import com.kanbanvision.httpapi.ratelimit.defaultRateLimiterFactory
+import com.kanbanvision.httpapi.ratelimit.redis.redisBackedFactory
 import com.kanbanvision.httpapi.support.AUTH_RATE_LIMIT_NAME
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application
@@ -18,7 +19,7 @@ private const val RATE_LIMIT_WINDOW_MINUTES = 1
 fun Application.configureRateLimit(
     limit: Int = DEFAULT_RATE_LIMIT,
     trustedProxyCount: Int = loadTrustedProxyCount(),
-    factory: RateLimiterFactory = defaultRateLimiterFactory(),
+    factory: RateLimiterFactory = defaultRateLimiterFactory(redisFactory = ::redisBackedFactory),
 ) {
     require(limit > 0) { "Rate limit must be positive, was: $limit" }
     val windowMillis = RATE_LIMIT_WINDOW_MINUTES.minutes.inWholeMilliseconds
