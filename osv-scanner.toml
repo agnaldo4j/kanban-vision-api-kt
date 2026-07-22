@@ -1,15 +1,11 @@
 # Exceções do gate de SCA (ADR-0025).
 # Toda entrada exige `reason` com justificativa, data e critério de remoção.
 # Nunca desligar o gate: exceção sem reason é rejeitada em code review.
-
-[[IgnoredVulns]]
-id = "GHSA-5jmj-h7xm-6q6v"
-reason = """2026-07-08 (atualiza texto de 2026-07-05): o advisory foi revisado no OSV em
-2026-06-30 e hoje NÃO tem versão corrigida — todos os ranges têm apenas `introduced`
-(2.8.0+, 2.19.0+, 2.22.0+ e 3.1.0+ afetadas), então nenhum bump encerra esta exceção por
-enquanto (o critério anterior ">= 2.22.1" ficou obsoleto: 2.22.1 segue sinalizada).
-Medium 5.3 — mass assignment via @JsonFormat case-insensitive + @JsonIgnoreProperties;
-a aplicação usa kotlinx.serialization (jackson é transitiva de java-jwt/swagger-parser),
-padrão não alcançável. Critério de remoção: OSV publicar evento `fixed` para o advisory
-e a versão resolvida no runtimeClasspath ser >= esse fix (verificar com
-`osv-scanner --config=osv-scanner.toml --sbom=build/reports/cyclonedx/bom.json`)."""
+#
+# Nenhuma exceção ativa no momento.
+#
+# A exceção de GHSA-5jmj-h7xm-6q6v (jackson mass-assignment) foi REMOVIDA em 2026-07-21: o OSV
+# revisou o advisory novamente e ele não casa mais com nenhum pacote do SBOM (osv-scanner reporta
+# "unused ignore"). Como o osv-scanner-action v2.3.8 do CI FALHA (exit 1) em ignore não-usada, uma
+# exceção obsoleta passa a bloquear o gate — daí a remoção. Se o OSV re-listar o advisory contra uma
+# versão resolvida, reintroduzir a exceção (com reason atualizada) ou fazer o bump correspondente.
