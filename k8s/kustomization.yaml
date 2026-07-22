@@ -10,7 +10,13 @@ resources:
   - 06-hpa.yml
   - 07-pdb.yml
   - 09-migration-job.yml
-  # Observability stack (GAP-CB / ADR-0043) — added incrementally across PRs.
+  # Observability stack (GAP-CB / ADR-0043) — adicionado incrementalmente nos PRs 1-4.
+  # Esquema de numeração fixado (evita renumeração entre PRs):
+  #   10-prometheus.yml         (Deployment + Service + RBAC)  — PR-2
+  #   11-prometheus-rules.yml   (ConfigMap de regras)          — PR-1 (este)
+  #   12-prometheus-config.yml  (ConfigMap de scrape)          — PR-2
+  #   13-alertmanager.yml       (Alertmanager + alert-sink)    — PR-3
+  #   14-grafana.yml            (Grafana + datasource/dashboard)— PR-4
   - 11-prometheus-rules.yml
 
 # Secret is generated from k8s/secrets.env — never committed.
