@@ -10,6 +10,8 @@ resources:
   - 06-hpa.yml
   - 07-pdb.yml
   - 09-migration-job.yml
+  # Observability stack (GAP-CB / ADR-0043) — added incrementally across PRs.
+  - 11-prometheus-rules.yml
 
 # Secret is generated from k8s/secrets.env — never committed.
 # Copy k8s/secrets.env.example to k8s/secrets.env and fill in real values.

@@ -1,0 +1,178 @@
+# Prometheus alerting rules — in-cluster (GAP-CB / ADR-0043).
+#
+# As 6 regras de negócio/HTTP/pool (HighHttpErrorRate, HighHttpLatencyP95, HikariPoolExhaustion,
+# RateLimitRedisDegraded, DbConnectionFleetExhaustion, ServiceDown) são reusadas VERBATIM de
+# observability/prometheus-alerts.yml — a mesma fonte que o job config-lint (GAP-CY) já valida.
+#
+# As 3 regras de CONTAINER divergem por decisão da ADR-0043: no compose o cAdvisor é dedicado a
+# este stack e `{name!=""}` só vê containers do próprio compose; em k8s a fonte é o cAdvisor do
+# kubelet, que expõe TODOS os containers do nó (todos os namespaces). Sem escopo, um container de
+# terceiro no mesmo nó dispararia estas regras e paginaria os receivers deste stack. Por isso o
+# seletor vira `{namespace="kanban-vision",container!=""}` (o kubelet expõe namespace/pod/container,
+# não o label `name` do compose) e as summaries usam `{{ $labels.pod }}` no lugar de `{{ $labels.name }}`.
+#
+# Montado em /etc/prometheus/rules/ pelo Deployment do Prometheus (k8s/10-prometheus.yml, PR
+# seguinte); referenciado por `rule_files: [/etc/prometheus/rules/*.yml]` no scrape config.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: kanban-vision
+  labels:
+    app.kubernetes.io/name: kanban-vision-api
+    app.kubernetes.io/component: prometheus
+data:
+  kanban-vision-alerts.yml: |
+    groups:
+      - name: kanban-vision-api
+        rules:
+
+          # Alert when the HTTP 5xx error rate exceeds 5% over a 5-minute window.
+          # Threshold: sum(rate(5xx)) / sum(rate(all)) > 0.05
+          - alert: HighHttpErrorRate
+            expr: |
+              (
+                sum by (instance) (rate(ktor_http_server_requests_seconds_count{status=~"5.."}[5m]))
+                /
+                sum by (instance) (rate(ktor_http_server_requests_seconds_count[5m]))
+              ) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High HTTP 5xx error rate on {{ $labels.instance }}"
+              description: >
+                HTTP 5xx error rate is {{ $value | humanizePercentage }}
+                (threshold: 5%) over the last 5 minutes.
+
+          # Alerta de P95 alto. Threshold ancorado no orçamento de latência JÁ documentado do k6
+          # (load/simulation-journey.js: create/snapshot/cfd/list p95 < 300ms, run_day < 500ms).
+          # 500ms = o teto do endpoint mais lento do orçamento; acima disso algo saiu do envelope medido.
+          - alert: HighHttpLatencyP95
+            expr: |
+              histogram_quantile(0.95,
+                sum by (le, instance) (
+                  rate(ktor_http_server_requests_seconds_bucket[5m])
+                )
+              ) > 0.5
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High HTTP P95 latency on {{ $labels.instance }}"
+              description: >
+                P95 HTTP response latency is {{ printf "%.3f" $value }}s
+                (threshold: 0.5s = orçamento k6 do run_day; p95 medido no envelope: 0.031s)
+                over the last 5 minutes.
+
+          # Pool de conexões por instância acima de 90%.
+          - alert: HikariPoolExhaustion
+            expr: |
+              (
+                hikaricp_connections_active
+                /
+                hikaricp_connections_max
+              ) > 0.9
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "HikariCP connection pool near exhaustion on {{ $labels.instance }}"
+              description: >
+                HikariCP pool is {{ $value | humanizePercentage }} utilised
+                (threshold: 90%) for more than 2 minutes.
+
+          # Rate limit distribuído (GAP-BZ/ADR-0041): quando o circuit breaker do Redis abre, o limiter
+          # degrada para um bucket local POR POD — o teto por IP dilui sob o HPA (até maxReplicas×).
+          - alert: RateLimitRedisDegraded
+            expr: max(resilience4j_circuitbreaker_state{name="redis",state=~"open|forced_open"}) > 0
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Rate limit degradado para local — Redis indisponível"
+              description: >
+                O circuit breaker do Redis (rate limit) está aberto há mais de 1min em ao menos um pod.
+                O limiter está servindo do bucket local por pod, então o teto por IP dilui sob o HPA
+                até o Redis voltar (ADR-0041). Verifique a disponibilidade do redis-svc.
+
+          # Exaustão de conexões da FROTA — o modo de falha que o alerta por instância NÃO vê:
+          # pods pouco utilizados não disparam nada enquanto o banco satura (GAP-BU/ADR-0037 amarrou
+          # maxReplicas ao pool). A métrica é `hikaricp_connections` (TOTAL = active + idle).
+          # Threshold 85: acima das 80 previstas (8 réplicas × poolSize 10) e ~10 abaixo do teto real
+          # (~95 num PostgreSQL default, menos +2 do Job de migração).
+          - alert: DbConnectionFleetExhaustion
+            expr: sum(hikaricp_connections) > 85
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Conexões da frota perto do teto do banco"
+              description: >
+                {{ printf "%.0f" $value }} conexões ABERTAS somadas na frota (active + idle)
+                — acima das 80 previstas pelo invariante (maxReplicas 8 × poolSize 10).
+                Teto real: ~95 utilizáveis num PostgreSQL default, menos +2 do Job de migração.
+
+          # ── Camada de CONTAINER (cAdvisor do kubelet) — escopada a namespace="kanban-vision" ──
+          # Um pod estrangulado pelo CFS ou perto do limite de memória não gera 5xx nem latência
+          # acima do threshold — queima capacidade em silêncio. Em k8s o limits.cpu/memory do pod
+          # (ADR-0037) está sempre presente, então o sinal existe. O `> 0` no denominador NÃO é
+          # cosmético: é um filtro (container sem limite não tem períodos de CFS / spec_limit=0).
+          - alert: ContainerCpuThrottling
+            expr: |
+              (
+                rate(container_cpu_cfs_throttled_periods_total{namespace="kanban-vision",container!=""}[5m])
+                /
+                (rate(container_cpu_cfs_periods_total{namespace="kanban-vision",container!=""}[5m]) > 0)
+              ) > 0.25
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "CPU throttling em {{ $labels.pod }}"
+              description: >
+                {{ $value | humanizePercentage }} dos períodos de CFS foram estrangulados
+                (threshold: 25%) nos últimos 5min — o container está pedindo mais CPU que a quota.
+
+          # Working set perto do limite do container — a métrica que dimensiona requests.memory
+          # (ADR-0037), NÃO memory.peak (inclui page cache reclaimável). `(limite > 0)` é FILTRO.
+          - alert: ContainerMemoryNearLimit
+            expr: |
+              (
+                container_memory_working_set_bytes{namespace="kanban-vision",container!=""}
+                /
+                (container_spec_memory_limit_bytes{namespace="kanban-vision",container!=""} > 0)
+              ) > 0.85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Working set perto do limite em {{ $labels.pod }}"
+              description: >
+                Working set em {{ $value | humanizePercentage }} do limite do container
+                (threshold: 85%). Memória é incompressível: acima do limite o kernel mata o processo.
+
+          # OOMKill: o kernel matou o processo por estourar a memória.
+          - alert: ContainerOomKilled
+            expr: increase(container_oom_events_total{namespace="kanban-vision",container!=""}[5m]) > 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: "OOMKill em {{ $labels.pod }}"
+              description: >
+                O container {{ $labels.pod }} sofreu OOMKill nos últimos 5min — o limite de
+                memória foi estourado e o kernel matou o processo.
+
+          # Alert when the scrape target disappears (up metric equals 0).
+          # This fires within 1 minute of the service becoming unreachable.
+          - alert: ServiceDown
+            expr: up{job="kanban-vision-api"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "kanban-vision-api is down on {{ $labels.instance }}"
+              description: >
+                The scrape target {{ $labels.instance }} has been unreachable
+                for more than 1 minute.
