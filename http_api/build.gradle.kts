@@ -203,6 +203,14 @@ dependencies {
     // versão exigida (4.2.15 > 4.1.118).
     implementation(platform("io.netty:netty-bom:4.2.15.Final"))
 
+    // logstash-logback-encoder 9.0 migrou para Jackson 3.x (coordenadas `tools.jackson`, distintas do
+    // Jackson 2.x `com.fasterxml.jackson` pinado acima) e puxa a família em 3.1.4 — vulnerável a
+    // GHSA-5gvw-p9qm-jgwh (jackson-databind, corrigida em 3.1.5), gate de SCA (ADR-0025). O BOM alinha
+    // TODA a família tools.jackson (core/databind/module-kotlin) a 3.1.5 numa linha, evitando drift
+    // módulo-a-módulo (mesmo idioma do netty-bom acima). Remover quando logstash-logback-encoder puxar
+    // >= 3.1.5 nativamente.
+    implementation(platform("tools.jackson:jackson-bom:3.1.5"))
+
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))
     implementation(project(":usecases"))
@@ -210,6 +218,10 @@ dependencies {
 
     // Binário de migração (ADR-0032): persistência + logback para logs do Job.
     // O logback.xml referencia o OpenTelemetryAppender — o jar precisa estar presente.
+    // O jackson-bom precisa ser repetido aqui: `migrationRuntime` é uma configuração própria e NÃO
+    // herda o `platform` do `implementation`, então o logstash-logback-encoder abaixo puxaria a família
+    // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
+    migrationRuntime(platform("tools.jackson:jackson-bom:3.1.5"))
     migrationRuntime(project(":sql_persistence"))
     migrationRuntime("ch.qos.logback:logback-classic:1.5.38")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
