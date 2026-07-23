@@ -60,16 +60,23 @@ receivers:
   #         send_resolved: true
 
 # Um incidente crítico silencia os warnings da MESMA fonte (reduz ruído durante a falha).
-# `equal: ['instance', 'name']`:
-#   - `instance` casa os alertas de app/frota (job kanban-vision-api, instance="kanban-vision-api").
-#   - `name` é OBRIGATÓRIO para escopar os alertas de container por container: o job `cadvisor` em
-#     prometheus.yml tem alvo único (`targets: ["cadvisor:8080"]`, sem relabel), então TODAS as
-#     séries container_* compartilham `instance="cadvisor:8080"` — quem diferencia container é o
-#     label `name` (os expr usam `{name!=""}`). Sem `name`, um ContainerOomKilled do postgres
-#     inibiria CPU/memória de QUALQUER container (app, grafana). Os alertas de app/frota não têm
-#     label `name`: pela semântica "campo ausente = igual" do Alertmanager, sua inibição atual é
-#     preservada; `name` só restringe corretamente os pares de container ao container coincidente.
+# `equal: ['namespace', 'pod']` — chave para a TOPOLOGIA DE LABEL do k8s (GAP-DC; diverge do compose):
+#   - Escopa a inibição ao MESMO POD nas duas camadas: alertas de app (pod SD → labels `namespace`+`pod`,
+#     ver k8s/12-prometheus-config.yml) e de container (cAdvisor do kubelet → `namespace`+`pod`+`container`).
+#     Um crítico no pod X passa a silenciar SÓ os warnings do pod X.
+#   - Por que NÃO `['instance','name']` (a chave do compose): em k8s o cAdvisor vem do KUBELET, cujo
+#     `instance` é o NÓ (compartilhado por todos os pods do nó), e NÃO existe label `name`. Com aquela chave,
+#     um ContainerOomKilled crítico inibiria CPU/memória de TODOS os pods do mesmo nó (achado P2 do review #333).
+#   - Por que NÃO incluir `container`: os alertas de app não têm label `container`; incluí-lo quebraria a
+#     inibição app→container no mesmo pod. O pod da API é single-container (`api`), então `pod` já basta.
+#   - Residual ACEITO: os 3 alertas AGREGADOS que descartam labels — DbConnectionFleetExhaustion (`sum`),
+#     RateLimitRedisDegraded (`max`), ApiTargetsAbsent (`absent`) — não têm `namespace`/`pod`; pela semântica
+#     "campo ausente em AMBOS = igual" do Alertmanager, seguem inibindo uns aos outros. É redução de ruído de
+#     frota (aceitável), não o bug cross-pod.
+# NOTA: observability/alertmanager.yml (compose) mantém `['instance','name']` de propósito — está correto p/ o
+# cAdvisor dedicado do compose (alvo único, diferenciado por `name`). As duas configs divergem legitimamente;
+# a fonte única fica para GAP-DB.
 inhibit_rules:
   - source_matchers: [ 'severity="critical"' ]
     target_matchers: [ 'severity="warning"' ]
-    equal: ['instance', 'name']
+    equal: ['namespace', 'pod']
