@@ -29,12 +29,15 @@ data:
 
           # Alert when the HTTP 5xx error rate exceeds 5% over a 5-minute window.
           # Threshold: sum(rate(5xx)) / sum(rate(all)) > 0.05
+          # Agrega por `namespace, pod, instance` (não só `instance` como no compose): o pod SD carrega
+          # namespace/pod em toda série, e o inhibit_rule do Alertmanager escopa por `['namespace','pod']`
+          # (GAP-DC) — sem preservá-los aqui, um crítico de erro num pod inibiria latência de TODOS os pods.
           - alert: HighHttpErrorRate
             expr: |
               (
-                sum by (instance) (rate(ktor_http_server_requests_seconds_count{status=~"5.."}[5m]))
+                sum by (namespace, pod, instance) (rate(ktor_http_server_requests_seconds_count{status=~"5.."}[5m]))
                 /
-                sum by (instance) (rate(ktor_http_server_requests_seconds_count[5m]))
+                sum by (namespace, pod, instance) (rate(ktor_http_server_requests_seconds_count[5m]))
               ) > 0.05
             for: 5m
             labels:
@@ -48,10 +51,12 @@ data:
           # Alerta de P95 alto. Threshold ancorado no orçamento de latência JÁ documentado do k6
           # (load/simulation-journey.js: create/snapshot/cfd/list p95 < 300ms, run_day < 500ms).
           # 500ms = o teto do endpoint mais lento do orçamento; acima disso algo saiu do envelope medido.
+          # Preserva namespace/pod na agregação (além de `le`/`instance`) — mesma razão do HighHttpErrorRate:
+          # o inhibit_rule escopa por `['namespace','pod']` (GAP-DC).
           - alert: HighHttpLatencyP95
             expr: |
               histogram_quantile(0.95,
-                sum by (le, instance) (
+                sum by (le, namespace, pod, instance) (
                   rate(ktor_http_server_requests_seconds_bucket[5m])
                 )
               ) > 0.5
