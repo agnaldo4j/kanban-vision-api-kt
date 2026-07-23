@@ -101,7 +101,7 @@ setup pode ganhar `continue-on-error`, e nenhum passo de relatório pode perdê-
 | Vários jobs caindo **no mesmo passo** e **ao mesmo tempo** | Infra, não código | §1 |
 | Falha reproduzível **da sua máquina** com `gh api` | O problema não é do runner | §1 |
 | Falha em **PRs já mergeados e verdes** | Impossível ser regressão — é infra | §1 |
-| `Supply Chain` reprova com CVE numa dep que o **PR não tocou** | **Nova CVE divulgada pelo OSV** numa dep transitiva já resolvida — **repo-wide**, bloqueia `main` e todo PR aberto (não é infra do GitHub nem regressão sua) | Corrigir num **`fix/` PR separado** (não dobrar no PR de feature): bump da família via **BOM** (`platform(...)`). Verificar TODO módulo/config que a vaza — `:mod:dependencies` por `runtimeClasspath` **e** `migrationRuntime` (o SBOM agregado varre cada um) |
+| `Supply Chain` reprova com CVE numa dep que o **PR não tocou** | **Nova CVE divulgada pelo OSV** numa dep transitiva já resolvida — **repo-wide**, bloqueia `main` e todo PR aberto (não é infra do GitHub nem regressão sua) | Corrigir num **`fix/` PR separado** (não dobrar no PR de feature): bump da família via **BOM** (`platform(...)`). O SBOM agregado cobre **só `runtimeClasspath`** (`includeConfigs` no `build.gradle.kts` raiz) — repita o BOM em **cada módulo** que a resolve (`:mod:dependencies --configuration runtimeClasspath`). ⚠️ O `migrationRuntime` (binário de migração) **NÃO entra no SBOM** — é ponto cego (GAP-DA): cheque-o **à mão** (`--configuration migrationRuntime`) e alinhe lá também |
 
 **Teste decisivo:** reproduza fora do CI. Se falha localmente com token válido, o runner é inocente.
 
