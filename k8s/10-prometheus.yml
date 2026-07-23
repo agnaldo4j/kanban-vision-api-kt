@@ -77,7 +77,10 @@ spec:
         - name: prometheus
           image: prom/prometheus:v2.54.1
           args:
-            - "--config.file=/etc/prometheus/prometheus.yml"
+            # config e regras montadas como DIRETÓRIOS (sem subPath) — um subPath fixa o arquivo na
+            # versão do pod-start e nem o /-/reload lê a nova (achado P2 do review #330). Como dir mount,
+            # o kubelet propaga a atualização do ConfigMap e o /-/reload (--web.enable-lifecycle) relê.
+            - "--config.file=/etc/prometheus/config/prometheus.yml"
             - "--storage.tsdb.path=/prometheus"
             - "--storage.tsdb.retention.time=7d"
             - "--web.enable-lifecycle"
@@ -105,9 +108,9 @@ spec:
               cpu: "500m"
               memory: "512Mi"
           volumeMounts:
+            # Dir mounts (sem subPath) p/ as atualizações do ConfigMap propagarem — ver args acima.
             - name: config
-              mountPath: /etc/prometheus/prometheus.yml
-              subPath: prometheus.yml
+              mountPath: /etc/prometheus/config
               readOnly: true
             - name: rules
               mountPath: /etc/prometheus/rules

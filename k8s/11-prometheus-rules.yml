@@ -166,6 +166,9 @@ data:
 
           # Alert when the scrape target disappears (up metric equals 0).
           # This fires within 1 minute of the service becoming unreachable.
+          # Cobre a queda PARCIAL: um pod conhecido responde `up=0`. Num OUTAGE TOTAL sob k8s pod SD
+          # (todos os pods somem) NÃO há série `up` — `up==0` avalia vetor vazio e não dispara. Esse
+          # caso é coberto pela regra ApiTargetsAbsent abaixo (achado P1 do review #330).
           - alert: ServiceDown
             expr: up{job="kanban-vision-api"} == 0
             for: 1m
@@ -176,3 +179,18 @@ data:
               description: >
                 The scrape target {{ $labels.instance }} has been unreachable
                 for more than 1 minute.
+
+          # Outage TOTAL / falha de rollout|scheduling: o service discovery não retorna NENHUM pod
+          # kanban-vision-api, então não há série `up` e o ServiceDown (up==0) não dispara. `absent()`
+          # cobre o "zero targets" — a semântica que muda ao passar de alvo estático (compose) para pod
+          # SD (k8s). Complementa o ServiceDown, não o substitui (P1 do review #330).
+          - alert: ApiTargetsAbsent
+            expr: absent(up{job="kanban-vision-api"})
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Nenhum target kanban-vision-api descoberto"
+              description: >
+                O service discovery não retornou nenhum pod kanban-vision-api por mais de 1min —
+                outage total ou falha de rollout/scheduling. Nenhuma réplica está sendo coletada.
