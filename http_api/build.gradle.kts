@@ -198,10 +198,13 @@ dependencies {
 
     // Lettuce (rate limit distribuído, GAP-BZ/ADR-0041) é compilada contra Netty 4.1.x e puxa módulos
     // que o Ktor NÃO usa — netty-resolver-dns / netty-codec-dns (com CVEs na 4.1.118, GHSA-cm33/5pvg/
-    // 676x/xmv7). O BOM alinha TODA a família io.netty a 4.2.15.Final (a do Ktor 3.5.1), fechando o gate
-    // de SCA (ADR-0025) e evitando drift módulo-a-módulo. `platform` participa da resolução com a maior
-    // versão exigida (4.2.15 > 4.1.118).
-    implementation(platform("io.netty:netty-bom:4.2.15.Final"))
+    // 676x/xmv7). O BOM alinha TODA a família io.netty a 4.2.16.Final, fechando o gate de SCA (ADR-0025)
+    // e evitando drift módulo-a-módulo. `platform` participa da resolução com a maior versão exigida
+    // (4.2.16 > 4.1.118 da Lettuce e > 4.2.15 do Ktor 3.5.1).
+    // 4.2.15 → 4.2.16: lote de CVEs em netty-codec-http/http2/compression (GHSA-558v/4mp9/6cqp/6jqx/gcjf/
+    // jppx/mvh2/q4f6/c69g, High/Medium), fix 4.2.16.Final. Não introduzido por nenhum PR — bump transitivo
+    // do OSV; bump quando o Ktor puxar >= 4.2.16 nativamente.
+    implementation(platform("io.netty:netty-bom:4.2.16.Final"))
 
     // logstash-logback-encoder 9.0 migrou para Jackson 3.x (coordenadas `tools.jackson`, distintas do
     // Jackson 2.x `com.fasterxml.jackson` pinado acima) e puxa a família em 3.1.4 — vulnerável a
