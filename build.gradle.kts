@@ -6,11 +6,14 @@ plugins {
     id("org.graalvm.buildtools.native") version "1.1.5" apply false
 }
 
-// O gate de SCA cobre o artefato publicado (ADR-0025): só o runtimeClasspath
-// entra no SBOM — dependências de teste e de tooling de build ficam de fora.
+// O gate de SCA cobre os artefatos PUBLICADOS (ADR-0025): o `runtimeClasspath` (binário principal
+// kanban-vision-api) E o `migrationRuntime` (binário de migração kanban-vision-migrate, ADR-0032) —
+// GAP-DA. Sem `migrationRuntime` uma CVE que só o binário de migração alcança passava o gate (o SBOM
+// era ponto cego dele, como o jackson do #329 mostrou). Dependências de teste/tooling ficam de fora.
+// `migrationRuntime` só existe no http_api, então o nome casa exatamente aquele grafo.
 allprojects {
     tasks.withType<org.cyclonedx.gradle.CyclonedxDirectTask>().configureEach {
-        includeConfigs.set(listOf("runtimeClasspath"))
+        includeConfigs.set(listOf("runtimeClasspath", "migrationRuntime"))
     }
 }
 
