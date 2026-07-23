@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: "kanban-vision"
+    orgId: 1
+    folder: "Kanban Vision"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

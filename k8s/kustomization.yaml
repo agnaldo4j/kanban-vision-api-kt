@@ -21,18 +21,29 @@ resources:
   - 11-prometheus-rules.yml
   - 12-prometheus-config.yml
   - 13-alertmanager.yml
+  - 14-grafana.yml
 
-# Config do Alertmanager. É uma CÓPIA verbatim de observability/alertmanager.yml mantida DENTRO de k8s/
-# (`k8s/alertmanager.yml`) — de propósito: referenciar `../observability` quebraria `kubectl apply -k k8s/`,
-# que não aceita `--load-restrictor` (review #333 P1). Manter dentro do root também dá paridade com as
-# regras (k8s/11-prometheus-rules.yml) e o secrets.env, todos locais ao root. O hash no nome faz uma
-# mudança da config disparar rollout do Deployment. A duplicação (drift compose↔k8s) é dívida rastreada
-# em GAP-DB (fonte única + config-lint cobrindo o stack k8s).
+# Configs de observabilidade REUSADAS de observability/* como CÓPIAS locais em k8s/ (grafana-*, alertmanager.yml)
+# — de propósito: referenciar `../observability` quebraria `kubectl apply -k k8s/`, que não aceita
+# `--load-restrictor` (review #333 P1). Locais ao root, como as regras e o secrets.env. O hash no nome faz uma
+# mudança de config disparar rollout do Deployment. A duplicação (drift compose↔k8s) é rastreada em GAP-DB.
 configMapGenerator:
   - name: alertmanager-config
     namespace: kanban-vision
     files:
       - alertmanager.yml
+  - name: grafana-datasources
+    namespace: kanban-vision
+    files:
+      - prometheus.yml=grafana-datasource-prometheus.yml
+  - name: grafana-dashboards-provider
+    namespace: kanban-vision
+    files:
+      - dashboard.yml=grafana-dashboard-provider.yml
+  - name: grafana-dashboards
+    namespace: kanban-vision
+    files:
+      - kanban-vision-api.json=grafana-dashboard.json
 
 # Secret is generated from k8s/secrets.env — never committed.
 # Copy k8s/secrets.env.example to k8s/secrets.env and fill in real values.
