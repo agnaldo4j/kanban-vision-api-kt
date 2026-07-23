@@ -855,6 +855,18 @@ de entrega. GAP-CA wireou o **Alertmanager** no stack docker-compose:
   `instance="cadvisor:8080"`, então só `name` distingue containers).
 - **`observability/prometheus.yml`** — bloco `alerting.alertmanagers` apontando `alertmanager:9093`
   (é o que faltava para o Prometheus saber onde entregar).
+
+> ⚠️ **A chave `equal` de um `inhibit_rule` só funciona se TODO alerta (source E target) EMITE aqueles
+> labels — e `sum by (...)` / `histogram_quantile(..., sum by (le, ...))` DESCARTAM silenciosamente todo
+> label fora do `by`.** No compose, `['instance','name']` funciona porque `instance` é constante e o
+> cAdvisor diferencia container por `name`. No **k8s in-cluster** a topologia muda: `name` não existe, o
+> `instance` do cAdvisor do kubelet é o **nó**, e os alertas de app precisam de `namespace`/`pod` — mas
+> `HighHttpErrorRate`/`HighHttpLatencyP95` agregavam por `instance` só, então perdiam `namespace`/`pod` e um
+> crítico de um pod inibia warnings de TODOS. Correção (GAP-DC): `equal: ['namespace','pod']` **mais**
+> preservar `namespace`/`pod` nas agregações (`sum by (namespace, pod, instance)`). **Regra:** ao escolher a
+> chave de inibição (ou qualquer join de label entre alertas), confira o `expr` de cada alerta e garanta que
+> ele emite os labels da chave; agregados que descartam tudo (`sum(...)`/`max(...)`/`absent(...)`) casam por
+> "ausente em ambos = igual" — trate isso como residual consciente.
 - **`docker-compose.yml`** — serviços `alertmanager` (`prom/alertmanager`, `:9093`) e `alert-sink`
   (echo container sem segredo): cada receiver posta num caminho distinto (`/critical`, `/warning`,
   `/default`), então `docker logs kanban-vision-alert-sink` prova a entrega ponta-a-ponta.
@@ -863,8 +875,12 @@ de entrega. GAP-CA wireou o **Alertmanager** no stack docker-compose:
 por `*_file` (ex.: `slack_configs[].api_url_file`) montado de um caminho não versionado ou de um
 Secret do k8s. Ver o comentário no topo de `observability/alertmanager.yml`. Nunca comitar URL real.
 
-**Escopo:** só compose (onde o Prometheus roda hoje). O Alertmanager **in-cluster** (manifestos k8s +
-Prometheus in-cluster) é o **GAP-CB [E]**.
+**Escopo:** o stack **in-cluster** (manifestos k8s: Prometheus + regras + scrape → Alertmanager + alert-sink
+→ Grafana) foi entregue em **GAP-CB [E]/ADR-0043** (`k8s/10-14*.yml` + as cópias locais `k8s/alertmanager.yml`
+e `k8s/grafana-*`). Notas duráveis do stack k8s: Services usam os nomes DNS do compose
+(`prometheus`/`alertmanager`/`grafana`/`alert-sink`) p/ os configs reusados resolverem; configs são **cópias
+locais** em `k8s/` (não `../observability`, senão `apply -k` quebra); alertas de container escopados a
+`namespace="kanban-vision"` e o `inhibit_rule` a `['namespace','pod']` (topologia de label do kubelet, ≠ compose).
 
 **Validar sem subir tudo** (precisa do daemon Docker) — este é o *mesmo* lint que o job
 **`config-lint`** do CI roda como gate bloqueante (GAP-CY); rode-o local antes de abrir PR:
@@ -878,6 +894,21 @@ docker run --rm --entrypoint promtool \
 ```
 > No CI as versões saem do `docker-compose.yml` (sem drift). O gate pega a classe de bug
 > semântico que um parser YAML genérico não vê — ex.: o P2 do PR #317 (`inhibit_rules`).
+
+> ⚠️ **O `config-lint` (e os comandos acima) cobrem SÓ `observability/*` — as cópias k8s NÃO são gated.**
+> `k8s/alertmanager.yml` e as regras embutidas em `k8s/11-prometheus-rules.yml` são payloads de ConfigMap
+> **opacos** para o kustomize, então um erro de schema neles PASSA o gate anunciado. Ao mexer numa cópia
+> k8s, valide-a à mão (rastreado por **GAP-DB** — estender o `config-lint` ao stack k8s):
+> ```bash
+> docker run --rm --entrypoint amtool -v "$PWD/k8s:/k8s" \
+>   prom/alertmanager:v0.27.0 check-config /k8s/alertmanager.yml
+> # regras do k8s: extraia o payload do ConfigMap e rode promtool check rules
+> kubectl kustomize k8s/ | python3 -c 'import sys,yaml
+> for d in yaml.safe_load_all(sys.stdin):
+>     if d and d.get("kind")=="ConfigMap" and d["metadata"]["name"]=="prometheus-rules":
+>         open("/tmp/k8s-rules.yml","w").write(d["data"]["kanban-vision-alerts.yml"])' \
+>   && docker run --rm --entrypoint promtool -v /tmp:/wd prom/prometheus:v2.54.1 check rules /wd/k8s-rules.yml
+> ```
 Ponta-a-ponta: `docker compose up -d` → Prometheus `:9090` → Status → Alertmanagers mostra
 `alertmanager:9093` ativo → `docker compose stop app` (dispara `ServiceDown` em ~1min) →
 Alertmanager `:9093` mostra o grupo → `docker logs kanban-vision-alert-sink` mostra o POST em
