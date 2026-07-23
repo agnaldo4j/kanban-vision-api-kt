@@ -101,6 +101,7 @@ setup pode ganhar `continue-on-error`, e nenhum passo de relatório pode perdê-
 | Vários jobs caindo **no mesmo passo** e **ao mesmo tempo** | Infra, não código | §1 |
 | Falha reproduzível **da sua máquina** com `gh api` | O problema não é do runner | §1 |
 | Falha em **PRs já mergeados e verdes** | Impossível ser regressão — é infra | §1 |
+| `Supply Chain` reprova com CVE numa dep que o **PR não tocou** | **Nova CVE divulgada pelo OSV** numa dep transitiva já resolvida — **repo-wide**, bloqueia `main` e todo PR aberto (não é infra do GitHub nem regressão sua) | Corrigir num **`fix/` PR separado** (não dobrar no PR de feature): bump da família via **BOM** (`platform(...)`). O SBOM agregado cobre **só `runtimeClasspath`** (`includeConfigs` no `build.gradle.kts` raiz) — repita o BOM em **cada módulo** que a resolve (`:mod:dependencies --configuration runtimeClasspath`). ⚠️ O `migrationRuntime` (binário de migração) **NÃO entra no SBOM** — é ponto cego (GAP-DA): cheque-o **à mão** (`--configuration migrationRuntime`) e alinhe lá também |
 
 **Teste decisivo:** reproduza fora do CI. Se falha localmente com token válido, o runner é inocente.
 
@@ -156,6 +157,12 @@ se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no có
   incidente **não** prova que é culpa nossa — use o §4 (reproduzir fora do CI).
 - `## PR Size Report` dizendo *"unavailable"* **não é bug**: é o `pr-size` admitindo que o `gh api` não
   respondeu (ou voltou vazio, como no #288) em vez de fabricar um `✅` a partir de contagem ausente.
+- **O `osv-scanner-action@v2.3.8` do CI FALHA (exit 1) numa `unused ignore`; o `osv-scanner` 2.4.0 local só
+  avisa (exit 0).** Uma exceção obsoleta no `osv-scanner.toml` (o OSV revisou o advisory e ela não casa mais
+  com nenhum pacote do SBOM) passa a **bloquear o gate sozinha** — e um scan local recente **não reproduz**.
+  Reproduza com o comando EXATO do CI (`osv-scanner --config=osv-scanner.toml --format markdown --output
+  osv-report.md -L build/reports/cyclonedx/bom.json`) e observe o **exit code**, não só o texto; **remova a
+  exceção obsoleta**. Detalhes na memória `project_osv_scanner_ci_gotchas`.
 
 ## 8. Referências
 

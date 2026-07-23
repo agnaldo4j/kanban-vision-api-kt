@@ -834,6 +834,14 @@ groups:
           summary: "kanban-vision-api está fora do ar"
 ```
 
+> ⚠️ **`up == 0` NÃO cobre outage total sob Kubernetes pod service discovery.** Com um alvo
+> **estático** (compose), a série `up{job=...}` sempre existe, então `up == 0` dispara quando o
+> serviço cai. Com **`kubernetes_sd_configs` role `pod`**, um outage total (todas as réplicas somem,
+> falha de rollout/scheduling) **remove todas as séries** — `up == 0` avalia vetor vazio e **nunca
+> dispara**. Adicione uma regra companheira `absent(up{job="kanban-vision-api"})` (severity critical)
+> para o caso "zero targets"; o `ServiceDown` segue cobrindo a queda **parcial** (um pod conhecido
+> responde `up=0`). As duas juntas cobrem parcial + total. *(GAP-CB PR-2, review #330.)*
+
 ### Alertmanager (entrega) — GAP-CA
 
 As regras acima eram AVALIADAS pelo Prometheus mas disparavam **para o vazio**: faltava a camada

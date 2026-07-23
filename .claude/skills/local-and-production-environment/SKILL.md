@@ -533,6 +533,14 @@ stringData:                               # stringData aceita texto; K8s convert
   DATABASE_PASSWORD: "SUBSTITUIR_EM_PRODUCAO"
 ```
 
+> ⚠️ **Montar um ConfigMap por `subPath` congela o arquivo na versão do pod-start.** Um `volumeMount`
+> com `subPath` (ex.: montar só `prometheus.yml`) **não** recebe as atualizações do ConfigMap — o
+> kubelet só propaga mudanças em mounts de **diretório** (troca de symlink). Pior: nem o endpoint de
+> reload (ex.: Prometheus `--web.enable-lifecycle` + `POST /-/reload`) resolve, porque relê o **mesmo
+> arquivo velho**. O Deployment também não faz rollout sozinho quando o ConfigMap muda. Para que a
+> mudança propague sem `kubectl rollout restart`: monte o ConfigMap como **diretório** (sem `subPath`)
+> e aponte a flag de config para lá (ou adicione um sidecar reloader). *(GAP-CB PR-2, review #330.)*
+
 ### deployment.yml
 
 ```yaml
