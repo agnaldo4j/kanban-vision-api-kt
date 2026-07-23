@@ -20,6 +20,7 @@
 #
 # Gate wired into the `config-lint` job: exit 0 = holds; exit 1 = violation; exit 2 = PyYAML missing.
 
+import re
 import sys
 from pathlib import Path
 
@@ -31,24 +32,32 @@ except ModuleNotFoundError:
 
 ALERTMANAGER = Path(__file__).resolve().parent.parent / "k8s" / "alertmanager.yml"
 
+# Alertmanager matcher string: label<op>"value" (op ∈ =, !=, =~, !~).
+_MATCHER_RE = re.compile(r'^\s*([a-zA-Z_]\w*)\s*(=~|!~|!=|=)\s*"?([^"]*)"?\s*$')
+
 # In k8s the critical→warning inhibition MUST be scoped by both `namespace` and `pod`: they scope
 # app alerts (pod SD) and container alerts (kubelet cAdvisor) to the SAME pod. Reverting to the
 # compose `['instance','name']` (no `name` in k8s; `instance` = node) breaks per-pod scoping.
 REQUIRED_EQUAL = {"namespace", "pod"}
 
 
-def matchers_mention(rule, key, needle):
-    """True if any `<key>` matcher of the rule contains `needle`.
+def selects(rule, key, label, value):
+    """True iff the rule's `<key>_matchers`/`<key>_match` contains an EXACT equality matcher
+    `label="value"` (operator `=`).
 
-    Tolerates both the `*_matchers` list form (e.g. ['severity="critical"']) and the legacy
-    `*_match` map form (e.g. {severity: critical}).
+    Parses the matcher (label, op, value) and compares each part — a substring test would
+    false-match e.g. `app_severity="critical"` for `severity="critical"` (Codex P2, #337).
+    Tolerates both the `*_matchers` list form and the legacy `*_match` map form.
     """
     matchers = rule.get(f"{key}_matchers")
     if isinstance(matchers, list):
-        return any(needle in str(m) for m in matchers)
+        for m in matchers:
+            mo = _MATCHER_RE.match(str(m))
+            if mo and mo.group(1) == label and mo.group(2) == "=" and mo.group(3) == value:
+                return True
     legacy = rule.get(f"{key}_match")
     if isinstance(legacy, dict):
-        return any(needle in f'{k}="{v}"' for k, v in legacy.items())
+        return legacy.get(label) == value
     return False
 
 
@@ -59,8 +68,8 @@ def main():
     crit_to_warn = [
         r
         for r in inhibit_rules
-        if matchers_mention(r, "source", 'severity="critical"')
-        and matchers_mention(r, "target", 'severity="warning"')
+        if selects(r, "source", "severity", "critical")
+        and selects(r, "target", "severity", "warning")
     ]
 
     if not crit_to_warn:

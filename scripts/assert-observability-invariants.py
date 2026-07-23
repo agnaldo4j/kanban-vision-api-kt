@@ -18,6 +18,7 @@
 #
 # Requirements: python3 + PyYAML (preinstalled on ubuntu-latest; `pip install pyyaml` if absent).
 
+import re
 import sys
 from pathlib import Path
 
@@ -31,23 +32,31 @@ ALERTMANAGER = (
     Path(__file__).resolve().parent.parent / "observability" / "alertmanager.yml"
 )
 
+# Alertmanager matcher string: label<op>"value" (op ∈ =, !=, =~, !~).
+_MATCHER_RE = re.compile(r'^\s*([a-zA-Z_]\w*)\s*(=~|!~|!=|=)\s*"?([^"]*)"?\s*$')
+
 # The critical→warning inhibition MUST be scoped by both labels. `instance` groups the
 # app/fleet series; `name` restricts container pairs to the same container (PR #317).
 REQUIRED_EQUAL = {"instance", "name"}
 
 
-def matchers_mention(rule, key, needle):
-    """True if any `<key>` matcher of the rule contains `needle`.
+def selects(rule, key, label, value):
+    """True iff the rule's `<key>_matchers`/`<key>_match` contains an EXACT equality matcher
+    `label="value"` (operator `=`).
 
-    Tolerates both the current `*_matchers` list form (e.g. ['severity="critical"']) and the
-    legacy `*_match` map form (e.g. {severity: critical}).
+    Parses the matcher (label, op, value) and compares each part — a substring test would
+    false-match e.g. `app_severity="critical"` for `severity="critical"` (Codex P2, #337).
+    Tolerates both the current `*_matchers` list form and the legacy `*_match` map form.
     """
     matchers = rule.get(f"{key}_matchers")
     if isinstance(matchers, list):
-        return any(needle in str(m) for m in matchers)
+        for m in matchers:
+            mo = _MATCHER_RE.match(str(m))
+            if mo and mo.group(1) == label and mo.group(2) == "=" and mo.group(3) == value:
+                return True
     legacy = rule.get(f"{key}_match")
     if isinstance(legacy, dict):
-        return any(needle in f'{k}="{v}"' for k, v in legacy.items())
+        return legacy.get(label) == value
     return False
 
 
@@ -58,8 +67,8 @@ def main():
     crit_to_warn = [
         r
         for r in inhibit_rules
-        if matchers_mention(r, "source", 'severity="critical"')
-        and matchers_mention(r, "target", 'severity="warning"')
+        if selects(r, "source", "severity", "critical")
+        and selects(r, "target", "severity", "warning")
     ]
 
     if not crit_to_warn:
