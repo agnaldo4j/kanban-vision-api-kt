@@ -266,13 +266,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "container_memory_working_set_bytes{name=\"kanban-vision-app\"}",
+          "expr": "container_memory_working_set_bytes{namespace=\"kanban-vision\",container=\"api\"}",
           "legendFormat": "Working set",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "container_spec_memory_limit_bytes{name=\"kanban-vision-app\"}",
+          "expr": "container_spec_memory_limit_bytes{namespace=\"kanban-vision\",container=\"api\"}",
           "legendFormat": "Limite do container",
           "refId": "B"
         }
@@ -300,7 +300,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(container_cpu_cfs_throttled_periods_total{name=\"kanban-vision-app\"}[1m]) / (rate(container_cpu_cfs_periods_total{name=\"kanban-vision-app\"}[1m]) > 0)",
+          "expr": "rate(container_cpu_cfs_throttled_periods_total{namespace=\"kanban-vision\",container=\"api\"}[1m]) / (rate(container_cpu_cfs_periods_total{namespace=\"kanban-vision\",container=\"api\"}[1m]) > 0)",
           "legendFormat": "Periodos estrangulados",
           "refId": "A"
         }
