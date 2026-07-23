@@ -665,11 +665,46 @@ jobs:
           inv_out="$(python3 scripts/assert-observability-invariants.py 2>&1)"; inv_rc=$?
           record "inhibit-scope invariant · alertmanager.yml" "$inv_out" "$inv_rc"
 
+          # ── Cópias k8s (GAP-DB) ────────────────────────────────────────────────────────────────
+          # O config-lint acima cobre só observability/*; as cópias k8s são payloads de ConfigMap
+          # OPACOS ao kustomize, então um erro de schema nelas passaria o gate (buraco apontado nos
+          # reviews #333/#334/#336). Extrai os payloads e valida com as MESMAS versões fixadas.
+          extract_out="$(python3 scripts/extract-k8s-observability-payloads.py 2>&1)"; extract_rc=$?
+          record "extract k8s ConfigMap payloads" "$extract_out" "$extract_rc"
+
+          run_check "amtool check-config · k8s/alertmanager.yml" \
+            --entrypoint amtool -v "$PWD/k8s:/cfg" \
+            "prom/alertmanager:$AM_VER" check-config /cfg/alertmanager.yml
+
+          # Mount /tmp:/tmp para os caminhos ABSOLUTOS baterem: o scrape referencia os stubs de auth
+          # em /tmp (repontados pelo extract script), e os payloads também vivem em /tmp.
+          run_check "promtool check rules · k8s/11-prometheus-rules.yml" \
+            --entrypoint promtool -v /tmp:/tmp \
+            "prom/prometheus:$PROM_VER" check rules /tmp/k8s-rules.yml
+
+          run_check "promtool check config · k8s/12-prometheus-config.yml" \
+            --entrypoint promtool -v /tmp:/tmp \
+            "prom/prometheus:$PROM_VER" check config /tmp/k8s-prom.yml
+
+          # Invariante do k8s: a inibição critical→warning tem de ser escopada por `namespace` E `pod`
+          # (o kubelet cAdvisor não tem `name` e o `instance` é o nó — review #333 P2). Config próprio,
+          # NÃO retarget do compose: as duas configs divergem legitimamente (GAP-DB).
+          k8s_inv_out="$(python3 scripts/assert-k8s-observability-invariants.py 2>&1)"; k8s_inv_rc=$?
+          record "inhibit-scope invariant · k8s/alertmanager.yml" "$k8s_inv_out" "$k8s_inv_rc"
+
+          # Drift-guard: os 2 ymls do Grafana são o ÚNICO config que permanece byte-idêntico entre
+          # compose e k8s (o resto divergiu por topologia de label do k8s). Falha se divergirem sem
+          # intenção — force uma decisão de divergência consciente + atualização do guard.
+          drift_out=""; drift_rc=0
+          o="$(diff -u observability/grafana/provisioning/datasources/prometheus.yml k8s/grafana-datasource-prometheus.yml 2>&1)" || drift_rc=1; drift_out+="$o"
+          o="$(diff -u observability/grafana/provisioning/dashboards/dashboard.yml k8s/grafana-dashboard-provider.yml 2>&1)" || drift_rc=1; drift_out+="$o"
+          record "grafana yml drift-guard (datasource + provider)" "${drift_out:-identical}" "$drift_rc"
+
           {
             echo 'body<<CONFIG_LINT_REPORT'
             echo '## Config Lint Report'
             echo ''
-            echo "Valida \`observability/*.yml\` com **amtool** (\`prom/alertmanager:$AM_VER\`) e **promtool** (\`prom/prometheus:$PROM_VER\`) — versões fixadas no \`docker-compose.yml\`."
+            echo "Valida \`observability/*.yml\` **e as cópias k8s** (\`k8s/alertmanager.yml\`, regras + scrape embutidas em \`k8s/1{1,2}-prometheus-*.yml\`) com **amtool** (\`prom/alertmanager:$AM_VER\`) e **promtool** (\`prom/prometheus:$PROM_VER\`) — versões fixadas no \`docker-compose.yml\`. Inclui o drift-guard dos ymls do Grafana."
             echo ''
             echo '| Check | Resultado |'
             echo '|-------|-----------|'
