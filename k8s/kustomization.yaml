@@ -20,6 +20,17 @@ resources:
   - 10-prometheus.yml
   - 11-prometheus-rules.yml
   - 12-prometheus-config.yml
+  - 13-alertmanager.yml
+
+# Config do Alertmanager REUSADA verbatim de observability/alertmanager.yml (fonte única — o job
+# config-lint/GAP-CY segue sendo o guarda). O hash no nome faz uma mudança da config disparar rollout do
+# Deployment (a config nova sempre chega). Requer `kubectl kustomize --load-restrictor LoadRestrictionsNone`
+# porque o arquivo está fora de k8s/.
+configMapGenerator:
+  - name: alertmanager-config
+    namespace: kanban-vision
+    files:
+      - alertmanager.yml=../observability/alertmanager.yml
 
 # Secret is generated from k8s/secrets.env — never committed.
 # Copy k8s/secrets.env.example to k8s/secrets.env and fill in real values.
