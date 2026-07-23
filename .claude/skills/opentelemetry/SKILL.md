@@ -894,6 +894,21 @@ docker run --rm --entrypoint promtool \
 ```
 > No CI as versões saem do `docker-compose.yml` (sem drift). O gate pega a classe de bug
 > semântico que um parser YAML genérico não vê — ex.: o P2 do PR #317 (`inhibit_rules`).
+
+> ⚠️ **O `config-lint` (e os comandos acima) cobrem SÓ `observability/*` — as cópias k8s NÃO são gated.**
+> `k8s/alertmanager.yml` e as regras embutidas em `k8s/11-prometheus-rules.yml` são payloads de ConfigMap
+> **opacos** para o kustomize, então um erro de schema neles PASSA o gate anunciado. Ao mexer numa cópia
+> k8s, valide-a à mão (rastreado por **GAP-DB** — estender o `config-lint` ao stack k8s):
+> ```bash
+> docker run --rm --entrypoint amtool -v "$PWD/k8s:/k8s" \
+>   prom/alertmanager:v0.27.0 check-config /k8s/alertmanager.yml
+> # regras do k8s: extraia o payload do ConfigMap e rode promtool check rules
+> kubectl kustomize k8s/ | python3 -c 'import sys,yaml
+> for d in yaml.safe_load_all(sys.stdin):
+>     if d and d.get("kind")=="ConfigMap" and d["metadata"]["name"]=="prometheus-rules":
+>         open("/tmp/k8s-rules.yml","w").write(d["data"]["kanban-vision-alerts.yml"])' \
+>   && docker run --rm --entrypoint promtool -v /tmp:/wd prom/prometheus:v2.54.1 check rules /wd/k8s-rules.yml
+> ```
 Ponta-a-ponta: `docker compose up -d` → Prometheus `:9090` → Status → Alertmanagers mostra
 `alertmanager:9093` ativo → `docker compose stop app` (dispara `ServiceDown` em ~1min) →
 Alertmanager `:9093` mostra o grupo → `docker logs kanban-vision-alert-sink` mostra o POST em
