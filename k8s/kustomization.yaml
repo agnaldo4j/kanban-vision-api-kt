@@ -17,7 +17,9 @@ resources:
   #   12-prometheus-config.yml  (ConfigMap de scrape)          — PR-2
   #   13-alertmanager.yml       (Alertmanager + alert-sink)    — PR-3
   #   14-grafana.yml            (Grafana + datasource/dashboard)— PR-4
+  - 10-prometheus.yml
   - 11-prometheus-rules.yml
+  - 12-prometheus-config.yml
 
 # Secret is generated from k8s/secrets.env — never committed.
 # Copy k8s/secrets.env.example to k8s/secrets.env and fill in real values.
