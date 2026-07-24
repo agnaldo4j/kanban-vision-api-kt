@@ -6,7 +6,9 @@ plugins {
 dependencies {
     // ADR-0044: erros tipados nas OPERAÇÕES de agregado (Either/Raise via Arrow — FP pura, permitida
     // pelo DomainPurityTest). Precondições de construção/argumento seguem `require` (fail-fast em bug).
-    implementation("io.arrow-kt:arrow-core:2.2.3")
+    // `api`: o `Either<KanbanError, _>` das operações de agregado (Board.addStep/addCard) é ABI
+    // pública do módulo — expõe arrow-core transitivamente aos consumidores (padrão de usecases).
+    api("io.arrow-kt:arrow-core:2.2.3")
     implementation(project(":domain-common"))
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
