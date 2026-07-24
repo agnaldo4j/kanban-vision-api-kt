@@ -64,4 +64,16 @@ class DecisionRequestExhaustivenessTest {
             assertIs<SimulationError.InvalidDecision>(decoded.leftOrNull())
         }
     }
+
+    @Test
+    fun `blank or missing add-item title decodes to InvalidDecision instead of throwing`() {
+        // GAP-DH: NonBlankTitle rejeita branco; a borda deve dobrar isso em 400 tipado, nunca lançar (500).
+        val blank = DecisionRequest("ADD_ITEM", mapOf("title" to "   ")).toDomain()
+        assertTrue(blank.isLeft(), "ADD_ITEM with blank title must be Left")
+        assertIs<SimulationError.InvalidDecision>(blank.leftOrNull())
+
+        val missing = DecisionRequest("ADD_ITEM", emptyMap()).toDomain()
+        assertTrue(missing.isLeft(), "ADD_ITEM without title must be Left")
+        assertIs<SimulationError.InvalidDecision>(missing.leftOrNull())
+    }
 }
