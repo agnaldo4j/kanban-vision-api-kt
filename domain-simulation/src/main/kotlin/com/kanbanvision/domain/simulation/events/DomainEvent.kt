@@ -9,7 +9,7 @@ sealed class DomainEvent {
         val simulationId: String,
         val simulationName: String,
         val organizationId: String,
-        override val occurredAt: Instant = Instant.now(),
+        override val occurredAt: Instant,
     ) : DomainEvent()
 
     data class SimulationDayExecuted(
@@ -18,14 +18,14 @@ sealed class DomainEvent {
         val throughput: Int,
         val wipCount: Int,
         val blockedCount: Int,
-        override val occurredAt: Instant = Instant.now(),
+        override val occurredAt: Instant,
     ) : DomainEvent()
 
     data class CardMoved(
         val simulationId: String,
         val cardId: String,
         val day: Int,
-        override val occurredAt: Instant = Instant.now(),
+        override val occurredAt: Instant,
     ) : DomainEvent()
 
     data class CardBlocked(
@@ -33,20 +33,20 @@ sealed class DomainEvent {
         val cardId: String,
         val day: Int,
         val reason: String,
-        override val occurredAt: Instant = Instant.now(),
+        override val occurredAt: Instant,
     ) : DomainEvent()
 
     data class CardUnblocked(
         val simulationId: String,
         val cardId: String,
         val day: Int,
-        override val occurredAt: Instant = Instant.now(),
+        override val occurredAt: Instant,
     ) : DomainEvent()
 
     data class CardCompleted(
         val simulationId: String,
         val cardId: String,
         val day: Int,
-        override val occurredAt: Instant = Instant.now(),
+        override val occurredAt: Instant,
     ) : DomainEvent()
 }
