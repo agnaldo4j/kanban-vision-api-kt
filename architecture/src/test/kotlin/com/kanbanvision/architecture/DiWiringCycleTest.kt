@@ -32,7 +32,7 @@ class DiWiringCycleTest {
             "parseKoinBindings não reconheceu o wiring esperado do AppModule; encontrou ${bindings.components}"
         }
 
-        val ctorParams = konsistCtorParamTypes()
+        val ctorParams = konsistCtorParamTypes(bindings.components)
         val cycle = findCycle(buildInjectionGraph(bindings) { ctorParams[it].orEmpty() })
 
         assertNull(cycle) {
@@ -106,18 +106,29 @@ class DiWiringCycleTest {
         assertNull(findCycle(graph))
     }
 
-    /** Nome simples da classe → tipos dos parâmetros do seu construtor primário (nome simples). */
-    private fun konsistCtorParamTypes(): Map<String, List<String>> =
-        Konsist
-            .scopeFromProduction()
-            .classes(includeNested = true)
-            .associate { klass ->
-                klass.name to
-                    klass.primaryConstructor
-                        ?.parameters
-                        ?.map { it.type.name }
-                        .orEmpty()
-            }
+    /**
+     * Nome simples do componente → tipos dos parâmetros do seu construtor primário (nome simples).
+     * Restrito aos [components] wired — os únicos nós cujo construtor o grafo lê. Base por NOME SIMPLES
+     * porque o `AppModule`/`resolvesTo` são por nome simples (≠ [ClassCycleTest], que usa FQN — GAP-CV).
+     * Por isso, em vez de silenciar `last-wins` num homônimo, **falha alto** se um componente wired tiver
+     * nome simples ambíguo em produção — aí o gate não saberia qual construtor ler (perder/fabricar ciclo).
+     */
+    private fun konsistCtorParamTypes(components: Set<String>): Map<String, List<String>> {
+        val byName = Konsist.scopeFromProduction().classes(includeNested = true).groupBy { it.name }
+        val ambiguous = components.filter { (byName[it]?.size ?: 0) > 1 }
+        check(ambiguous.isEmpty()) {
+            "Componentes wired com nome simples ambíguo em produção — o gate não desambigua " +
+                "(renomeie ou resolva por FQN): $ambiguous"
+        }
+        return components.associateWith { name ->
+            byName[name]
+                ?.singleOrNull()
+                ?.primaryConstructor
+                ?.parameters
+                ?.map { it.type.name }
+                .orEmpty()
+        }
+    }
 
     private fun appModuleText(): String {
         val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
