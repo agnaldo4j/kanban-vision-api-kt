@@ -19,6 +19,7 @@ set -euo pipefail
 # passa valores largos por env (runner compartilhado é ruidoso) sem mudar o uso local.
 THROUGHPUT_DROP_PCT=${THROUGHPUT_DROP_PCT:-10}   # regressão se req/s cair mais que isto (%)
 P95_RISE_PCT=${P95_RISE_PCT:-20}                 # regressão se p95 de um endpoint subir mais que isto (%)
+P99_RISE_PCT=${P99_RISE_PCT:-25}                 # regressão se p99 (cauda) subir mais que isto (%) — mais largo que p95: a cauda é mais ruidosa
 ERROR_RISE_ABS=${ERROR_RISE_ABS:-0.01}           # regressão se a taxa de erro subir mais que isto (absoluto)
 
 # Só endpoints com threshold no journey (baseThresholds) — o k6 só materializa o submétrico
@@ -83,9 +84,26 @@ for ep in "${ENDPOINTS[@]}"; do
   printf '%-28s %12.2f %12.2f %8s%%  %s\n' "p95 $ep (ms)" "$ref_p" "$cur_p" "$delta" "$verdict"
 done
 
+# ── p99 por-endpoint (cauda / tail-latency, GAP-DE) — regressão se subir ───────
+# A submetric p(99) só existe se o run usou summaryTrendStats com p(99) (load/simulation-journey.js).
+# Ausente de um lado (ex.: referência de CI antiga, pré-p99) → pulada graciosamente, sem erro —
+# o p99 entra no sinal quando a referência for re-bootstrapada (ADR-0039).
+for ep in "${ENDPOINTS[@]}"; do
+  q=".metrics[\"http_req_duration{endpoint:$ep}\"][\"p(99)\"] // empty"
+  ref_p=$(metric "$REF" "$q")
+  cur_p=$(metric "$CUR" "$q")
+  [[ -n "$ref_p" && -n "$cur_p" ]] || continue
+  delta=$(jq -rn --argjson r "$ref_p" --argjson c "$cur_p" '(($c-$r)/$r*100)|.*100|round/100')
+  verdict="OK"
+  if jq -en --argjson r "$ref_p" --argjson c "$cur_p" --argjson t "$P99_RISE_PCT" '($c > $r*(1+$t/100))' >/dev/null; then
+    verdict="REGRESSÃO"; regressions=$((regressions+1))
+  fi
+  printf '%-28s %12.2f %12.2f %8s%%  %s\n' "p99 $ep (ms)" "$ref_p" "$cur_p" "$delta" "$verdict"
+done
+
 printf '%s\n' "-------------------------------------------------------------------------------"
 if [[ "$regressions" -gt 0 ]]; then
-  echo "SINAL: $regressions regressão(ões) além da tolerância (throughput -${THROUGHPUT_DROP_PCT}%, p95 +${P95_RISE_PCT}%, erro +${ERROR_RISE_ABS})." >&2
+  echo "SINAL: $regressions regressão(ões) além da tolerância (throughput -${THROUGHPUT_DROP_PCT}%, p95 +${P95_RISE_PCT}%, p99 +${P99_RISE_PCT}%, erro +${ERROR_RISE_ABS})." >&2
   exit 1
 fi
 echo "SINAL: sem regressão além da tolerância."
