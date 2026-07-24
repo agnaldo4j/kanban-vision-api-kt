@@ -51,16 +51,19 @@ class AuditBehaviorTest {
     }
 
     @Test
-    fun `given no arguments when using audit defaults then now and touch fall back to the current instant`() {
+    fun `given explicit instant when stamping audit then now and touch use it`() {
         val default = Audit()
         assertEquals(Instant.EPOCH, default.createdAt)
         assertEquals(default.createdAt, default.updatedAt)
 
-        val fresh = Audit.now()
-        assertEquals(fresh.createdAt, fresh.updatedAt)
+        val at = Instant.parse("2026-05-06T07:08:09Z")
+        val fresh = Audit.now(at)
+        assertEquals(at, fresh.createdAt)
+        assertEquals(at, fresh.updatedAt)
 
-        val touched = fresh.touch()
-        assertEquals(fresh.createdAt, touched.createdAt)
+        val touched = fresh.touch(at.plusSeconds(30))
+        assertEquals(at, touched.createdAt)
+        assertEquals(at.plusSeconds(30), touched.updatedAt)
     }
 
     @Test
