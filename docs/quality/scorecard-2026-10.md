@@ -76,7 +76,8 @@ c4-model 9.3, XP/Kanban 9.4, DoD 9.2, Security 9.2, GraalVM 9.2.
 
 ## Key metrics (current)
 
-- **Modules:** **7** Gradle modules + the test-only `architecture`. Graph `simulation → kanban → common`.
+- **Modules:** **7 total** — 6 product (`domain-common`, `domain-kanban`, `domain-simulation`, `usecases`,
+  `sql_persistence`, `http_api`) + the test-only `architecture`. Graph `simulation → kanban → common`.
 - **Coverage:** JaCoCo gate **≥ 98%/module** (ADR-0029); measured overall ~99.4%.
 - **Architecture fitness:** Konsist + JUnit — now **12 suites** including the new **`DiWiringCycleTest`**
   (constructor-injection cycle) alongside `PackageCycleTest`, `ClassCycleTest`/`ClassGraphTest`/`CycleDetectionTest`
