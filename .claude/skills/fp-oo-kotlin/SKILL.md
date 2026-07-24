@@ -4,8 +4,9 @@ description: >
   Aplique técnicas de programação funcional combinadas com OO em Kotlin neste projeto.
   Use este skill ao escrever funções puras, modelar erros com tipos, trabalhar com
   imutabilidade, compor transformações e decidir quando usar FP vs OO. Cobre os
-  princípios do Uncle Bob sobre a complementaridade dos paradigmas e as técnicas
-  práticas do Arrow-kt (Either, Raise, Optics).
+  princípios do Uncle Bob sobre a complementaridade dos paradigmas, a teoria de
+  Algebraic Data Types (tipos soma/produto, cardinalidade, illegal-states-unrepresentable)
+  e as técnicas práticas do Arrow-kt (Either, Raise, Optics).
 argument-hint: "[file or use case to apply FP/OO techniques (optional)]"
 allowed-tools: Read, Grep, Glob
 ---
@@ -363,10 +364,113 @@ fun Raise<CreateBoardError>.execute(command: CreateBoardCommand): BoardId {
 
 ---
 
-## `sealed class` — FP para Modelagem de Domínio
+## Algebraic Data Types (ADTs) — a Álgebra dos Tipos
 
-`sealed class` e `sealed interface` são a forma idiomática de modelar estados
-e erros de domínio em Kotlin com segurança de compilação:
+Um tipo é um **conjunto de valores**. Quantos valores ele admite é sua **cardinalidade** — e essa
+cardinalidade obedece a uma **álgebra**. Modelar bem um domínio é escolher o tipo cuja cardinalidade seja
+**exatamente** o conjunto de estados válidos: nem mais (estados ilegais representáveis), nem menos.
+
+> ADTs: https://softwaremill.com/functional-programming-in-kotlin/ ·
+> https://www.kodeco.com/11593767-functional-programming-with-kotlin-and-arrow-algebraic-data-types ·
+> https://kotlinlang.org/docs/sealed-classes.html
+
+### Tipo Produto (`×`) — "E"
+
+`data class`, `Pair`, `Triple`: **todos** os campos coexistem. A cardinalidade é o **produto** das
+cardinalidades dos campos.
+
+```kotlin
+enum class Triage { NONE, LOW, HIGH }              // 3 valores
+
+// Produto: todos os campos ao mesmo tempo
+data class Struct(val enabled: Boolean, val triage: Triage, val value: Byte)
+// |Struct| = |Boolean| × |Triage| × |Byte| = 2 × 3 × 256 = 1 536
+
+// No domínio: uma entidade É um produto dos seus campos (com value-class IDs, ADR-0034)
+data class Card(val id: CardId, val title: String, val serviceClass: ServiceClass)
+// |Card| = |CardId| × |String| × |ServiceClass|
+```
+
+`Unit` — e todo `object` — tem cardinalidade **1**: é a **identidade do produto** (`1 × n = n`), não carrega
+informação, só "existe".
+
+### Tipo Soma (`+`) — "OU"
+
+`sealed interface`/`sealed class`, `enum class` e `data object`: exatamente **uma** variante existe em
+runtime. A cardinalidade é a **soma** das cardinalidades das variantes.
+
+```kotlin
+// Soma real do projeto: uma decisão é UMA de quatro variantes (cada variante é um produto)
+sealed interface Decision {
+    data class MoveItem(val cardId: CardId) : Decision
+    data class BlockItem(val cardId: CardId, val reason: String) : Decision
+    data class UnblockItem(val cardId: CardId) : Decision
+    data class AddItem(val title: String, val serviceClass: ServiceClass) : Decision
+}
+// |Decision| = |MoveItem| + |BlockItem| + |UnblockItem| + |AddItem|
+
+// enum é uma soma de variantes nulárias (cada constante vale 1)
+enum class ServiceClass { STANDARD, FIXED_DATE, EXPEDITE, INTANGIBLE }   // 1+1+1+1 = 4
+```
+
+`Nothing` tem cardinalidade **0** — não é instanciável. É o **absorvente do produto** (`0 × n = 0`) e o
+**neutro da soma** (`0 + n = n`); é o tipo de `raise()`/`throw`/loop infinito (nunca produz um valor).
+
+**Os tipos do Arrow são ADTs:** `Either<E, A>` = `E + A` (soma: `Left(E)` **ou** `Right(A)`);
+`Option<A>` = `A + 1` (`Some(A)` ou `None`, com `None ≡ Unit`); `NonEmptyList<A>` = `A × List<A>`. É por isso
+que `Either`/`Option`/`Raise` compõem exatamente como a álgebra prevê.
+
+### Tipo Função (`exponente`)
+
+`(A) -> B` tem `|B|^|A|` habitantes — uma escolha de `B` para cada um dos `|A|` inputs. Ex.:
+`(Boolean) -> Boolean` = `2² = 4` funções possíveis. Por isso funções de alta ordem (acima) são "dados"
+tanto quanto qualquer `data class`.
+
+### Mapa: construto Kotlin → papel algébrico
+
+| Construto | Papel | Cardinalidade |
+|---|---|---|
+| `data class` / `Pair` / `Triple` | Produto (`×`) | produto dos campos |
+| `sealed interface` / `sealed class` | Soma (`+`) | soma das variantes |
+| `enum class` | Soma de nulárias | nº de constantes |
+| `object` / `data object` / `Unit` | Unidade | **1** |
+| `Nothing` | Vazio | **0** |
+| `(A) -> B` | Exponente | `card(B) ^ card(A)` |
+| `A?` | `A + 1` | `card(A) + 1` |
+
+### O Payoff: *Make Illegal States Unrepresentable*
+
+A álgebra tem uma consequência de design: **um produto de flags/nuláveis quase sempre admite combinações
+inválidas** — cardinalidade maior que o conjunto legal. Troque o produto por uma **soma** cujas variantes
+sejam só os estados válidos.
+
+```kotlin
+// ❌ Produto: 8 combinações representáveis (2 × 2 × 2 dos nuláveis/boolean), mas só 3 são legais.
+//    O que significa loading=true E error!=null? Estado ilegal — porém compila.
+data class LoadState(
+    val loading: Boolean,
+    val data: Board?,
+    val error: String?,
+)
+
+// ✅ Soma: exatamente os 3 estados legais — a combinação ilegal simplesmente não existe.
+sealed interface LoadState {
+    data object Loading : LoadState
+    data class Loaded(val data: Board) : LoadState
+    data class Failed(val error: String) : LoadState
+}
+```
+
+O `when` exaustivo (sem `else`) sobre a soma força tratar cada variante — ver a seção seguinte. É a mesma
+razão pela qual os grupos de erro do projeto (`CommonError`/`KanbanError`/`SimulationError`) e o `Decision`
+são `sealed`: cada um é a soma **fechada** dos seus casos, sem nenhum caso inválido representável.
+
+---
+
+## `sealed class` — o mecanismo de tipo-soma para Modelagem de Domínio
+
+`sealed class` e `sealed interface` são o **mecanismo de tipo-soma** de Kotlin (ver ADTs acima) — a forma
+idiomática de modelar estados e erros de domínio com segurança de compilação:
 
 ```kotlin
 // Estados de um Board
@@ -394,6 +498,22 @@ fun BoardError.toMessage(): String = when (this) {
 **Regra**: `when` em `sealed class` deve ser **exaustivo** — sem `else`.
 O `else` esconde casos que o compilador poderia detectar.
 
+### `sealed` vs `enum` — quando cada um
+
+Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
+
+| | `enum class` | `sealed interface`/`class` |
+|---|---|---|
+| Variante carrega dados? | Não — constante única (instância singleton) | Sim — cada variante pode ser `data class` com campos próprios |
+| Cardinalidade | nº de constantes (soma de `1`s) | soma das cardinalidades das variantes |
+| Herança | não estende `sealed class`; **pode implementar** `sealed interface` | variantes são `data class`/`data object`/subclasses |
+
+- **`enum`** quando as variantes são rótulos sem dados (ex.: `ServiceClass`, `SortOrder`).
+- **`sealed`** quando as variantes carregam payloads distintos (ex.: `Decision`, `SimulationError`).
+- **Colocação (regra de compilação):** subclasses **diretas** de um `sealed` devem estar no **mesmo módulo e
+  pacote** — é o que fecha a soma e habilita o `when` exaustivo. (No projeto, cada grupo `*Error`/`Decision`
+  fica junto do seu agregado — ver `screaming-architecture`.)
+
 ---
 
 ## Checklist ao Escrever Código
@@ -405,6 +525,7 @@ O `else` esconde casos que o compilador poderia detectar.
 - [ ] Campos de `data class` são todos `val`?
 - [ ] Coleções são imutáveis (`List`, `Map`, `Set` — não `Mutable*`)?
 - [ ] `when` em `sealed class` é exaustivo (sem `else`)?
+- [ ] Modelou com o **menor tipo** que representa exatamente os estados válidos (illegal states unrepresentable)? Preferiu uma **soma** (`sealed`) a um produto de flags/nuláveis quando as combinações têm casos inválidos?
 - [ ] Nenhuma exceção é lançada diretamente — usa `raise()` ou `Either`?
 
 ### Para adaptadores em `sql_persistence/` e `http_api/`
@@ -433,6 +554,7 @@ O `else` esconde casos que o compilador poderia detectar.
 | `MutableList` em entidade de domínio | Coleção mutável exposta | Troque por `List` imutável |
 | Lógica de negócio dentro de `catch` | Regra misturada com tratamento de erro | Separe: trate o erro, depois aplique a regra |
 | Múltiplos `copy()` aninhados (3+ níveis) | Verbosidade e fragilidade | Avalie Arrow Optics |
+| Produto de `Boolean`/`?`-nuláveis com combinações inválidas | Cardinalidade > estados legais (illegal states representáveis) | Troque o produto por uma **soma** (`sealed interface`) só com as variantes válidas |
 
 ---
 
@@ -598,7 +720,8 @@ fun save(simulation: Simulation): Either<DomainError, Unit> =
 | Skill | Como se conecta com FP + OO |
 |---|---|
 | **clean-architecture** | Dependency Rule = DIP de OO; funções puras no núcleo = FP nas camadas internas |
-| **screaming-architecture** | Nomes de domínio em `sealed class` gritam o negócio |
+| **screaming-architecture** | Nomes de domínio em `sealed class` gritam o negócio; as somas (`*Error`/`Decision`) ficam junto do agregado |
+| **ddd** | Modelar-com-tipos = ADTs: entidades/VOs são produtos, estados/erros são somas — a cardinalidade fecha exatamente o conjunto de estados válidos do domínio |
 | **solid-principles** | SRP: funções puras têm uma razão para existir; DIP: interfaces OO para inversão |
 | **kotlin-quality-pipeline** | Detekt detecta complexidade excessiva → oportunidade para funções puras menores |
 
