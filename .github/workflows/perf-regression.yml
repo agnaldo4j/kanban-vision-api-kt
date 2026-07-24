@@ -72,7 +72,7 @@ jobs:
           [ -f k6-summary.json ] || { echo "k6-summary.json não gerado — boot/k6 falhou" >&2; exit 1; }
           status=0
           if [ -f load/ci-reference-summary.json ]; then
-            THROUGHPUT_DROP_PCT=25 P95_RISE_PCT=50 ERROR_RISE_ABS=0.02 \
+            THROUGHPUT_DROP_PCT=25 P95_RISE_PCT=50 P99_RISE_PCT=60 ERROR_RISE_ABS=0.02 \
               scripts/perf-regression.sh load/ci-reference-summary.json k6-summary.json | tee report.txt || status=$?
           else
             {
@@ -84,6 +84,7 @@ jobs:
               echo "error rate:         $(jq -r '.metrics.http_req_failed.value // "n/a"' k6-summary.json)"
               for ep in create run_day days snapshot cfd list; do
                 echo "p95 $ep (ms):       $(jq -r ".metrics[\"http_req_duration{endpoint:$ep}\"][\"p(95)\"] // \"n/a\"" k6-summary.json)"
+                echo "p99 $ep (ms):       $(jq -r ".metrics[\"http_req_duration{endpoint:$ep}\"][\"p(99)\"] // \"n/a\"" k6-summary.json)"
               done
             } | tee report.txt
           fi

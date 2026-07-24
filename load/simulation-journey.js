@@ -2,7 +2,7 @@
 // Perfis via -e PROFILE=smoke|baseline|stress|soak|spike (default: smoke).
 //
 //   smoke    — 1 VU, 30s: valida o script e o ambiente (usado pelo workflow manual).
-//   baseline — ramp 0→20 VUs, ~4min: mede p95/throughput contra o docker compose.
+//   baseline — ramp 0→20 VUs, ~4min: mede p95/p99/throughput contra o docker compose.
 //   stress   — ramp 20→50→100 VUs, ~6min: acha o joelho (onde p95/erros disparam).
 //   soak     — 20 VUs sustentados por ~34min: detecta leaks/degradação ao longo do tempo.
 //   spike    — surto 10→100 VUs em 10s + recuperação: mede resiliência a picos súbitos.
@@ -33,25 +33,29 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 
 // Thresholds do baseline vigente — sinal executável (ADR-0027): NÃO é gate de PR.
 // Novo threshold exige nova medição documentada em docs/quality/ (ver Confirmation da ADR).
+// p(99) = orçamento de CAUDA (tail-latency, GAP-DE), além do p(95) da mediana-alta. São TETOS
+// de SLO (≈1,3–1,4× o teto p95 para folga de cauda), não a medição — o p99 empírico vem do
+// bootstrap da referência de CI (ADR-0039), igual ao days. Requer o p(99) em summaryTrendStats
+// (options, abaixo), senão o k6 nem resume a cauda. Com ~30ms de p95 medido, a folga é enorme.
 const baseThresholds = {
   http_req_failed: ['rate<0.01'],
-  'http_req_duration{endpoint:create}': ['p(95)<300'],
-  'http_req_duration{endpoint:run_day}': ['p(95)<500'],
+  'http_req_duration{endpoint:create}': ['p(95)<300', 'p(99)<400'],
+  'http_req_duration{endpoint:run_day}': ['p(95)<500', 'p(99)<700'],
   // days: leitura GET (série do dia) da mesma classe de cfd/snapshot (p95 7–8ms no baseline
   // 2026-07, << 300ms; ver docs/quality/performance-baseline-2026-07-days.md). O threshold
   // materializa a submetric p/ o sinal de regressão (GAP-CR); o número empírico específico do
   // days vem do bootstrap da referência de CI (ADR-0039).
-  'http_req_duration{endpoint:days}': ['p(95)<300'],
-  'http_req_duration{endpoint:snapshot}': ['p(95)<300'],
-  'http_req_duration{endpoint:cfd}': ['p(95)<300'],
-  'http_req_duration{endpoint:list}': ['p(95)<300'],
+  'http_req_duration{endpoint:days}': ['p(95)<300', 'p(99)<400'],
+  'http_req_duration{endpoint:snapshot}': ['p(95)<300', 'p(99)<400'],
+  'http_req_duration{endpoint:cfd}': ['p(95)<300', 'p(99)<400'],
+  'http_req_duration{endpoint:list}': ['p(95)<300', 'p(99)<400'],
 };
 
 // stress/spike: latência alta é esperada perto/no pico — thresholds relaxados para que o
 // run não seja marcado "failed" indevidamente (o valor é ONDE degrada, não pass/fail).
 const overloadThresholds = {
   http_req_failed: ['rate<0.05'],
-  http_req_duration: ['p(95)<3000'],
+  http_req_duration: ['p(95)<3000', 'p(99)<5000'],
 };
 
 const PROFILES = {
@@ -108,6 +112,10 @@ if (!profile) {
 
 export const options = {
   ...profile,
+  // p(99) além do default p(90)/p(95): o k6 só resume no --summary-export os percentis listados
+  // aqui, então sem isto a cauda (tail-latency, GAP-DE) não apareceria no baseline nem no
+  // comparador de regressão (scripts/perf-regression.sh).
+  summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
 };
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };

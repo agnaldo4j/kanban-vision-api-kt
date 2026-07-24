@@ -18,6 +18,12 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 > PR** — runner compartilhado dá latência ruidosa e gate flaky corrói a confiança no CI.
 > O baseline oficial é medido **localmente** contra o docker compose e versionado em
 > `docs/quality/`. Alterar um threshold exige nova medição documentada lá.
+>
+> **Tail-latency (p99, GAP-DE):** o journey resume `p(99)` além de `p(95)` (via
+> `summaryTrendStats` em `options`) e `perf-regression.sh` compara a cauda com tolerância própria
+> (`P99_RISE_PCT`, mais larga que p95). Os thresholds `p(99)` são **tetos de SLO** (folga sobre o
+> p95); o p99 **empírico** entra na referência de CI no próximo bootstrap (ADR-0039) e num próximo
+> baseline oficial de máquina de referência — não fabrique número de p99 em ambiente ruidoso.
 
 ---
 
