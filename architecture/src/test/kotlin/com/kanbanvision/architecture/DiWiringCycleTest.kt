@@ -80,6 +80,17 @@ class DiWiringCycleTest {
     }
 
     @Test
+    fun `buildInjectionGraph preserva self-injection como ciclo`() {
+        // single { A(get()) } com class A(other: A): o Koin estoura montando A → A (self-loop real).
+        val bindings = KoinBindings(components = setOf("A"), resolvesTo = mapOf("A" to "A"))
+
+        val graph = buildInjectionGraph(bindings) { if (it == "A") listOf("A") else emptyList() }
+
+        assertEquals(mapOf("A" to setOf("A")), graph)
+        assertNotNull(findCycle(graph)) { "self-injection A → A deve ser detectada" }
+    }
+
+    @Test
     fun `buildInjectionGraph nao fabrica ciclo num DAG e ignora tipos externos`() {
         val bindings =
             KoinBindings(

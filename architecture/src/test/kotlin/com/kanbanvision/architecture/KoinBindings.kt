@@ -52,9 +52,13 @@ internal fun parseKoinBindings(appModuleText: String): KoinBindings {
 
 /**
  * Grafo `impl → {impl}`: para cada componente, uma aresta a cada parâmetro de construtor cujo TIPO
- * resolve (via [KoinBindings.resolvesTo]) a OUTRO componente. [ctorParamTypes] devolve os nomes
- * simples dos tipos dos parâmetros do construtor primário de um componente — vazio quando a classe não
- * está no escopo de produção (um tipo de biblioteca, ex.: `PrometheusMeterRegistry`, vira sink).
+ * resolve (via [KoinBindings.resolvesTo]) a um componente — **inclusive ao próprio** (`single { A(get()) }`
+ * com `class A(other: A)` é uma self-injection que estoura o Koin: um ciclo real `A → A`, que o [findCycle]
+ * detecta como self-loop). Isso difere do grafo de composição de classe ([buildClassGraph]), onde uma
+ * self-ref (`TreeNode(children: List<TreeNode>)`) é legítima e por isso descartada. [ctorParamTypes]
+ * devolve os nomes simples dos tipos dos parâmetros do construtor primário de um componente — vazio
+ * quando a classe não está no escopo de produção (um tipo de biblioteca, ex.: `PrometheusMeterRegistry`,
+ * vira sink).
  */
 internal fun buildInjectionGraph(
     bindings: KoinBindings,
@@ -65,7 +69,7 @@ internal fun buildInjectionGraph(
         val targets =
             ctorParamTypes(impl)
                 .mapNotNull { bindings.resolvesTo[it] }
-                .filterTo(mutableSetOf()) { it in bindings.components && it != impl }
+                .filterTo(mutableSetOf()) { it in bindings.components }
         if (targets.isNotEmpty()) edges[impl] = targets
     }
     return edges
