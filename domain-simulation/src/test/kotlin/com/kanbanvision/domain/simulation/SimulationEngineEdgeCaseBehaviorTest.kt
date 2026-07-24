@@ -45,7 +45,7 @@ class SimulationEngineEdgeCaseBehaviorTest {
         val step = board.steps.first()
         val worker = Worker(name = "Dev", abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
         val card = Card(id = CardId("c1"), step = step.id, title = "T", state = CardState.DONE)
-        val boardWithCard = board.copy(steps = listOf(step.assignWorker(worker).copy(cards = listOf(card))))
+        val boardWithCard = board.copy(steps = listOf(step.withWorker(worker).copy(cards = listOf(card))))
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 1, seedValue = 1L)
         val scenario = Scenario.create(name = "S", rules = rules, board = boardWithCard)
         val simulation =

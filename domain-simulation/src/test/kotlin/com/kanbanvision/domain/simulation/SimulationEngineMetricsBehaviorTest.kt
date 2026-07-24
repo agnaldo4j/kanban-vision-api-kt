@@ -149,7 +149,7 @@ class SimulationEngineMetricsBehaviorTest {
                 developmentEffort = 10,
                 remainingDevelopmentEffort = 10,
             )
-        val stepWithWorker = step.assignWorker(worker).copy(cards = listOf(card))
+        val stepWithWorker = step.withWorker(worker).copy(cards = listOf(card))
         return simulationFrom(board.copy(steps = listOf(stepWithWorker)), wipLimit = 3)
     }
 

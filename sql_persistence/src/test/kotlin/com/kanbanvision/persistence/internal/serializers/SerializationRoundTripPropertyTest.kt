@@ -18,6 +18,7 @@ import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.persistence.withCard
 import com.kanbanvision.persistence.withStep
+import com.kanbanvision.persistence.withWorker
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.enum
@@ -69,7 +70,7 @@ class SerializationRoundTripPropertyTest {
                         abilities = AbilityName.entries.map { ability -> Ability(name = ability, seniority = seniority) }.toSet(),
                     )
                 }
-            board = board.copy(steps = board.steps.map { s -> workers.fold(s) { acc, w -> acc.assignWorker(w) } })
+            board = board.copy(steps = board.steps.map { s -> workers.fold(s) { acc, w -> acc.withWorker(w) } })
 
             val rules =
                 ScenarioRules.create(

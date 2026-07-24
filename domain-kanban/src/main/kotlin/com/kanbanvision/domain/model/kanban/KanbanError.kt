@@ -25,4 +25,17 @@ sealed interface KanbanError : DomainError {
     data class DuplicateStepName(
         val name: String,
     ) : KanbanError
+
+    data class WorkerCannotExecuteStep(
+        val workerId: String,
+        val stepId: String,
+    ) : KanbanError
+
+    data class WorkerAlreadyAssigned(
+        val workerId: String,
+    ) : KanbanError
+
+    data class CardNotInProgress(
+        val cardId: String,
+    ) : KanbanError
 }

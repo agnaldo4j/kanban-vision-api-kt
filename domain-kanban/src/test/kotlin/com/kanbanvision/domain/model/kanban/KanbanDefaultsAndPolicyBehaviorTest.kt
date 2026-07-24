@@ -1,5 +1,5 @@
 package com.kanbanvision.domain.model.kanban
-
+import com.kanbanvision.domain.model.blockOrThrow
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.PolicySet
 import com.kanbanvision.domain.model.organization.Squad
@@ -7,6 +7,7 @@ import com.kanbanvision.domain.model.organization.Tribe
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
@@ -46,7 +47,7 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     fun `given in-progress card when blocked then state becomes blocked`() {
         val card = Card(step = StepId("s-1"), title = "Card").advance()
 
-        val blocked = card.block()
+        val blocked = card.blockOrThrow()
 
         assertEquals(CardState.BLOCKED, blocked.state)
     }
@@ -55,7 +56,7 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     fun `given non in-progress card when blocked then it is rejected`() {
         val card = Card(step = StepId("s-1"), title = "Card")
 
-        assertFailsWith<IllegalArgumentException> { card.block() }
+        assertIs<KanbanError.CardNotInProgress>(card.block().leftOrNull())
     }
 
     @Test
