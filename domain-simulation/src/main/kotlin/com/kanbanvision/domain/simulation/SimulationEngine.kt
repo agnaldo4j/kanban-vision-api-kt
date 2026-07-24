@@ -24,8 +24,9 @@ object SimulationEngine {
         simulation: Simulation,
         decisions: List<Decision>,
         seed: Long,
+        now: Instant,
     ): SimulationResult {
-        val ctx = EngineContext(day = simulation.currentDay.value, seed = seed, now = Instant.now())
+        val ctx = EngineContext(day = simulation.currentDay.value, seed = seed, now = now)
         val rng = Random(seed)
         val scenario = simulation.scenario
 

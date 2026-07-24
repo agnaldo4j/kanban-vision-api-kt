@@ -21,6 +21,9 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -31,7 +34,8 @@ class RunDayUseCaseTest {
     private val snapshotRepository = mockk<SnapshotRepository>()
     private val simulationEngine = mockk<SimulationEnginePort>()
     private val publisher = mockk<EventPublisherPort>(relaxed = true)
-    private val useCase = RunDayUseCase(simulationRepository, snapshotRepository, simulationEngine, publisher)
+    private val clock = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC)
+    private val useCase = RunDayUseCase(simulationRepository, snapshotRepository, simulationEngine, publisher, clock)
 
     @Test
     fun `given already executed day when running simulation day then conflict error is returned`() =
@@ -49,7 +53,7 @@ class RunDayUseCaseTest {
             assertIs<SimulationError.DayAlreadyExecuted>(error)
             assertEquals(3, error.day)
 
-            coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any()) }
+            coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any(), any()) }
             coVerify(exactly = 0) { simulationRepository.save(any()) }
             coVerify(exactly = 0) { snapshotRepository.save(any()) }
         }
@@ -64,7 +68,7 @@ class RunDayUseCaseTest {
             coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
             coEvery { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) } returns null.right()
             coEvery {
-                simulationEngine.runDay(simulation = simulation, decisions = any(), seed = simulation.scenario.rules.seedValue)
+                simulationEngine.runDay(simulation, any(), simulation.scenario.rules.seedValue, any())
             } returns SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
             coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
@@ -78,7 +82,7 @@ class RunDayUseCaseTest {
 
             coVerify(exactly = 1) { simulationRepository.findById(SimulationId("sim-1")) }
             coVerify(exactly = 1) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) }
-            coVerify(exactly = 1) { simulationEngine.runDay(simulation, any(), simulation.scenario.rules.seedValue) }
+            coVerify(exactly = 1) { simulationEngine.runDay(simulation, any(), simulation.scenario.rules.seedValue, any()) }
             coVerify(exactly = 1) { simulationRepository.save(updatedSimulation) }
             coVerify(exactly = 1) { snapshotRepository.save(snapshot) }
             verify(exactly = 1) {
@@ -99,7 +103,7 @@ class RunDayUseCaseTest {
 
             coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
             coEvery { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) } returns null.right()
-            coEvery { simulationEngine.runDay(simulation, any(), any()) } returns
+            coEvery { simulationEngine.runDay(simulation, any(), any(), any()) } returns
                 SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
             coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
             coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
@@ -158,6 +162,6 @@ class RunDayUseCaseTest {
             assertIs<CommonError.PersistenceError>(result.leftOrNull())
 
             coVerify(exactly = 0) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) }
-            coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any()) }
+            coVerify(exactly = 0) { simulationEngine.runDay(any(), any(), any(), any()) }
         }
 }

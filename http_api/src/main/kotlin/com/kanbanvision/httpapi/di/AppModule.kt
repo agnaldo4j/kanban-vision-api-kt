@@ -22,6 +22,7 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import java.time.Clock
 
 object AppModule {
     val koinModule =
@@ -37,9 +38,13 @@ object AppModule {
             single<SnapshotRepository> { JdbcSnapshotRepository() }
             single<SimulationEnginePort> { DefaultSimulationEngine() }
 
-            single { CreateSimulationUseCase(get(), get(), get()) }
+            // Clock injected at the edge so the engine/use cases stay pure functions of their
+            // inputs (`now` threaded like `seed`) — GAP-DK. Tests bind a fixed Clock.
+            single<Clock> { Clock.systemUTC() }
+
+            single { CreateSimulationUseCase(get(), get(), get(), get()) }
             single { GetSimulationUseCase(get()) }
-            single { RunDayUseCase(get(), get(), get(), get()) }
+            single { RunDayUseCase(get(), get(), get(), get(), get()) }
             single { GetDailySnapshotUseCase(get(), get()) }
             single { ListSimulationsUseCase(get()) }
             single { GetSimulationDaysUseCase(get(), get()) }

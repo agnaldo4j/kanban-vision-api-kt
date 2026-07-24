@@ -17,6 +17,9 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -26,7 +29,8 @@ class CreateSimulationUseCaseTest {
     private val organizationRepository = mockk<OrganizationRepository>()
     private val simulationRepository = mockk<SimulationRepository>()
     private val publisher = mockk<EventPublisherPort>(relaxed = true)
-    private val useCase = CreateSimulationUseCase(organizationRepository, simulationRepository, publisher)
+    private val clock = Clock.fixed(Instant.EPOCH, ZoneOffset.UTC)
+    private val useCase = CreateSimulationUseCase(organizationRepository, simulationRepository, publisher, clock)
 
     @Test
     fun `given valid command when organization exists then use case creates and persists simulation`() =

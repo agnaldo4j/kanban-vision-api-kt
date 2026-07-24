@@ -19,12 +19,15 @@ import com.kanbanvision.usecases.repositories.SnapshotRepository
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
 import com.kanbanvision.usecases.timed
 import org.slf4j.LoggerFactory
+import java.time.Clock
+import java.time.Instant
 
 class RunDayUseCase(
     private val simulationRepository: SimulationRepository,
     private val snapshotRepository: SnapshotRepository,
     private val simulationEngine: SimulationEnginePort,
     private val publisher: EventPublisherPort,
+    private val clock: Clock,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -37,8 +40,9 @@ class RunDayUseCase(
             }
             guardDuplicate(simulation.id, simulation.currentDay.value).bind()
 
-            val result = simulationEngine.runDay(simulation, command.decisions, simulation.scenario.rules.seedValue)
-            val (snapshot, duration) = timed { persistResult(result.simulation, result.snapshot) }
+            val now = clock.instant()
+            val result = simulationEngine.runDay(simulation, command.decisions, simulation.scenario.rules.seedValue, now)
+            val (snapshot, duration) = timed { persistResult(result.simulation, result.snapshot, now) }
             log.info(
                 "Day run: simulation={} day={} duration={}ms",
                 simulation.id,
@@ -63,29 +67,31 @@ class RunDayUseCase(
     private suspend fun persistResult(
         updatedSimulation: Simulation,
         snapshot: DailySnapshot,
+        now: Instant,
     ): Either<DomainError, DailySnapshot> =
         either {
             simulationRepository.save(updatedSimulation).bind()
             snapshotRepository.save(snapshot).bind()
-            publisher.publish(buildDomainEvents(updatedSimulation.id.value, snapshot))
+            publisher.publish(buildDomainEvents(updatedSimulation.id.value, snapshot, now))
             snapshot
         }
 
     private fun buildDomainEvents(
         simulationId: String,
         snapshot: DailySnapshot,
+        now: Instant,
     ): List<DomainEvent> =
         buildList {
             snapshot.movements.forEach { movement ->
                 when (movement.type) {
                     MovementType.COMPLETED ->
-                        add(DomainEvent.CardCompleted(simulationId, movement.cardId.value, snapshot.day.value))
+                        add(DomainEvent.CardCompleted(simulationId, movement.cardId.value, snapshot.day.value, now))
                     MovementType.BLOCKED ->
-                        add(DomainEvent.CardBlocked(simulationId, movement.cardId.value, snapshot.day.value, movement.reason))
+                        add(DomainEvent.CardBlocked(simulationId, movement.cardId.value, snapshot.day.value, movement.reason, now))
                     MovementType.MOVED ->
-                        add(DomainEvent.CardMoved(simulationId, movement.cardId.value, snapshot.day.value))
+                        add(DomainEvent.CardMoved(simulationId, movement.cardId.value, snapshot.day.value, now))
                     MovementType.UNBLOCKED ->
-                        add(DomainEvent.CardUnblocked(simulationId, movement.cardId.value, snapshot.day.value))
+                        add(DomainEvent.CardUnblocked(simulationId, movement.cardId.value, snapshot.day.value, now))
                 }
             }
             add(
@@ -95,6 +101,7 @@ class RunDayUseCase(
                     throughput = snapshot.metrics.throughput,
                     wipCount = snapshot.metrics.wipCount,
                     blockedCount = snapshot.metrics.blockedCount,
+                    occurredAt = now,
                 ),
             )
         }

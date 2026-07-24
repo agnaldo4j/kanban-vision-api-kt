@@ -35,28 +35,22 @@ import kotlin.test.assertTrue
 /**
  * GAP-AW (ADR-0029): contratos dos default arguments — os testes do domínio
  * sempre constroem via factories/argumentos mínimos, deixando os branches de
- * id/audit explícitos e os no-arg de Audit sem exercício. Cada teste cobre os
- * DOIS lados do bridge de defaults e asserta o contrato do valor default.
+ * id/audit explícitos sem exercício. Cada teste cobre os DOIS lados do bridge de
+ * defaults e asserta o contrato do valor default. (Audit.now/touch deixaram de ter
+ * default de relógio — GAP-DK — e passam a exigir um instant explícito.)
  */
 class DefaultArgumentContractsBehaviorTest {
-    private companion object {
-        const val CLOCK_TOLERANCE_SECONDS = 300L
-    }
-
     private val fixedInstant = Instant.parse("2026-07-06T12:00:00Z")
     private val explicitAudit = Audit(createdAt = fixedInstant, updatedAt = fixedInstant)
 
     @Test
-    fun `audit factory and touch without arguments stamp current time`() {
-        // Janela tolerante (relógio de parede pode ajustar para trás) — o alvo
-        // do teste é exercitar o bridge no-arg, não a monotonicidade do clock.
-        val before = Instant.now().minusSeconds(CLOCK_TOLERANCE_SECONDS)
-        val audit = Audit.now()
-        val touched = audit.touch()
-        val after = Instant.now().plusSeconds(CLOCK_TOLERANCE_SECONDS)
-        assertTrue(audit.createdAt in before..after)
-        assertTrue(touched.updatedAt in before..after)
-        assertEquals(audit.createdAt, touched.createdAt)
+    fun `audit factory and touch require an explicit instant and stamp it`() {
+        val audit = Audit.now(fixedInstant)
+        val touched = audit.touch(fixedInstant.plusSeconds(60))
+        assertEquals(fixedInstant, audit.createdAt)
+        assertEquals(fixedInstant, audit.updatedAt)
+        assertEquals(fixedInstant, touched.createdAt)
+        assertEquals(fixedInstant.plusSeconds(60), touched.updatedAt)
     }
 
     @Test

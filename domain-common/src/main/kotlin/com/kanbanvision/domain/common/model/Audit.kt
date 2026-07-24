@@ -15,8 +15,10 @@ data class Audit(
     }
 
     companion object {
-        fun now(at: Instant = Instant.now()): Audit = Audit(createdAt = at)
+        // `at` is required (no `Instant.now()` default): the clock is an effect and must be sourced at the
+        // edge, never hidden in a domain default — same rule the engine/events follow (GAP-DK / ADR-0044 spirit).
+        fun now(at: Instant): Audit = Audit(createdAt = at)
     }
 
-    fun touch(at: Instant = Instant.now()): Audit = copy(updatedAt = at)
+    fun touch(at: Instant): Audit = copy(updatedAt = at)
 }
