@@ -41,7 +41,7 @@ class SimulationEngineEdgeCaseBehaviorTest {
 
     @Test
     fun `given step with worker and done card when running day then worker execution is skipped`() {
-        val board = Board.create("B").addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+        val board = Board.create("B").withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         val step = board.steps.first()
         val worker = Worker(name = "Dev", abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
         val card = Card(id = CardId("c1"), step = step.id, title = "T", state = CardState.DONE)

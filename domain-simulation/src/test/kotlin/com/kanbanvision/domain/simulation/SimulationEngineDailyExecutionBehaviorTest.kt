@@ -92,8 +92,8 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val boardWithSteps =
             Board
                 .create(name = "Main")
-                .addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
-                .addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
 
         val analysis = boardWithSteps.steps.first { it.requiredAbility == AbilityName.PRODUCT_MANAGER }
         val development = boardWithSteps.steps.first { it.requiredAbility == AbilityName.DEVELOPER }
@@ -177,7 +177,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
         val board =
             Board
                 .create(name = "Flow")
-                .addStep(name = "Input", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Input", requiredAbility = AbilityName.PRODUCT_MANAGER)
 
         val input = board.steps.first()
         val cards =

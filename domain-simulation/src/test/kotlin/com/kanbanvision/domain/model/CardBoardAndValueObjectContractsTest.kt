@@ -1,5 +1,4 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -16,6 +15,8 @@ import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.ScenarioId
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
+import com.kanbanvision.domain.simulation.withCard
+import com.kanbanvision.domain.simulation.withStep
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -79,12 +80,12 @@ class CardBoardAndValueObjectContractsTest {
         val board =
             Board
                 .create(name = "Main")
-                .addStep("Analysis", AbilityName.PRODUCT_MANAGER)
-                .addStep("Development", AbilityName.DEVELOPER)
+                .withStep("Analysis", AbilityName.PRODUCT_MANAGER)
+                .withStep("Development", AbilityName.DEVELOPER)
         val analysis = board.steps.first { it.requiredAbility == AbilityName.PRODUCT_MANAGER }
         val development = board.steps.first { it.requiredAbility == AbilityName.DEVELOPER }
 
-        val updated = board.addCard(step = development.id, title = "Build", description = "impl")
+        val updated = board.withCard(step = development.id, title = "Build", description = "impl")
 
         val updatedAnalysis = updated.steps.first { it.id == analysis.id }
         val updatedDevelopment = updated.steps.first { it.id == development.id }

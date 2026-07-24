@@ -118,7 +118,7 @@ class SimulationEngineGuardBehaviorTest {
 
     @Test
     fun `given worker assigned but in progress card has zero remaining effort when running day then effort stays zero`() {
-        val board = Board.create("Board").addStep("Dev", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Dev", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val worker =
             Worker(
@@ -152,7 +152,7 @@ class SimulationEngineGuardBehaviorTest {
         state: CardState,
         agingDays: Int = 0,
     ): Simulation {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state, agingDays = agingDays)
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
@@ -163,7 +163,7 @@ class SimulationEngineGuardBehaviorTest {
         inProgressCount: Int,
         todoCount: Int,
     ): Simulation {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val cards =
             (1..inProgressCount).map { i ->

@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 class SimulationEngineCardOrderAndMetricsTest {
     @Test
     fun `given two expedite and two standard todo with wip limit 2 when running then both expedite start`() {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val cards =
             listOf(
@@ -57,7 +57,7 @@ class SimulationEngineCardOrderAndMetricsTest {
 
     @Test
     fun `given mixed in progress blocked and done cards when metrics computed then all counts are exact`() {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val cards =
             listOf(
@@ -77,7 +77,7 @@ class SimulationEngineCardOrderAndMetricsTest {
 
     @Test
     fun `given cards with different positions when board rebuilt after run then lower position cards come first`() {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val cards =
             listOf(
@@ -104,7 +104,7 @@ class SimulationEngineCardOrderAndMetricsTest {
         deployEffort: Int,
         remainingDeployEffort: Int,
     ): Simulation {
-        val board = Board.create("Board").addStep("Deploy", AbilityName.DEPLOYER)
+        val board = Board.create("Board").withStep("Deploy", AbilityName.DEPLOYER)
         val step = board.steps.first()
         val worker =
             Worker(

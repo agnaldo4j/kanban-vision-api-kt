@@ -118,7 +118,7 @@ class SimulationEngineDecisionBehaviorTest {
         val board =
             Board
                 .create("Board")
-                .addStep(name = "Execution", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Execution", requiredAbility = AbilityName.DEVELOPER)
 
         val step = board.steps.first()
         val boardWithCard =

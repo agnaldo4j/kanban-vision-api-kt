@@ -5,6 +5,7 @@ import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.domain.model.kanban.CardId
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.Step
 import com.kanbanvision.domain.model.kanban.StepId
@@ -14,6 +15,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
@@ -106,7 +108,7 @@ class KanbanGuardViolationBehaviorTest {
         val step =
             Board
                 .create("B")
-                .addStep(name = "Test", requiredAbility = AbilityName.TESTER)
+                .withStep(name = "Test", requiredAbility = AbilityName.TESTER)
                 .steps
                 .first()
         assertFailsWith<IllegalArgumentException> { step.assignWorker(devWorker) }
@@ -114,7 +116,7 @@ class KanbanGuardViolationBehaviorTest {
         val devStep =
             Board
                 .create("B")
-                .addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
                 .steps
                 .first()
         val assigned = devStep.assignWorker(devWorker)
@@ -126,7 +128,7 @@ class KanbanGuardViolationBehaviorTest {
         val step =
             Board
                 .create("B")
-                .addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
                 .steps
                 .first()
         val done = card(developmentEffort = 0)
@@ -140,7 +142,7 @@ class KanbanGuardViolationBehaviorTest {
         val step =
             Board
                 .create("B")
-                .addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
                 .steps
                 .first()
         val pending = card(developmentEffort = 5)
@@ -153,10 +155,12 @@ class KanbanGuardViolationBehaviorTest {
     fun `given invalid board inputs then create addStep and addCard guards reject`() {
         assertFailsWith<IllegalArgumentException> { Board.create("  ") }
 
-        val board = Board.create("B").addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+        val board = Board.create("B").withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+        // Nome em branco segue precondição de construção (Step.create) → lança (ADR-0044: require em construção).
         assertFailsWith<IllegalArgumentException> { board.addStep(name = " ", requiredAbility = AbilityName.TESTER) }
-        assertFailsWith<IllegalArgumentException> { board.addStep(name = "Dev", requiredAbility = AbilityName.TESTER) }
-        assertFailsWith<IllegalStateException> { board.addCard(step = StepId("nope"), title = "T") }
+        // Regra de domínio (nome duplicado / step inexistente) → erro tipado (Left), não exceção.
+        assertIs<KanbanError.DuplicateStepName>(board.addStep(name = "Dev", requiredAbility = AbilityName.TESTER).leftOrNull())
+        assertIs<KanbanError.StepNotFound>(board.addCard(step = StepId("nope"), title = "T").leftOrNull())
     }
 
     private fun card(

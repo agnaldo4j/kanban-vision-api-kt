@@ -148,7 +148,7 @@ class SimulationEngineServiceClassBehaviorTest {
         val board =
             Board
                 .create(name = "Flow")
-                .addStep(name = "Input", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Input", requiredAbility = AbilityName.PRODUCT_MANAGER)
         val input = board.steps.first()
         val cards =
             listOf(
@@ -174,7 +174,7 @@ class SimulationEngineServiceClassBehaviorTest {
         val board =
             Board
                 .create(name = "Flow")
-                .addStep(name = "Input", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Input", requiredAbility = AbilityName.PRODUCT_MANAGER)
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 2, seedValue = 77L)
         val scenario = Scenario.create(name = "Scenario", rules = rules, board = board)
         return Simulation.create(

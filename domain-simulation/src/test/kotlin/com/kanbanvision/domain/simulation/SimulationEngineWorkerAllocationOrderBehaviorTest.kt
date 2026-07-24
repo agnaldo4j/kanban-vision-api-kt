@@ -41,7 +41,7 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
     }
 
     private fun simulationWithTwoWorkersOnDevelopmentStep(): Simulation {
-        val board = Board.create("Board").addStep("Development", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Development", AbilityName.DEVELOPER)
         val stepWithWorkers =
             board.steps
                 .first()

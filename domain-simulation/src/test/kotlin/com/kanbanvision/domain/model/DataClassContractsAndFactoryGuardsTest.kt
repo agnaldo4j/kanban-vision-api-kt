@@ -1,5 +1,4 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -19,6 +18,7 @@ import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationError
+import com.kanbanvision.domain.simulation.withStep
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +30,7 @@ class DataClassContractsAndFactoryGuardsTest {
     @Test
     fun `given aggregate data classes when copying then equality and hash contract remains stable`() {
         val rules = ScenarioRules.create(wipLimit = 2, teamSize = 3, seedValue = 7L)
-        val board = Board.create("Board").addStep("Analysis", AbilityName.PRODUCT_MANAGER)
+        val board = Board.create("Board").withStep("Analysis", AbilityName.PRODUCT_MANAGER)
         val scenario = Scenario.create(name = "Scenario", rules = rules, board = board)
         val simulation = Simulation.create(name = "Sim", organization = Organization.create("Org"), scenario = scenario)
         val snapshot =

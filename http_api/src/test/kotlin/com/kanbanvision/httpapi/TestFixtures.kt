@@ -1,5 +1,4 @@
 package com.kanbanvision.httpapi
-
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -47,8 +46,8 @@ internal fun ApplicationTestBuilder.withJwt(token: String = issueTestJwt()): io.
 internal fun fixtureSimulation(id: String = "sim-1"): Simulation {
     val board =
         Board(id = BoardId("board-1"), name = "Main Board")
-            .addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
-            .addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+            .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+            .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
     val scenario =
         Scenario(
             id = ScenarioId("scn-1"),

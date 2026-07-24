@@ -30,8 +30,8 @@ internal fun fixtureScenario(
 ): Scenario {
     val board =
         Board(id = BoardId("board-1"), name = "Main Board")
-            .addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
-            .addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+            .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+            .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
     return Scenario(
         id = ScenarioId(id),
         name = "Default Simulation Scenario",
