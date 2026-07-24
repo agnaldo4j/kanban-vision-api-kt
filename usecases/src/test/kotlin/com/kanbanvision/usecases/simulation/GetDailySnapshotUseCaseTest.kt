@@ -40,7 +40,7 @@ class GetDailySnapshotUseCaseTest {
         }
 
     @Test
-    fun `given missing snapshot when loading daily snapshot then simulation not found is returned`() =
+    fun `given existing simulation but missing snapshot when loading daily snapshot then snapshot not found is returned`() =
         runTest {
             coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns
                 fixtureSimulation(id = "sim-1", organizationId = "org-1").right()
@@ -49,7 +49,10 @@ class GetDailySnapshotUseCaseTest {
             val result = useCase.execute(GetDailySnapshotQuery(simulationId = "sim-1", day = 2, callerOrganizationId = "org-1"))
 
             assertTrue(result.isLeft())
-            assertIs<SimulationError.SimulationNotFound>(result.leftOrNull())
+            // Snapshot ausente ≠ simulação ausente: a simulação foi encontrada acima (GAP-DF).
+            val error = assertIs<SimulationError.SnapshotNotFound>(result.leftOrNull())
+            assertEquals("sim-1", error.simulationId)
+            assertEquals(2, error.day)
             coVerify(exactly = 1) { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(2)) }
         }
 

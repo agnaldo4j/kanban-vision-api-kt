@@ -65,9 +65,9 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
     return when (error) {
         is CommonError.ValidationError ->
             respond(HttpStatusCode.BadRequest, ValidationErrorResponse(errors = error.messages, requestId = requestId))
-        is KanbanError.BoardNotFound, is KanbanError.CardNotFound,
-        is KanbanError.StepNotFound,
+        is KanbanError.BoardNotFound, is KanbanError.CardNotFound, is KanbanError.StepNotFound,
         is KanbanError.OrganizationNotFound, is SimulationError.SimulationNotFound,
+        is SimulationError.SnapshotNotFound,
         ->
             respond(HttpStatusCode.NotFound, DomainErrorResponse(error = notFoundMessage(error), requestId = requestId))
         is CommonError.PersistenceError ->
@@ -102,5 +102,6 @@ private fun notFoundMessage(error: DomainError): String =
         is KanbanError.StepNotFound -> "Step not found"
         is KanbanError.OrganizationNotFound -> "Organization not found"
         is SimulationError.SimulationNotFound -> "Simulation not found"
+        is SimulationError.SnapshotNotFound -> "Snapshot not found"
         else -> "Resource not found"
     }

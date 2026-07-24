@@ -11,4 +11,11 @@ class SimulationErrorGuardTest {
             SimulationError.DayAlreadyExecuted(0)
         }
     }
+
+    @Test
+    fun `given non positive day when creating snapshot not found then validation fails`() {
+        assertFailsWith<IllegalArgumentException> {
+            SimulationError.SnapshotNotFound("sim-1", 0)
+        }
+    }
 }

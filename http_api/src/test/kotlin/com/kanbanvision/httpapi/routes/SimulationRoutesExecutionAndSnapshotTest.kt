@@ -101,14 +101,14 @@ class SimulationRoutesExecutionAndSnapshotTest {
             val mocks = SimulationApiMocks()
             coEvery {
                 mocks.getDailySnapshotUseCase.execute(any())
-            } returns SimulationError.SimulationNotFound("sim-1").left()
+            } returns SimulationError.SnapshotNotFound("sim-1", 1).left()
 
             application { configureSimulationApi(mocks) }
 
             val response = client.get("/api/v1/simulations/sim-1/days/1/snapshot") { withJwt().invoke(this) }
 
             assertEquals(HttpStatusCode.NotFound, response.status)
-            assertTrue(response.bodyAsText().contains("Simulation not found"))
+            assertTrue(response.bodyAsText().contains("Snapshot not found"))
         }
 
     @Test
