@@ -141,7 +141,11 @@ Compor é encadear funções ponta a ponta: a saída de uma vira a entrada da pr
 como elemento neutro. Só vale para funções **puras** (pilar 1) — um efeito colateral quebra as leis.
 
 ```kotlin
-// andThen: (f andThen g)(x) == g(f(x))   |   compose: (f compose g)(x) == f(g(x))
+// Defina os operadores uma vez — nem a stdlib nem o Arrow 2.x trazem `andThen`/`compose` para (A) -> B:
+infix fun <A, B, C> ((A) -> B).andThen(g: (B) -> C): (A) -> C = { a -> g(this(a)) }
+infix fun <A, B, C> ((B) -> C).compose(f: (A) -> B): (A) -> C = { a -> this(f(a)) }
+
+// andThen: (f andThen g)(x) == g(f(x))   |   compose: (g compose f)(x) == g(f(x))
 val trim: (String) -> String = String::trim
 val toUpper: (String) -> String = String::uppercase
 val normalize: (String) -> String = trim andThen toUpper   // trim primeiro, depois uppercase
@@ -157,9 +161,10 @@ fun processCards(cards: List<Card>): List<Card> =
         .map { it.copy(title = it.title.trim()) }
 ```
 
-> `andThen`/`compose` sobre `(A) -> B` vêm do Arrow (`arrow.core.andThen`/`compose`). Sem Arrow, uma
-> `infix fun` de uma linha resolve:
-> `infix fun <A, B, C> ((A) -> B).andThen(g: (B) -> C): (A) -> C = { g(this(it)) }`.
+> **Nota de stack (pinada):** `(A) -> B` **não** ganha `andThen`/`compose` prontos — nem da stdlib do
+> Kotlin, nem do Arrow. Na série 2.0 o Arrow **removeu** esses helpers; em `arrow-core:2.2.3` (versão deste
+> projeto) `arrow.core` expõe só `identity`. Portanto **defina os operadores localmente** (acima) ou componha
+> direto via as coleções/`let` — não confie num `import arrow.core.andThen`, que não resolve.
 
 #### `inline`, currying e aplicação parcial
 
@@ -593,7 +598,8 @@ convenção, que dá a acumulação "de graça".
 
 Um **monad** acrescenta `flatMap` (`(A) -> F<B>` achatado em `F<B>`) — sequência com **dependência**: o
 próximo passo precisa do resultado do anterior, e qualquer falha **curto-circuita**. O `either { }` é a
-**notação-do** monádica do projeto; cada `.bind()` (implícito no DSL do `Raise`) é um `flatMap`:
+**notação-do** monádica do projeto; cada `.bind()` sobre um `Either` **é** o `flatMap` do monad — extrai o
+`Right` ou aborta no `Left` (chamar uma função `Raise<E>`-receiver faz o mesmo bind, aí implícito):
 
 ```kotlin
 val result: Either<DomainError, Board> = either {
