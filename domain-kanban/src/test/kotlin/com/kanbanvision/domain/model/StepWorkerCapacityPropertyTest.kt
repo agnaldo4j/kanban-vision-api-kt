@@ -55,7 +55,7 @@ class StepWorkerCapacityPropertyTest {
                         name = workerName,
                         abilities = setOf(Ability(name = differentAbility, seniority = Seniority.PL)),
                     )
-                runCatching { step.assignWorker(worker) }.isFailure
+                runCatching { step.withWorker(worker) }.isFailure
             }
         }
     }
@@ -72,8 +72,8 @@ class StepWorkerCapacityPropertyTest {
                 val step =
                     Step
                         .create(board = BOARD_REF, name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
-                        .assignWorker(worker)
-                runCatching { step.assignWorker(worker) }.isFailure
+                        .withWorker(worker)
+                runCatching { step.withWorker(worker) }.isFailure
             }
         }
     }
@@ -87,7 +87,7 @@ class StepWorkerCapacityPropertyTest {
             ) { ability, name ->
                 val worker = Worker(name = name, abilities = setOf(Ability(name = ability, seniority = Seniority.PL)))
                 val step = Step.create(board = BOARD_REF, name = "Step", position = 0, requiredAbility = ability)
-                runCatching { step.assignWorker(worker) }.isSuccess
+                runCatching { step.withWorker(worker) }.isSuccess
             }
         }
     }

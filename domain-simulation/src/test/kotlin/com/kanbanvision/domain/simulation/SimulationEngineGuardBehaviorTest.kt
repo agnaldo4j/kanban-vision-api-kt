@@ -135,7 +135,7 @@ class SimulationEngineGuardBehaviorTest {
                 developmentEffort = 5,
                 remainingDevelopmentEffort = 0,
             )
-        val stepWithWorker = step.assignWorker(worker).copy(cards = listOf(card))
+        val stepWithWorker = step.withWorker(worker).copy(cards = listOf(card))
         val simulation = simulationFrom(board.copy(steps = listOf(stepWithWorker)), wipLimit = 3)
 
         val result = SimulationEngine.runDay(simulation, decisions = emptyList(), seed = 1L)

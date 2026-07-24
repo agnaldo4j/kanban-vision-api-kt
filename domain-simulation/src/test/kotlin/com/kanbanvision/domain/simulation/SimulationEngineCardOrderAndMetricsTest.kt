@@ -121,7 +121,7 @@ class SimulationEngineCardOrderAndMetricsTest {
                 deployEffort = deployEffort,
                 remainingDeployEffort = remainingDeployEffort,
             )
-        return boardSim(board.copy(steps = listOf(step.assignWorker(worker).copy(cards = listOf(card)))), wipLimit = 3)
+        return boardSim(board.copy(steps = listOf(step.withWorker(worker).copy(cards = listOf(card)))), wipLimit = 3)
     }
 
     private fun boardSim(

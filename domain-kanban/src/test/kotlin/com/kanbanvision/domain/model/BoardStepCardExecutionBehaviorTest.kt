@@ -16,7 +16,6 @@ import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -52,7 +51,7 @@ class BoardStepCardExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("board-1"), name = "Development", position = 1, requiredAbility = AbilityName.DEVELOPER)
-                .assignWorker(dev)
+                .withWorker(dev)
         val card =
             Card(
                 step = step.id,
@@ -63,7 +62,7 @@ class BoardStepCardExecutionBehaviorTest {
             )
 
         val result =
-            step.executeCard(worker = dev, card = card, dailyCapacities = dev.generateDailyCapacities(Random(1), 2, 2), now = Instant.EPOCH)
+            step.execute(worker = dev, card = card, dailyCapacities = dev.generateDailyCapacities(Random(1), 2, 2), now = Instant.EPOCH)
 
         assertEquals(2, result.consumedEffort)
         assertEquals(3, result.updatedCard.remainingDevelopmentEffort)
@@ -76,7 +75,7 @@ class BoardStepCardExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("board-1"), name = "Deploy", position = 3, requiredAbility = AbilityName.DEPLOYER)
-                .assignWorker(deployer)
+                .withWorker(deployer)
         val card =
             Card(
                 step = step.id,
@@ -87,7 +86,7 @@ class BoardStepCardExecutionBehaviorTest {
             )
 
         val result =
-            step.executeCard(worker = deployer, card = card, dailyCapacities = mapOf(AbilityName.DEPLOYER to 0), now = Instant.EPOCH)
+            step.execute(worker = deployer, card = card, dailyCapacities = mapOf(AbilityName.DEPLOYER to 0), now = Instant.EPOCH)
 
         assertEquals(4, result.consumedEffort)
         assertEquals(0, result.updatedCard.remainingDeployEffort)
@@ -117,9 +116,7 @@ class BoardStepCardExecutionBehaviorTest {
     fun `given non in progress card when blocking then operation is rejected`() {
         val todo = Card(step = StepId("step-1"), title = "Task", state = CardState.TODO)
 
-        assertFailsWith<IllegalArgumentException> {
-            todo.block()
-        }
+        assertIs<KanbanError.CardNotInProgress>(todo.block().leftOrNull())
     }
 
     private fun worker(name: String): Worker =

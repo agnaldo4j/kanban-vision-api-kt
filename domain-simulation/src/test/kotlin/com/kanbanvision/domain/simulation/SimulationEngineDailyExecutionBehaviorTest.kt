@@ -128,7 +128,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
         return board.copy(
             steps =
                 board.steps.map { step ->
-                    if (step.id.value == developmentStepId) step.assignWorker(developer) else step
+                    if (step.id.value == developmentStepId) step.withWorker(developer) else step
                 },
         )
     }

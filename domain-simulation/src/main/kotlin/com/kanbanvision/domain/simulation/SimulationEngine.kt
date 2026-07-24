@@ -136,7 +136,11 @@ object SimulationEngine {
         if (targetIndex < 0) return
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
-        val result = step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
+        // ADR-0044: elegibilidade já pré-guardada em L129 → o Left é inalcançável; desembrulha o Right
+        // sem reintroduzir throw (mantém o engine total).
+        val result =
+            step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now).getOrNull()
+                ?: return
         current[targetIndex] = result.updatedCard
     }
 
@@ -178,7 +182,8 @@ private fun applyBlock(
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return null
     val card = current[idx]
-    current[idx] = card.block()
+    // ADR-0044: estado IN_PROGRESS já pré-guardado acima → Left inalcançável; desembrulha sem throw.
+    current[idx] = card.block().getOrNull() ?: return null
     return Movement(type = MovementType.BLOCKED, cardId = card.id, day = SimulationDay(day), reason = reason)
 }
 

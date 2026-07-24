@@ -45,8 +45,8 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
         val stepWithWorkers =
             board.steps
                 .first()
-                .assignWorker(workerB())
-                .assignWorker(workerA())
+                .withWorker(workerB())
+                .withWorker(workerA())
         val card =
             Card(
                 id = CardId("card-1"),

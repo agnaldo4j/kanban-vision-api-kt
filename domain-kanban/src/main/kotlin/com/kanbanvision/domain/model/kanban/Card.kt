@@ -1,5 +1,8 @@
 package com.kanbanvision.domain.model.kanban
 
+import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
 import java.time.Instant
@@ -74,10 +77,12 @@ data class Card(
             CardState.DONE -> this
         }
 
-    fun block(): Card {
-        require(state == CardState.IN_PROGRESS) { "Only IN_PROGRESS cards can be blocked" }
-        return copy(state = CardState.BLOCKED)
-    }
+    // ADR-0044: transição de estado inválida (bloquear card não-IN_PROGRESS) é regra de domínio → Either.
+    fun block(): Either<KanbanError, Card> =
+        either {
+            ensure(state == CardState.IN_PROGRESS) { KanbanError.CardNotInProgress(id.value) }
+            copy(state = CardState.BLOCKED)
+        }
 
     fun incrementAge(): Card = copy(agingDays = agingDays + 1)
 

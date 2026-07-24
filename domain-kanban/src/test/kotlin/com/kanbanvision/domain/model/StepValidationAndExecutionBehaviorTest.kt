@@ -1,10 +1,10 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
 import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.domain.model.kanban.CardState
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.Step
 import com.kanbanvision.domain.model.kanban.StepId
@@ -13,6 +13,7 @@ import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class StepValidationAndExecutionBehaviorTest {
@@ -69,7 +70,7 @@ class StepValidationAndExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
-                .assignWorker(worker)
+                .withWorker(worker)
 
         val updated = step.unassignWorker(worker.id)
 
@@ -95,12 +96,18 @@ class StepValidationAndExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
-                .assignWorker(developer)
+                .withWorker(developer)
         val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 1)
 
-        assertFailsWith<IllegalArgumentException> {
-            step.executeCard(worker = tester, card = card, dailyCapacities = mapOf(AbilityName.DEVELOPER to 1), now = Instant.EPOCH)
-        }
+        val error =
+            step
+                .executeCard(
+                    worker = tester,
+                    card = card,
+                    dailyCapacities = mapOf(AbilityName.DEVELOPER to 1),
+                    now = Instant.EPOCH,
+                ).leftOrNull()
+        assertIs<KanbanError.WorkerCannotExecuteStep>(error)
     }
 
     @Test
@@ -113,9 +120,9 @@ class StepValidationAndExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
-                .assignWorker(worker)
+                .withWorker(worker)
 
-        assertFailsWith<IllegalArgumentException> { step.assignWorker(worker) }
+        assertIs<KanbanError.WorkerAlreadyAssigned>(step.assignWorker(worker).leftOrNull())
     }
 
     @Test
@@ -128,10 +135,10 @@ class StepValidationAndExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
-                .assignWorker(worker)
+                .withWorker(worker)
         val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 3)
 
-        val result = step.executeCard(worker = worker, card = card, dailyCapacities = emptyMap(), now = Instant.EPOCH)
+        val result = step.execute(worker = worker, card = card, dailyCapacities = emptyMap(), now = Instant.EPOCH)
 
         assertEquals(0, result.consumedEffort)
         assertEquals(false, result.isStepCompleted)
@@ -147,7 +154,7 @@ class StepValidationAndExecutionBehaviorTest {
         val step =
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
-                .assignWorker(worker)
+                .withWorker(worker)
         val doneEffortCard =
             Card(
                 step = step.id,
@@ -158,7 +165,7 @@ class StepValidationAndExecutionBehaviorTest {
             )
 
         val result =
-            step.executeCard(
+            step.execute(
                 worker = worker,
                 card = doneEffortCard,
                 dailyCapacities = mapOf(AbilityName.DEVELOPER to 2),

@@ -1,5 +1,8 @@
 package com.kanbanvision.domain.model.kanban
 
+import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
 import java.time.Instant
@@ -50,13 +53,13 @@ data class Step(
 
     fun canAssign(worker: Worker): Boolean = worker.hasAbility(requiredAbility)
 
-    fun assignWorker(worker: Worker): Step {
-        require(canAssign(worker)) {
-            "Worker '${worker.name}' cannot be assigned to step '$name' (required ability: $requiredAbility)"
+    // ADR-0044: regras de domínio (elegibilidade/duplicidade de worker) → Either.
+    fun assignWorker(worker: Worker): Either<KanbanError, Step> =
+        either {
+            ensure(canAssign(worker)) { KanbanError.WorkerCannotExecuteStep(worker.id, id.value) }
+            ensure(workers.none { it.id == worker.id }) { KanbanError.WorkerAlreadyAssigned(worker.id) }
+            copy(workers = workers + worker)
         }
-        require(workers.none { it.id == worker.id }) { "Worker '${worker.name}' is already assigned to step '$name'" }
-        return copy(workers = workers + worker)
-    }
 
     fun toRef(): StepId = id
 
@@ -67,33 +70,32 @@ data class Step(
         card: Card,
         dailyCapacities: Map<AbilityName, Int>,
         now: Instant,
-    ): ExecutionResult {
-        require(canAssign(worker)) {
-            "Worker '${worker.name}' cannot execute step '$name' (required ability: $requiredAbility)"
-        }
+    ): Either<KanbanError, ExecutionResult> =
+        either {
+            ensure(canAssign(worker)) { KanbanError.WorkerCannotExecuteStep(worker.id, id.value) }
 
-        val remaining = card.remainingEffortFor(requiredAbility)
-        if (remaining == 0) {
-            return ExecutionResult(updatedCard = card, consumedEffort = 0, isStepCompleted = true)
-        }
-
-        val available = dailyCapacities[requiredAbility] ?: 0
-        val consumed =
-            when (requiredAbility) {
-                // DEPLOYER consome tudo que resta (deploy é atômico); as demais habilidades
-                // consomem só o que a capacidade diária do worker permite.
-                AbilityName.DEPLOYER -> remaining
-                AbilityName.PRODUCT_MANAGER,
-                AbilityName.DEVELOPER,
-                AbilityName.TESTER,
-                -> minOf(remaining, available.coerceAtLeast(0))
+            val remaining = card.remainingEffortFor(requiredAbility)
+            if (remaining == 0) {
+                return@either ExecutionResult(updatedCard = card, consumedEffort = 0, isStepCompleted = true)
             }
 
-        val updated = card.consumeEffort(requiredAbility, consumed, now)
-        return ExecutionResult(
-            updatedCard = updated,
-            consumedEffort = consumed,
-            isStepCompleted = updated.remainingEffortFor(requiredAbility) == 0,
-        )
-    }
+            val available = dailyCapacities[requiredAbility] ?: 0
+            val consumed =
+                when (requiredAbility) {
+                    // DEPLOYER consome tudo que resta (deploy é atômico); as demais habilidades
+                    // consomem só o que a capacidade diária do worker permite.
+                    AbilityName.DEPLOYER -> remaining
+                    AbilityName.PRODUCT_MANAGER,
+                    AbilityName.DEVELOPER,
+                    AbilityName.TESTER,
+                    -> minOf(remaining, available.coerceAtLeast(0))
+                }
+
+            val updated = card.consumeEffort(requiredAbility, consumed, now)
+            ExecutionResult(
+                updatedCard = updated,
+                consumedEffort = consumed,
+                isStepCompleted = updated.remainingEffortFor(requiredAbility) == 0,
+            )
+        }
 }

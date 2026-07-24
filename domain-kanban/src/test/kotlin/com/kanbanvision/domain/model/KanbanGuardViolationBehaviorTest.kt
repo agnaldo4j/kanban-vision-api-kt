@@ -111,7 +111,7 @@ class KanbanGuardViolationBehaviorTest {
                 .withStep(name = "Test", requiredAbility = AbilityName.TESTER)
                 .steps
                 .first()
-        assertFailsWith<IllegalArgumentException> { step.assignWorker(devWorker) }
+        assertIs<KanbanError.WorkerCannotExecuteStep>(step.assignWorker(devWorker).leftOrNull())
 
         val devStep =
             Board
@@ -119,8 +119,8 @@ class KanbanGuardViolationBehaviorTest {
                 .withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
                 .steps
                 .first()
-        val assigned = devStep.assignWorker(devWorker)
-        assertFailsWith<IllegalArgumentException> { assigned.assignWorker(devWorker) }
+        val assigned = devStep.withWorker(devWorker)
+        assertIs<KanbanError.WorkerAlreadyAssigned>(assigned.assignWorker(devWorker).leftOrNull())
     }
 
     @Test
@@ -132,7 +132,7 @@ class KanbanGuardViolationBehaviorTest {
                 .steps
                 .first()
         val done = card(developmentEffort = 0)
-        val result = step.executeCard(devWorker, done, dailyCapacities = emptyMap(), now = Instant.EPOCH)
+        val result = step.execute(devWorker, done, dailyCapacities = emptyMap(), now = Instant.EPOCH)
         assertEquals(0, result.consumedEffort)
         assertTrue(result.isStepCompleted)
     }
@@ -146,7 +146,7 @@ class KanbanGuardViolationBehaviorTest {
                 .steps
                 .first()
         val pending = card(developmentEffort = 5)
-        val result = step.executeCard(devWorker, pending, dailyCapacities = emptyMap(), now = Instant.EPOCH)
+        val result = step.execute(devWorker, pending, dailyCapacities = emptyMap(), now = Instant.EPOCH)
         assertEquals(0, result.consumedEffort)
         assertEquals(5, result.updatedCard.remainingEffortFor(AbilityName.DEVELOPER))
     }

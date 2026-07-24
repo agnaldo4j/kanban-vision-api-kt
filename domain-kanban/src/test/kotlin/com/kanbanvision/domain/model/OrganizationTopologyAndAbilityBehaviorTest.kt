@@ -1,8 +1,8 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.Step
 import com.kanbanvision.domain.model.kanban.Worker
@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class OrganizationTopologyAndAbilityBehaviorTest {
@@ -61,11 +62,11 @@ class OrganizationTopologyAndAbilityBehaviorTest {
         val tester = worker(name = "Test", abilities = setOf(ability(AbilityName.TESTER), ability(AbilityName.DEPLOYER)))
         val step = Step.create(board = BoardId("board-1"), name = "Development", position = 0, requiredAbility = AbilityName.DEVELOPER)
 
-        val assigned = step.assignWorker(developer)
+        val assigned = step.withWorker(developer)
 
         assertTrue(assigned.workers.any { it.id == developer.id })
         assertFalse(step.canAssign(tester))
-        assertFailsWith<IllegalArgumentException> { step.assignWorker(tester) }
+        assertIs<KanbanError.WorkerCannotExecuteStep>(step.assignWorker(tester).leftOrNull())
     }
 
     @Test
