@@ -136,12 +136,12 @@ object SimulationEngine {
         if (targetIndex < 0) return
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
-        // ADR-0044: elegibilidade já pré-guardada em L129 → o Left é inalcançável; desembrulha o Right
-        // sem reintroduzir throw (mantém o engine total).
-        val result =
-            step.executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now).getOrNull()
-                ?: return
-        current[targetIndex] = result.updatedCard
+        // ADR-0044: o `Left` de executeCard (worker inelegível) é inalcançável aqui — o invariante do Step
+        // (`workers.all { hasAbility }`) garante que todo worker de `step.workers` pode executar. `onRight`
+        // absorve o `Left` impossível DENTRO do Arrow (sem ramo morto no engine) e mantém o engine total.
+        step
+            .executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
+            .onRight { current[targetIndex] = it.updatedCard }
     }
 
     private fun calculateMetrics(
@@ -182,8 +182,9 @@ private fun applyBlock(
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return null
     val card = current[idx]
-    // ADR-0044: estado IN_PROGRESS já pré-guardado acima → Left inalcançável; desembrulha sem throw.
-    current[idx] = card.block().getOrNull() ?: return null
+    // ADR-0044: estado IN_PROGRESS já pré-guardado acima → o `Left` de block() é inalcançável; `onRight`
+    // absorve o `Left` impossível dentro do Arrow (sem ramo morto), sem reintroduzir throw.
+    card.block().onRight { current[idx] = it }
     return Movement(type = MovementType.BLOCKED, cardId = card.id, day = SimulationDay(day), reason = reason)
 }
 
