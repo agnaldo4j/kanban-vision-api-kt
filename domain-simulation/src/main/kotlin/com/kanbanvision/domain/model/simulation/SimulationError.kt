@@ -10,6 +10,15 @@ sealed interface SimulationError : DomainError {
         val id: String,
     ) : SimulationError
 
+    data class SnapshotNotFound(
+        val simulationId: String,
+        val day: Int,
+    ) : SimulationError {
+        init {
+            require(day >= 1) { "SnapshotNotFound day must be at least 1" }
+        }
+    }
+
     data class InvalidDecision(
         val reason: String,
     ) : SimulationError

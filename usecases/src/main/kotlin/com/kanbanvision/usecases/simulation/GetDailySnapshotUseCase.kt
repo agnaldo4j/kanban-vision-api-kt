@@ -31,7 +31,7 @@ class GetDailySnapshotUseCase(
                 CommonError.Forbidden("Simulation does not belong to the caller's organization")
             }
             val (snapshot, duration) = timed { snapshotRepository.findByDay(SimulationId(id), SimulationDay(query.day)) }
-            ensureNotNull(snapshot) { SimulationError.SimulationNotFound(id) }
+            ensureNotNull(snapshot) { SimulationError.SnapshotNotFound(id, query.day) }
             log.info("Snapshot fetched: simulation={} day={} duration={}ms", id, query.day, duration.inWholeMilliseconds)
             snapshot
         }
