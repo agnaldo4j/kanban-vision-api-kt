@@ -36,7 +36,7 @@
 - **Functional error handling** — `Either<DomainError, T>` via Arrow-kt throughout
 - **Production-ready** — JWT auth, distributed rate limiting over Redis (ADR-0041/0042), Prometheus metrics, Grafana dashboards, OTel SDK traces; runs in production as a GraalVM Native Image (≈9× faster startup, −79% memory — ADR-0032)
 - **In-cluster observability** — self-contained Kubernetes manifests for the whole stack: Prometheus (`kubernetes_sd` scrape) → Alertmanager + alert-sink → Grafana, no Operator/CRD (ADR-0043), alongside the docker-compose stack
-- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 98% + PITest mutation testing + Konsist architecture fitness (incl. class-cycle detection) + a semantic `config-lint` (amtool/promtool over the observability configs) enforced on every PR
+- **Quality gates** — Detekt + KtLint + JaCoCo ≥ 98% + PITest mutation testing + Konsist architecture fitness (incl. class-cycle detection) + a semantic `config-lint` check (amtool/promtool over the observability configs, advisory) run on every PR
 - **Supply chain security** — CycloneDX SBOM (over the app **and** the migration binary's classpath) + osv-scanner CVE gate blocking every image build; both native binaries are smoke-tested against ephemeral Postgres
 - **Property-based testing** — Kotest generators validate domain invariants with randomized inputs
 

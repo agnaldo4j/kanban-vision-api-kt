@@ -82,7 +82,7 @@ What moved the headline, honestly:
   pass the gate silently (the class of blind spot the #329 jackson fix had to check by hand); `osv-scanner.toml`
   carries **0 stale exceptions**; and the migrate binary is now booted in the CI smoke test. Held below 9.5 —
   unchanged: **HS256 symmetric JWT** (no asymmetric rotation) and **no automated DAST/pentest**.
-- **CI gates 9.7 → 9.8** — the `config-lint` gate now validates the **k8s config copies**, not just
+- **CI gates 9.7 → 9.8** — the `config-lint` check now validates the **k8s config copies**, not just
   `observability/*`: `amtool` on `k8s/alertmanager.yml`, `promtool` on the ConfigMap payloads extracted by
   `scripts/extract-k8s-observability-payloads.py`, a k8s-specific inhibit invariant
   (`scripts/assert-k8s-observability-invariants.py`, `equal ⊇ {namespace,pod}`) and a Grafana-yml drift-guard
@@ -113,7 +113,8 @@ OpenAPI 9.0, Schema 9.1, Microservices 9.4, Change mgmt 9.4, ADR 9.7, XP/Kanban 
   new **class-cycle** trio `ClassCycleTest`/`ClassGraphTest`/`CycleDetectionTest` (GAP-CO/CV).
 - **Supply chain:** CycloneDX SBOM (plugin 3.3.0) over `runtimeClasspath` **+ `migrationRuntime`** + osv-scanner
   SCA, **blocking** (ADR-0025/GAP-DA); **0 active exceptions**.
-- **Config-lint:** `amtool`/`promtool` over `observability/*` **and** the k8s config copies, blocking (GAP-CY/GAP-DB).
+- **Config-lint:** `amtool`/`promtool` over `observability/*` **and** the k8s config copies; fails its own job
+  on invalid config, but is not a required status check (advisory to merge) (GAP-CY/GAP-DB).
 - **Observability:** in-cluster k8s stack (Prometheus + Alertmanager + alert-sink + Grafana, ADR-0043) alongside
   the docker-compose stack; traces via OTel SDK, no javaagent (ADR-0031).
 - **Performance:** k6 baseline p95 ~22 ms, ~1,644 req/s (ADR-0027, manual); scheduled non-blocking regression
