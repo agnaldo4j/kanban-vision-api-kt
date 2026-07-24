@@ -1,5 +1,4 @@
 package com.kanbanvision.persistence.internal.serializers
-
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -17,6 +16,8 @@ import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
+import com.kanbanvision.persistence.withCard
+import com.kanbanvision.persistence.withStep
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.enum
@@ -48,11 +49,11 @@ class SerializationRoundTripPropertyTest {
             var board = Board.create(arbName.bind())
             val abilities = AbilityName.entries
             repeat(stepCount) { i ->
-                board = board.addStep(name = "step-$i-${arbName.bind()}", requiredAbility = abilities[i % abilities.size])
+                board = board.withStep(name = "step-$i-${arbName.bind()}", requiredAbility = abilities[i % abilities.size])
             }
             board.steps.forEach { step ->
                 repeat(cardsPerStep) { c ->
-                    board = board.addCard(step = step.toRef(), title = "card-$c-${arbName.bind()}", description = arbName.bind())
+                    board = board.withCard(step = step.toRef(), title = "card-$c-${arbName.bind()}", description = arbName.bind())
                 }
             }
             // List(n) em vez de Arb.list: o Kotest pode repetir a MESMA amostra na

@@ -1,5 +1,4 @@
 package com.kanbanvision.httpapi.routes
-
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.organization.Organization
@@ -11,6 +10,8 @@ import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
+import com.kanbanvision.httpapi.withCard
+import com.kanbanvision.httpapi.withStep
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.filter
@@ -40,9 +41,9 @@ class DtoMappingPropertyTest {
     private val arbSimulation: Arb<Simulation> =
         arbitrary {
             val cardCount = Arb.int(0..4).bind()
-            var board = Board.create(arbName.bind()).addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+            var board = Board.create(arbName.bind()).withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
             repeat(cardCount) { c ->
-                board = board.addCard(step = board.steps.first().toRef(), title = "card-$c")
+                board = board.withCard(step = board.steps.first().toRef(), title = "card-$c")
             }
             val rules =
                 ScenarioRules.create(

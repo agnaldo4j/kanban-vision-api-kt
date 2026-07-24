@@ -21,4 +21,8 @@ sealed interface KanbanError : DomainError {
     data class OrganizationNotFound(
         val id: String,
     ) : KanbanError
+
+    data class DuplicateStepName(
+        val name: String,
+    ) : KanbanError
 }

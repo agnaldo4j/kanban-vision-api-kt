@@ -75,7 +75,7 @@ class SimulationEngineDecisionStateTest {
 
     @Test
     fun `given add item when two cards already in step then new card gets position equal to count`() {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val existing =
             listOf(
@@ -97,14 +97,14 @@ class SimulationEngineDecisionStateTest {
         cardId: String,
         state: CardState,
     ): Simulation {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
         val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state)
         return boardSim(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 
     private fun emptyBoardSim(): Simulation {
-        val board = Board.create("Board").addStep("Step", AbilityName.DEVELOPER)
+        val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         return boardSim(board, wipLimit = 3)
     }
 

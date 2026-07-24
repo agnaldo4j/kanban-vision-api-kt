@@ -4,7 +4,9 @@ plugins {
 }
 
 dependencies {
-    // Sem arrow: os agregados kanban/organization não usam Either/Raise.
+    // ADR-0044: erros tipados nas OPERAÇÕES de agregado (Either/Raise via Arrow — FP pura, permitida
+    // pelo DomainPurityTest). Precondições de construção/argumento seguem `require` (fail-fast em bug).
+    implementation("io.arrow-kt:arrow-core:2.2.3")
     implementation(project(":domain-common"))
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")

@@ -1,5 +1,4 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -17,6 +16,7 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationResult
+import com.kanbanvision.domain.simulation.withStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 class ReferenceObjectAndSnapshotCompatibilityBehaviorTest {
     @Test
     fun `given domain aggregates when converting to refs then identifiers are preserved`() {
-        val board = Board.create(name = "Main").addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+        val board = Board.create(name = "Main").withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
         val step = board.steps.first()
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 4, seedValue = 42)
         val scenario = Scenario.create(name = "Baseline", rules = rules, board = board)

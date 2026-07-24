@@ -7,6 +7,7 @@ import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
 import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.domain.model.kanban.CardState
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.Step
 import com.kanbanvision.domain.model.kanban.StepId
@@ -16,25 +17,27 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class BoardStepCardExecutionBehaviorTest {
     @Test
     fun `given board when adding steps then names must be unique`() {
         val board = Board.create(name = "Flow Board")
-        val boardWithStep = board.addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+        val boardWithStep = board.withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
 
-        assertFailsWith<IllegalArgumentException> {
-            boardWithStep.addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
-        }
+        // ADR-0044: nome de step duplicado é regra de domínio → Left(DuplicateStepName), não exceção.
+        val error = boardWithStep.addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER).leftOrNull()
+
+        assertIs<KanbanError.DuplicateStepName>(error)
     }
 
     @Test
     fun `given board and step when adding card then card is appended to target step`() {
-        val board = Board.create(name = "Flow").addStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+        val board = Board.create(name = "Flow").withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
         val stepId = board.steps.first().id
 
-        val updated = board.addCard(step = stepId, title = "Build API", description = "Implement endpoint")
+        val updated = board.withCard(step = stepId, title = "Build API", description = "Implement endpoint")
 
         val step = updated.steps.first()
         val card = step.cards.first()

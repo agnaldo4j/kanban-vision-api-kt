@@ -1,8 +1,8 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.StepId
 import com.kanbanvision.domain.model.organization.Organization
@@ -17,9 +17,11 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationResult
 import com.kanbanvision.domain.model.simulation.SimulationStatus
+import com.kanbanvision.domain.simulation.withStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 class AggregateAndCompanionValidationBehaviorTest {
     @Test
@@ -31,12 +33,13 @@ class AggregateAndCompanionValidationBehaviorTest {
     }
 
     @Test
-    fun `given board add card with unknown step when adding then operation fails fast`() {
-        val board = Board.create(name = "Board").addStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+    fun `given board add card with unknown step when adding then a typed StepNotFound is returned`() {
+        val board = Board.create(name = "Board").withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
 
-        assertFailsWith<IllegalStateException> {
-            board.addCard(step = StepId("missing"), title = "Task")
-        }
+        // ADR-0044: lookup de domínio falho → erro tipado (Left), não exceção.
+        val error = board.addCard(step = StepId("missing"), title = "Task").leftOrNull()
+
+        assertIs<KanbanError.StepNotFound>(error)
     }
 
     @Test
@@ -78,7 +81,7 @@ class AggregateAndCompanionValidationBehaviorTest {
         val board = Board.create(name = "Flow Board")
 
         assertFailsWith<IllegalArgumentException> {
-            board.addStep(name = "", requiredAbility = AbilityName.DEVELOPER)
+            board.withStep(name = "", requiredAbility = AbilityName.DEVELOPER)
         }
     }
 

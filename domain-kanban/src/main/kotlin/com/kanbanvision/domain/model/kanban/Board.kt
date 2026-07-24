@@ -1,5 +1,8 @@
 package com.kanbanvision.domain.model.kanban
 
+import arrow.core.Either
+import arrow.core.raise.either
+import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
 import java.util.UUID
@@ -21,29 +24,33 @@ data class Board(
         }
     }
 
+    // ADR-0044: falha de REGRA de domínio → Either (raise KanbanError). A precondição de construção
+    // (nome não-vazio) segue `require` no `Step.create`/`Card.create` — fail-fast em bug do chamador.
     fun addStep(
         name: String,
         requiredAbility: AbilityName,
-    ): Board {
-        require(name.isNotBlank()) { "Step name must not be blank" }
-        require(steps.none { it.name == name }) { "Step name '$name' already exists on this board" }
-        val newStep = Step.create(board = toRef(), name = name, position = steps.size, requiredAbility = requiredAbility)
-        return copy(steps = steps + newStep)
-    }
+    ): Either<KanbanError, Board> =
+        either {
+            ensure(steps.none { it.name == name }) { KanbanError.DuplicateStepName(name) }
+            val newStep = Step.create(board = toRef(), name = name, position = steps.size, requiredAbility = requiredAbility)
+            copy(steps = steps + newStep)
+        }
 
     fun addCard(
         step: StepId,
         title: String,
         description: String = "",
-    ): Board {
-        val target = steps.firstOrNull { it.id == step } ?: error("Step ${step.value} not found in board ${id.value}")
-        val newCard = Card.create(step = target.toRef(), title = title, description = description, position = target.cards.size)
-        val updatedSteps =
-            steps.map { currentStep ->
-                if (currentStep.id == target.id) currentStep.copy(cards = currentStep.cards + newCard) else currentStep
-            }
-        return copy(steps = updatedSteps)
-    }
+    ): Either<KanbanError, Board> =
+        either {
+            val target = steps.firstOrNull { it.id == step } ?: raise(KanbanError.StepNotFound(step.value))
+            val newCard = Card.create(step = target.toRef(), title = title, description = description, position = target.cards.size)
+            copy(
+                steps =
+                    steps.map { currentStep ->
+                        if (currentStep.id == target.id) currentStep.copy(cards = currentStep.cards + newCard) else currentStep
+                    },
+            )
+        }
 
     fun toRef(): BoardId = id
 }

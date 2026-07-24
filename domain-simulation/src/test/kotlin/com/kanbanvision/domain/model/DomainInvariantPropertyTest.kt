@@ -1,5 +1,4 @@
 package com.kanbanvision.domain.model
-
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -8,6 +7,7 @@ import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.ScenarioId
 import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.SimulationId
+import com.kanbanvision.domain.simulation.withStep
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.int
@@ -65,7 +65,7 @@ class DomainInvariantPropertyTest {
         val board = Board.create("Board")
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                runCatching { board.addStep(blank, AbilityName.DEVELOPER) }.isFailure
+                runCatching { board.withStep(blank, AbilityName.DEVELOPER) }.isFailure
             }
         }
     }
@@ -74,8 +74,8 @@ class DomainInvariantPropertyTest {
     fun `Board addStep always rejects duplicate step names`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
-                val board = Board.create("Board").addStep(name, AbilityName.DEVELOPER)
-                runCatching { board.addStep(name, AbilityName.DEVELOPER) }.isFailure
+                val board = Board.create("Board").withStep(name, AbilityName.DEVELOPER)
+                runCatching { board.withStep(name, AbilityName.DEVELOPER) }.isFailure
             }
         }
     }
@@ -85,8 +85,8 @@ class DomainInvariantPropertyTest {
         runBlocking {
             forAll(ARB_NON_BLANK, ARB_NON_BLANK) { name1, name2 ->
                 if (name1 == name2) return@forAll true
-                val board = Board.create("Board").addStep(name1, AbilityName.DEVELOPER)
-                runCatching { board.addStep(name2, AbilityName.DEVELOPER) }.isSuccess
+                val board = Board.create("Board").withStep(name1, AbilityName.DEVELOPER)
+                runCatching { board.withStep(name2, AbilityName.DEVELOPER) }.isSuccess
             }
         }
     }

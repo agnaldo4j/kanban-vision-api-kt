@@ -5,6 +5,8 @@ import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.PolicySet
 import com.kanbanvision.domain.model.organization.Squad
 import com.kanbanvision.domain.model.organization.Tribe
+import com.kanbanvision.domain.model.withCard
+import com.kanbanvision.domain.model.withStep
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -78,10 +80,10 @@ class KanbanDataClassContractsTest {
 
     @Test
     fun `given board with a step when adding a card with default description then the card lands on the step`() {
-        val board = Board.create(name = "Board").addStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+        val board = Board.create(name = "Board").withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         val stepId = board.steps.first().id
 
-        val updated = board.addCard(step = stepId, title = "Card")
+        val updated = board.withCard(step = stepId, title = "Card")
 
         assertEquals(
             1,
