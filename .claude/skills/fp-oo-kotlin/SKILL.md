@@ -445,16 +445,17 @@ inválidas** — cardinalidade maior que o conjunto legal. Troque o produto por 
 sejam só os estados válidos.
 
 ```kotlin
-// ❌ Produto: contando só a PRESENÇA/ausência de cada campo (loading, data?, error?) já há
-//    8 formas (2 × 2 × 2), das quais só 3 são legais — e a cardinalidade BRUTA é ainda maior
-//    (× |Board| × |String|). O que significa loading=true E error != null? Ilegal, porém compila.
+// ❌ Produto: |LoadState| = 2 × (|Board|+1) × (|String|+1) habitantes (cada `?` é A+1, ver acima).
+//    Olhando só a PRESENÇA/ausência de cada campo já são 2 × 2 × 2 = 8 "formas", das quais só 3 são
+//    legais. O que significa loading=true E error != null? Estado ilegal — porém compila.
 data class LoadState(
     val loading: Boolean,
     val data: Board?,
     val error: String?,
 )
 
-// ✅ Soma: exatamente os 3 estados legais — a combinação ilegal simplesmente não existe.
+// ✅ Soma: |LoadState| = 1 + |Board| + |String| — exatamente os 3 estados legais; a forma ilegal
+//    (loading E erro ao mesmo tempo) simplesmente não é representável.
 sealed interface LoadState {
     data object Loading : LoadState
     data class Loaded(val data: Board) : LoadState
@@ -464,7 +465,13 @@ sealed interface LoadState {
 
 O `when` exaustivo (sem `else`) sobre a soma força tratar cada variante — ver a seção seguinte. É a mesma
 razão pela qual os grupos de erro do projeto (`CommonError`/`KanbanError`/`SimulationError`) e o `Decision`
-são `sealed`: cada um é a soma **fechada** dos seus casos, sem nenhum caso inválido representável.
+são `sealed`: a soma **fecha o conjunto de variantes** — nenhuma variante fora dela é representável e o `when`
+é exaustivo.
+
+> **Fechar as variantes ≠ validar os campos.** A soma elimina *formas* ilegais (variantes fora do conjunto),
+> não valores de campo inválidos *dentro* de uma variante: `Decision.AddItem(title)` ainda aceita um `title`
+> em branco que só o `Card.create()` rejeita depois. Validade de campo é papel de **smart constructors** /
+> tipos refinados (ex.: um value class `NonBlankTitle`), complementar — não substituto — do tipo-soma.
 
 ---
 
