@@ -693,6 +693,7 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 ### Para funções em `domain/` e `usecases/`
 
 - [ ] A função é pura? (mesmo input → mesmo output, sem efeitos colaterais)
+- [ ] Nenhum parâmetro tem **default que lê um efeito** (`= Instant.now()`, `= UUID.randomUUID()`)? Um default de efeito é um clock/RNG oculto — a borda deve **sempre** passar o valor (GAP-DK). Se sobrar outro efeito (IDs aleatórios), a função ainda não é determinística: injete/verifique o conjunto **inteiro**.
 - [ ] Erros de domínio são modelados como tipos (`sealed class`, `Either`, `Raise`)?
 - [ ] Campos de `data class` são todos `val`?
 - [ ] Coleções são imutáveis (`List`, `Map`, `Set` — não `Mutable*`)?
@@ -725,6 +726,7 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 | `try/catch` em `usecases/` | Tratando exceção de infraestrutura no núcleo | Mova para o adaptador com `catch { }` |
 | `when (x) { ... else -> }` em `sealed class` | Caso não tratado escondido | Remova o `else`, force exaustividade |
 | Função que modifica estado global | Efeito colateral no domínio | Extraia o efeito para a borda |
+| Parâmetro com **default que lê um efeito** — `fun f(now: Instant = Instant.now())`, `id: UUID = UUID.randomUUID()` | Relógio/RNG **oculto**: a assinatura *parece* injetar a borda, mas o caminho no-arg lê o clock/gera ID — passa num check casual de "recebe o clock?" e continua impura | Remova o default → a borda **sempre** passa o instant/ID (torna o relógio oculto *illegal-state-unrepresentable*, GAP-DK #353). E lembre: injetar **um** efeito (clock) não deixa a função determinística se **outro** resta (`UUID.randomUUID` de IDs) — verifique o **conjunto todo** de efeitos e escopo o teste ao que de fato ficou puro |
 | `MutableList` em entidade de domínio | Coleção mutável exposta | Troque por `List` imutável |
 | Lógica de negócio dentro de `catch` | Regra misturada com tratamento de erro | Separe: trate o erro, depois aplique a regra |
 | Múltiplos `copy()` aninhados (3+ níveis) | Verbosidade e fragilidade | Avalie Arrow Optics |
