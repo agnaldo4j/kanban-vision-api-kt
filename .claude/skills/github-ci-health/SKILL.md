@@ -163,6 +163,13 @@ se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no có
   Reproduza com o comando EXATO do CI (`osv-scanner --config=osv-scanner.toml --format markdown --output
   osv-report.md -L build/reports/cyclonedx/bom.json`) e observe o **exit code**, não só o texto; **remova a
   exceção obsoleta**. Detalhes na memória `project_osv_scanner_ci_gotchas`.
+- **Um comando FOREGROUND sem limite num step pode PENDURAR o job inteiro.** Um `docker run` (não-`-d`),
+  `curl` sem `--max-time`, ou qualquer wait que trave espera até o **limite externo do runner** (default 6h)
+  — sem report, sem teardown, queimando minutos. Ironia: é justo a regressão que um smoke/probe existe para
+  pegar (ex.: o binário nativo travando num init de DB) que dispara isto (GAP-DA/#338 P2). Sempre **limite o
+  comando** (`timeout <s> docker run …` → hang vira falha PRONTA/exit 124 que entra no gate; force `docker rm
+  -f` a limpeza) **E** ponha **`timeout-minutes:`** no job como rede de segurança (nenhum job do `ci.yml`
+  tinha até o #338 — o `build` nativo agora tem `30`).
 
 ## 8. Referências
 
