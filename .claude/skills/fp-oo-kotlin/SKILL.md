@@ -445,8 +445,9 @@ inválidas** — cardinalidade maior que o conjunto legal. Troque o produto por 
 sejam só os estados válidos.
 
 ```kotlin
-// ❌ Produto: 8 combinações representáveis (2 × 2 × 2 dos nuláveis/boolean), mas só 3 são legais.
-//    O que significa loading=true E error!=null? Estado ilegal — porém compila.
+// ❌ Produto: contando só a PRESENÇA/ausência de cada campo (loading, data?, error?) já há
+//    8 formas (2 × 2 × 2), das quais só 3 são legais — e a cardinalidade BRUTA é ainda maior
+//    (× |Board| × |String|). O que significa loading=true E error != null? Ilegal, porém compila.
 data class LoadState(
     val loading: Boolean,
     val data: Board?,
