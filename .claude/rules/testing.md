@@ -31,7 +31,7 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
 - **MockK + `@JvmInline value class`**: `any()` typed matcher may fail. Use specific values or untyped `any()`.
 - **`CreateScenarioUseCase` generates its own ID**: use `any()` when mocking `scenarioRepository.saveState(...)` — the ID is generated internally by `Scenario.create()`.
 - **`IntegrationTestSetup.closeDataSource()` / `reinitDataSource()`**: use in `@BeforeEach`/`@AfterEach` to force `PersistenceError` paths.
-- **Koin DI in route tests**: register the simulation use cases the route under test needs (e.g. `single { CreateSimulationUseCase(get(), get(), get()) }`, `single { RunDayUseCase(get(), get(), get(), get()) }`) with mocked repositories/ports.
+- **Koin DI in route tests**: register the simulation use cases the route under test needs (e.g. `single { CreateSimulationUseCase(get(), get(), get(), get()) }`, `single { RunDayUseCase(get(), get(), get(), get(), get()) }`) with mocked repositories/ports. Both take a `Clock` last (GAP-DK — provide `single<Clock> { Clock.fixed(...) }`); a use case with a domain clock reads `now` from it, so tests bind a fixed `Clock` for determinism.
 - **LargeClass threshold**: 200 lines. Split test files when they grow beyond this.
 
 ## Coverage
