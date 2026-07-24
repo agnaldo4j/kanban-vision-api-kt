@@ -418,10 +418,12 @@ sql_persistence → domain              ← persistence depende do domínio
 domain/model/                          ← pacotes internos ao domain
     kanban/     → model/ (root)
     organization/ → model/ (root), kanban/
-    simulation/  → model/ (root), organization/*
+    simulation/  → model/ (root), organization/, kanban/
 
-* organization/ ↔ simulation/ é ciclo transitivo CONHECIDO — pendente de resolução
-  (Scenario precisa migrar decisions/history para Simulation — gap futuro)
+* organization/ ↔ simulation/ NÃO é ciclo (RESOLVIDO — ver "Tipo 3" acima): o grafo é one-way
+  `simulation → organization` (um DAG). A `ContextBoundaryTest` (architecture/, ADR-0026) trava o
+  back-edge `organization → simulation`. Nota: pós-ADR-0038 o domínio são 3 módulos Gradle
+  (domain-common/-kanban/-simulation) — os pacotes acima seguem válidos; a direção é a mesma.
 ```
 
 ### Regras Invioláveis
