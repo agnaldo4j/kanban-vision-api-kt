@@ -80,8 +80,13 @@ data class Step(
         val available = dailyCapacities[requiredAbility] ?: 0
         val consumed =
             when (requiredAbility) {
+                // DEPLOYER consome tudo que resta (deploy é atômico); as demais habilidades
+                // consomem só o que a capacidade diária do worker permite.
                 AbilityName.DEPLOYER -> remaining
-                else -> minOf(remaining, available.coerceAtLeast(0))
+                AbilityName.PRODUCT_MANAGER,
+                AbilityName.DEVELOPER,
+                AbilityName.TESTER,
+                -> minOf(remaining, available.coerceAtLeast(0))
             }
 
         val updated = card.consumeEffort(requiredAbility, consumed, now)
