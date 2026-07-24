@@ -52,24 +52,38 @@ de uso/rota — ADR-0038/GAP-BF); e dos 6 sites, **2 têm caller de produção**
 
 1. **Manter o throw no domínio** e corrigir a regra do `/fp-oo-kotlin` para reconhecê-lo como intencional.
 2. **Erros tipados só no `domain-kanban`** (o módulo flagado).
-3. **Erros tipados como princípio domain-wide**, aplicado aos métodos de operação que falham por regra/lookup —
-   na prática, os 6 sites do `domain-kanban`; precondições de construção/argumento ficam `require`.
+3. **Erros tipados como princípio do projeto todo** (transparência referencial + funções puras + `Either`/`Raise`
+   no lugar de `throw` para falhas de domínio/controle), aplicado aos métodos de operação que falham por
+   regra/lookup — na prática, os 6 rule-checks do `domain-kanban`; precondições de construção/argumento ficam
+   `require` (fail-fast em bug, único guard através do `copy()`).
 4. **Conversão total**, incluindo mover invariantes de construtor para factories `create(): Either<…>`.
 
 ## Decision Outcome
 
-**Escolhida: Opção 3.** Adota-se o princípio, **para todo o domain layer**:
+**Escolhida: Opção 3.** A decisão eleva-se a um **princípio do projeto todo** — a virtude de programação
+funcional que Kotlin e este projeto já cultivam (transparência referencial, funções puras, controle forte de
+efeitos): **preferir erros tipados (`Either`/`Raise`) a cortar a execução com `throw`** para falhas de
+domínio/negócio e controle de fluxo. As camadas `usecases`/`sql_persistence`/`http_api` já seguem isso; o
+**domain layer era a última exceção** que ainda lançava — é o que esta ADR converte.
 
-> Um método de **operação** de agregado/entidade que falha por **regra de negócio ou lookup de domínio**
-> retorna `Either<KanbanError, T>` e sinaliza a falha com `raise(...)` (dentro de `either { }`). Uma vez que o
-> método retorna `Either`, **todas** as suas falhas viram `raise` — não se mistura `throw` com `Either` no
-> mesmo método. **Precondições de construção/factory e guards de argumento puros** (blank, não-negativos)
-> **permanecem `require`** (erro de programação, não falha de domínio).
+> **Falha de domínio/regra → tipo.** Um método de **operação** de agregado/entidade que falha por **regra de
+> negócio ou lookup de domínio** retorna `Either<DomainError, T>` e sinaliza com `raise(...)` (dentro de
+> `either { }`), usando a hierarquia de erro do **próprio bounded context** — `CommonError`/`KanbanError`/
+> `SimulationError` (ADR-0038); `domain-common` não pode referenciar `KanbanError` sem inverter o grafo
+> `common → kanban`, então cada agregado levanta o `*Error` do seu contexto (todos são `DomainError`). Uma vez
+> que o método retorna `Either`, **todas** as suas falhas viram `raise` — não se mistura `throw` com `Either`.
+>
+> **Precondição de contrato → `require`.** Invariantes de construção/factory e guards de argumento puros
+> (blank, não-negativos) **permanecem `require`/`check`** — são **fail-fast em bug do chamador**, não falha de
+> domínio recuperável, e são o **único** mecanismo que valida invariante através do `copy()` sintético de uma
+> `data class` (removê-los deixaria o `copy()` construir objetos inválidos; value classes e serialização
+> dependem igualmente do construtor). Input externo já é validado com `Either` no boundary do `usecases`.
 
-Aplicação: `domain-kanban` ganha `arrow-core`; os **6 sites** de operação viram `Either<KanbanError, T>`
-(`Board.addStep`/`addCard`, `Step.assignWorker`/`executeCard`, `Card.block`), com novas variantes em
-`KanbanError` para as regras que ainda não têm (duplicidade de step, elegibilidade/atribuição de worker, estado
-de card); `Board.addCard` reusa o `StepNotFound` existente. Os 2 call sites de produção no `SimulationEngine`
+Aplicação: `domain-kanban` ganha `arrow-core`; os **6 rule-checks em 5 métodos** de operação viram
+`Either<KanbanError, T>` (`Board.addStep`/`addCard`, `Step.assignWorker` — **2 checks: elegibilidade + já-atribuído**,
+`Step.executeCard`, `Card.block`), com novas variantes em `KanbanError` para as regras que ainda não têm
+(duplicidade de step, elegibilidade/atribuição de worker, estado de card); `Board.addCard` reusa o `StepNotFound`
+existente. (Aqui o contexto é o Kanban Management BC, logo o erro é `KanbanError`.) Os 2 call sites de produção no `SimulationEngine`
 já pré-guardam a condição, então **desembrulham o `Right`** sem reintroduzir `throw`, mantendo o engine total.
 `domain-common`/`domain-simulation` **adotam o princípio sem mudança de código** (não têm sites de categoria B).
 
@@ -126,5 +140,8 @@ factories `Either` é enorme e semanticamente errado (blank name é bug do chama
 - Item no board #6: **GAP-DN** (o plano de implementação vive lá e no PR, não aqui — ADR-0023)
 - Relacionadas: ADR-0038 (split do domínio por bounded context), ADR-0034 (value-class IDs), ADR-0023 (política
   de ADRs). Origem: auditoria `/fp-oo-kotlin` (2026-07-24) e a discussão que reclassificou GAP-DG#1 → GAP-DN.
-- Emenda de skill decorrente: a regra "sem `throw` em `domain/`" do `/fp-oo-kotlin` passa a distinguir
-  **operação-com-falha-de-domínio (→ `Either`)** de **precondição de construtor/argumento (→ `require`)**.
+- Emenda de skill decorrente (no PR de implementação): a regra "sem `throw` em `domain/`" do `/fp-oo-kotlin`
+  vira um **princípio do projeto todo** — transparência referencial + funções puras + `Either`/`Raise` no lugar
+  de `throw` para falhas de **domínio/negócio e controle de fluxo**, em todas as camadas — distinguindo isso de
+  **precondição de construção/argumento (→ `require`/`check`)**, que fica como fail-fast em bug do chamador (e é
+  o único guard através do `copy()` de `data class`).
