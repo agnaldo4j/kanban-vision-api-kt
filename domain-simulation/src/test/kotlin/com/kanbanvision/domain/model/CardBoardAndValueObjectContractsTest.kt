@@ -1,4 +1,6 @@
 package com.kanbanvision.domain.model
+
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -30,7 +32,7 @@ class CardBoardAndValueObjectContractsTest {
         val card =
             Card(
                 step = StepId("s-1"),
-                title = "Feature",
+                title = NonBlankTitle("Feature"),
                 analysisEffort = 2,
                 developmentEffort = 3,
                 testEffort = 4,
@@ -55,7 +57,7 @@ class CardBoardAndValueObjectContractsTest {
             Card(
                 id = CardId("card-1"),
                 step = StepId("step-1"),
-                title = "Task",
+                title = NonBlankTitle("Task"),
                 description = "desc",
                 position = 1,
                 serviceClass = ServiceClass.FIXED_DATE,
@@ -67,7 +69,7 @@ class CardBoardAndValueObjectContractsTest {
                 deployEffort = 4,
             )
         val same = original.copy()
-        val changed = original.copy(title = "Task 2")
+        val changed = original.copy(title = NonBlankTitle("Task 2"))
 
         assertEquals(original, same)
         assertEquals(original.hashCode(), same.hashCode())

@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -115,7 +116,7 @@ class SimulationEngineMetricsBehaviorTest {
     ): Simulation {
         val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state, agingDays = agingDays)
+        val card = Card(id = CardId(cardId), step = step.id, title = NonBlankTitle("Task"), state = state, agingDays = agingDays)
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 
@@ -124,9 +125,9 @@ class SimulationEngineMetricsBehaviorTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = CardId("wip-1"), step = step.id, title = "WIP 1", state = CardState.IN_PROGRESS),
-                Card(id = CardId("wip-2"), step = step.id, title = "WIP 2", state = CardState.IN_PROGRESS),
-                Card(id = CardId("done-1"), step = step.id, title = "Done 1", state = CardState.DONE),
+                Card(id = CardId("wip-1"), step = step.id, title = NonBlankTitle("WIP 1"), state = CardState.IN_PROGRESS),
+                Card(id = CardId("wip-2"), step = step.id, title = NonBlankTitle("WIP 2"), state = CardState.IN_PROGRESS),
+                Card(id = CardId("done-1"), step = step.id, title = NonBlankTitle("Done 1"), state = CardState.DONE),
             )
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 5)
     }
@@ -144,7 +145,7 @@ class SimulationEngineMetricsBehaviorTest {
             Card(
                 id = CardId("card"),
                 step = step.id,
-                title = "Task",
+                title = NonBlankTitle("Task"),
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 10,
                 remainingDevelopmentEffort = 10,

@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
@@ -25,7 +26,7 @@ class DecisionRequestExhaustivenessTest {
             Decision.MoveItem(CardId("c-1")),
             Decision.BlockItem(CardId("c-1"), "dep"),
             Decision.UnblockItem(CardId("c-1")),
-            Decision.AddItem("t", ServiceClass.EXPEDITE),
+            Decision.AddItem(NonBlankTitle("t"), ServiceClass.EXPEDITE),
         )
 
     @Test
@@ -45,7 +46,7 @@ class DecisionRequestExhaustivenessTest {
                     is Decision.AddItem ->
                         DecisionRequest(
                             "ADD_ITEM",
-                            mapOf("title" to original.title, "serviceClass" to original.serviceClass.name),
+                            mapOf("title" to original.title.value, "serviceClass" to original.serviceClass.name),
                         )
                 }
             val decoded = request.toDomain()

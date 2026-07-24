@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -50,13 +51,13 @@ class SimulationEngineDecisionStateTest {
     fun `given add item decision when running day then card appears in first step with standard class`() {
         val sim = emptyBoardSim()
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem("NewTask")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem(NonBlankTitle("NewTask"))), seed = 1L)
 
         val allCards =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
         assertEquals(1, allCards.size)
-        assertEquals("NewTask", allCards.first().title)
+        assertEquals("NewTask", allCards.first().title.value)
         assertEquals(ServiceClass.STANDARD, allCards.first().serviceClass)
     }
 
@@ -64,7 +65,7 @@ class SimulationEngineDecisionStateTest {
     fun `given add item with expedite service class when running day then card has expedite service class`() {
         val sim = emptyBoardSim()
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem("Urgent", ServiceClass.EXPEDITE)), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem(NonBlankTitle("Urgent"), ServiceClass.EXPEDITE)), seed = 1L)
 
         val card =
             result.simulation.scenario.board.steps
@@ -79,17 +80,17 @@ class SimulationEngineDecisionStateTest {
         val step = board.steps.first()
         val existing =
             listOf(
-                Card(id = CardId("c0"), step = step.id, title = "C0", state = CardState.IN_PROGRESS, position = 0),
-                Card(id = CardId("c1"), step = step.id, title = "C1", state = CardState.IN_PROGRESS, position = 1),
+                Card(id = CardId("c0"), step = step.id, title = NonBlankTitle("C0"), state = CardState.IN_PROGRESS, position = 0),
+                Card(id = CardId("c1"), step = step.id, title = NonBlankTitle("C1"), state = CardState.IN_PROGRESS, position = 1),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = existing))), wipLimit = 5)
 
-        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem("New")), seed = 1L)
+        val result = SimulationEngine.runDay(sim, listOf(Decision.AddItem(NonBlankTitle("New"))), seed = 1L)
 
         val newCard =
             result.simulation.scenario.board.steps
                 .flatMap { it.cards }
-                .first { it.title == "New" }
+                .first { it.title.value == "New" }
         assertEquals(2, newCard.position)
     }
 
@@ -99,7 +100,7 @@ class SimulationEngineDecisionStateTest {
     ): Simulation {
         val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state)
+        val card = Card(id = CardId(cardId), step = step.id, title = NonBlankTitle("Task"), state = state)
         return boardSim(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 

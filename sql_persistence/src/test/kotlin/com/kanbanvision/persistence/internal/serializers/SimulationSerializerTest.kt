@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
@@ -52,20 +53,20 @@ class SimulationSerializerTest {
     @Test
     fun `given simulation with add item decision when encoding and decoding then decision and service class are preserved`() {
         val base = PersistenceFixtures.simulation()
-        val decision = Decision.AddItem(title = "Fast track", serviceClass = ServiceClass.EXPEDITE)
+        val decision = Decision.AddItem(title = NonBlankTitle("Fast track"), serviceClass = ServiceClass.EXPEDITE)
         val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
 
         val restored = assertIs<Decision.AddItem>(decoded.decisions.first())
-        assertEquals("Fast track", restored.title)
+        assertEquals("Fast track", restored.title.value)
         assertEquals(ServiceClass.EXPEDITE, restored.serviceClass)
     }
 
     @Test
     fun `given simulation with add item default service class when encoding and decoding then standard is preserved`() {
         val base = PersistenceFixtures.simulation()
-        val decision = Decision.AddItem(title = "Backlog item")
+        val decision = Decision.AddItem(title = NonBlankTitle("Backlog item"))
         val source = base.copy(decisions = listOf(decision))
 
         val decoded = SimulationSerializer.decode(SimulationSerializer.encode(source))
@@ -90,7 +91,7 @@ class SimulationSerializerTest {
     @Test
     fun `given encoded add item with invalid service class when decoding then standard is used as fallback`() {
         val base = PersistenceFixtures.simulation()
-        val decision = Decision.AddItem(title = "UniqueMarker-Title")
+        val decision = Decision.AddItem(title = NonBlankTitle("UniqueMarker-Title"))
         val source = base.copy(decisions = listOf(decision))
         val encoded =
             SimulationSerializer.encode(source).replace(

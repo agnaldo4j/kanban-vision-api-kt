@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
@@ -21,7 +22,7 @@ class DecisionSnapshotAndMetricsBehaviorTest {
         val move = Decision.MoveItem(cardId = CardId("card-1"))
         val block = Decision.BlockItem(cardId = CardId("card-2"), reason = "dependency")
         val unblock = Decision.UnblockItem(cardId = CardId("card-2"))
-        val add = Decision.AddItem(title = "New item", serviceClass = ServiceClass.EXPEDITE)
+        val add = Decision.AddItem(title = NonBlankTitle("New item"), serviceClass = ServiceClass.EXPEDITE)
 
         assertIs<Decision.MoveItem>(move)
         assertEquals("card-1", move.cardId.value)

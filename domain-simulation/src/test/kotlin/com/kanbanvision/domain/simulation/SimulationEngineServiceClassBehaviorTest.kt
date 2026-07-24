@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -59,14 +60,14 @@ class SimulationEngineServiceClassBehaviorTest {
         val result =
             SimulationEngine.runDay(
                 simulation = simulation,
-                decisions = listOf(Decision.AddItem(title = "Deadline", serviceClass = ServiceClass.FIXED_DATE)),
+                decisions = listOf(Decision.AddItem(title = NonBlankTitle("Deadline"), serviceClass = ServiceClass.FIXED_DATE)),
                 seed = 2L,
             )
 
         val firstStep =
             result.simulation.scenario.board.steps
                 .minByOrNull { it.position }!!
-        assertEquals(ServiceClass.FIXED_DATE, firstStep.cards.single { it.title == "Deadline" }.serviceClass)
+        assertEquals(ServiceClass.FIXED_DATE, firstStep.cards.single { it.title.value == "Deadline" }.serviceClass)
     }
 
     @Test
@@ -76,14 +77,14 @@ class SimulationEngineServiceClassBehaviorTest {
         val result =
             SimulationEngine.runDay(
                 simulation = simulation,
-                decisions = listOf(Decision.AddItem(title = "Research", serviceClass = ServiceClass.INTANGIBLE)),
+                decisions = listOf(Decision.AddItem(title = NonBlankTitle("Research"), serviceClass = ServiceClass.INTANGIBLE)),
                 seed = 2L,
             )
 
         val firstStep =
             result.simulation.scenario.board.steps
                 .minByOrNull { it.position }!!
-        assertEquals(ServiceClass.INTANGIBLE, firstStep.cards.single { it.title == "Research" }.serviceClass)
+        assertEquals(ServiceClass.INTANGIBLE, firstStep.cards.single { it.title.value == "Research" }.serviceClass)
     }
 
     @Test
@@ -152,8 +153,8 @@ class SimulationEngineServiceClassBehaviorTest {
         val input = board.steps.first()
         val cards =
             listOf(
-                Card(id = CardId(first.first), step = input.id, title = first.first, serviceClass = first.second),
-                Card(id = CardId(second.first), step = input.id, title = second.first, serviceClass = second.second),
+                Card(id = CardId(first.first), step = input.id, title = NonBlankTitle(first.first), serviceClass = first.second),
+                Card(id = CardId(second.first), step = input.id, title = NonBlankTitle(second.first), serviceClass = second.second),
             )
         val rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = 2, seedValue = 77L)
         val scenario =

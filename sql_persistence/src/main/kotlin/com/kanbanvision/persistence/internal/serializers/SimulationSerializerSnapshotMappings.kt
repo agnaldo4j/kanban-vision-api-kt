@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
@@ -16,7 +17,15 @@ internal fun Decision.toSurrogate(): DecisionSurrogate =
         is Decision.MoveItem -> DecisionSurrogate(type = "MOVE_ITEM", payload = mapOf("cardId" to cardId.value))
         is Decision.BlockItem -> DecisionSurrogate(type = "BLOCK_ITEM", payload = mapOf("cardId" to cardId.value, "reason" to reason))
         is Decision.UnblockItem -> DecisionSurrogate(type = "UNBLOCK_ITEM", payload = mapOf("cardId" to cardId.value))
-        is Decision.AddItem -> DecisionSurrogate(type = "ADD_ITEM", payload = mapOf("title" to title, "serviceClass" to serviceClass.name))
+        is Decision.AddItem ->
+            DecisionSurrogate(
+                type = "ADD_ITEM",
+                payload =
+                    mapOf(
+                        "title" to title.value,
+                        "serviceClass" to serviceClass.name,
+                    ),
+            )
     }
 
 internal fun DecisionSurrogate.toDomain(): Decision =
@@ -24,7 +33,7 @@ internal fun DecisionSurrogate.toDomain(): Decision =
         "MOVE_ITEM" -> Decision.MoveItem(cardId = CardId(payload.need("cardId")))
         "BLOCK_ITEM" -> Decision.BlockItem(cardId = CardId(payload.need("cardId")), reason = payload["reason"] ?: "blocked")
         "UNBLOCK_ITEM" -> Decision.UnblockItem(cardId = CardId(payload.need("cardId")))
-        "ADD_ITEM" -> Decision.AddItem(title = payload.need("title"), serviceClass = surrogateServiceClass(payload))
+        "ADD_ITEM" -> Decision.AddItem(title = NonBlankTitle(payload.need("title")), serviceClass = surrogateServiceClass(payload))
         else -> error("Unknown decision type: $type")
     }
 

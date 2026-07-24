@@ -5,13 +5,14 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import java.time.Instant
 import java.util.UUID
 
 data class Card(
     override val id: CardId = CardId(UUID.randomUUID().toString()),
     val step: StepId,
-    val title: String,
+    val title: NonBlankTitle,
     val description: String = "",
     val position: Int = 0,
     val serviceClass: ServiceClass = ServiceClass.STANDARD,
@@ -28,7 +29,6 @@ data class Card(
     override val audit: Audit = Audit(),
 ) : Domain<CardId> {
     init {
-        require(title.isNotBlank()) { "Card title must not be blank" }
         require(position >= 0) { "Card position must be non-negative" }
         require(agingDays >= 0) { "Card agingDays must be non-negative" }
         require(analysisEffort >= 0) { "analysisEffort must be non-negative" }
@@ -49,16 +49,14 @@ data class Card(
             title: String,
             description: String = "",
             position: Int,
-        ): Card {
-            require(title.isNotBlank()) { "Card title must not be blank" }
-            return Card(
+        ): Card =
+            Card(
                 id = CardId(UUID.randomUUID().toString()),
                 step = step,
-                title = title,
+                title = NonBlankTitle(title),
                 description = description,
                 position = position,
             )
-        }
     }
 
     fun moveTo(

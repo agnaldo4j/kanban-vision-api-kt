@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.organization.Organization
@@ -59,7 +60,7 @@ class ModelInvariantBoundaryCoverageTest {
     @Test
     fun `given decision subtypes when creating block and add item then default values are present`() {
         val blocked = Decision.BlockItem(cardId = CardId("card-1"))
-        val added = Decision.AddItem(title = "Task")
+        val added = Decision.AddItem(title = NonBlankTitle("Task"))
 
         assertEquals("blocked", blocked.reason)
         assertEquals(ServiceClass.STANDARD, added.serviceClass)

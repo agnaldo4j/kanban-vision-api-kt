@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
@@ -22,7 +23,7 @@ class DecisionRoundTripExhaustivenessTest {
             Decision.MoveItem(cardId = CardId("c-1")),
             Decision.BlockItem(cardId = CardId("c-1"), reason = "dep"),
             Decision.UnblockItem(cardId = CardId("c-1")),
-            Decision.AddItem(title = "t", serviceClass = ServiceClass.EXPEDITE),
+            Decision.AddItem(title = NonBlankTitle("t"), serviceClass = ServiceClass.EXPEDITE),
         )
 
     @Test

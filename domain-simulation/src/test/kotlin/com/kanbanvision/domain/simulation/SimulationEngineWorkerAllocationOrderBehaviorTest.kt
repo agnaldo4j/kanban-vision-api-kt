@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -51,7 +52,7 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
             Card(
                 id = CardId("card-1"),
                 step = stepWithWorkers.id,
-                title = "Task",
+                title = NonBlankTitle("Task"),
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 6,
                 remainingDevelopmentEffort = 6,

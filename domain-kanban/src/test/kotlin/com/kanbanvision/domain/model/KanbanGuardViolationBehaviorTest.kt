@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -172,7 +173,7 @@ class KanbanGuardViolationBehaviorTest {
         Card(
             id = CardId("c1"),
             step = StepId("s1"),
-            title = "T",
+            title = NonBlankTitle("T"),
             analysisEffort = analysisEffort,
             developmentEffort = developmentEffort,
             testEffort = testEffort,

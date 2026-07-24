@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -76,9 +77,9 @@ class DefaultArgumentContractsBehaviorTest {
         val board = Board(id = BoardId("b-1"), name = "B", audit = explicitAudit)
         assertTrue(board.steps.isEmpty())
 
-        val card = Card(id = CardId("c-1"), step = StepId("s-1"), title = "T", audit = explicitAudit)
+        val card = Card(id = CardId("c-1"), step = StepId("s-1"), title = NonBlankTitle("T"), audit = explicitAudit)
         assertEquals(0, card.analysisEffort + card.developmentEffort + card.testEffort + card.deployEffort)
-        assertNotNull(Card(step = StepId("s-1"), title = "T").id)
+        assertNotNull(Card(step = StepId("s-1"), title = NonBlankTitle("T")).id)
     }
 
     @Test

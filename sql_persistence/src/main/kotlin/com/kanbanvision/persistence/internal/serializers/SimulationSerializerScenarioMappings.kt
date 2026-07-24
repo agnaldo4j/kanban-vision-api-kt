@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -82,7 +83,7 @@ private fun Card.toSurrogate() =
     CardSurrogate(
         id = id.value,
         stepId = step.value,
-        title = title,
+        title = title.value,
         description = description,
         position = position,
         serviceClass = serviceClass.name,
@@ -102,7 +103,7 @@ private fun CardSurrogate.toDomain() =
     Card(
         id = CardId(id),
         step = StepId(stepId),
-        title = title,
+        title = NonBlankTitle(title),
         description = description,
         position = position,
         serviceClass = ServiceClass.valueOf(serviceClass),

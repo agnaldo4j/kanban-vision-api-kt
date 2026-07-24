@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 
@@ -18,7 +19,7 @@ sealed interface Decision {
     ) : Decision
 
     data class AddItem(
-        val title: String,
+        val title: NonBlankTitle,
         val serviceClass: ServiceClass = ServiceClass.STANDARD,
     ) : Decision
 }

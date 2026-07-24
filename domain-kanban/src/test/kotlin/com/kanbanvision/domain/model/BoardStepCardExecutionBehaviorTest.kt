@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -41,7 +42,7 @@ class BoardStepCardExecutionBehaviorTest {
         val step = updated.steps.first()
         val card = step.cards.first()
         assertEquals(1, step.cards.size)
-        assertEquals("Build API", card.title)
+        assertEquals("Build API", card.title.value)
         assertEquals(stepId, card.step)
     }
 
@@ -55,7 +56,7 @@ class BoardStepCardExecutionBehaviorTest {
         val card =
             Card(
                 step = step.id,
-                title = "Feature",
+                title = NonBlankTitle("Feature"),
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 5,
                 remainingDevelopmentEffort = 5,
@@ -79,7 +80,7 @@ class BoardStepCardExecutionBehaviorTest {
         val card =
             Card(
                 step = step.id,
-                title = "Release",
+                title = NonBlankTitle("Release"),
                 state = CardState.IN_PROGRESS,
                 deployEffort = 4,
                 remainingDeployEffort = 4,
@@ -99,7 +100,7 @@ class BoardStepCardExecutionBehaviorTest {
         val card =
             Card(
                 step = StepId("step-1"),
-                title = "Spec",
+                title = NonBlankTitle("Spec"),
                 analysisEffort = 3,
                 remainingAnalysisEffort = 3,
                 audit = baseAudit,
@@ -114,7 +115,7 @@ class BoardStepCardExecutionBehaviorTest {
 
     @Test
     fun `given non in progress card when blocking then operation is rejected`() {
-        val todo = Card(step = StepId("step-1"), title = "Task", state = CardState.TODO)
+        val todo = Card(step = StepId("step-1"), title = NonBlankTitle("Task"), state = CardState.TODO)
 
         assertIs<KanbanError.CardNotInProgress>(todo.block().leftOrNull())
     }

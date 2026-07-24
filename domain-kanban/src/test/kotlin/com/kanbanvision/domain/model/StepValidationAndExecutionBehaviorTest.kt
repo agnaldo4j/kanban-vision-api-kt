@@ -1,4 +1,6 @@
 package com.kanbanvision.domain.model
+
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -97,7 +99,7 @@ class StepValidationAndExecutionBehaviorTest {
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .withWorker(developer)
-        val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 1)
+        val card = Card(step = step.id, title = NonBlankTitle("Task"), state = CardState.IN_PROGRESS, developmentEffort = 1)
 
         val error =
             step
@@ -136,7 +138,7 @@ class StepValidationAndExecutionBehaviorTest {
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .withWorker(worker)
-        val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 3)
+        val card = Card(step = step.id, title = NonBlankTitle("Task"), state = CardState.IN_PROGRESS, developmentEffort = 3)
 
         val result = step.execute(worker = worker, card = card, dailyCapacities = emptyMap(), now = Instant.EPOCH)
 
@@ -158,7 +160,7 @@ class StepValidationAndExecutionBehaviorTest {
         val doneEffortCard =
             Card(
                 step = step.id,
-                title = "Task",
+                title = NonBlankTitle("Task"),
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 3,
                 remainingDevelopmentEffort = 0,

@@ -78,7 +78,7 @@ object SimulationEngine {
                 is Decision.MoveItem -> applyMove(current, decision.cardId, ctx.day)?.let { movements += it }
                 is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
                 is Decision.UnblockItem -> applyUnblock(current, decision.cardId, ctx.day)?.let { movements += it }
-                is Decision.AddItem -> applyAdd(current, board, decision.title, decision.serviceClass)
+                is Decision.AddItem -> applyAdd(current, board, decision.title.value, decision.serviceClass)
             }
         }
         return current.toList() to movements.toList()

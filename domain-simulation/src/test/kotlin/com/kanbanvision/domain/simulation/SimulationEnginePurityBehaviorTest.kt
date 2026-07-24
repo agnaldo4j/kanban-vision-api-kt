@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -97,7 +98,7 @@ class SimulationEnginePurityBehaviorTest {
         Card(
             id = CardId("dev-card"),
             step = stepId,
-            title = "Build",
+            title = NonBlankTitle("Build"),
             state = CardState.IN_PROGRESS,
             developmentEffort = 3,
             remainingDevelopmentEffort = 3,
