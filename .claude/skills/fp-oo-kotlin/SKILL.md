@@ -150,7 +150,8 @@ val trim: (String) -> String = String::trim
 val toUpper: (String) -> String = String::uppercase
 val normalize: (String) -> String = trim andThen toUpper   // trim primeiro, depois uppercase
 
-// Identidade — o neutro da composição: (f andThen ::id) == f == (::id andThen f)
+// Identidade — o neutro da composição, valendo por extensão (para todo x), não por igualdade de objeto:
+//   (f andThen ::id)(x) == f(x) == (::id andThen f)(x)
 fun <A> id(a: A): A = a
 
 // Pipeline de transformação — composição idiomática via as coleções (cada passo é puro)
