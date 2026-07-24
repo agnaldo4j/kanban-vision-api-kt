@@ -122,7 +122,7 @@ factories `Either` é enorme e semanticamente errado (blank name é bug do chama
 
 ## More Information
 
-- Branch: `feat/adr-0044-erros-tipados-dominio` · PR: (preencher após abrir)
+- Branch: `feat/adr-0044-erros-tipados-dominio` · PR: https://github.com/agnaldo4j/kanban-vision-api-kt/pull/348
 - Item no board #6: **GAP-DN** (o plano de implementação vive lá e no PR, não aqui — ADR-0023)
 - Relacionadas: ADR-0038 (split do domínio por bounded context), ADR-0034 (value-class IDs), ADR-0023 (política
   de ADRs). Origem: auditoria `/fp-oo-kotlin` (2026-07-24) e a discussão que reclassificou GAP-DG#1 → GAP-DN.
