@@ -208,6 +208,20 @@ echo "=== B importa A ===" && grep -rn "import.*organization" "$PKG_B" --include
 ./gradlew :http_api:dependencies | grep -E "project\(|---"
 ```
 
+### Detecção automatizada — fitness functions (`architecture/`, ADR-0026)
+
+Quatro grafos de ciclo rodam no `testAll` e falham CI: `PackageCycleTest` (import→pacote),
+`ClassCycleTest` (composição classe↔classe intra-pacote, FQN homonym-safe — GAP-CV),
+`ProjectDependencyGraphTest` (grafo de módulos Gradle) e **`DiWiringCycleTest`** (injeção por construtor do
+Koin — parseia as bindings `single { }` do `AppModule`, lê os tipos do construtor primário e roda o
+`findCycle` DFS; GAP-DD). Todos reusam o mesmo detector `CycleDetection.findCycle`.
+
+> **Cuidado ao reusar um detector de grafo entre gates — revalide o que uma aresta/self-loop SIGNIFICA
+> naquele domínio.** Uma **self-ref de composição de dados** (`TreeNode(children: List<TreeNode>)`) é
+> legítima e por isso descartada em `ClassCycleTest`; uma **self-injection de DI** (`single { A(get()) }`
+> com `class A(other: A)`) é um ciclo REAL que estoura o Koin — `DiWiringCycleTest` **preserva** essa
+> self-aresta. Um filtro herdado ("remove self-ref") cegaria o gate de DI (Codex + harness P2 no #341).
+
 ### Indicadores de Ciclo em Code Review
 
 | Sinal no PR | Tipo de ciclo suspeito |
@@ -418,10 +432,12 @@ sql_persistence → domain              ← persistence depende do domínio
 domain/model/                          ← pacotes internos ao domain
     kanban/     → model/ (root)
     organization/ → model/ (root), kanban/
-    simulation/  → model/ (root), organization/*
+    simulation/  → model/ (root), organization/, kanban/
 
-* organization/ ↔ simulation/ é ciclo transitivo CONHECIDO — pendente de resolução
-  (Scenario precisa migrar decisions/history para Simulation — gap futuro)
+* organization/ ↔ simulation/ NÃO é ciclo (RESOLVIDO — ver "Tipo 3" acima): o grafo é one-way
+  `simulation → organization` (um DAG). A `ContextBoundaryTest` (architecture/, ADR-0026) trava o
+  back-edge `organization → simulation`. Nota: pós-ADR-0038 o domínio são 3 módulos Gradle
+  (domain-common/-kanban/-simulation) — os pacotes acima seguem válidos; a direção é a mesma.
 ```
 
 ### Regras Invioláveis

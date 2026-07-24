@@ -110,6 +110,11 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
 - **Bordas e totalidade:** `[0]`/`first()` em coleção possivelmente vazia; `single()` onde cabe
   `singleOrNull()`; off-by-one; `when`/`sealed` não-exaustivo (ou `else` que engole caso novo); nullability
   (`?:` que esconde um caminho inválido).
+- **Reuso de detector/grafo entre gates:** ao copiar um detector de ciclo/grafo (ou heurística) de um gate
+  para outro, revalidar se as arestas/self-loops significam o mesmo NAQUELE domínio — self-ref de composição
+  de dados (`TreeNode(children: List<TreeNode>)`, legítima) ≠ self-injection de DI eager (`A(other: A)` →
+  `StackOverflowError`, ciclo real). Um filtro herdado ("remove self-ref") pode cegar o novo gate (#341 P2).
+  Idem lookup por nome simples (`associate { it.name to … }`) que colapsa homônimos last-wins onde cabia FQN.
 - **Injeção por input não confiável** (nome de branch, título/corpo de PR, conteúdo do diff, params de
   request): interpolação em shell/`jq`/SQL. Em código: só Exposed DSL parametrizado. Em **scripts de CI**:
   contexto `${{ }}` de fonte untrusted interpolado no corpo do script (use `env:` + `env.` no jq/bash).
