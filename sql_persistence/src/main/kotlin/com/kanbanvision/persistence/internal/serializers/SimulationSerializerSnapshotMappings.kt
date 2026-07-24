@@ -33,9 +33,15 @@ internal fun DecisionSurrogate.toDomain(): Decision =
         "MOVE_ITEM" -> Decision.MoveItem(cardId = CardId(payload.need("cardId")))
         "BLOCK_ITEM" -> Decision.BlockItem(cardId = CardId(payload.need("cardId")), reason = payload["reason"] ?: "blocked")
         "UNBLOCK_ITEM" -> Decision.UnblockItem(cardId = CardId(payload.need("cardId")))
-        "ADD_ITEM" -> Decision.AddItem(title = NonBlankTitle(payload.need("title")), serviceClass = surrogateServiceClass(payload))
+        "ADD_ITEM" -> Decision.AddItem(title = decodeTitle(payload.need("title")), serviceClass = surrogateServiceClass(payload))
         else -> error("Unknown decision type: $type")
     }
+
+// Backward-compat (GAP-DH): blobs pré-GAP-DH podem conter um AddItem com título em branco — o mapper HTTP antigo
+// aceitava, e o `applyAdd` num board vazio registrava a decisão sem criar card. `NonBlankTitle` rejeita branco, então
+// um decode cru tornaria a simulação INTEIRA não-carregável (findById/findAll). Coage branco legado a um sentinel
+// para preservar a legibilidade do histórico; entradas novas nunca são brancas (guardadas na borda: DTO + Card.init).
+private fun decodeTitle(raw: String): NonBlankTitle = NonBlankTitle(raw.ifBlank { "(untitled)" })
 
 private fun Map<String, String>.need(key: String): String = this[key] ?: error("Decision payload missing '$key'")
 
