@@ -22,7 +22,7 @@
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 + JUnit — módulo test-only `architecture/` (ADR-0026); 19 fitness tests, incl. o grafo de `project` deps `simulation → kanban → common` (`ProjectDependencyGraphTest`, ADR-0038); roda no `testAll` |
 | Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, **nunca gate de PR**. Sinal agendado de regressão (`perf-regression.yml`, cron semanal) compara CI-vs-referência-de-CI com tolerância larga — tripwire não-bloqueante (ADR-0039) |
-| SBOM | CycloneDX Gradle plugin 3.3.0 (`org.cyclonedx.bom`, root; runtimeClasspath only — ADR-0025) |
+| SBOM | CycloneDX Gradle plugin 3.3.0 (`org.cyclonedx.bom`, root; `runtimeClasspath` + `migrationRuntime` — ADR-0025, GAP-DA) |
 | SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
@@ -43,7 +43,7 @@
 6. Upload coverage to Codecov
 
 **Job `supply-chain`** — every PR and push to `main`, parallel to `quality` (ADR-0025):
-1. `./gradlew cyclonedxBom` — aggregate SBOM (runtimeClasspath of all modules) at `build/reports/cyclonedx/bom.json`
+1. `./gradlew cyclonedxBom` — aggregate SBOM (`runtimeClasspath` of all modules **+ `migrationRuntime`** do binário de migração, GAP-DA) at `build/reports/cyclonedx/bom.json`
 2. Upload SBOM artifact (14 days)
 3. osv-scanner scans the SBOM against OSV.dev — **fails the job on any known CVE**; documented exceptions only via `osv-scanner.toml`
 4. Post PR comment: Supply Chain Report (component count, active exceptions, findings table)

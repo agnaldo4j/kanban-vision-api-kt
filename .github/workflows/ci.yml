@@ -413,7 +413,7 @@ jobs:
             ignores=$({ grep -c '^\[\[IgnoredVulns\]\]' osv-scanner.toml 2>/dev/null || true; } | tr -d '[:space:]')
             echo '| Metric | Value |'
             echo '|--------|-------|'
-            printf '| Componentes no SBOM (runtimeClasspath) | %s |\n' "$components"
+            printf '| Componentes no SBOM (runtimeClasspath + migrationRuntime) | %s |\n' "$components"
             printf '| Exceções ativas (`osv-scanner.toml`) | %s |\n' "${ignores:-0}"
             echo ''
             if [ ! -f osv-report.md ]; then
@@ -763,6 +763,9 @@ jobs:
     name: Build & Push Image
     runs-on: ubuntu-latest
     needs: [quality, supply-chain]
+    # Rede de segurança: o build nativo (~15min) + smoke não devem pendurar até o limite externo do
+    # runner se algum passo travar (ex.: o probe de migração, review #338 P2). 30min é folgado.
+    timeout-minutes: 30
 
     permissions:
       contents: read
@@ -830,6 +833,23 @@ jobs:
           done
           [ "$PG_READY" -eq 1 ] || { echo "Postgres não ficou pronto em 60s" >&2; docker logs smoke-pg >&2 || true; }
 
+          # Binário de MIGRAÇÃO (GAP-DA): boota o kanban-vision-migrate NATIVO contra o Postgres VIRGEM,
+          # exercitando a reachability metadata do Flyway / native-path (classe GAP-BM/BB) que o smoke do
+          # binário principal não cobre. Mesma invocação do k8s/09-migration-job.yml (--entrypoint + tmpdir).
+          # FLYWAY_LOCATIONS vem do ENV da imagem. Idempotente: o boot do app depois roda Flyway e não acha
+          # nada pendente. Não-fatal aqui (|| mig_rc); a linha entra no report e no gate FAILED abaixo.
+          # `timeout 180`: o run é FOREGROUND — se o binário travar num caminho de init nativo/DB (a
+          # regressão que este probe existe para pegar) o `docker run` nunca retornaria e penduraria o job
+          # (sem timeout-minutes). Com timeout vira falha PRONTA (exit 124). A migração de DB virgem leva
+          # segundos; 180s é folgado. `docker rm -f` garante a limpeza mesmo se o timeout matar o cliente.
+          mig_rc=0
+          mig_out="$(timeout 180 docker run --rm --name smoke-migrate --network smoke \
+            --entrypoint /app/kanban-vision-migrate \
+            -e DATABASE_URL=jdbc:postgresql://smoke-pg:5432/kanbanvision \
+            -e DATABASE_USER=kanban -e DATABASE_PASSWORD=kanban \
+            "$IMAGE" -Djava.io.tmpdir=/tmp 2>&1)" || mig_rc=$?
+          docker rm -f smoke-migrate >/dev/null 2>&1 || true
+
           # Redis: exercita o backend distribuído do rate limit (GAP-BZ/ADR-0041) no binário nativo —
           # senão a reflection/resources do Lettuce ficam sem cobertura (o mesmo ponto cego do GAP-AR).
           docker run -d --name smoke-redis --network smoke redis:7-alpine
@@ -855,6 +875,9 @@ jobs:
             local mark; [ "$4" -eq 0 ] && mark='✅' || { mark='❌'; FAILED=1; }
             ROWS="${ROWS}| $1 | $2 | $3 | ${mark} |"$'\n'
           }
+
+          add_row "Binário de migração (\`kanban-vision-migrate\`, nativo)" "exit 0" "exit $mig_rc" "$([ "$mig_rc" -eq 0 ] && echo 0 || echo 1)"
+          [ "$mig_rc" -eq 0 ] || printf 'migrate binary output:\n%s\n' "$mig_out" >&2
 
           add_row "Boot + readiness (\`/health/ready\`)" "200" "$READY_DETAIL" "$([ "$READY" -eq 1 ] && echo 0 || echo 1)"
 
