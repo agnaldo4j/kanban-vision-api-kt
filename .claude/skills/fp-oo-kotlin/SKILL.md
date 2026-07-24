@@ -4,9 +4,11 @@ description: >
   Aplique técnicas de programação funcional combinadas com OO em Kotlin neste projeto.
   Use este skill ao escrever funções puras, modelar erros com tipos, trabalhar com
   imutabilidade, compor transformações e decidir quando usar FP vs OO. Cobre os
-  princípios do Uncle Bob sobre a complementaridade dos paradigmas, a teoria de
-  Algebraic Data Types (tipos soma/produto, cardinalidade, illegal-states-unrepresentable)
-  e as técnicas práticas do Arrow-kt (Either, Raise, Optics).
+  princípios do Uncle Bob sobre a complementaridade dos paradigmas, funções de alta
+  ordem e composição (tipos de função, lambdas, referências, currying, andThen/compose),
+  a teoria de Algebraic Data Types (tipos soma/produto, cardinalidade,
+  illegal-states-unrepresentable), a Teoria de Categorias que fundamenta map/flatMap/either
+  (Functor, Applicative, Monad e suas leis) e as técnicas práticas do Arrow-kt (Either, Raise, Optics).
 argument-hint: "[file or use case to apply FP/OO techniques (optional)]"
 allowed-tools: Read, Grep, Glob
 ---
@@ -100,25 +102,82 @@ class MutableCard {
 
 ### 3. Funções de Alta Ordem e Composição
 
-Kotlin trata funções como cidadãos de primeira classe:
+Kotlin trata funções como **cidadãos de primeira classe**: toda função tem um **tipo**, pode ser guardada
+em `val`, passada como argumento e devolvida como resultado. Uma **função de alta ordem (HOF)** é qualquer
+função que recebe ou retorna outra função. É esta a técnica que a Teoria de Categorias (seção adiante)
+formaliza: uma função pura `(A) -> B` é um **morfismo** de `A` para `B`, e compor funções é o ato central
+de FP.
+
+> Referências: [Kotlin — Higher-order functions & lambdas](https://kotlinlang.org/docs/lambdas.html) ·
+> [Kodeco — Function Fundamentals](https://www.kodeco.com/books/functional-programming-in-kotlin-by-tutorials/v1.0/chapters/2-function-fundamentals)
+
+#### Tipos de função, lambdas e referências
 
 ```kotlin
-// Função que recebe função — transformação genérica
-fun <A, B> List<A>.mapValid(f: (A) -> B?): List<B> =
-    mapNotNull(f)
+// Tipo de função (A) -> B — um tipo como qualquer outro, com valor de primeira classe
+val validateBoard: (String) -> Boolean = { name -> name.isNotBlank() && name.length <= 100 }
 
-// Composição de validações
-val validateBoard: (String) -> Boolean =
-    { name -> name.isNotBlank() && name.length <= 100 }
+// `it` — o parâmetro único implícito de um lambda; trailing lambda sai dos parênteses
+cards.filter { it.title.isNotBlank() }
 
-// Pipeline de transformação
+// Tipo com receiver A.(B) -> C — o corpo roda "dentro de" um A; é a base dos DSLs (ex.: `either { }`)
+val describe: Card.() -> String = { "$title @ $position" }   // `this` é o Card, `title` é seu campo
+
+// Referência de função (::) — reaproveita função/membro existente como valor, sem reescrever o lambda
+cards.map(Card::title)                     // referência de membro
+val parse: (String) -> Int = String::toInt // referência de função
+
+// Closure — o lambda captura o ambiente léxico (aqui, `max`), virando uma função configurável
+fun titleUnder(max: Int): (Card) -> Boolean = { it.title.length <= max }
+
+// HOF genérica — recebe a transformação como parâmetro
+fun <A, B> List<A>.mapValid(f: (A) -> B?): List<B> = mapNotNull(f)
+```
+
+#### Composição — o coração da FP
+
+Compor é encadear funções ponta a ponta: a saída de uma vira a entrada da próxima. É exatamente a
+**composição de morfismos** da categoria (seção adiante): **associativa** e com a **função identidade**
+como elemento neutro. Só vale para funções **puras** (pilar 1) — um efeito colateral quebra as leis.
+
+```kotlin
+// Defina os operadores uma vez — nem a stdlib nem o Arrow 2.x trazem `andThen`/`compose` para (A) -> B:
+infix fun <A, B, C> ((A) -> B).andThen(g: (B) -> C): (A) -> C = { a -> g(this(a)) }
+infix fun <A, B, C> ((B) -> C).compose(f: (A) -> B): (A) -> C = { a -> this(f(a)) }
+
+// andThen: (f andThen g)(x) == g(f(x))   |   compose: (g compose f)(x) == g(f(x))
+val trim: (String) -> String = String::trim
+val toUpper: (String) -> String = String::uppercase
+val normalize: (String) -> String = trim andThen toUpper   // trim primeiro, depois uppercase
+
+// Identidade — o neutro da composição, valendo por extensão (para todo x), não por igualdade de objeto:
+//   (f andThen ::id)(x) == f(x) == (::id andThen f)(x)
+fun <A> id(a: A): A = a
+
+// Pipeline de transformação — composição idiomática via as coleções (cada passo é puro)
 fun processCards(cards: List<Card>): List<Card> =
     cards
         .filter { it.title.isNotBlank() }
         .sortedBy { it.position }
         .map { it.copy(title = it.title.trim()) }
+```
 
-// Extension functions são FP em estilo Kotlin
+> **Nota de stack (pinada):** `(A) -> B` **não** ganha `andThen`/`compose` prontos — nem da stdlib do
+> Kotlin, nem do Arrow. Na série 2.0 o Arrow **removeu** esses helpers; em `arrow-core:2.2.3` (versão deste
+> projeto) `arrow.core` expõe só `identity`. Portanto **defina os operadores localmente** (acima) ou componha
+> direto via as coleções/`let` — não confie num `import arrow.core.andThen`, que não resolve.
+
+#### `inline`, currying e aplicação parcial
+
+```kotlin
+// inline — HOFs de biblioteca (map/filter/let/…) são inline: o lambda não vira objeto em runtime
+inline fun <T> T.applyIf(cond: Boolean, f: (T) -> T): T = if (cond) f(this) else this
+
+// Currying: (A, B) -> C  vira  (A) -> (B) -> C  — fixa argumentos um a um
+val add: (Int) -> (Int) -> Int = { a -> { b -> a + b } }
+val inc: (Int) -> Int = add(1)             // aplicação parcial: `add` com o 1º argumento já fixado
+
+// Extension functions são a forma idiomática Kotlin de HOF/composição
 fun String.toTrimmedOrNull(): String? = trim().ifBlank { null }
 ```
 
@@ -485,6 +544,101 @@ são `sealed`: a soma **fecha o conjunto de variantes** — nenhuma variante for
 
 ---
 
+## Teoria de Categorias — a estrutura por trás de `map`, `flatMap` e `either { }`
+
+Category theory é a **álgebra da composição**. O projeto **já** a usa toda vez que encadeia `map`,
+`flatMap` ou abre um `either { }` — esta seção **nomeia** a estrutura para aplicá-la com intenção, não por
+acaso. É a contraparte "comportamento" da seção **ADTs** (que trata os tipos como "dados"): ADTs dão os
+**objetos**, a Teoria de Categorias dá os **morfismos** entre eles e as leis de composição.
+
+> Referência: [arrow-kt/Category-Theory-for-Programmers.kt](https://github.com/arrow-kt/Category-Theory-for-Programmers.kt)
+> — a versão Kotlin do clássico de Bartosz Milewski. Fundamenta os tipos do Arrow que o projeto usa.
+
+### A categoria: tipos são objetos, funções são morfismos
+
+Uma **categoria** tem objetos e **morfismos** (setas) entre eles, com três leis:
+
+- **Composição** — dados `f: A -> B` e `g: B -> C`, existe `g ∘ f: A -> C` (é o `andThen` do pilar 3).
+- **Identidade** — todo objeto tem `id: A -> A`, o neutro da composição.
+- **Associatividade** — `h ∘ (g ∘ f) == (h ∘ g) ∘ f`.
+
+Em Kotlin os **objetos** são os tipos (`String`, `Card`, `BoardId`…) e os **morfismos** são as funções
+**puras** `(A) -> B`. É por isso que pureza (pilar 1) + composição (pilar 3) são a fundação: sem pureza a
+composição não obedece às leis — um efeito colateral quebra a associatividade.
+
+Da seção **ADTs**: `Unit` (cardinalidade **1**) é o **objeto terminal** — de todo tipo existe exatamente
+uma função `(A) -> Unit`; `Nothing` (cardinalidade **0**) é o **objeto inicial** — existe uma única função
+`(Nothing) -> A` para qualquer `A` (nunca chamada, pois `Nothing` não tem valores). É a mesma dualidade
+`1`/`0` que fecha a álgebra dos tipos.
+
+### Functor — `map`: eleva uma função a um contexto, preservando a forma
+
+Um **functor** é um construtor de tipo `F<_>` com um `map` que aplica `(A) -> B` **dentro** do contexto
+sem mudar a estrutura. `List`, `Either<E, _>`, `Option` e `A?` são todos functores:
+
+```kotlin
+listOf(1, 2, 3).map { it * 2 }             // List é functor
+findBoard(id).map { it.toResponse() }      // Either<E, _> — map só toca o Right; Left passa reto
+maybeName.map { it.uppercase() }           // Option — None passa reto
+```
+
+**Leis do functor** (o que garante que `map` "só transforma o conteúdo"):
+
+- **Identidade**: `xs.map { it } == xs`
+- **Composição**: `xs.map(f).map(g) == xs.map { g(f(it)) }` — dois `map` encadeados = compor as funções.
+
+### Applicative — combinar contextos independentes
+
+Um **applicative** acrescenta `pure` (embrulha um valor puro: `a.right()`, `Some(a)`) e uma forma de
+**combinar efeitos independentes**. No projeto isso é o `zipOrAccumulate` — a razão pela qual validações
+de campo independentes **acumulam todos os erros** em vez de parar no primeiro:
+
+```kotlin
+either {
+    zipOrAccumulate(
+        { ensure(name.isNotBlank()) { ValidationError("name", "vazio") } },
+        { ensure(ownerId.isNotBlank()) { ValidationError("ownerId", "vazio") } },
+    ) { _, _ -> CreateBoardCommand(name, ownerId) }
+}
+```
+
+Independente ⇒ applicative (`zip`/`zipOrAccumulate`); dependente ⇒ monad (abaixo). É a estrutura, não uma
+convenção, que dá a acumulação "de graça".
+
+### Monad — `flatMap`/`bind`: sequenciar passos onde um depende do anterior
+
+Um **monad** acrescenta `flatMap` (`(A) -> F<B>` achatado em `F<B>`) — sequência com **dependência**: o
+próximo passo precisa do resultado do anterior, e qualquer falha **curto-circuita**. O `either { }` é a
+**notação-do** monádica do projeto; cada `.bind()` sobre um `Either` **é** o `flatMap` do monad — extrai o
+`Right` ou aborta no `Left` (chamar uma função `Raise<E>`-receiver faz o mesmo bind, aí implícito):
+
+```kotlin
+val result: Either<DomainError, Board> = either {
+    val board = findBoard(id).bind()          // não depende de nada antes
+    val cards = findCards(board.id).bind()    // depende de `board` — por isso flatMap, não zip
+    board.copy(cards = cards)                 // qualquer .bind() que dê Left aborta aqui
+}
+```
+
+**Leis do monad** (garantem que `either { }`/`flatMap` compõem sem surpresa):
+
+- **Identidade à esquerda**: `pure(a).flatMap(f) == f(a)`
+- **Identidade à direita**: `m.flatMap { pure(it) } == m`
+- **Associatividade**: `m.flatMap(f).flatMap(g) == m.flatMap { f(it).flatMap(g) }`
+
+### Por que isso importa aqui — aplicar com firmeza
+
+- `Either`/`Option`/`List` compõem **porque são** Functor/Applicative/Monad — não é coincidência, é a
+  álgebra (ver **ADTs**: `Either = E + A`, `Option = A + 1`).
+- **Escolha a estrutura mais fraca que resolve**: transformar → `map` (functor); combinar independentes →
+  `zipOrAccumulate` (applicative, **acumula** erros); sequenciar dependentes → `either { }`/`bind` (monad,
+  **curto-circuita**). Usar monad onde applicative bastava **perde a acumulação de erros** — é o erro de
+  design mais comum nas validações.
+- É a mesma lei em todo lugar: a composição associativa com identidade é o que torna pipelines de
+  `map`/`flatMap` refatoráveis sem medo — a base de `usecases/` e das bordas HTTP com `fold`.
+
+---
+
 ## `sealed class` — o mecanismo de tipo-soma para Modelagem de Domínio
 
 `sealed class` e `sealed interface` são o **mecanismo de tipo-soma** de Kotlin (ver ADTs acima) — a forma
@@ -544,7 +698,9 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 - [ ] Coleções são imutáveis (`List`, `Map`, `Set` — não `Mutable*`)?
 - [ ] `when` em `sealed class` é exaustivo (sem `else`)?
 - [ ] Modelou com o **menor tipo** que representa exatamente os estados válidos (illegal states unrepresentable)? Preferiu uma **soma** (`sealed`) a um produto de flags/nuláveis quando as combinações têm casos inválidos?
-- [ ] Falha de **regra/negócio** não corta a execução com `throw`/`error()` — usa `raise()`/`Either` (ADR-0044)? (Precondição de **construção/argumento** pode seguir `require`/`check`.)
+- [ ] Nenhuma exceção é lançada diretamente — usa `raise()` ou `Either`?
+- [ ] Preferiu **compor** funções puras (`map`/`andThen`/pipeline de coleção) a lógica imperativa com estado temporário?
+- [ ] Escolheu a estrutura **mais fraca** que resolve — `map` (functor) < `zipOrAccumulate` (applicative, **acumula** erros) < `either { }`/`bind` (monad, **curto-circuita**)? Usar monad onde applicative bastava perde a acumulação.
 
 ### Para adaptadores em `sql_persistence/` e `http_api/`
 
@@ -573,6 +729,9 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 | Lógica de negócio dentro de `catch` | Regra misturada com tratamento de erro | Separe: trate o erro, depois aplique a regra |
 | Múltiplos `copy()` aninhados (3+ níveis) | Verbosidade e fragilidade | Avalie Arrow Optics |
 | Produto de `Boolean`/`?`-nuláveis com combinações inválidas | Cardinalidade > estados legais (illegal states representáveis) | Troque o produto por uma **soma** (`sealed interface`) só com as variantes válidas |
+| `either { }`/`flatMap` para validações **independentes** | Curto-circuita no 1º erro — perde a acumulação | Use `zipOrAccumulate`/`mapOrAccumulate` (applicative) para reportar todos os erros |
+| `.map { }` seguido de `.bind()`/`getOrNull()!!` para achatar `Either` aninhado | Functor onde faltava monad → `Either<E, Either<E, A>>` | Use `flatMap` (monad) — achata em um passo |
+| Encadeamento imperativo com `var`/estado temporário onde caberia composição | Ignora a composição de morfismos (associativa, pura) | Componha funções puras: `andThen`/pipeline de coleção/`map` |
 
 ---
 
