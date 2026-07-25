@@ -115,7 +115,7 @@ class JdbcSimulationRepository : SimulationRepository {
         val scenario = Scenario.create(name = "Default Simulation Scenario", rules = rules)
         return Simulation(
             id = SimulationId(row[SimulationsTable.id]),
-            name = "Simulation ${row[SimulationsTable.id].take(SIMULATION_NAME_ID_PREFIX_LENGTH)}",
+            name = NonBlankName("Simulation ${row[SimulationsTable.id].take(SIMULATION_NAME_ID_PREFIX_LENGTH)}"),
             currentDay = SimulationDay(1),
             status = SimulationStatus.DRAFT,
             organization = organization,

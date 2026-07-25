@@ -66,7 +66,7 @@ class CreateSimulationUseCase(
                 listOf(
                     DomainEvent.SimulationCreated(
                         simulationId = simulation.id.value,
-                        simulationName = simulation.name,
+                        simulationName = simulation.name.value,
                         organizationId = simulation.organization.id,
                         occurredAt = now,
                     ),

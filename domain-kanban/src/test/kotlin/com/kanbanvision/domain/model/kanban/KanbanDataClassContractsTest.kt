@@ -28,11 +28,18 @@ class KanbanDataClassContractsTest {
         assertEquals(Seniority.SR, ability.seniority)
         assertEquals(audit, ability.audit)
 
-        val board = Board(id = BoardId("b-1"), name = "Board", audit = audit)
-        assertEquals("Board", board.name)
+        val board = Board(id = BoardId("b-1"), name = NonBlankName("Board"), audit = audit)
+        assertEquals("Board", board.name.value)
         assertEquals(audit, board.audit)
 
-        val step = Step(id = StepId("s-1"), board = BoardId("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER, audit = audit)
+        val step =
+            Step(
+                id = StepId("s-1"),
+                board = BoardId("b-1"),
+                name = NonBlankName("Dev"),
+                requiredAbility = AbilityName.DEVELOPER,
+                audit = audit,
+            )
         assertEquals(BoardId("b-1"), step.board)
         assertEquals(audit, step.audit)
 
@@ -73,7 +80,7 @@ class KanbanDataClassContractsTest {
     @Test
     fun `given blank identifiers or names when constructing entities then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { Ability(id = "", name = AbilityName.DEVELOPER, seniority = Seniority.PL) }
-        assertFailsWith<IllegalArgumentException> { Board(id = BoardId("b-1"), name = "") }
+        assertFailsWith<IllegalArgumentException> { Board(id = BoardId("b-1"), name = NonBlankName("")) }
         assertFailsWith<IllegalArgumentException> { Organization(id = "", name = NonBlankName("Org")) }
         assertFailsWith<IllegalArgumentException> { Organization(id = "o-1", name = NonBlankName("")) }
         assertFailsWith<IllegalArgumentException> { Squad(id = "", name = NonBlankName("Squad")) }

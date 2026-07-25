@@ -18,11 +18,11 @@ class EntityIdentityBehaviorTest {
     @Test
     fun `given blank ids in domain entities when constructing then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { Organization(id = "", name = NonBlankName("Org")) }
-        assertFailsWith<IllegalArgumentException> { Board(id = BoardId(""), name = "Board") }
+        assertFailsWith<IllegalArgumentException> { Board(id = BoardId(""), name = NonBlankName("Board")) }
         assertFailsWith<IllegalArgumentException> {
             Scenario(
                 id = ScenarioId(""),
-                name = "Scenario",
+                name = NonBlankName("Scenario"),
                 rules = scenarioRules(),
                 board = board(),
             )
@@ -30,7 +30,7 @@ class EntityIdentityBehaviorTest {
         assertFailsWith<IllegalArgumentException> {
             Simulation(
                 id = SimulationId(""),
-                name = "Simulation",
+                name = NonBlankName("Simulation"),
                 currentDay = SimulationDay(1),
                 status = SimulationStatus.DRAFT,
                 organization = organization(),
@@ -41,12 +41,14 @@ class EntityIdentityBehaviorTest {
 
     @Test
     fun `given blank names in domain entities when constructing with valid id then creation is rejected`() {
-        assertFailsWith<IllegalArgumentException> { Board(id = BoardId("b-1"), name = "") }
-        assertFailsWith<IllegalArgumentException> { Scenario(id = ScenarioId("sc-1"), name = "", rules = scenarioRules(), board = board()) }
+        assertFailsWith<IllegalArgumentException> { Board(id = BoardId("b-1"), name = NonBlankName("")) }
+        assertFailsWith<IllegalArgumentException> {
+            Scenario(id = ScenarioId("sc-1"), name = NonBlankName(""), rules = scenarioRules(), board = board())
+        }
         assertFailsWith<IllegalArgumentException> {
             Simulation(
                 id = SimulationId("s-1"),
-                name = "",
+                name = NonBlankName(""),
                 currentDay = SimulationDay(1),
                 status = SimulationStatus.DRAFT,
                 organization = organization(),

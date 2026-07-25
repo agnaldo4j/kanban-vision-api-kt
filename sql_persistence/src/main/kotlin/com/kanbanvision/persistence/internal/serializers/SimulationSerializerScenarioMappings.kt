@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -18,7 +19,7 @@ import com.kanbanvision.domain.model.simulation.ScenarioRules
 internal fun Scenario.toSurrogate() =
     ScenarioSurrogate(
         id = id.value,
-        name = name,
+        name = name.value,
         rules = rules.toSurrogate(),
         board = board.toSurrogate(),
     )
@@ -26,7 +27,7 @@ internal fun Scenario.toSurrogate() =
 internal fun ScenarioSurrogate.toDomain() =
     Scenario(
         id = ScenarioId(id),
-        name = name,
+        name = NonBlankName(name),
         rules = rules.toDomain(),
         board = board.toDomain(),
     )
@@ -53,15 +54,15 @@ private fun PolicySet.toSurrogate() = PolicySetSurrogate(id = id, wipLimit = wip
 
 private fun PolicySetSurrogate.toDomain() = PolicySet(id = id, wipLimit = wipLimit)
 
-private fun Board.toSurrogate() = BoardSurrogate(id = id.value, name = name, steps = steps.map { it.toSurrogate() })
+private fun Board.toSurrogate() = BoardSurrogate(id = id.value, name = name.value, steps = steps.map { it.toSurrogate() })
 
-private fun BoardSurrogate.toDomain() = Board(id = BoardId(id), name = name, steps = steps.map { it.toDomain() })
+private fun BoardSurrogate.toDomain() = Board(id = BoardId(id), name = NonBlankName(name), steps = steps.map { it.toDomain() })
 
 private fun Step.toSurrogate() =
     StepSurrogate(
         id = id.value,
         boardId = board.value,
-        name = name,
+        name = name.value,
         position = position,
         requiredAbility = requiredAbility.name,
         cards = cards.map { it.toSurrogate() },
@@ -72,7 +73,7 @@ private fun StepSurrogate.toDomain() =
     Step(
         id = StepId(id),
         board = BoardId(boardId),
-        name = name,
+        name = NonBlankName(name),
         position = position,
         requiredAbility = AbilityName.valueOf(requiredAbility),
         cards = cards.map { it.toDomain() },

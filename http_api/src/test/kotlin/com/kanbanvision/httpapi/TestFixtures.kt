@@ -47,19 +47,19 @@ internal fun ApplicationTestBuilder.withJwt(token: String = issueTestJwt()): io.
 
 internal fun fixtureSimulation(id: String = "sim-1"): Simulation {
     val board =
-        Board(id = BoardId("board-1"), name = "Main Board")
+        Board(id = BoardId("board-1"), name = NonBlankName("Main Board"))
             .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
             .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
     val scenario =
         Scenario(
             id = ScenarioId("scn-1"),
-            name = "Default Simulation Scenario",
+            name = NonBlankName("Default Simulation Scenario"),
             rules = ScenarioRules.create(wipLimit = 2, teamSize = 2, seedValue = 42L),
             board = board,
         )
     return Simulation(
         id = SimulationId(id),
-        name = "Simulation",
+        name = NonBlankName("Simulation"),
         currentDay = SimulationDay(1),
         status = SimulationStatus.DRAFT,
         organization = Organization(id = "org-1", name = NonBlankName("Org")),

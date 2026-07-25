@@ -68,14 +68,14 @@ class DefaultArgumentContractsBehaviorTest {
             Step(
                 id = StepId("s-1"),
                 board = BoardId("b-1"),
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 requiredAbility = AbilityName.DEVELOPER,
                 audit = explicitAudit,
             )
         assertEquals(0, step.position)
         assertTrue(step.cards.isEmpty() && step.workers.isEmpty())
 
-        val board = Board(id = BoardId("b-1"), name = "B", audit = explicitAudit)
+        val board = Board(id = BoardId("b-1"), name = NonBlankName("B"), audit = explicitAudit)
         assertTrue(board.steps.isEmpty())
 
         val card = Card(id = CardId("c-1"), step = StepId("s-1"), title = NonBlankTitle("T"), audit = explicitAudit)
@@ -111,9 +111,9 @@ class DefaultArgumentContractsBehaviorTest {
         val scenario =
             Scenario(
                 id = ScenarioId("sc-1"),
-                name = "S",
+                name = NonBlankName("S"),
                 rules = rules,
-                board = Board(id = BoardId("b"), name = "B"),
+                board = Board(id = BoardId("b"), name = NonBlankName("B")),
                 audit = explicitAudit,
             )
         assertEquals("sc-1", scenario.id.value)
@@ -154,7 +154,7 @@ class DefaultArgumentContractsBehaviorTest {
         val simulation =
             Simulation(
                 id = SimulationId("sim-1"),
-                name = "Sim",
+                name = NonBlankName("Sim"),
                 currentDay = SimulationDay(1),
                 status = SimulationStatus.DRAFT,
                 organization = Organization.create(name = "Org"),

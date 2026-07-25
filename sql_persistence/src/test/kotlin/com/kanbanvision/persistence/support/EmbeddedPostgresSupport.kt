@@ -123,7 +123,7 @@ internal object PersistenceFixtures {
         val organization = sampleOrganization(organizationId, worker)
         return Simulation(
             id = SimulationId(simulationId),
-            name = "Simulation 1",
+            name = NonBlankName("Simulation 1"),
             currentDay = SimulationDay(2),
             status = SimulationStatus.RUNNING,
             organization = organization,
@@ -152,7 +152,7 @@ internal object PersistenceFixtures {
         val scenarioRules = scenarioRules()
         return Scenario(
             id = ScenarioId("a0000000-0000-0000-0000-000000000001"),
-            name = "Scenario 1",
+            name = NonBlankName("Scenario 1"),
             rules = scenarioRules,
             board = board,
         )
@@ -163,13 +163,13 @@ internal object PersistenceFixtures {
             Step(
                 id = StepId("50000000-0000-0000-0000-000000000001"),
                 board = BoardId("60000000-0000-0000-0000-000000000001"),
-                name = "Development",
+                name = NonBlankName("Development"),
                 position = 1,
                 requiredAbility = AbilityName.DEVELOPER,
                 cards = listOf(card()),
                 workers = listOf(worker),
             )
-        return Board(id = BoardId("60000000-0000-0000-0000-000000000001"), name = "Main Board", steps = listOf(step))
+        return Board(id = BoardId("60000000-0000-0000-0000-000000000001"), name = NonBlankName("Main Board"), steps = listOf(step))
     }
 
     private fun scenarioRules() =

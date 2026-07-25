@@ -2,12 +2,13 @@ package com.kanbanvision.domain.model.simulation
 
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.organization.Organization
 import java.util.UUID
 
 data class Simulation(
     override val id: SimulationId,
-    val name: String,
+    val name: NonBlankName,
     val currentDay: SimulationDay,
     val status: SimulationStatus,
     val organization: Organization,
@@ -16,27 +17,21 @@ data class Simulation(
     val history: List<DailySnapshot> = emptyList(),
     override val audit: Audit = Audit(),
 ) : Domain<SimulationId> {
-    init {
-        require(name.isNotBlank()) { "Simulation name must not be blank" }
-    }
-
     companion object {
         fun create(
             name: String,
             organization: Organization,
             scenario: Scenario,
             status: SimulationStatus = SimulationStatus.DRAFT,
-        ): Simulation {
-            require(name.isNotBlank()) { "Simulation name must not be blank" }
-            return Simulation(
+        ): Simulation =
+            Simulation(
                 id = SimulationId(UUID.randomUUID().toString()),
-                name = name,
+                name = NonBlankName(name),
                 currentDay = SimulationDay(1),
                 status = status,
                 organization = organization,
                 scenario = scenario,
             )
-        }
     }
 
     fun toRef(): SimulationId = id

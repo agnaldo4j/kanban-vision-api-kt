@@ -23,8 +23,8 @@ class KanbanDefaultsAndPolicyBehaviorTest {
 
     @Test
     fun `given minimal constructors when using defaults then kanban entities are created`() {
-        val board = Board(id = BoardId("b-1"), name = "Board")
-        val step = Step(board = BoardId("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+        val board = Board(id = BoardId("b-1"), name = NonBlankName("Board"))
+        val step = Step(board = BoardId("b-1"), name = NonBlankName("Dev"), requiredAbility = AbilityName.DEVELOPER)
         val card = Card(step = StepId("s-1"), title = NonBlankTitle("Card"))
         val worker = Worker(name = NonBlankName("Dev"), abilities = setOf(ability))
 

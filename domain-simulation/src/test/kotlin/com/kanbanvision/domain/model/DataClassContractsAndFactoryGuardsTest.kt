@@ -2,6 +2,7 @@ package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -45,7 +46,7 @@ class DataClassContractsAndFactoryGuardsTest {
             )
 
         val sameScenario = scenario.copy()
-        val changedScenario = scenario.copy(name = "Scenario 2")
+        val changedScenario = scenario.copy(name = NonBlankName("Scenario 2"))
 
         assertEquals(scenario, sameScenario)
         assertEquals(scenario.hashCode(), sameScenario.hashCode())

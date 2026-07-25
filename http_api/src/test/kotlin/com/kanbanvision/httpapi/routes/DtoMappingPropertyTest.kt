@@ -102,7 +102,7 @@ class DtoMappingPropertyTest {
         runBlocking {
             forAll(iterations = 300, arbSimulation) { sim ->
                 val s = sim.toSummaryResponse()
-                s.id == sim.id.value && s.name == sim.name && s.status == sim.status.name && s.currentDay == sim.currentDay.value
+                s.id == sim.id.value && s.name == sim.name.value && s.status == sim.status.name && s.currentDay == sim.currentDay.value
             }
         }
     }
