@@ -2,6 +2,7 @@
 paths:
   - "**/db/migration/*.sql"
   - "**/migration/**"
+  - "**/internal/serializers/**"
 ---
 
 # Database Migrations — Flyway + PostgreSQL
@@ -38,9 +39,12 @@ campo serializado** — trocar um `String` cru por um value class / smart constr
   não. Um único valor legado inválido (ex.: um `ADD_ITEM` de título em branco gravado antes do guard) faz o
   decode **lançar** → `Either.catch` → `PersistenceError` → a **linha/agregado inteiro** fica não-carregável
   (`findById`/`findAll` viram 500), não só o campo.
-- **Regra:** o decode deve ser **tolerante a legado**. Coaja o valor inválido a um **sentinel** (ex.:
-  `decodeTitle()` → `"(untitled)"`) ou converta em erro tipado — nunca deixe o `require` do value class lançar
-  cru. Cubra com um teste dedicado ("legacy blank … decodes to a sentinel instead of crashing the load").
+- **Regra:** o decode deve ser **tolerante a legado**. Se a exigência é manter o agregado **carregável**
+  (o caso normal para histórico), **coaja** o valor inválido a um **sentinel** (ex.: `decodeTitle()` →
+  `"(untitled)"`) — nunca deixe o `require` do value class lançar cru. (Trocar o `require` por um **erro tipado**
+  só muda a *forma* da falha: o agregado **continua não-carregável**; use isso apenas se falhar o load daquele
+  registro for aceitável, o que raramente é para dados históricos.) Cubra com um teste dedicado ("legacy blank …
+  decodes to a sentinel instead of crashing the load").
 - **Alternativa (quando cabe uma migração):** um data-fix Flyway forward-only que sanitize o histórico
   (`UPDATE … SET … WHERE …` sobre o JSONB) — mas só depois de **auditar** que tais registros existem; se o
   campo *sempre* teve guard (ex.: `Card.init` nunca deixou blank), não há legado a tolerar e nada a migrar.
