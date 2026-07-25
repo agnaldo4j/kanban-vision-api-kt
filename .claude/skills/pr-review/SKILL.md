@@ -47,12 +47,24 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
 > reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
 > exatamente o falso-verde que este bloco existe para matar.
-> Se o parecer não existe, o que fazer **depende do tipo de PR** — use o mesmo predicado do guard anti-loop
-> do `post-merge-harvester` (`.claude/agents/post-merge-harvester.md`):
-> - **Toca `*/src/main/**` (implementação real)** → **dispatch manual obrigatório antes do merge**. Foi
->   exatamente este caso que produziu o #364: implementação mergeada com zero revisão e nada vermelho.
-> - **Processo / doc / skill / ADR / test-only** → mergear ciente de que não houve revisão é aceitável;
->   registre isso no PR em vez de deixar implícito.
+> Se o parecer não existe, o que fazer depende do tipo de PR — mas **por allowlist, não por exclusão**:
+> dispensa revisão **só** o PR em que **TODO** arquivo alterado é doc/processo puro. Qualquer outra coisa
+> exige **dispatch manual antes do merge**.
+> ```bash
+> gh pr view <n> --json files -q '.files[].path' \
+>   | grep -vE '^(docs/|adr/|\.claude/|[^/]+\.md$|[^/]+/src/test/)'
+> # saída VAZIA  ⇒ doc/processo puro — mergear ciente da ausência de revisão é aceitável (registre no PR)
+> # QUALQUER linha ⇒ chega em produção ou nos gates ⇒ dispatch manual obrigatório
+> ```
+> **Por que allowlist.** A versão anterior desta regra perguntava "toca `*/src/main/**`?" e liberava todo o
+> resto — o que dispensaria revisão de um PR que só mexe em `Dockerfile`, `k8s/**`, `.github/workflows/**`,
+> `build.gradle.kts`, `buildSrc/**`, `config/**`, `scripts/**` (consumidos pelos gates) ou uma migration
+> Flyway. Nenhum deles tem `src/main` e todos mudam produção, dependências ou os próprios gates. O PR #367,
+> que introduziu a regra, **se auto-isentaria** por essa lógica ao alterar `.github/workflows/pr-review.yml`.
+> Codex P2 no #367. Com allowlist, o caminho não-reconhecido cai no lado seguro.
+> ⚠️ **Não reuse o predicado `*/src/main/**` do `post-merge-harvester`** como proxy de risco de revisão: lá
+> ele existe para outra finalidade (guard anti-loop — impedir que uma melhoria de processo dispare outra), e
+> ser conservador *naquela* direção é o oposto de ser conservador aqui.
 >
 > Nunca registre "harness APPROVE" sem ter lido um parecer real.
 > ⚠️ **Parecer sem o marcador** (postado antes desta convenção) não prova nada sobre o head atual: trate como

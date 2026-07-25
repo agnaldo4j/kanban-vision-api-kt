@@ -75,6 +75,13 @@ gh pr diff <n> --name-only    # arquivos tocados
 > (`adr/ADR-XXXX.md`) → fechamento-só (a colheita vem do PR de IMPLEMENTAÇÃO do gap, que toca `src/main`). Um
 > PR que mexe em `http_api/src/main/**` **e** docs → implementação real → colhe.
 
+> ⚠️ **Este predicado serve a ESTE guard e a mais nada.** Aqui ele decide *terminação de loop*, e errar para o
+> lado de "não é implementação" é seguro — no máximo uma lição deixa de ser colhida. **Não o reuse como proxy
+> de risco**: para decidir se um PR pode ser mergeado sem revisão, a direção segura é a OPOSTA, porque
+> `.github/**`, `k8s/**`, `Dockerfile`, `build.gradle.kts`, `buildSrc/**`, `config/**` e `scripts/**` não têm
+> `src/main` e mudam produção ou os gates. Essa decisão tem allowlist própria em
+> `.claude/skills/pr-review/SKILL.md` (Codex P2 no #367).
+
 ## 2.1. Colha as lições da revisão daquele PR
 Leia os sinais reais de revisão do PR — **os comentários inline, não só o resumo** (o resumo do harness
 subestima; ver `docs/quality/lessons-learned.md`):
