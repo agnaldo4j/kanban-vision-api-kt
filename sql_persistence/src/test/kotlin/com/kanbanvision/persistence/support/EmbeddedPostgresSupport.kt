@@ -176,7 +176,6 @@ internal object PersistenceFixtures {
         ScenarioRules(
             id = "70000000-0000-0000-0000-000000000001",
             policySet = PolicySet(id = "80000000-0000-0000-0000-000000000001", wipLimit = 2),
-            wipLimit = 2,
             teamSize = 2,
             seedValue = 42L,
         )

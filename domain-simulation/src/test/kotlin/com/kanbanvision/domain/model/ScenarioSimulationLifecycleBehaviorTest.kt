@@ -3,6 +3,7 @@ package com.kanbanvision.domain.model
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.organization.Organization
+import com.kanbanvision.domain.model.organization.PolicySet
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.FlowMetrics
@@ -26,7 +27,20 @@ class ScenarioSimulationLifecycleBehaviorTest {
         assertEquals(3, rules.wipLimit)
         assertEquals(4, rules.teamSize)
         assertEquals(42L, rules.seedValue)
-        assertEquals(rules.wipLimit, rules.policySet.wipLimit)
+        assertEquals(3, rules.policySet.wipLimit)
+    }
+
+    @Test
+    fun `given rules built from a policy set when reading wip limit then it tracks the policy set`() {
+        val rules =
+            ScenarioRules(
+                policySet = PolicySet(wipLimit = 7),
+                teamSize = 2,
+                seedValue = 1L,
+            )
+
+        assertEquals(7, rules.wipLimit)
+        assertEquals(9, rules.copy(policySet = PolicySet(wipLimit = 9)).wipLimit)
     }
 
     @Test

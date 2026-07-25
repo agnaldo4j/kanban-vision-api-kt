@@ -55,24 +55,23 @@ class AggregateAndCompanionValidationBehaviorTest {
     }
 
     @Test
-    fun `given scenario rules mismatching policy set when constructing then validation fails`() {
-        assertFailsWith<IllegalArgumentException> {
+    fun `given scenario rules when constructing then wip limit is derived from the policy set`() {
+        val rules =
             ScenarioRules(
-                policySet = PolicySet(wipLimit = 2),
-                wipLimit = 3,
+                policySet = PolicySet(wipLimit = 3),
                 teamSize = 4,
                 seedValue = 10L,
             )
-        }
+
+        assertEquals(3, rules.wipLimit)
     }
 
     @Test
-    fun `given scenario rules with zero wip limit when constructing then wip limit validation fails`() {
+    fun `given scenario rules with zero team size when constructing then team size validation fails`() {
         assertFailsWith<IllegalArgumentException> {
             ScenarioRules(
                 policySet = PolicySet(wipLimit = 1),
-                wipLimit = 0,
-                teamSize = 1,
+                teamSize = 0,
                 seedValue = 1L,
             )
         }

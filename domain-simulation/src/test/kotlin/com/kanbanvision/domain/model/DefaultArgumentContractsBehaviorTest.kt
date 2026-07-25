@@ -101,7 +101,6 @@ class DefaultArgumentContractsBehaviorTest {
             ScenarioRules(
                 id = "r-1",
                 policySet = policySet,
-                wipLimit = 3,
                 teamSize = 2,
                 seedValue = 7L,
                 audit = explicitAudit,
