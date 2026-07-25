@@ -43,7 +43,7 @@ class ModelInvariantBoundaryCoverageTest {
         }
         assertFailsWith<IllegalArgumentException> { PolicySet(id = "", wipLimit = 1) }
         assertFailsWith<IllegalArgumentException> {
-            ScenarioRules(id = "", policySet = PolicySet(wipLimit = 1), wipLimit = 1, teamSize = 1, seedValue = 1L)
+            ScenarioRules(id = "", policySet = PolicySet(wipLimit = 1), teamSize = 1, seedValue = 1L)
         }
         assertFailsWith<IllegalArgumentException> { Tribe(id = "", name = NonBlankName("Tribe")) }
         assertFailsWith<IllegalArgumentException> { Squad(id = "", name = NonBlankName("Squad")) }

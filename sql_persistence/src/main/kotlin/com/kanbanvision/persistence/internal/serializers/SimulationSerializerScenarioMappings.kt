@@ -36,6 +36,8 @@ private fun ScenarioRules.toSurrogate() =
     ScenarioRulesSurrogate(
         id = id,
         policySet = policySet.toSurrogate(),
+        // Legacy wire field: kept so a pod running an older release can still decode blobs written
+        // by this one during a rolling deploy. Mirrors policySet.wipLimit via the delegating accessor.
         wipLimit = wipLimit,
         teamSize = teamSize,
         seedValue = seedValue,
@@ -44,8 +46,9 @@ private fun ScenarioRules.toSurrogate() =
 private fun ScenarioRulesSurrogate.toDomain() =
     ScenarioRules(
         id = id,
+        // policySet is the single source of the WIP limit; the surrogate's own wipLimit is a legacy
+        // wire field and is deliberately ignored, even when a legacy blob has it diverging.
         policySet = policySet.toDomain(),
-        wipLimit = wipLimit,
         teamSize = teamSize,
         seedValue = seedValue,
     )
