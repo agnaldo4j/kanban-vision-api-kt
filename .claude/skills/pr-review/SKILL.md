@@ -47,8 +47,14 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
 > reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
 > exatamente o falso-verde que este bloco existe para matar.
-> Se o parecer não existe, **dispatch manual** (a exceção legítima abaixo) — ou mergeie ciente de que o PR
-> não teve revisão. Nunca registre "harness APPROVE" sem ter lido um parecer real.
+> Se o parecer não existe, o que fazer **depende do tipo de PR** — use o mesmo predicado do guard anti-loop
+> do `post-merge-harvester` (`.claude/agents/post-merge-harvester.md`):
+> - **Toca `*/src/main/**` (implementação real)** → **dispatch manual obrigatório antes do merge**. Foi
+>   exatamente este caso que produziu o #364: implementação mergeada com zero revisão e nada vermelho.
+> - **Processo / doc / skill / ADR / test-only** → mergear ciente de que não houve revisão é aceitável;
+>   registre isso no PR em vez de deixar implícito.
+>
+> Nunca registre "harness APPROVE" sem ter lido um parecer real.
 > ⚠️ **Parecer sem o marcador** (postado antes desta convenção) não prova nada sobre o head atual: trate como
 > ausente e confirme pelo passo 2. E o mesmo vale para os **inline** — eles já ancoram no SHA via
 > `<!-- pr-harness:<sha>:… -->`, então cheque o SHA ali também antes de dar um achado como endereçado.
