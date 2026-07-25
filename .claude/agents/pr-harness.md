@@ -120,6 +120,14 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   contexto `${{ }}` de fonte untrusted interpolado no corpo do script (use `env:` + `env.` no jq/bash).
 - **Exposed/persistência:** `transaction {}` fora de `withContext(Dispatchers.IO)` num handler de coroutine;
   `ResultRow` lido fora do `transaction {}`; método de repositório sem `either {}`/`catch {}`.
+- **Refinar o tipo de um campo *persistido/serializado*:** ao trocar um `String` cru por um value class /
+  smart constructor com invariante (`NonBlankTitle`, GAP-DH #355) num tipo que é gravado e relido (blob JSON,
+  `stateJson`, snapshot), o `require`/`init` passa a rodar sobre **histórico legado** gravado antes de a borda
+  guardar. Pergunte: "existe blob persistido por release anterior com um valor que este novo tipo rejeita?" Se
+  sim e o **decode** (`toDomain`/surrogate) joga direto no value class, um único valor legado inválido torna o
+  **agregado inteiro** não-carregável (`findById`/`findAll` → 500) — não só o campo. Exija decode tolerante
+  (coerção a sentinel / erro tipado) ou migração+auditoria, e um teste do caminho legado. A borda de *entrada*
+  nova quase sempre guarda; o **decode de histórico** é o ponto cego (Codex P1 + este harness P2 no #355).
 - **CI/workflow (quando o diff toca `.github/`):** `gh api` que sai **exit 0 com corpo vazio** quando o
   GitHub degrada (o modo do #288 — ✅ fabricado); `continue-on-error` num passo que é gate real; permissões
   a mais/a menos; `on:`/`if:` que dispara/pula no evento errado; `set -e`/`pipefail` ausente onde a falha

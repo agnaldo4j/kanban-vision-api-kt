@@ -40,7 +40,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `security.md` | `**/*.kt` | OWASP Top 10 (2025) — security rules, forbidden patterns, checklists |
 | `kotlin-quality.md` | `**/*.kt`, `**/*.gradle.kts` | Detekt, KtLint, JaCoCo |
 | `testing.md` | `**/test/**/*.kt`, `**/*Test.kt` | Test conventions, MockK pitfalls |
-| `migrations.md` | `**/db/migration/*.sql` | Flyway naming, schema history |
+| `migrations.md` | `**/db/migration/*.sql`, `**/internal/serializers/**` | Flyway naming, schema history, decode tolerante a legado |
 
 ## Skills (`.claude/skills/`)
 
