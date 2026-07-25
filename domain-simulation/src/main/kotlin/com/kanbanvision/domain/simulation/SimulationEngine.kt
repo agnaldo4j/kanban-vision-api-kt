@@ -58,8 +58,9 @@ object SimulationEngine {
         // Tell, don't ask (OOD): peça as transições ao próprio agregado — `advanceDay`/`appendDecision`/
         // `appendSnapshot` são donos dessas regras (não reconstruir o dia/decisions/history na mão aqui).
         val updatedSimulation =
-            decisions
-                .fold(simulation.advanceDay()) { acc, decision -> acc.appendDecision(decision) }
+            simulation
+                .advanceDay()
+                .appendDecisions(decisions)
                 .appendSnapshot(snapshot)
                 .copy(scenario = updatedScenario)
         return SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
