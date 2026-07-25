@@ -65,6 +65,18 @@
 2. Post PR comment: Flow Metrics Report — **non-blocking** (never fails the build)
 3. WIP line needs a PAT with `read:project` in secret `FLOW_PROJECT_TOKEN`; without it the script degrades WIP to "unavailable" (cycle/lead/cadence/size still reported)
 
+**Job `review-exemption`** — every PR (skips forks), parallel to `quality` (#368):
+1. `scripts/test-review-exemption.sh` — tabela caminho → esperado, **offline** (sem token/rede). É gate
+   real (`run:`, sem `continue-on-error`): os vazamentos da allowlist só apareceram exercitando caminho a
+   caminho, a leitura do regex não pegou.
+2. `scripts/review-exemption.sh <pr>` — este PR pode ser mergeado **sem parecer do harness**? Isenta só
+   quando TODO arquivo é doc/processo puro; `.claude/**`, `adr/**`, `CLAUDE.md` e
+   `docs/politicas-explicitas.md` nunca são isentos (senão o guard autoriza a própria remoção).
+3. Post PR comment: sticky **Review Exemption Report** (EXEMPT / REVIEW-REQUIRED + lista / INDETERMINATE)
+   — **non-blocking**, nunca reprova o job. Existe porque a cadeia #365→#367→#368 mergeou pela metade
+   três vezes quando a checagem dependia de alguém *lembrar*: um guard que depende de memória herda o
+   modo de falha que existe para matar.
+
 **Job `config-lint`** — every PR and push to `main`, parallel to `quality` (GAP-CY):
 1. Lint `observability/*.yml` semantically: `amtool check-config` (`alertmanager.yml`) + `promtool check config`/`check rules` (`prometheus.yml` + `prometheus-alerts.yml`) — runs the containers directly, no JVM/Gradle. Plus `scripts/assert-observability-invariants.py` — a semantic invariant the schema linters can't express: the critical→warning `inhibit_rule` must be scoped by both `instance` **and** `name` (dropping `name` stays schema-valid but is the exact PR #317 regression; Codex P2 on PR #319)
    - **Também linta as cópias k8s (GAP-DB):** `amtool` em `k8s/alertmanager.yml` + `promtool check rules`/`check config` sobre os payloads de ConfigMap **extraídos** de `k8s/11-prometheus-rules.yml` e `k8s/12-prometheus-config.yml` (`scripts/extract-k8s-observability-payloads.py` — os payloads são opacos ao kustomize; um erro de schema neles passaria o gate). Invariante k8s própria (`scripts/assert-k8s-observability-invariants.py`: `equal ⊇ {namespace, pod}` — o kubelet cAdvisor não tem `name`, review #333 P2) + **drift-guard** dos 2 ymls do Grafana (único config compose↔k8s ainda byte-idêntico). O resto dos configs diverge legitimamente por topologia de label do k8s — single-source é inviável, daí validação independente.

@@ -50,12 +50,47 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > Se o parecer não existe, o que fazer depende do tipo de PR — mas **por allowlist, não por exclusão**:
 > dispensa revisão **só** o PR em que **TODO** arquivo alterado é doc/processo puro. Qualquer outra coisa
 > exige **dispatch manual antes do merge**.
+> A regra é **executável e roda sozinha no CI** — o job advisory `Review Exemption Advisory` posta um
+> sticky **Review Exemption Report** em todo PR. Não dependa de lembrar: leia o comentário. Para rodar
+> à mão:
 > ```bash
-> gh pr view <n> --json files -q '.files[].path' \
->   | grep -vE '^(docs/|adr/|\.claude/|[^/]+\.md$|[^/]+/src/test/)'
-> # saída VAZIA  ⇒ doc/processo puro — mergear ciente da ausência de revisão é aceitável (registre no PR)
-> # QUALQUER linha ⇒ chega em produção ou nos gates ⇒ dispatch manual obrigatório
+> scripts/review-exemption.sh <n>          # consulta o PR
+> scripts/review-exemption.sh --paths -    # classifica caminhos do stdin (offline, sem token)
+> #   exit  0  EXEMPT           → doc/processo puro; merge sem parecer é aceitável (registre no PR)
+> #   exit  1  REVIEW-REQUIRED  → lista os arquivos que chegam em produção/gates ⇒ dispatch manual
+> #   exit  2  INDETERMINATE    → API falhou ou lista vazia ⇒ trate como REVIEW-REQUIRED
+> #   exit 64  erro de USO      → distinto de 1 de propósito: typo não pode virar "há risco"
 > ```
+> A tabela caminho → esperado vive em `scripts/test-review-exemption.sh` e roda como gate no CI —
+> foi assim que os vazamentos da allowlist apareceram; ler o regex não bastou, duas vezes.
+> O script é a fonte única da allowlist; o `SKILL.md` só explica **por que** ela tem a forma que tem — três
+> decisões que vieram de defeito real, e que não devem ser "simplificadas" de volta:
+> - **Fail-closed em erro de API.** `gh … | grep -v` engole `exit≠0`: token expirado, rate limit ou PR
+>   inexistente devolvem **stdout vazio**, indistinguível de doc-only — e a regra criada para impedir merge
+>   sem revisão passaria a **autorizá-lo**. Modo `gh api` exit-0-corpo-vazio do GAP-CC/#288 dentro do próprio
+>   guard. Daí o exit 2 separado.
+> - **Allowlist por TIPO, não por diretório.** `\.claude/` inteiro isentaria `hooks/guard-security.sh` (o guard
+>   de segredo hardcoded declarado em `security.md`) e `settings.json`; e `[^/]+/src/test/` isentaria
+>   `architecture/src/test/**`, o módulo **test-only** das fitness functions — apagar
+>   `ProjectDependencyGraphTest.kt` deixa `testAll`/JaCoCo/PITest verdes porque não há `src/main` para cobrir.
+>   Por isso: só `**/*.md` nos diretórios de doc, e os módulos de teste isentos **enumerados**, com
+>   `architecture` fora.
+> - **`pulls/<n>/files`, não `pr view --json files`.** Pagina além de 100 arquivos e expõe `previous_filename`
+>   — sem ele um `git mv http_api/src/main/X.kt docs/X.kt` aparece só com o caminho novo e sai como doc-only.
+> - **Nada em `.claude/**` nem `adr/**` é isento**, por mais `.md` que seja — sem isso o guard **autoriza a
+>   própria remoção**: um PR que reabre o pipe fail-open ou afrouxa o rubric sairia como "doc puro". Aferido
+>   retroativamente: o **#365 muda de EXEMPT para REVIEW-REQUIRED**, e de fato ele mergeou sem revisão
+>   alterando o rubric. Tentei antes enumerar "só os subdiretórios perigosos"
+>   (`agents|rules|skills/pr-review`) e **vazou duas vezes**: ficaram de fora `CLAUDE.md`, a skill
+>   `/github-ci-health` (que documenta o próprio sintoma de gate vazio) e `/xp-kanban` — para a qual a regra
+>   *protegida* `rules/workflow.md` delega o Board Protocol, um bypass por indireção. Diretório inteiro, então:
+>   skill nova entra protegida por padrão. `adr/**` entra junto — ADR aceita é imutável e gateia todo `[E]`
+>   (ADR-0023). (Codex P1 + harness P2 no #368.)
+> - **Limitação conhecida e aceita:** `<módulo>/src/test/**` é isento, mas um PR test-only que **esvazia
+>   asserções** passa — as linhas seguem executadas, então o JaCoCo não cai. Ao revisar PR de teste, olhe
+>   remoção de asserção, não só cobertura. (Harness P3 no #368.)
+>
+> (Codex P2 no #367 · harness P2×2 no #367 · Codex P1 + harness P2 no #368.)
 > **Por que allowlist.** A versão anterior desta regra perguntava "toca `*/src/main/**`?" e liberava todo o
 > resto — o que dispensaria revisão de um PR que só mexe em `Dockerfile`, `k8s/**`, `.github/workflows/**`,
 > `build.gradle.kts`, `buildSrc/**`, `config/**`, `scripts/**` (consumidos pelos gates) ou uma migration
@@ -82,6 +117,11 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > gh api graphql -f query='{ repository(owner:"<owner>",name:"<repo>"){ pullRequest(number:<n>){ reviewThreads(first:40){ nodes { id isResolved comments(first:1){ nodes { databaseId author{login} } } } } } } }'
 > ```
 > Responder um thread: `POST .../pulls/<n>/comments/<id>/replies`. Resolver: GraphQL `resolveReviewThread`.
+> ⚠️ **Passe o corpo por ARQUIVO, nunca interpolado:** `-F body=@resposta.md` (ou `gh pr comment --body-file`),
+> jamais `-f body="…"`. Uma resposta de review é markdown com crases, `$`, `!` e regex — em `zsh`/`bash` isso
+> vira substituição de comando ou glob. Mordeu duas vezes no mesmo dia: no #367 uma crase engoliu uma palavra
+> do texto **já publicado**, e no #368 um `$)` de regex abortou o comando inteiro com `bad pattern`. Escreva
+> num arquivo temporário e mande o arquivo.
 
 > ⚠️ **Se dispatchar manual:** o subagente `pr-harness` roda Bash **no mesmo working dir** e pode dar
 > `git checkout` (já trocou de branch e reverteu arquivos mid-review — o commit pushado fica intacto pois
