@@ -99,7 +99,7 @@ moda:
 (`*/src/main`). O que existe:
 - **Coroutines request/response:** use cases `suspend`, Ktor non-blocking, o `transaction{}` bloqueante isolado
   em `Dispatchers.IO` (`PersistenceSupport.kt:23`). Isso é **concorrência** (async), não dataflow reativo.
-- **Observer síncrono:** `EventPublisherPort.publish(events)` (`EventPublisherPort.kt:5`) +
+- **Observer síncrono:** `EventPublisherPort.publish(events)` (`EventPublisherPort.kt:6`) +
   `MicrometerEventPublisher` — é o padrão Observer, mas **síncrono e in-process** para um sink de métricas; não é
   um stream reativo (sem push assíncrono, sem back-pressure, sem coletor). Não o chame de "stream reativo".
 
