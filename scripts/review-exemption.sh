@@ -25,6 +25,15 @@ REPO="${2:-agnaldo4j/kanban-vision-api-kt}"
 # apagar uma fitness function dali não derruba gate nenhum).
 ALLOW='^(docs/.*\.md$|adr/.*\.md$|\.claude/.*\.md$|training/.*\.md$|[^/]+\.md$|(domain-common|domain-kanban|domain-simulation|usecases|sql_persistence|http_api)/src/test/)'
 
+# Markdown que DEFINE o gate — nunca isento, por mais `.md` que seja, e avaliado DEPOIS da allowlist.
+# Sem isto o guard autoriza a própria remoção: um PR que reabre o pipe fail-open, afrouxa o rubric do
+# harness, reescreve as regras de segurança ou muda as políticas de qualidade sairia como "doc puro".
+#  · .claude/agents/**       — o rubric do harness e o harvester (que edita o repo e abre PR)
+#  · .claude/rules/**        — carregadas automaticamente; security.md declara o que é proibido
+#  · .claude/skills/pr-review/** — a própria decisão de isenção
+#  · docs/politicas-explicitas.md — critérios de step, quality gates, regras de ADR
+GATE='^(\.claude/agents/|\.claude/rules/|\.claude/skills/pr-review/|docs/politicas-explicitas\.md$)'
+
 # `pulls/<n>/files`, não `pr view --json files`: pagina além de 100 arquivos e expõe `previous_filename`
 # — sem ele um `git mv http_api/src/main/X.kt docs/X.kt` apareceria só com o caminho novo (doc-only).
 if ! files=$(gh api "repos/$REPO/pulls/$PR/files" --paginate \
@@ -38,7 +47,9 @@ if [ -z "$files" ]; then
     exit 2
 fi
 
-risky=$(printf '%s\n' "$files" | grep -vE "$ALLOW" || true)
+not_allowed=$(printf '%s\n' "$files" | grep -vE "$ALLOW" || true)
+gate_bearing=$(printf '%s\n' "$files" | grep -E "$GATE" || true)
+risky=$(printf '%s\n%s\n' "$not_allowed" "$gate_bearing" | grep -v '^[[:space:]]*$' | sort -u || true)
 
 if [ -z "$risky" ]; then
     echo "EXEMPT: doc/processo puro ($(printf '%s\n' "$files" | wc -l | tr -d ' ') arquivos) — merge sem parecer é aceitável; registre isso no PR"

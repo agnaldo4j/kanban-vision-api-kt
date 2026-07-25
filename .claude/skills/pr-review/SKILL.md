@@ -71,8 +71,14 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 >   `architecture` fora.
 > - **`pulls/<n>/files`, não `pr view --json files`.** Pagina além de 100 arquivos e expõe `previous_filename`
 >   — sem ele um `git mv http_api/src/main/X.kt docs/X.kt` aparece só com o caminho novo e sai como doc-only.
+> - **Markdown que DEFINE o gate nunca é isento**, por mais `.md` que seja: `.claude/agents/**` (rubric do
+>   harness, harvester), `.claude/rules/**` (carregadas automaticamente; `security.md` declara o que é
+>   proibido), `.claude/skills/pr-review/**` (a própria decisão de isenção) e `docs/politicas-explicitas.md`.
+>   Sem essa deny-list o guard **autoriza a própria remoção** — um PR que reabre o pipe fail-open ou afrouxa
+>   o rubric sairia como "doc puro". Aferido retroativamente: o **#365 muda de EXEMPT para REVIEW-REQUIRED**,
+>   e de fato ele mergeou sem revisão alterando o rubric. (Codex P1 no #368.)
 >
-> (Codex P2 + harness P2×2 no #367.)
+> (Codex P2 no #367 · harness P2×2 no #367 · Codex P1 no #368.)
 > **Por que allowlist.** A versão anterior desta regra perguntava "toca `*/src/main/**`?" e liberava todo o
 > resto — o que dispensaria revisão de um PR que só mexe em `Dockerfile`, `k8s/**`, `.github/workflows/**`,
 > `build.gradle.kts`, `buildSrc/**`, `config/**`, `scripts/**` (consumidos pelos gates) ou uma migration

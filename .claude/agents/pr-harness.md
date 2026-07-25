@@ -333,7 +333,14 @@ escreva o marcador com o **SHA já resolvido** (nunca `${REVIEWED}` literal no a
 # mesma revalidação de head dos inline — não poste parecer de um diff que já não é o head
 [ "$(gh pr view <n> --json headRefOid -q .headRefOid)" = "$REVIEWED" ] || { echo "head avançou — abortar"; exit 0; }
 BODY=$(mktemp -t pr-harness-report)    # fora do repo: você é read-only, não suja o working dir do usuário
-{ printf '<!-- pr-harness-report:%s -->\n' "$REVIEWED"; printf '%s\n' "$PARECER"; } > "$BODY"
+# Heredoc COM ASPAS ('EOF'): o parecer é markdown cheio de crases, `$` e `!` — sem as aspas o shell
+# faria substituição de comando/variável dentro do seu próprio texto.
+{ printf '<!-- pr-harness-report:%s -->\n' "$REVIEWED"
+  cat <<'EOF'
+## PR Review Harness — parecer
+… escreva o parecer completo aqui, literalmente …
+EOF
+} > "$BODY"
 gh pr comment <n> --body-file "$BODY" && rm -f "$BODY"
 ```
 - **Nunca escreva o parecer num caminho relativo** (`parecer.md`, `report.md`): num dispatch manual o working
