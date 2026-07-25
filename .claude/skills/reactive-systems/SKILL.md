@@ -104,7 +104,11 @@ falha é **reificada** e tratada *fora* do componente que falhou.
   **limite**: JSON malformado ainda **lança** no `decode` → `PersistenceError`/500 (é justamente a lacuna de
   resiliência que o card de decode-tolerante ataca; ver abaixo). No rate-limit, a queda do Redis **degrada para
   um bucket local semeado** que continua limitando **por-pod** (nunca abre para ilimitado, nunca 5xx — GAP-BZ):
-  degradação graciosa, não "fail-closed" de negar tudo — mas o teto *global* dilui até `maxReplicas` (ver Elastic).
+  degradação graciosa que **preserva o limite**, não "fail-closed" de negar tudo — mas o teto *global* dilui até
+  `maxReplicas` (ver Elastic). ⚠️ Cuidado com o termo: "fail-closed" de **segurança** (`/owasp` A10 /
+  `security.md` §6) é *negar acesso* quando o controle falha; aqui a falha é de *disponibilidade da dependência*,
+  e a resposta certa é **degradar preservando a garantia** (continuar limitando), não bloquear a requisição.
+  São eixos diferentes — não use "fail-closed" para descrever esta degradação.
 - **Contenção na borda:** `StatusPages` converte `Throwable` em resposta controlada (nunca stack trace ao
   cliente — `/owasp` A10); crash → reinício pelo k8s.
 
