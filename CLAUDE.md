@@ -56,6 +56,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/solid-principles` | Review cohesion, coupling and responsibilities |
 | `/fp-oo-kotlin` | Either, Arrow-kt, immutability, pure functions |
 | `/refactoring` | Identify code smells and apply refactoring techniques |
+| `/design-patterns` | GoF patterns (creational/structural/behavioral) through the Kotlin FP/OO lens — which the code realizes, which dissolve into idioms |
 | `/testing-and-observability` | JUnit 5 + MockK tests, MDC/logging |
 | `/kotlin-quality-pipeline` | Fix Detekt/KtLint violations, adjust JaCoCo |
 | `/openapi-quality` | Audit and improve OpenAPI/Swagger specs |
