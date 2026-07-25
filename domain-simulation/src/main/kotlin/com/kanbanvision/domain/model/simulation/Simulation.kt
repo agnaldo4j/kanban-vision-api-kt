@@ -42,5 +42,8 @@ data class Simulation(
 
     fun appendDecision(decision: Decision): Simulation = copy(decisions = decisions + decision)
 
+    // Batch: uma única concatenação (O(atual + lote)) — evita o O(n²) de dobrar `appendDecision` num lote.
+    fun appendDecisions(newDecisions: List<Decision>): Simulation = copy(decisions = decisions + newDecisions)
+
     fun appendSnapshot(snapshot: DailySnapshot): Simulation = copy(history = history + snapshot)
 }

@@ -55,13 +55,14 @@ object SimulationEngine {
                 movements = allMovements,
             )
         val updatedScenario = scenario.copy(board = scenario.board.withCards(afterAging))
+        // Tell, don't ask (OOD): peça as transições ao próprio agregado — `advanceDay`/`appendDecision`/
+        // `appendSnapshot` são donos dessas regras (não reconstruir o dia/decisions/history na mão aqui).
         val updatedSimulation =
-            simulation.copy(
-                currentDay = SimulationDay(simulation.currentDay.value + 1),
-                scenario = updatedScenario,
-                decisions = simulation.decisions + decisions,
-                history = simulation.history + snapshot,
-            )
+            simulation
+                .advanceDay()
+                .appendDecisions(decisions)
+                .appendSnapshot(snapshot)
+                .copy(scenario = updatedScenario)
         return SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
     }
 
@@ -239,12 +240,16 @@ private fun orderTodoByPriority(
     cards: List<Card>,
     rng: Random,
 ): List<Int> {
+    // Polimorfismo/OOD: a política de agendamento mora no ServiceClass (schedulingRank/shuffleWithinTier),
+    // não num `when` aqui. Percorre os tiers por rank crescente e só embaralha os que pedem — preservando a
+    // MESMA ordem de consumo do `rng` (STANDARD depois INTANGIBLE) para determinismo byte-idêntico.
     val todoIndices = cards.indices.filter { cards[it].state == CardState.TODO }
-    val expedite = todoIndices.filter { cards[it].serviceClass == ServiceClass.EXPEDITE }
-    val fixedDate = todoIndices.filter { cards[it].serviceClass == ServiceClass.FIXED_DATE }
-    val standard = todoIndices.filter { cards[it].serviceClass == ServiceClass.STANDARD }.shuffled(rng)
-    val intangible = todoIndices.filter { cards[it].serviceClass == ServiceClass.INTANGIBLE }.shuffled(rng)
-    return expedite + fixedDate + standard + intangible
+    return ServiceClass.entries
+        .sortedBy { it.schedulingRank }
+        .flatMap { serviceClass ->
+            val tier = todoIndices.filter { cards[it].serviceClass == serviceClass }
+            if (serviceClass.shuffleWithinTier) tier.shuffled(rng) else tier
+        }
 }
 
 private fun Board.withCards(cards: List<Card>): Board {

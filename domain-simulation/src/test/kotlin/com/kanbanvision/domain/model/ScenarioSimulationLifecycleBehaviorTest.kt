@@ -74,6 +74,22 @@ class ScenarioSimulationLifecycleBehaviorTest {
     }
 
     @Test
+    fun `given simulation when appending a decision batch then all are added in order`() {
+        val sim = simulation()
+        val batch =
+            listOf(
+                Decision.MoveItem(cardId = CardId("card-1")),
+                Decision.UnblockItem(cardId = CardId("card-2")),
+            )
+
+        val updated = sim.appendDecisions(batch)
+
+        assertEquals(2, updated.decisions.size)
+        assertTrue(updated.decisions[0] is Decision.MoveItem)
+        assertTrue(updated.decisions[1] is Decision.UnblockItem)
+    }
+
+    @Test
     fun `given blank names for scenario and simulation when creating then validation fails`() {
         val organization = Organization.create(name = "Org")
         val rules = ScenarioRules.create(wipLimit = 2, teamSize = 3, seedValue = 7L)
