@@ -26,16 +26,36 @@ internal fun Decision.toSurrogate(): DecisionSurrogate =
                         "serviceClass" to serviceClass.name,
                     ),
             )
+        is Decision.Unknown -> DecisionSurrogate(type = type, payload = payload)
     }
 
+// Backward-compat (GAP-DS): o decode roda sobre um registro imutável de leitura, então nunca pode lançar — um único
+// blob com tipo desconhecido (release mais nova revertida) ou `cardId` ausente/branco derrubaria a Simulation INTEIRA
+// (findById/findAll → 500), não só aquela decisão. O que não dá para interpretar vira `Decision.Unknown`, que preserva
+// tipo e payload crus e volta idêntico ao wire no `toSurrogate` — tolerar sem perder o dado. Entradas novas continuam
+// guardadas na borda (DTO + value classes).
 internal fun DecisionSurrogate.toDomain(): Decision =
     when (type) {
-        "MOVE_ITEM" -> Decision.MoveItem(cardId = CardId(payload.need("cardId")))
-        "BLOCK_ITEM" -> Decision.BlockItem(cardId = CardId(payload.need("cardId")), reason = payload["reason"] ?: "blocked")
-        "UNBLOCK_ITEM" -> Decision.UnblockItem(cardId = CardId(payload.need("cardId")))
-        "ADD_ITEM" -> Decision.AddItem(title = decodeTitle(payload.need("title")), serviceClass = surrogateServiceClass(payload))
-        else -> error("Unknown decision type: $type")
+        "MOVE_ITEM", "BLOCK_ITEM", "UNBLOCK_ITEM" -> cardIdDecision()
+        "ADD_ITEM" -> Decision.AddItem(title = decodeTitle(payload["title"].orEmpty()), serviceClass = surrogateServiceClass(payload))
+        else -> unknown()
     }
+
+/**
+ * The three card-scoped decision kinds. A missing or blank `cardId` leaves nothing to point at, so the
+ * decision degrades to [Decision.Unknown] rather than fabricating a card reference. The final branch is
+ * `UNBLOCK_ITEM` — the only caller is the `when` above, which reaches here for exactly these three tags.
+ */
+private fun DecisionSurrogate.cardIdDecision(): Decision {
+    val raw = payload["cardId"]?.takeIf { it.isNotBlank() } ?: return unknown()
+    return when (type) {
+        "MOVE_ITEM" -> Decision.MoveItem(cardId = CardId(raw))
+        "BLOCK_ITEM" -> Decision.BlockItem(cardId = CardId(raw), reason = payload["reason"] ?: "blocked")
+        else -> Decision.UnblockItem(cardId = CardId(raw))
+    }
+}
+
+private fun DecisionSurrogate.unknown(): Decision.Unknown = Decision.Unknown(type = type, payload = payload)
 
 // Backward-compat (GAP-DH): blobs pré-GAP-DH podem conter um AddItem com título em branco — o mapper HTTP antigo
 // aceitava, e o `applyAdd` num board vazio registrava a decisão sem criar card. `NonBlankTitle` rejeita branco, então
@@ -43,7 +63,9 @@ internal fun DecisionSurrogate.toDomain(): Decision =
 // para preservar a legibilidade do histórico; entradas novas nunca são brancas (guardadas na borda: DTO + Card.init).
 private fun decodeTitle(raw: String): NonBlankTitle = NonBlankTitle(raw.ifBlank { "(untitled)" })
 
-private fun Map<String, String>.need(key: String): String = this[key] ?: error("Decision payload missing '$key'")
+// Backward-compat (GAP-DS): mesma razão do decode de decisões — um `cardId` branco num movimento legado tornaria o
+// agregado inteiro não-carregável. Coage a um sentinel legível em vez de deixar o `require` de `CardId` lançar.
+internal fun decodeCardId(raw: String): CardId = CardId(raw.ifBlank { "(unknown)" })
 
 private fun surrogateServiceClass(payload: Map<String, String>): ServiceClass =
     payload["serviceClass"]?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
@@ -89,7 +111,7 @@ private fun FlowMetricsSurrogate.toDomain() =
 private fun Movement.toSurrogate() =
     MovementSurrogate(
         id = id,
-        type = type.name,
+        type = type.tag,
         cardId = cardId.value,
         day = day.value,
         reason = reason,
@@ -98,8 +120,8 @@ private fun Movement.toSurrogate() =
 private fun MovementSurrogate.toDomain() =
     Movement(
         id = id,
-        type = MovementType.valueOf(type),
-        cardId = CardId(cardId),
+        type = MovementType.fromTag(type),
+        cardId = decodeCardId(cardId),
         day = SimulationDay(day),
         reason = reason,
     )

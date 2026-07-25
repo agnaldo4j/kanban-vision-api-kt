@@ -84,6 +84,10 @@ class RunDayUseCase(
         buildList {
             snapshot.movements.forEach { movement ->
                 when (movement.type) {
+                    // A movement whose persisted tag this release does not know maps to no domain event.
+                    // Kept as the FIRST branch: as the last one its `is` check has an unreachable false
+                    // path, which JaCoCo scores as a partial that no test can close.
+                    is MovementType.Unknown -> Unit
                     MovementType.COMPLETED ->
                         add(DomainEvent.CardCompleted(simulationId, movement.cardId.value, snapshot.day.value, now))
                     MovementType.BLOCKED ->

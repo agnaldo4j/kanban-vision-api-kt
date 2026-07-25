@@ -1,6 +1,5 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.Movement
@@ -70,7 +69,7 @@ internal object DailySnapshotSerializer {
     private fun Movement.toSurrogate() =
         SnapshotMovementSurrogate(
             id = id,
-            type = type.name,
+            type = type.tag,
             cardId = cardId.value,
             day = day.value,
             reason = reason,
@@ -95,11 +94,14 @@ internal object DailySnapshotSerializer {
             avgAgingDays = avgAgingDays,
         )
 
+    // Backward-compat (GAP-DS): decode tolerante, espelhando `SimulationSerializerSnapshotMappings`. Esta é a cópia
+    // lida para fora (`DailySnapshotResponse`), então uma tag desconhecida degrada só aquele movimento em vez de
+    // derrubar o GET inteiro com 500. `MovementType.Unknown` preserva a tag original no round-trip.
     private fun SnapshotMovementSurrogate.toDomain() =
         Movement(
             id = id,
-            type = MovementType.valueOf(type),
-            cardId = CardId(cardId),
+            type = MovementType.fromTag(type),
+            cardId = decodeCardId(cardId),
             day = SimulationDay(day),
             reason = reason,
         )

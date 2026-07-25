@@ -5,6 +5,8 @@ import arrow.core.right
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.Movement
+import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.domain.model.simulation.SimulationId
@@ -119,6 +121,39 @@ class RunDayUseCaseTest {
                             events.any { it is DomainEvent.CardCompleted }
                     },
                 )
+            }
+        }
+
+    @Test
+    fun `given snapshot with an unknown movement type when running day then it produces no card event`() =
+        runTest {
+            val simulation = fixtureSimulation(id = "sim-1", day = 1)
+            val updatedSimulation = fixtureSimulation(id = "sim-1", day = 2)
+            val snapshot =
+                fixtureSnapshot(simulationId = "sim-1", day = 1).copy(
+                    movements =
+                        listOf(
+                            Movement(
+                                type = MovementType.Unknown("TELEPORTED"),
+                                cardId = CardId("c-1"),
+                                day = SimulationDay(1),
+                                reason = "legacy",
+                            ),
+                        ),
+                )
+
+            coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
+            coEvery { snapshotRepository.findByDay(SimulationId("sim-1"), SimulationDay(1)) } returns null.right()
+            coEvery { simulationEngine.runDay(simulation, any(), any(), any()) } returns
+                SimulationResult(simulation = updatedSimulation, snapshot = snapshot)
+            coEvery { simulationRepository.save(updatedSimulation) } returns updatedSimulation.right()
+            coEvery { snapshotRepository.save(snapshot) } returns snapshot.right()
+
+            useCase.execute(RunDayCommand(simulationId = "sim-1", decisions = emptyList(), callerOrganizationId = "org-1"))
+
+            // Only the day-executed event survives: an unrecognised movement tag maps to no card event.
+            verify(exactly = 1) {
+                publisher.publish(match { events -> events.singleOrNull() is DomainEvent.SimulationDayExecuted })
             }
         }
 

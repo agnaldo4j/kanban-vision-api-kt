@@ -45,6 +45,17 @@ class SerializationRoundTripPropertyTest {
     private val arbName =
         Arb.of("Simulação \"β\"", "Órg & Cia", "a\\b/c", "linha\nquebrada", "日本語", "x", "Wörk 100%")
 
+    // MovementType virou sum type (GAP-DS), então não há mais `Arb.enum`. Inclui um `Unknown` de propósito:
+    // a tag legada preservada tem de sobreviver ao round-trip igual às quatro conhecidas.
+    private val arbMovementType: Arb<MovementType> =
+        Arb.of(
+            MovementType.MOVED,
+            MovementType.BLOCKED,
+            MovementType.UNBLOCKED,
+            MovementType.COMPLETED,
+            MovementType.Unknown("LEGACY_KIND"),
+        )
+
     private val arbAggregate: Arb<Simulation> =
         arbitrary { rs ->
             val stepCount = Arb.int(1..3).bind()
@@ -107,7 +118,9 @@ class SerializationRoundTripPropertyTest {
                         .list(
                             arbitrary {
                                 Movement(
-                                    type = Arb.enum<MovementType>().bind(),
+                                    // MovementType deixou de ser enum (GAP-DS): inclui um Unknown para o
+                                    // round-trip cobrir também a tag legada preservada.
+                                    type = arbMovementType.bind(),
                                     cardId = CardId("card-${Arb.int(1..999).bind()}"),
                                     day = SimulationDay(Arb.int(1..365).bind()),
                                     reason = Arb.string(0..20).bind(),
