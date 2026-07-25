@@ -105,6 +105,11 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > gh api graphql -f query='{ repository(owner:"<owner>",name:"<repo>"){ pullRequest(number:<n>){ reviewThreads(first:40){ nodes { id isResolved comments(first:1){ nodes { databaseId author{login} } } } } } } }'
 > ```
 > Responder um thread: `POST .../pulls/<n>/comments/<id>/replies`. Resolver: GraphQL `resolveReviewThread`.
+> ⚠️ **Passe o corpo por ARQUIVO, nunca interpolado:** `-F body=@resposta.md` (ou `gh pr comment --body-file`),
+> jamais `-f body="…"`. Uma resposta de review é markdown com crases, `$`, `!` e regex — em `zsh`/`bash` isso
+> vira substituição de comando ou glob. Mordeu duas vezes no mesmo dia: no #367 uma crase engoliu uma palavra
+> do texto **já publicado**, e no #368 um `$)` de regex abortou o comando inteiro com `bad pattern`. Escreva
+> num arquivo temporário e mande o arquivo.
 
 > ⚠️ **Se dispatchar manual:** o subagente `pr-harness` roda Bash **no mesmo working dir** e pode dar
 > `git checkout` (já trocou de branch e reverteu arquivos mid-review — o commit pushado fica intacto pois
