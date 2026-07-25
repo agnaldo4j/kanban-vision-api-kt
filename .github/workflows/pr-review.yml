@@ -129,8 +129,11 @@ jobs:
             in-repo — ADR-0038, docs/context-map.md (seams ACL/OHS), docs/quality/scorecard-*.md; sobre o
             board, você aqui NÃO tem token de projeto, então sugira próximos passos como candidatos ao
             Todo sem afirmar o estado do board. Ambas as seções são OPCIONAIS e NÃO mudam o veredito —
-            omita-as se nada substantivo. Poste o parecer como um comentário do PR começando com o título
-            exato "## PR Review Harness".
+            omita-as se nada substantivo. Poste o parecer como um comentário do PR cuja PRIMEIRA linha é o
+            marcador oculto "<!-- pr-harness-report:${{ github.event.workflow_run.head_sha }} -->" seguido,
+            na linha seguinte, do título exato "## PR Review Harness". O marcador é OBRIGATÓRIO: é por ele
+            que se confirma que existe parecer PARA ESTE head — sem ele um parecer stale de um push anterior
+            passa por revisão do commit atual (§5 do rubric; Codex P2 no #365).
           # Least-privilege (OWASP A08): o agente é read-only por contrato, mas `Bash` é mantido amplo
           # de propósito — ele precisa de `gh` (diff/view/api), `git` e leitura de arquivos, e posta o
           # parecer via `gh pr comment`. Um allowlist de comandos só seria verificável pós-merge e uma
