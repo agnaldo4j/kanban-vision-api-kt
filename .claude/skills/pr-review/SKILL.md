@@ -37,12 +37,36 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > #    (`gh api --jq` aceita UM argumento — nada de `--arg`; interpole o SHA na própria expressão)
 > gh api repos/<owner>/<repo>/issues/$N/comments --paginate \
 >   --jq ".[] | select(.body | contains(\"pr-harness-report:$SHA\")) | .html_url"   # vazio ⇒ sem parecer
-> # 2) saída vazia → o harness rodou e falhou? (run verde ≠ parecer emitido)
+> # 2) saída vazia → o harness rodou e falhou, ou nem chegou a rodar? (run verde ≠ parecer emitido)
 > gh run list --workflow=pr-review.yml --limit 10 --json databaseId,createdAt,conclusion
-> gh run view <id> --log | grep -E 'Resolved PR|is_error|::warning'
+> gh run view <id> --log | grep -E 'Resolved PR|Nenhum PR aberto|is_error|::warning'
 > ```
-> Se o parecer não existe, **dispatch manual** (a exceção legítima abaixo) — ou mergeie ciente de que o PR
-> não teve revisão. Nunca registre "harness APPROVE" sem ter lido um parecer real.
+> São **três** estados, não dois, e os dois últimos concluem verde: (a) parecer postado; (b) o harness
+> resolveu o PR e **falhou** (`is_error: true`); (c) o run **nem chegou** ao harness — `Nenhum PR aberto com
+> head == $RUN_SHA … Pulando` (ou o job sai `skipped`). Por isso o grep inclui a linha de "pulando".
+> E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
+> reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
+> exatamente o falso-verde que este bloco existe para matar.
+> Se o parecer não existe, o que fazer depende do tipo de PR — mas **por allowlist, não por exclusão**:
+> dispensa revisão **só** o PR em que **TODO** arquivo alterado é doc/processo puro. Qualquer outra coisa
+> exige **dispatch manual antes do merge**.
+> ```bash
+> gh pr view <n> --json files -q '.files[].path' \
+>   | grep -vE '^(docs/|adr/|\.claude/|[^/]+\.md$|[^/]+/src/test/)'
+> # saída VAZIA  ⇒ doc/processo puro — mergear ciente da ausência de revisão é aceitável (registre no PR)
+> # QUALQUER linha ⇒ chega em produção ou nos gates ⇒ dispatch manual obrigatório
+> ```
+> **Por que allowlist.** A versão anterior desta regra perguntava "toca `*/src/main/**`?" e liberava todo o
+> resto — o que dispensaria revisão de um PR que só mexe em `Dockerfile`, `k8s/**`, `.github/workflows/**`,
+> `build.gradle.kts`, `buildSrc/**`, `config/**`, `scripts/**` (consumidos pelos gates) ou uma migration
+> Flyway. Nenhum deles tem `src/main` e todos mudam produção, dependências ou os próprios gates. O PR #367,
+> que introduziu a regra, **se auto-isentaria** por essa lógica ao alterar `.github/workflows/pr-review.yml`.
+> Codex P2 no #367. Com allowlist, o caminho não-reconhecido cai no lado seguro.
+> ⚠️ **Não reuse o predicado `*/src/main/**` do `post-merge-harvester`** como proxy de risco de revisão: lá
+> ele existe para outra finalidade (guard anti-loop — impedir que uma melhoria de processo dispare outra), e
+> ser conservador *naquela* direção é o oposto de ser conservador aqui.
+>
+> Nunca registre "harness APPROVE" sem ter lido um parecer real.
 > ⚠️ **Parecer sem o marcador** (postado antes desta convenção) não prova nada sobre o head atual: trate como
 > ausente e confirme pelo passo 2. E o mesmo vale para os **inline** — eles já ancoram no SHA via
 > `<!-- pr-harness:<sha>:… -->`, então cheque o SHA ali também antes de dar um achado como endereçado.

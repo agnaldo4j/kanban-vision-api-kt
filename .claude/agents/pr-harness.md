@@ -118,6 +118,12 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
 - **Injeção por input não confiável** (nome de branch, título/corpo de PR, conteúdo do diff, params de
   request): interpolação em shell/`jq`/SQL. Em código: só Exposed DSL parametrizado. Em **scripts de CI**:
   contexto `${{ }}` de fonte untrusted interpolado no corpo do script (use `env:` + `env.` no jq/bash).
+- **Estado ternário no diagnóstico de um job de CI:** ao revisar (ou escrever) instrução de "o gate rodou?",
+  exija os **três** estados terminais, não dois — (a) executou e reportou, (b) executou e **falhou**, (c) o run
+  ficou verde mas **pulou o alvo** (`if:` não casou, guard interno saiu cedo, job `skipped`). O terceiro é o
+  mais comum num repo com pushes rápidos e o que mais parece com "nada aconteceu". E `gh run view --json jobs`
+  reporta `conclusion: success` para um passo que falhou sob `continue-on-error` — **só o `--log` distingue**,
+  então um atalho por JSON reintroduz o falso-verde. Mesma família do "✅ fabricado" do GAP-CC (#365).
 - **Exposed/persistência:** `transaction {}` fora de `withContext(Dispatchers.IO)` num handler de coroutine;
   `ResultRow` lido fora do `transaction {}`; método de repositório sem `either {}`/`catch {}`.
 - **Refinar o tipo de um campo *persistido/serializado*:** ao trocar um `String` cru por um value class /
@@ -218,17 +224,24 @@ artefatos in-repo — nunca afirme o estado do board sem tê-lo lido.
 
 ## 5. Formato do parecer (a sua saída)
 
-Comece com 1–2 linhas de escopo ("o PR faz X; toca os módulos/skills Y"). Depois:
+A ordem é exatamente esta, sem nada antes do marcador:
 
-A **primeira linha** é um marcador HTML oculto com o SHA revisado (`${REVIEWED}`, o mesmo que ancora os
-inline). Sem ele o report não diz a QUAL commit se refere: num PR que recebeu novo push, um parecer antigo
-continua sendo o único `## PR Review Harness` do PR e faz o head novo passar por revisado (Codex P2 no #365).
+1. **Linha 1 — marcador HTML oculto** com o SHA revisado (`${REVIEWED}`, o mesmo que ancora os inline).
+   **Obrigatório.** Sem ele o report não diz a QUAL commit se refere: num PR que recebeu novo push, um
+   parecer antigo continua sendo o único `## PR Review Harness` do PR e faz o head novo passar por revisado
+   (Codex P2 no #365). O prompt do `.github/workflows/pr-review.yml` exige o mesmo — os dois caminhos de
+   emissão (CI e dispatch manual) têm de produzir o mesmo formato, senão a verificação da skill dá
+   falso "sem parecer" justamente no caminho default.
+2. **Linha 2 — o título** `## PR Review Harness — parecer`.
+3. **Depois do veredito**, 1–2 linhas de escopo ("o PR faz X; toca os módulos/skills Y").
 
 ```
 <!-- pr-harness-report:${REVIEWED} -->
 ## PR Review Harness — parecer
 
 **Veredito:** BLOCK | CHANGES-REQUESTED | APPROVE — <1 linha de racional>
+
+<1–2 linhas de escopo: o PR faz X; toca os módulos/skills Y>
 
 ### Achados
 - **[P1] <título>** — `arquivo:linha`
@@ -303,6 +316,23 @@ gh api repos/<owner>/<repo>/pulls/<n>/comments \
   `arquivo:linha`) em vez de falhar. Nunca invente uma linha.
 - **Read-only vale para o repo, não para o PR:** postar comentário é a sua saída legítima; você continua sem
   editar/commitar/push de código.
+
+**Como postar o report.** Ele carrega um marcador **obrigatório** (§5) e um corpo multi-linha cheio de crases,
+`$` e `!` — improvisar o `gh pr comment` é onde o marcador se perde ou o quoting quebra. Use `--body-file`, e
+escreva o marcador com o **SHA já resolvido** (nunca `${REVIEWED}` literal no arquivo):
+```bash
+# mesma revalidação de head dos inline — não poste parecer de um diff que já não é o head
+[ "$(gh pr view <n> --json headRefOid -q .headRefOid)" = "$REVIEWED" ] || { echo "head avançou — abortar"; exit 0; }
+{ printf '<!-- pr-harness-report:%s -->\n' "$REVIEWED"; cat parecer.md; } > /tmp/report.md
+gh pr comment <n> --body-file /tmp/report.md
+```
+- **O report é APPEND, não sticky** — decisão consciente, ao contrário dos relatórios de CI (que usam
+  `peter-evans/create-or-update-comment`). O histórico de revisão por commit tem valor: um parecer por head
+  revisado, e **o marcador é o discriminante do parecer corrente**. Não edite o parecer anterior; poste um novo.
+- **Ao introduzir ou alterar um marcador** (`pr-harness:`, `pr-harness-report:`), enumere **todos** os
+  emissores — §5, esta §5.5 e o prompt de `.github/workflows/pr-review.yml` — e o consumidor
+  (`.claude/skills/pr-review/SKILL.md`). Marcador emitido por um caminho e procurado noutro é falso-negativo
+  garantido: foi exatamente o P2 do #365, a segunda encarnação do P2 original do Codex.
 
 ## 6. Lições aprendidas — loop de melhoria do harness e das skills
 
