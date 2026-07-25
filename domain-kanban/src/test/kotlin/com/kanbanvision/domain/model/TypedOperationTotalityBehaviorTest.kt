@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -23,7 +24,7 @@ import kotlin.test.assertTrue
 class TypedOperationTotalityBehaviorTest {
     @Test
     fun `given worker eligible for the step when executing card then result is Right`() {
-        val dev = Worker(name = "Dev", abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+        val dev = Worker(name = NonBlankName("Dev"), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
         val step =
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)

@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -122,13 +123,13 @@ class BoardStepCardExecutionBehaviorTest {
 
     private fun worker(name: String): Worker =
         Worker(
-            name = name,
+            name = NonBlankName(name),
             abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
         )
 
     private fun deployWorker(): Worker =
         Worker(
-            name = "Deploy",
+            name = NonBlankName("Deploy"),
             abilities =
                 setOf(
                     Ability(name = AbilityName.DEPLOYER, seniority = Seniority.SR),

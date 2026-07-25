@@ -26,7 +26,7 @@ paths:
 - New migration file = new PR — never bundle schema changes with application code in the same PR without explicit justification.
 - Integration tests automatically apply all migrations via `DatabaseFactory` + Embedded PostgreSQL.
 - JSON columns (`simulation_states.state_json`, `daily_snapshots.snapshot_json`) use `JSONB` (migrated in V2 — ADR-0013).
-- Next available migration number: **V3**.
+- Next available migration number: **V4**. (`V3__organizations_name_not_blank.sql` — CHECK anti-branco em `organizations.name`, GAP-DH #357.)
 
 ## Refinar o tipo de um campo já persistido — decode tolerante a legado
 

@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
@@ -44,8 +45,8 @@ class ModelInvariantBoundaryCoverageTest {
         assertFailsWith<IllegalArgumentException> {
             ScenarioRules(id = "", policySet = PolicySet(wipLimit = 1), wipLimit = 1, teamSize = 1, seedValue = 1L)
         }
-        assertFailsWith<IllegalArgumentException> { Tribe(id = "", name = "Tribe") }
-        assertFailsWith<IllegalArgumentException> { Squad(id = "", name = "Squad") }
+        assertFailsWith<IllegalArgumentException> { Tribe(id = "", name = NonBlankName("Tribe")) }
+        assertFailsWith<IllegalArgumentException> { Squad(id = "", name = NonBlankName("Squad")) }
     }
 
     @Test
@@ -68,8 +69,8 @@ class ModelInvariantBoundaryCoverageTest {
 
     @Test
     fun `given organization tribe and squad names when blank then model rejects invalid topology nodes`() {
-        assertFailsWith<IllegalArgumentException> { Organization(id = "org-1", name = "") }
-        assertFailsWith<IllegalArgumentException> { Tribe(id = "tribe-1", name = "") }
-        assertFailsWith<IllegalArgumentException> { Squad(id = "squad-1", name = "") }
+        assertFailsWith<IllegalArgumentException> { Organization(id = "org-1", name = NonBlankName("")) }
+        assertFailsWith<IllegalArgumentException> { Tribe(id = "tribe-1", name = NonBlankName("")) }
+        assertFailsWith<IllegalArgumentException> { Squad(id = "squad-1", name = NonBlankName("")) }
     }
 }

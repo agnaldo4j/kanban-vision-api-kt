@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.internal.repositories
 import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.common.errors.DomainError
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.simulation.Scenario
 import com.kanbanvision.domain.model.simulation.ScenarioRules
@@ -103,7 +104,7 @@ class JdbcSimulationRepository : SimulationRepository {
         val organization =
             Organization(
                 id = row[SimulationsTable.organizationId],
-                name = row[OrganizationsTable.name],
+                name = NonBlankName(row[OrganizationsTable.name]),
             )
         val rules =
             ScenarioRules.create(

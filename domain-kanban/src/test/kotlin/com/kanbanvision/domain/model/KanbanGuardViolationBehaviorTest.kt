@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -27,7 +28,7 @@ import kotlin.test.assertTrue
  */
 class KanbanGuardViolationBehaviorTest {
     private val devAbility = Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)
-    private val devWorker = Worker(name = "Dev", abilities = setOf(devAbility))
+    private val devWorker = Worker(name = NonBlankName("Dev"), abilities = setOf(devAbility))
 
     @Test
     fun `given negative efforts when constructing card then each guard rejects`() {
@@ -80,7 +81,7 @@ class KanbanGuardViolationBehaviorTest {
     fun `given ability profile when generating daily capacities then each branch yields its capacity`() {
         val deployer =
             Worker(
-                name = "Ops",
+                name = NonBlankName("Ops"),
                 abilities =
                     setOf(
                         Ability(name = AbilityName.DEPLOYER, seniority = Seniority.SR),

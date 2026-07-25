@@ -1,6 +1,8 @@
 package com.kanbanvision.httpapi
+
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -60,7 +62,7 @@ internal fun fixtureSimulation(id: String = "sim-1"): Simulation {
         name = "Simulation",
         currentDay = SimulationDay(1),
         status = SimulationStatus.DRAFT,
-        organization = Organization(id = "org-1", name = "Org"),
+        organization = Organization(id = "org-1", name = NonBlankName("Org")),
         scenario = scenario,
     )
 }

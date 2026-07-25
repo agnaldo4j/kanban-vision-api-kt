@@ -1,4 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
+
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -66,7 +68,7 @@ class SerializationRoundTripPropertyTest {
                 List(workerCount) {
                     val seniority = Arb.enum<Seniority>().bind()
                     Worker(
-                        name = arbName.bind(),
+                        name = NonBlankName(arbName.bind()),
                         abilities = AbilityName.entries.map { ability -> Ability(name = ability, seniority = seniority) }.toSet(),
                     )
                 }

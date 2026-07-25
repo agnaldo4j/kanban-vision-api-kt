@@ -2,18 +2,18 @@ package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
+import com.kanbanvision.domain.common.model.NonBlankName
 import java.util.UUID
 import kotlin.random.Random
 
 data class Worker(
     override val id: String = UUID.randomUUID().toString(),
-    val name: String,
+    val name: NonBlankName,
     val abilities: Set<Ability>,
     override val audit: Audit = Audit(),
 ) : Domain<String> {
     init {
         require(id.isNotBlank()) { "Worker id must not be blank" }
-        require(name.isNotBlank()) { "Worker name must not be blank" }
         require(abilities.isNotEmpty()) { "Worker must have at least one ability" }
 
         val hasTester = abilities.any { it.name == AbilityName.TESTER }

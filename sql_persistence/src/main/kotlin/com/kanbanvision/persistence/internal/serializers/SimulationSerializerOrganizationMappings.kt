@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Seniority
@@ -39,36 +40,36 @@ internal fun SimulationSurrogate.toDomain() =
 private fun Organization.toSurrogate() =
     OrganizationSurrogate(
         id = id,
-        name = name,
+        name = name.value,
         tribes = tribes.map { it.toSurrogate() },
     )
 
 private fun OrganizationSurrogate.toDomain() =
     Organization(
         id = id,
-        name = name,
+        name = NonBlankName(name),
         tribes = tribes.map { it.toDomain() },
     )
 
-private fun Tribe.toSurrogate() = TribeSurrogate(id = id, name = name, squads = squads.map { it.toSurrogate() })
+private fun Tribe.toSurrogate() = TribeSurrogate(id = id, name = name.value, squads = squads.map { it.toSurrogate() })
 
-private fun TribeSurrogate.toDomain() = Tribe(id = id, name = name, squads = squads.map { it.toDomain() })
+private fun TribeSurrogate.toDomain() = Tribe(id = id, name = NonBlankName(name), squads = squads.map { it.toDomain() })
 
-private fun Squad.toSurrogate() = SquadSurrogate(id = id, name = name, workers = workers.map { it.toSurrogate() })
+private fun Squad.toSurrogate() = SquadSurrogate(id = id, name = name.value, workers = workers.map { it.toSurrogate() })
 
-private fun SquadSurrogate.toDomain() = Squad(id = id, name = name, workers = workers.map { it.toDomain() })
+private fun SquadSurrogate.toDomain() = Squad(id = id, name = NonBlankName(name), workers = workers.map { it.toDomain() })
 
 internal fun Worker.toSurrogate() =
     WorkerSurrogate(
         id = id,
-        name = name,
+        name = name.value,
         abilities = abilities.map { it.toSurrogate() },
     )
 
 internal fun WorkerSurrogate.toDomain() =
     Worker(
         id = id,
-        name = name,
+        name = NonBlankName(name),
         abilities = abilities.map { it.toDomain() }.toSet(),
     )
 

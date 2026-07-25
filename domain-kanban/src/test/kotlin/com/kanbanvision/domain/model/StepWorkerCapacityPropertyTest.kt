@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -52,7 +53,7 @@ class StepWorkerCapacityPropertyTest {
                 val step = Step.create(board = BOARD_REF, name = "Step", position = 0, requiredAbility = stepAbility)
                 val worker =
                     Worker(
-                        name = workerName,
+                        name = NonBlankName(workerName),
                         abilities = setOf(Ability(name = differentAbility, seniority = Seniority.PL)),
                     )
                 runCatching { step.withWorker(worker) }.isFailure
@@ -66,7 +67,7 @@ class StepWorkerCapacityPropertyTest {
             forAll(ARB_NON_BLANK) { name ->
                 val worker =
                     Worker(
-                        name = name,
+                        name = NonBlankName(name),
                         abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
                     )
                 val step =
@@ -85,7 +86,7 @@ class StepWorkerCapacityPropertyTest {
                 Arb.of(AbilityName.PRODUCT_MANAGER, AbilityName.DEVELOPER, AbilityName.DEPLOYER),
                 ARB_NON_BLANK,
             ) { ability, name ->
-                val worker = Worker(name = name, abilities = setOf(Ability(name = ability, seniority = Seniority.PL)))
+                val worker = Worker(name = NonBlankName(name), abilities = setOf(Ability(name = ability, seniority = Seniority.PL)))
                 val step = Step.create(board = BOARD_REF, name = "Step", position = 0, requiredAbility = ability)
                 runCatching { step.withWorker(worker) }.isSuccess
             }
@@ -100,7 +101,7 @@ class StepWorkerCapacityPropertyTest {
                 Arb.of(AbilityName.PRODUCT_MANAGER, AbilityName.TESTER),
             ) { name, absentAbility ->
                 val worker =
-                    Worker(name = name, abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+                    Worker(name = NonBlankName(name), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
                 worker.generateDailyCapacities(Random.Default)[absentAbility] == 0
             }
         }
@@ -116,7 +117,7 @@ class StepWorkerCapacityPropertyTest {
             ) { name, min, extra ->
                 val max = min + extra
                 val worker =
-                    Worker(name = name, abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+                    Worker(name = NonBlankName(name), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
                 val capacity = worker.generateDailyCapacities(Random.Default, minPoints = min, maxPoints = max)[AbilityName.DEVELOPER] ?: 0
                 assertTrue(capacity in min..max)
             }
@@ -128,7 +129,7 @@ class StepWorkerCapacityPropertyTest {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
                 val worker =
-                    Worker(name = name, abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+                    Worker(name = NonBlankName(name), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
                 runCatching { worker.generateDailyCapacities(Random.Default, minPoints = -1) }.isFailure
             }
         }
@@ -142,7 +143,7 @@ class StepWorkerCapacityPropertyTest {
                 Arb.int(1..MAX_POINTS),
             ) { name, min ->
                 val worker =
-                    Worker(name = name, abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+                    Worker(name = NonBlankName(name), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
                 runCatching { worker.generateDailyCapacities(Random.Default, minPoints = min, maxPoints = min - 1) }.isFailure
             }
         }

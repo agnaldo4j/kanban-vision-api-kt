@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -44,7 +45,7 @@ class SimulationEngineEdgeCaseBehaviorTest {
     fun `given step with worker and done card when running day then worker execution is skipped`() {
         val board = Board.create("B").withStep(name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val worker = Worker(name = "Dev", abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+        val worker = Worker(name = NonBlankName("Dev"), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
         val card = Card(id = CardId("c1"), step = step.id, title = NonBlankTitle("T"), state = CardState.DONE)
         val boardWithCard = board.copy(steps = listOf(step.withWorker(worker).copy(cards = listOf(card))))
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 1, seedValue = 1L)

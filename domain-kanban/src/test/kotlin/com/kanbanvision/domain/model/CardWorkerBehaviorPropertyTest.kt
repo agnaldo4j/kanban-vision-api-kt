@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -118,7 +119,7 @@ class CardWorkerBehaviorPropertyTest {
     fun `Worker rejects empty ability set`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
-                runCatching { Worker(name = name, abilities = emptySet()) }.isFailure
+                runCatching { Worker(name = NonBlankName(name), abilities = emptySet()) }.isFailure
             }
         }
     }
@@ -128,7 +129,7 @@ class CardWorkerBehaviorPropertyTest {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
                 val testerOnly = setOf(Ability(name = AbilityName.TESTER, seniority = Seniority.PL))
-                runCatching { Worker(name = name, abilities = testerOnly) }.isFailure
+                runCatching { Worker(name = NonBlankName(name), abilities = testerOnly) }.isFailure
             }
         }
     }
@@ -137,7 +138,7 @@ class CardWorkerBehaviorPropertyTest {
     fun `Worker generateDailyCapacities always assigns MAX_VALUE to DEPLOYER`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
-                val worker = Worker(name = name, abilities = DEPLOYER_ABILITIES)
+                val worker = Worker(name = NonBlankName(name), abilities = DEPLOYER_ABILITIES)
                 worker.generateDailyCapacities(Random.Default)[AbilityName.DEPLOYER] == Int.MAX_VALUE
             }
         }
@@ -147,7 +148,7 @@ class CardWorkerBehaviorPropertyTest {
     fun `Worker generateDailyCapacities returns zero for abilities not held`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
-                val worker = Worker(name = name, abilities = DEV_ONLY_ABILITIES)
+                val worker = Worker(name = NonBlankName(name), abilities = DEV_ONLY_ABILITIES)
                 val caps = worker.generateDailyCapacities(Random.Default)
                 caps[AbilityName.PRODUCT_MANAGER] == 0 &&
                     caps[AbilityName.TESTER] == 0 &&

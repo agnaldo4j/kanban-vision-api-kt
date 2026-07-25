@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -20,7 +21,7 @@ import com.kanbanvision.domain.model.simulation.SimulationStatus
 internal fun fixtureOrganization(
     id: String = "org-1",
     name: String = "Organization",
-): Organization = Organization(id = id, name = name)
+): Organization = Organization(id = id, name = NonBlankName(name))
 
 internal fun fixtureScenario(
     id: String = "scn-1",

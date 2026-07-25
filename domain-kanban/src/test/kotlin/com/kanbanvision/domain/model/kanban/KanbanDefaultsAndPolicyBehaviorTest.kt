@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model.kanban
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.blockOrThrow
 import com.kanbanvision.domain.model.organization.Organization
@@ -25,7 +26,7 @@ class KanbanDefaultsAndPolicyBehaviorTest {
         val board = Board(id = BoardId("b-1"), name = "Board")
         val step = Step(board = BoardId("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
         val card = Card(step = StepId("s-1"), title = NonBlankTitle("Card"))
-        val worker = Worker(name = "Dev", abilities = setOf(ability))
+        val worker = Worker(name = NonBlankName("Dev"), abilities = setOf(ability))
 
         assertTrue(board.steps.isEmpty())
         assertEquals(0, step.position)
@@ -36,9 +37,9 @@ class KanbanDefaultsAndPolicyBehaviorTest {
 
     @Test
     fun `given minimal constructors when using defaults then organization entities are created`() {
-        val org = Organization(id = "o-1", name = "Org")
-        val squad = Squad(name = "Squad")
-        val tribe = Tribe(name = "Tribe")
+        val org = Organization(id = "o-1", name = NonBlankName("Org"))
+        val squad = Squad(name = NonBlankName("Squad"))
+        val tribe = Tribe(name = NonBlankName("Tribe"))
 
         assertTrue(org.tribes.isEmpty())
         assertTrue(squad.workers.isEmpty())
