@@ -486,11 +486,18 @@ val next = simulation.copy(
     history = simulation.history + snapshot,                      // reimplementa appendSnapshot()
 )
 
-// ✅ Tell: peça as transições ao agregado — ele é o dono da regra (API real: `appendDecision` é singular)
-val next = decisions
-    .fold(simulation.advanceDay()) { acc, d -> acc.appendDecision(d) }
+// ✅ Tell: peça as transições ao agregado — ele é o dono da regra (dê ao agregado o método de LOTE)
+val next = simulation.advanceDay()
+    .appendDecisions(decisions)   // uma concatenação O(atual+lote); NÃO dobre appendDecision (singular)
     .appendSnapshot(snapshot)
 ```
+
+> **Tell-don't-ask preserva a complexidade.** Ao mover um append de LOTE (`decisions = decisions + lote`,
+> O(atual+lote)) para dentro do agregado, dê a ele um método de **lote** (`appendDecisions(List)`) — **não**
+> um `fold` do append **singular** (`decisions.fold(sim) { acc, d -> acc.appendDecision(d) }`), que recopia a
+> lista acumulada a cada iteração e troca O(atual+lote) por O(lote×atual + lote²) em silêncio. O refactor é
+> "behavior-preserving", mas a complexidade regride sem um teste pegar. (Codex P2 no #360; corrigido com
+> `Simulation.appendDecisions`.)
 
 **Sem estado redundante/vazado (single-source).** Guardar a mesma verdade em dois campos e reconciliar por um
 `require` é encapsulamento quebrado: a consistência depende de um check em vez da estrutura. Prefira **uma fonte**
