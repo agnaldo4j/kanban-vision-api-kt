@@ -21,6 +21,29 @@ posta o parecer como comentário **`[claude]`**. Então, num PR aberto, o **cami
 reports já postados** — não redisparar o harness. Dispatchar `/pr-review` manualmente é **exceção**:
 quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-review pontual.
 
+> 🔴 **Ausência de parecer NÃO é aprovação — o gate de revisão pode ficar silenciosamente VAZIO.**
+> O job do harness é advisory e o passo carrega `continue-on-error`: quando a `claude-code-action` falha
+> (`is_error: true`, tipicamente `num_turns: 1`, `duration_ms` ~300, `total_cost_usd: 0`), **nada é postado
+> no PR** e o run inteiro ainda conclui **verde** (`success`) — o único sinal é um `::warning` enterrado na
+> aba Actions. Some-se o Codex silencioso e o Copilot em quota, e o PR fica **mergeável com todos os checks
+> verdes e ZERO revisão, sem nada vermelho** (aconteceu no #364). É a mesma família do "✅ fabricado" do
+> GAP-CC: silêncio lido como aprovação.
+> **Antes de dar um PR como pronto, confirme que o parecer EXISTE para o head SHA** — não presuma:
+> ```bash
+> N=<n>; SHA=$(gh pr view $N --json headRefOid -q .headRefOid)
+> # 1) o parecer foi postado para ESTE head?
+> gh api repos/<owner>/<repo>/issues/$N/comments --paginate \
+>   --jq '[.[] | select(.body|startswith("## PR Review Harness"))] | length'
+> # 2) se 0 → o harness rodou e falhou? (run verde ≠ parecer emitido)
+> gh run list --workflow=pr-review.yml --limit 10 --json databaseId,createdAt,conclusion
+> gh run view <id> --log | grep -E 'Resolved PR|is_error|::warning'
+> ```
+> Se o parecer não existe, **dispatch manual** (a exceção legítima abaixo) — ou mergeie ciente de que o PR
+> não teve revisão. Nunca registre "harness APPROVE" sem ter lido um parecer real.
+> ⚠️ **Nota de `workflow_run`:** o `head_sha`/`head_branch` que a API mostra para os runs de `pr-review.yml`
+> é o da **default branch**, não o do PR — filtrar os runs por SHA do PR dá falso "nunca rodou". Case por
+> **horário** (o run nasce segundos após o CI concluir) e confirme no log a linha `Resolved PR #<n>`.
+
 > ⚠️ **Ao ler os reports, NUNCA confie só no RESUMO do parecer** — leia os **comentários inline reais**.
 > O resumo do harness pode dizer "APPROVE" enquanto os inline (e o Codex) carregam P1/P2 — inclusive
 > bloqueantes. Verifique com:
