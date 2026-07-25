@@ -136,6 +136,11 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   como determinística; recurso não fechado.
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
+- **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código
+  em tempo presente (`agregado.metodo()`, campos, tipos), **grep cada identificador no SHA** — nome exato,
+  **singular vs plural**, **membro vs extensão**. Um caractere de diferença (`appendDecisions` citado, só
+  `appendDecision` existe) "compila na cabeça" do revisor mas gera exemplo não-compilável, e a leitura de prosa
+  não pega (este harness P2 no #359).
 
 Um bug de corretude com cenário de falha plausível é **P1** (quebra em produção / corrompe dado / brecha de
 segurança) ou **P2** (quebra sob condição específica); nunca "só uma melhoria".

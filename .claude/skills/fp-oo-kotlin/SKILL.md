@@ -8,7 +8,9 @@ description: >
   ordem e composição (tipos de função, lambdas, referências, currying, andThen/compose),
   a teoria de Algebraic Data Types (tipos soma/produto, cardinalidade,
   illegal-states-unrepresentable), a Teoria de Categorias que fundamenta map/flatMap/either
-  (Functor, Applicative, Monad e suas leis) e as técnicas práticas do Arrow-kt (Either, Raise, Optics).
+  (Functor, Applicative, Monad e suas leis), o Design Orientado a Objetos (OOAD, encapsulamento/
+  tell-don't-ask, polimorfismo/program-to-interface) em colaboração com o FP, e as técnicas
+  práticas do Arrow-kt (Either, Raise, Optics).
 argument-hint: "[file or use case to apply FP/OO techniques (optional)]"
 allowed-tools: Read, Grep, Glob
 ---
@@ -433,6 +435,117 @@ fun Raise<CreateBoardError>.execute(command: CreateBoardCommand): BoardId {
 
 ---
 
+## Design Orientado a Objetos — Encapsulamento e Polimorfismo
+
+A seção anterior mostrou *quando* usar cada paradigma; esta aprofunda os **dois pilares de OO** que Uncle Bob e a
+literatura de OOAD colocam no centro — **encapsulamento** e **polimorfismo** — e como eles **colaboram** com o FP
+do projeto (não competem). A regra de ouro é a mesma da tese central: FP diz *como o dado se comporta* (imutável,
+puro); OO diz *quem é responsável por quê* e *onde a decisão é tomada em runtime*.
+
+> Referências: [Object-Oriented Analysis and Design (Wikipedia)](https://en.wikipedia.org/wiki/Object-oriented_analysis_and_design)
+> · [OOP Design (GeeksforGeeks)](https://www.geeksforgeeks.org/system-design/oops-object-oriented-design/) ·
+> complementa `/solid-principles`, `/ddd`, `/clean-architecture`, `/screaming-architecture`.
+
+### OOAD em uma frase
+
+**Análise** modela o problema como **objetos com responsabilidades** (quem sabe o quê, quem colabora com quem — CRC);
+**Design** mapeia isso em **classes/interfaces** sob restrições de implementação. No projeto: a análise vira os
+**agregados** (`Board`, `Simulation`, `Card`…) e os **ports** (`SimulationEnginePort`, repositórios); o design os
+realiza como `data class` + `sealed` + interfaces. Modelar bem = dar a cada objeto **a responsabilidade certa** e
+**esconder o resto**.
+
+### Encapsulamento — a invariante mora no objeto, não no chamador
+
+Encapsulamento é **information hiding**: o objeto guarda seu estado e **só expõe operações que preservam a
+invariante**. Combina exatamente com o FP do projeto — a imutabilidade impede mutação externa, e o **value
+class/smart constructor faz o guard SER o tipo**:
+
+```kotlin
+// ✅ A invariante ESTÁ no tipo (encapsulamento + illegal-states-unrepresentable, GAP-DH)
+@JvmInline value class NonBlankName(val value: String) { init { require(value.isNotBlank()) } }
+// Ninguém consegue construir um nome em branco — a regra não vaza para cada chamador.
+
+// ✅ A regra de transição é MÉTODO do agregado (não extensão) — mora dentro dele (ADR-0044)
+data class Card(/* … */) {
+    fun block(): Either<KanbanError, Card> = either {
+        ensure(state == CardState.IN_PROGRESS) { KanbanError.CardNotInProgress(id.value) }
+        copy(state = CardState.BLOCKED)
+    }
+}
+// Board.addStep enforça "nome de step único no board" DENTRO do Board — o caller pede, não fiscaliza.
+```
+
+**Tell, Don't Ask.** O chamador **pede um comportamento** ao objeto; não puxa os campos para decidir por ele. Puxar
+`x.a.b.c` e reconstruir o objeto na mão é *feature envy* — a lógica pertence ao dono do dado:
+
+```kotlin
+// ❌ Ask: o chamador reconstrói o agregado, duplicando a invariante do próprio agregado
+val next = simulation.copy(
+    currentDay = SimulationDay(simulation.currentDay.value + 1),   // reimplementa advanceDay()
+    decisions = simulation.decisions + decisions,                 // reimplementa appendDecision()
+    history = simulation.history + snapshot,                      // reimplementa appendSnapshot()
+)
+
+// ✅ Tell: peça as transições ao agregado — ele é o dono da regra (API real: `appendDecision` é singular)
+val next = decisions
+    .fold(simulation.advanceDay()) { acc, d -> acc.appendDecision(d) }
+    .appendSnapshot(snapshot)
+```
+
+**Sem estado redundante/vazado (single-source).** Guardar a mesma verdade em dois campos e reconciliar por um
+`require` é encapsulamento quebrado: a consistência depende de um check em vez da estrutura. Prefira **uma fonte**
+(um accessor que delega) — daí não há como divergir. (Ex.: `ScenarioRules` guardar `wipLimit` **e**
+`policySet.wipLimit` reconciliados por `require(...)` é o smell; um `val wipLimit get() = policySet.wipLimit`
+elimina a divergência representável.)
+
+**Conjunto fechado + exaustividade forçada (≠ OCP).** Um `sealed` **fecha** o conjunto de variantes: adicionar
+uma nova variante **obriga** a revisar cada `when` exaustivo — o compilador não deixa esquecer. Isso é o
+**oposto** de Open-Closed ("estender sem tocar no código existente"); é uma troca deliberada — conjunto fechado
++ tratamento total garantido. **OCP de verdade vem do polimorfismo/ports** (abaixo): adicionar uma nova
+implementação de um port não toca os consumidores. Não confunda os dois (ver `/solid-principles`).
+
+### Polimorfismo — a decisão certa em runtime, sem `when` espalhado
+
+Polimorfismo é **dynamic dispatch**: uma mesma chamada resolve para o comportamento do tipo concreto. O projeto
+usa **dois mecanismos** que convivem — *dispatch* (ports) e *pattern matching* exaustivo (sealed); mantenha-os
+como modelo e **não os confunda** (só o primeiro é dispatch):
+
+- **Program-to-interface / DIP (ports).** `usecases` depende de `SimulationEnginePort`/`SimulationRepository`
+  (interfaces), não de `sql_persistence`. O teste injeta um in-memory; produção injeta JDBC — **sem tocar no núcleo**.
+  É o polimorfismo que sustenta a Dependency Rule (`/clean-architecture`).
+- **`sealed` = pattern matching exaustivo (≠ dynamic dispatch).** `Decision`/`KanbanError`/`SimulationError` são
+  somas; um `when` **externo sem `else`** sobre elas é *pattern matching* verificado pelo compilador — **quem trata
+  cada caso é o chamador**, não a variante. Vira **dynamic dispatch** só quando o comportamento é um **membro
+  (método) da variante** — aí não há `when` externo, cada tipo responde por si (é o que a regra abaixo pede).
+
+Quando **um `when` sobre um enum/tag decide COMPORTAMENTO que é do próprio tipo**, isso é polimorfismo faltando —
+mova o comportamento **para dentro do tipo** (enum-carrega-comportamento / strategy):
+
+```kotlin
+// ❌ Comportamento do ServiceClass espalhado num when do engine
+val rank = when (sc) { EXPEDITE -> 0; FIXED_DATE -> 1; STANDARD -> 2; INTANGIBLE -> 3 }
+
+// ✅ O tipo carrega seu próprio comportamento (o enum É a strategy)
+enum class ServiceClass(val schedulingRank: Int, val shuffleWithinTier: Boolean) {
+    EXPEDITE(0, false), FIXED_DATE(1, false), STANDARD(2, true), INTANGIBLE(3, true);
+}
+// O engine ordena genericamente por `schedulingRank` — adicionar uma classe não toca o engine.
+```
+
+**Composition over inheritance.** O domínio **não usa herança de implementação** — value classes, `sealed`
+(variantes fechadas) e **composição** (`Scenario` contém `Board`, `Board` contém `Step`s). Reúso vem de compor
+objetos e funções puras, não de hierarquias frágeis. `sealed interface` dá o polimorfismo fechado sem os riscos de
+uma árvore de `open class`.
+
+### A síntese: agregado rico = `data class` imutável (FP) **+ métodos que são o dono da regra** (OO)
+
+O anti-padrão a evitar é o **modelo anêmico**: `data class` só com campos e a lógica espalhada em serviços/use
+cases que fazem *ask*. No projeto, o alvo é o oposto — `Card.advance/block`, `Board.addStep/addCard`,
+`Simulation.advanceDay/appendSnapshot` são **puros e imutáveis** (retornam nova instância, FP) **e** donos da
+invariante (OO). Encapsulamento + polimorfismo + funções puras não brigam: eles se reforçam.
+
+---
+
 ## Algebraic Data Types (ADTs) — a Álgebra dos Tipos
 
 Um tipo é um **conjunto de valores**. Quantos valores ele admite é sua **cardinalidade** — e essa
@@ -727,6 +840,14 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 - [ ] Implementações são substituíveis sem surpresas (LSP)?
 - [ ] Testes usam implementações in-memory puras, não mocks de IO?
 
+### Encapsulamento e polimorfismo (OOD)
+
+- [ ] **Tell, don't ask**: o comportamento mora no dono do dado? (chamei `agregado.transição()` em vez de puxar `x.a.b.c` e reconstruir na mão?)
+- [ ] A invariante está **no tipo** (value class/smart constructor) ou dentro do agregado — não fiscalizada por cada chamador?
+- [ ] Sem **estado redundante** reconciliado por `require` (single-source via accessor que delega)?
+- [ ] Um `when` sobre enum/tag que decide **comportamento do próprio tipo** virou **método no tipo** (enum-carrega-comportamento / dispatch), não lógica espalhada?
+- [ ] Reúso por **composição** (compor objetos/funções), não herança de implementação?
+
 ---
 
 ## Sinais de Alerta
@@ -747,6 +868,10 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 | `either { }`/`flatMap` para validações **independentes** | Curto-circuita no 1º erro — perde a acumulação | Use `zipOrAccumulate`/`mapOrAccumulate` (applicative) para reportar todos os erros |
 | `.map { }` seguido de `.bind()`/`getOrNull()!!` para achatar `Either` aninhado | Functor onde faltava monad → `Either<E, Either<E, A>>` | Use `flatMap` (monad) — achata em um passo |
 | Encadeamento imperativo com `var`/estado temporário onde caberia composição | Ignora a composição de morfismos (associativa, pura) | Componha funções puras: `andThen`/pipeline de coleção/`map` |
+| Chamador puxa `x.a.b.c` e **reconstrói o agregado na mão** (reimplementa uma transição que o agregado já tem) | *Feature envy* / tell-don't-**ask**: a regra vive fora do dono e os dois podem divergir | **Tell**: peça a operação ao agregado — `simulation.advanceDay().appendSnapshot(...)`, não `copy(...)` inline |
+| Mesma verdade em **dois campos** reconciliados por `require(a == b)` | Estado redundante — consistência depende de um check, não da estrutura (illegal state representável) | **Single-source**: um accessor que delega (`val wipLimit get() = policySet.wipLimit`) |
+| `when (enum) { … }` que decide **comportamento do próprio enum** (rank, política) espalhado num serviço | Polimorfismo faltando — o tipo não é dono do seu comportamento | **Enum-carrega-comportamento**: `enum class ServiceClass(val schedulingRank: Int)`; o serviço opera genérico |
+| `data class` só-campos + lógica de domínio em serviços/use cases | **Modelo anêmico** — encapsulamento ausente | Métodos ricos e **puros** no agregado (imutáveis, donos da invariante) |
 
 ---
 
@@ -914,8 +1039,10 @@ fun save(simulation: Simulation): Either<DomainError, Unit> =
 | **clean-architecture** | Dependency Rule = DIP de OO; funções puras no núcleo = FP nas camadas internas |
 | **screaming-architecture** | Nomes de domínio em `sealed class` gritam o negócio; as somas (`*Error`/`Decision`) ficam junto do agregado |
 | **ddd** | Modelar-com-tipos = ADTs: entidades/VOs são produtos, estados/erros são somas — a cardinalidade fecha exatamente o conjunto de estados válidos do domínio |
-| **solid-principles** | SRP: funções puras têm uma razão para existir; DIP: interfaces OO para inversão |
+| **solid-principles** | SRP: funções puras têm uma razão para existir; DIP: interfaces OO para inversão; OCP: **novo adapter de um port sem tocar consumidores** (não `sealed` — este é conjunto fechado + exaustividade); LSP: ports substituíveis |
 | **kotlin-quality-pipeline** | Detekt detecta complexidade excessiva → oportunidade para funções puras menores |
+
+> **OOD (encapsulamento + polimorfismo)** — ver a seção "Design Orientado a Objetos": tell-don't-ask + invariante-no-tipo + program-to-interface (ports) colaboram com o FP; conecta a `/solid-principles`, `/ddd`, `/clean-architecture`, `/screaming-architecture`.
 
 ---
 
