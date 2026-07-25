@@ -31,15 +31,21 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > **Antes de dar um PR como pronto, confirme que o parecer EXISTE para o head SHA** — não presuma:
 > ```bash
 > N=<n>; SHA=$(gh pr view $N --json headRefOid -q .headRefOid)
-> # 1) o parecer foi postado para ESTE head?
+> # 1) existe parecer ancorado NESTE head? O report abre com `<!-- pr-harness-report:<sha> -->`,
+> #    então filtre pelo SHA — contar `## PR Review Harness` sem filtrar aceita um parecer STALE
+> #    de um push anterior e declara revisado um head que ninguém olhou.
+> #    (`gh api --jq` aceita UM argumento — nada de `--arg`; interpole o SHA na própria expressão)
 > gh api repos/<owner>/<repo>/issues/$N/comments --paginate \
->   --jq '[.[] | select(.body|startswith("## PR Review Harness"))] | length'
-> # 2) se 0 → o harness rodou e falhou? (run verde ≠ parecer emitido)
+>   --jq ".[] | select(.body | contains(\"pr-harness-report:$SHA\")) | .html_url"   # vazio ⇒ sem parecer
+> # 2) saída vazia → o harness rodou e falhou? (run verde ≠ parecer emitido)
 > gh run list --workflow=pr-review.yml --limit 10 --json databaseId,createdAt,conclusion
 > gh run view <id> --log | grep -E 'Resolved PR|is_error|::warning'
 > ```
 > Se o parecer não existe, **dispatch manual** (a exceção legítima abaixo) — ou mergeie ciente de que o PR
 > não teve revisão. Nunca registre "harness APPROVE" sem ter lido um parecer real.
+> ⚠️ **Parecer sem o marcador** (postado antes desta convenção) não prova nada sobre o head atual: trate como
+> ausente e confirme pelo passo 2. E o mesmo vale para os **inline** — eles já ancoram no SHA via
+> `<!-- pr-harness:<sha>:… -->`, então cheque o SHA ali também antes de dar um achado como endereçado.
 > ⚠️ **Nota de `workflow_run`:** o `head_sha`/`head_branch` que a API mostra para os runs de `pr-review.yml`
 > é o da **default branch**, não o do PR — filtrar os runs por SHA do PR dá falso "nunca rodou". Case por
 > **horário** (o run nasce segundos após o CI concluir) e confirme no log a linha `Resolved PR #<n>`.
