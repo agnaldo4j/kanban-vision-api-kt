@@ -332,7 +332,10 @@ escreva o marcador com o **SHA já resolvido** (nunca `${REVIEWED}` literal no a
 ```bash
 # mesma revalidação de head dos inline — não poste parecer de um diff que já não é o head
 [ "$(gh pr view <n> --json headRefOid -q .headRefOid)" = "$REVIEWED" ] || { echo "head avançou — abortar"; exit 0; }
-BODY=$(mktemp -t pr-harness-report)    # fora do repo: você é read-only, não suja o working dir do usuário
+# Template COM XXXXXX e caminho explícito: `mktemp -t <prefixo>` é BSD/macOS. No GNU coreutils
+# (ubuntu-latest, o runner deste workflow) `-t` exige X's e aborta com "too few X's in template" —
+# `$BODY` sairia vazio, o redirect falharia e o parecer NÃO seria postado, com o run verde.
+BODY=$(mktemp "${TMPDIR:-/tmp}/pr-harness-report.XXXXXX")   # fora do repo: você não suja o working dir
 # Heredoc COM ASPAS ('EOF'): o parecer é markdown cheio de crases, `$` e `!` — sem as aspas o shell
 # faria substituição de comando/variável dentro do seu próprio texto.
 { printf '<!-- pr-harness-report:%s -->\n' "$REVIEWED"
