@@ -50,28 +50,29 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > Se o parecer não existe, o que fazer depende do tipo de PR — mas **por allowlist, não por exclusão**:
 > dispensa revisão **só** o PR em que **TODO** arquivo alterado é doc/processo puro. Qualquer outra coisa
 > exige **dispatch manual antes do merge**.
+> A regra é **executável** — não a reimplemente na mão a cada vez:
 > ```bash
-> N=<n>; R=<owner>/<repo>
-> ALLOW='^(docs/.*\.md$|adr/.*\.md$|\.claude/.*\.md$|training/.*\.md$|[^/]+\.md$|(domain-common|domain-kanban|domain-simulation|usecases|sql_persistence|http_api)/src/test/)'
-> # `pulls/<n>/files` (não `pr view --json files`): pagina além de 100 arquivos e expõe `previous_filename`,
-> # senão um `git mv src/main/X.kt docs/X.kt` aparece só com o caminho novo e sai como doc-only.
-> FILES=$(gh api "repos/$R/pulls/$N/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)') \
->   || { echo "INDETERMINADO (gh falhou) ⇒ dispatch manual"; }
-> [ -n "$FILES" ] || echo "INDETERMINADO (lista vazia) ⇒ dispatch manual"
-> printf '%s\n' "$FILES" | grep -vE "$ALLOW"
-> # saída VAZIA **com $FILES não-vazio** ⇒ doc/processo puro — merge ciente da ausência de revisão é aceitável
-> # QUALQUER linha, ou INDETERMINADO ⇒ chega em produção/gates ⇒ dispatch manual obrigatório
+> scripts/review-exemption.sh <n>
+> #   exit 0  EXEMPT           → doc/processo puro; merge sem parecer é aceitável (registre no PR)
+> #   exit 1  REVIEW-REQUIRED  → lista os arquivos que chegam em produção/gates ⇒ dispatch manual
+> #   exit 2  INDETERMINATE    → API falhou ou lista vazia ⇒ trate como REVIEW-REQUIRED
 > ```
-> ⚠️ **Falha do `gh` é indistinguível de "doc-only" se você não guardar o status.** Token expirado, rate limit
-> ou PR inexistente devolvem **stdout vazio e exit 1** — pipe direto para `grep` engole isso e a regra criada
-> para impedir merge sem revisão passa a **autorizá-lo**. É o modo `gh api` exit-0-corpo-vazio do GAP-CC/#288
-> dentro do próprio guard. Por isso capture em variável, teste o `||` e trate lista vazia como **indeterminado**,
-> nunca como isento. (Harness P2 no #367.)
-> ⚠️ **Allowlist por TIPO, não por diretório.** `\.claude/` inteiro isentaria `hooks/guard-security.sh` — o guard
-> de segredo hardcoded declarado em `security.md` — e `settings.json`; por isso só `.claude/**/*.md`. E
-> `[^/]+/src/test/` isentaria `architecture/src/test/**`, o módulo **test-only** com as fitness functions:
-> apagar `ProjectDependencyGraphTest.kt` deixa `testAll`/JaCoCo/PITest verdes porque não há `src/main` para
-> cobrir. Por isso os módulos de teste isentos são **enumerados** e `architecture` fica de fora. (Harness P2 no #367.)
+> O script é a fonte única da allowlist; o `SKILL.md` só explica **por que** ela tem a forma que tem — três
+> decisões que vieram de defeito real, e que não devem ser "simplificadas" de volta:
+> - **Fail-closed em erro de API.** `gh … | grep -v` engole `exit≠0`: token expirado, rate limit ou PR
+>   inexistente devolvem **stdout vazio**, indistinguível de doc-only — e a regra criada para impedir merge
+>   sem revisão passaria a **autorizá-lo**. Modo `gh api` exit-0-corpo-vazio do GAP-CC/#288 dentro do próprio
+>   guard. Daí o exit 2 separado.
+> - **Allowlist por TIPO, não por diretório.** `\.claude/` inteiro isentaria `hooks/guard-security.sh` (o guard
+>   de segredo hardcoded declarado em `security.md`) e `settings.json`; e `[^/]+/src/test/` isentaria
+>   `architecture/src/test/**`, o módulo **test-only** das fitness functions — apagar
+>   `ProjectDependencyGraphTest.kt` deixa `testAll`/JaCoCo/PITest verdes porque não há `src/main` para cobrir.
+>   Por isso: só `**/*.md` nos diretórios de doc, e os módulos de teste isentos **enumerados**, com
+>   `architecture` fora.
+> - **`pulls/<n>/files`, não `pr view --json files`.** Pagina além de 100 arquivos e expõe `previous_filename`
+>   — sem ele um `git mv http_api/src/main/X.kt docs/X.kt` aparece só com o caminho novo e sai como doc-only.
+>
+> (Codex P2 + harness P2×2 no #367.)
 > **Por que allowlist.** A versão anterior desta regra perguntava "toca `*/src/main/**`?" e liberava todo o
 > resto — o que dispensaria revisão de um PR que só mexe em `Dockerfile`, `k8s/**`, `.github/workflows/**`,
 > `build.gradle.kts`, `buildSrc/**`, `config/**`, `scripts/**` (consumidos pelos gates) ou uma migration
