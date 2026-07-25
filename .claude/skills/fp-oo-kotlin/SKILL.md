@@ -541,6 +541,18 @@ são `sealed`: a soma **fecha o conjunto de variantes** — nenhuma variante for
 > não valores de campo inválidos *dentro* de uma variante: `Decision.AddItem(title)` ainda aceita um `title`
 > em branco que só o `Card.create()` rejeita depois. Validade de campo é papel de **smart constructors** /
 > tipos refinados (ex.: um value class `NonBlankTitle`), complementar — não substituto — do tipo-soma.
+>
+> ⚠️ **Refinar o tipo de um campo *persistido/serializado* abre um caminho de decode com dados legados.**
+> Quando o campo refinado (`NonBlankTitle`) vive num tipo que é gravado e relido (blob JSON, `stateJson`,
+> `DailySnapshot`), o `require`/`init` do value class passa a rodar também sobre **histórico já persistido** —
+> gravado quando a borda *ainda não guardava* (o `Decision.AddItem("")` que o mapper HTTP antigo aceitava,
+> GAP-DH #355). Um único valor legado inválido faz o `toDomain`/decode **lançar** → capturado pelo
+> `Either.catch` do repositório → `PersistenceError` → o **agregado inteiro** fica não-carregável
+> (`findById`/`findAll` viram 500), não só o campo. A borda de entrada nova é fácil de lembrar; o **decode de
+> histórico** é o ponto cego. Regra: no `toDomain`/decode, **coaja o valor legado inválido a um sentinel**
+> (ex.: `"(untitled)"`) ou tipe o erro — nunca deixe o `require` do value class lançar cru sobre um registro
+> imutável de leitura. (Alternativa: migração/auditoria Flyway que confirme "zero dados legados inválidos"
+> antes de assumir incompatibilidade zero.) Codex+harness rataram o mesmo ponto como P1/P2 no #355.
 
 ---
 
@@ -731,6 +743,7 @@ Ambos são somas (`+`), mas diferem no que cada variante carrega (docs Kotlin):
 | Lógica de negócio dentro de `catch` | Regra misturada com tratamento de erro | Separe: trate o erro, depois aplique a regra |
 | Múltiplos `copy()` aninhados (3+ níveis) | Verbosidade e fragilidade | Avalie Arrow Optics |
 | Produto de `Boolean`/`?`-nuláveis com combinações inválidas | Cardinalidade > estados legais (illegal states representáveis) | Troque o produto por uma **soma** (`sealed interface`) só com as variantes válidas |
+| Value class / smart constructor refinando um campo **persistido/serializado** (`NonBlankTitle` num blob JSON, `stateJson`, snapshot) | O `require`/`init` roda também sobre **histórico legado** gravado antes de a borda guardar → um valor inválido antigo torna o **agregado inteiro** não-carregável no decode (`findById`/`findAll` → 500) | No `toDomain`/decode **coaja o legado inválido a um sentinel** (ou tipe o erro); nunca deixe o `require` lançar cru sobre um registro imutável de leitura (GAP-DH #355) |
 | `either { }`/`flatMap` para validações **independentes** | Curto-circuita no 1º erro — perde a acumulação | Use `zipOrAccumulate`/`mapOrAccumulate` (applicative) para reportar todos os erros |
 | `.map { }` seguido de `.bind()`/`getOrNull()!!` para achatar `Either` aninhado | Functor onde faltava monad → `Either<E, Either<E, A>>` | Use `flatMap` (monad) — achata em um passo |
 | Encadeamento imperativo com `var`/estado temporário onde caberia composição | Ignora a composição de morfismos (associativa, pura) | Componha funções puras: `andThen`/pipeline de coleção/`map` |

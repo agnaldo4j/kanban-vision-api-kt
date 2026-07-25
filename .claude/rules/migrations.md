@@ -26,3 +26,21 @@ paths:
 - Integration tests automatically apply all migrations via `DatabaseFactory` + Embedded PostgreSQL.
 - JSON columns (`simulation_states.state_json`, `daily_snapshots.snapshot_json`) use `JSONB` (migrated in V2 — ADR-0013).
 - Next available migration number: **V3**.
+
+## Refinar o tipo de um campo já persistido — decode tolerante a legado
+
+Os blobs JSON (`state_json`, `snapshot_json`) são **registro imutável de leitura**: contêm dados gravados por
+releases anteriores, quando a borda podia aceitar valores que hoje seriam inválidos. Ao **refinar o tipo de um
+campo serializado** — trocar um `String` cru por um value class / smart constructor com invariante (ex.:
+`NonBlankTitle`, GAP-DH #355) — o `require`/`init` do novo tipo passa a rodar **também sobre o histórico**.
+
+- **Ponto cego:** a borda de *entrada* nova (DTO/domínio) guarda o valor; o **decode** (`toDomain`/`surrogate`)
+  não. Um único valor legado inválido (ex.: um `ADD_ITEM` de título em branco gravado antes do guard) faz o
+  decode **lançar** → `Either.catch` → `PersistenceError` → a **linha/agregado inteiro** fica não-carregável
+  (`findById`/`findAll` viram 500), não só o campo.
+- **Regra:** o decode deve ser **tolerante a legado**. Coaja o valor inválido a um **sentinel** (ex.:
+  `decodeTitle()` → `"(untitled)"`) ou converta em erro tipado — nunca deixe o `require` do value class lançar
+  cru. Cubra com um teste dedicado ("legacy blank … decodes to a sentinel instead of crashing the load").
+- **Alternativa (quando cabe uma migração):** um data-fix Flyway forward-only que sanitize o histórico
+  (`UPDATE … SET … WHERE …` sobre o JSONB) — mas só depois de **auditar** que tais registros existem; se o
+  campo *sempre* teve guard (ex.: `Card.init` nunca deixou blank), não há legado a tolerar e nada a migrar.
