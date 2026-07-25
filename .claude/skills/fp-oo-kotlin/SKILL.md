@@ -498,20 +498,25 @@ val next = decisions
 `policySet.wipLimit` reconciliados por `require(...)` é o smell; um `val wipLimit get() = policySet.wipLimit`
 elimina a divergência representável.)
 
-**Open-closed via soma fechada.** Um `sealed` fecha o conjunto de variantes (fechado para modificação) mas o `when`
-exaustivo obriga tratar cada nova variante (aberto para extensão com segurança de compilação) — é o lado OO da
-mesma moeda dos ADTs.
+**Conjunto fechado + exaustividade forçada (≠ OCP).** Um `sealed` **fecha** o conjunto de variantes: adicionar
+uma nova variante **obriga** a revisar cada `when` exaustivo — o compilador não deixa esquecer. Isso é o
+**oposto** de Open-Closed ("estender sem tocar no código existente"); é uma troca deliberada — conjunto fechado
++ tratamento total garantido. **OCP de verdade vem do polimorfismo/ports** (abaixo): adicionar uma nova
+implementação de um port não toca os consumidores. Não confunda os dois (ver `/solid-principles`).
 
 ### Polimorfismo — a decisão certa em runtime, sem `when` espalhado
 
-Polimorfismo é **dynamic dispatch**: uma mesma chamada resolve para o comportamento do tipo concreto. Os usos
-sadios do projeto (mantenha-os como modelo):
+Polimorfismo é **dynamic dispatch**: uma mesma chamada resolve para o comportamento do tipo concreto. O projeto
+usa **dois mecanismos** que convivem — *dispatch* (ports) e *pattern matching* exaustivo (sealed); mantenha-os
+como modelo e **não os confunda** (só o primeiro é dispatch):
 
 - **Program-to-interface / DIP (ports).** `usecases` depende de `SimulationEnginePort`/`SimulationRepository`
   (interfaces), não de `sql_persistence`. O teste injeta um in-memory; produção injeta JDBC — **sem tocar no núcleo**.
   É o polimorfismo que sustenta a Dependency Rule (`/clean-architecture`).
-- **`sealed` com dispatch exaustivo.** `Decision`/`KanbanError`/`SimulationError` são somas; o `when` **sem `else`**
-  sobre elas é dispatch verificado pelo compilador — cada variante trata a si mesma.
+- **`sealed` = pattern matching exaustivo (≠ dynamic dispatch).** `Decision`/`KanbanError`/`SimulationError` são
+  somas; um `when` **externo sem `else`** sobre elas é *pattern matching* verificado pelo compilador — **quem trata
+  cada caso é o chamador**, não a variante. Vira **dynamic dispatch** só quando o comportamento é um **membro
+  (método) da variante** — aí não há `when` externo, cada tipo responde por si (é o que a regra abaixo pede).
 
 Quando **um `when` sobre um enum/tag decide COMPORTAMENTO que é do próprio tipo**, isso é polimorfismo faltando —
 mova o comportamento **para dentro do tipo** (enum-carrega-comportamento / strategy):
@@ -1034,7 +1039,7 @@ fun save(simulation: Simulation): Either<DomainError, Unit> =
 | **clean-architecture** | Dependency Rule = DIP de OO; funções puras no núcleo = FP nas camadas internas |
 | **screaming-architecture** | Nomes de domínio em `sealed class` gritam o negócio; as somas (`*Error`/`Decision`) ficam junto do agregado |
 | **ddd** | Modelar-com-tipos = ADTs: entidades/VOs são produtos, estados/erros são somas — a cardinalidade fecha exatamente o conjunto de estados válidos do domínio |
-| **solid-principles** | SRP: funções puras têm uma razão para existir; DIP: interfaces OO para inversão; OCP: `sealed` fechado + `when` exaustivo; LSP: ports substituíveis |
+| **solid-principles** | SRP: funções puras têm uma razão para existir; DIP: interfaces OO para inversão; OCP: **novo adapter de um port sem tocar consumidores** (não `sealed` — este é conjunto fechado + exaustividade); LSP: ports substituíveis |
 | **kotlin-quality-pipeline** | Detekt detecta complexidade excessiva → oportunidade para funções puras menores |
 
 > **OOD (encapsulamento + polimorfismo)** — ver a seção "Design Orientado a Objetos": tell-don't-ask + invariante-no-tipo + program-to-interface (ports) colaboram com o FP; conecta a `/solid-principles`, `/ddd`, `/clean-architecture`, `/screaming-architecture`.
