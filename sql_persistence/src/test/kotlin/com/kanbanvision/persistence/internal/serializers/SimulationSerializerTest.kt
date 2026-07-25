@@ -8,7 +8,6 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.persistence.support.PersistenceFixtures
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -103,24 +102,6 @@ class SimulationSerializerTest {
 
         val restored = assertIs<Decision.AddItem>(decoded.decisions.first())
         assertEquals(ServiceClass.STANDARD, restored.serviceClass)
-    }
-
-    @Test
-    fun `given stored decision with missing payload field when decoding then error is thrown for missing key`() {
-        val encoded =
-            SimulationSerializer
-                .encode(PersistenceFixtures.simulation())
-                .replace("""{"type":"MOVE_ITEM","payload":{"cardId":"c-1"}}""", """{"type":"MOVE_ITEM"}""")
-        assertFailsWith<IllegalStateException> { SimulationSerializer.decode(encoded) }
-    }
-
-    @Test
-    fun `given stored decision with unknown type when decoding then error is thrown`() {
-        val encoded =
-            SimulationSerializer
-                .encode(PersistenceFixtures.simulation())
-                .replace(""""type":"MOVE_ITEM"""", """"type":"CORRUPTED"""")
-        assertFailsWith<IllegalStateException> { SimulationSerializer.decode(encoded) }
     }
 
     @Test

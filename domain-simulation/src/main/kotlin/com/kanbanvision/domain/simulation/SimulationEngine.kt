@@ -76,6 +76,10 @@ object SimulationEngine {
         val movements = mutableListOf<Movement>()
         decisions.forEach { decision ->
             when (decision) {
+                // An uninterpretable persisted decision carries no instruction — replaying it is a no-op.
+                // Kept as the FIRST branch: as the last one its `is` check has an unreachable false path,
+                // which JaCoCo scores as a partial that no test can close.
+                is Decision.Unknown -> Unit
                 is Decision.MoveItem -> applyMove(current, decision.cardId, ctx.day)?.let { movements += it }
                 is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
                 is Decision.UnblockItem -> applyUnblock(current, decision.cardId, ctx.day)?.let { movements += it }

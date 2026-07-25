@@ -160,7 +160,7 @@ internal fun DailySnapshot.toResponse() =
         movements =
             movements.map { m ->
                 MovementResponse(
-                    type = m.type.name,
+                    type = m.type.tag,
                     cardId = m.cardId.value,
                     day = m.day.value,
                     reason = m.reason,

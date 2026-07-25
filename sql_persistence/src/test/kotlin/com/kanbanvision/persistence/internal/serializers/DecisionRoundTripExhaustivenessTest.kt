@@ -11,12 +11,17 @@ import kotlin.test.assertIs
 /**
  * OCP safety net for the [Decision] sealed hierarchy on the persistence boundary.
  *
- * `DecisionSurrogate.toDomain` decodes a persisted `String` tag and therefore keeps a
- * fail-closed `else` (a corrupt blob must not be silently accepted). That decode cannot be
- * made compiler-exhaustive over the sealed type. This test provides the missing guarantee:
- * the `when (original)` below is exhaustive over [Decision], so adding a new variant stops
- * this file compiling until the variant is added here — which then forces it through the
- * surrogate round-trip (`toSurrogate().toDomain()`), failing unless the decoder handles it.
+ * `DecisionSurrogate.toDomain` decodes a persisted `String` tag, so it cannot be made
+ * compiler-exhaustive over the sealed type. Since GAP-DS its `else` is deliberately *not*
+ * fail-closed: the blob is an immutable read record, and throwing there would make the whole
+ * aggregate unloadable rather than degrade one decision — so an unrecognised tag becomes
+ * [Decision.Unknown], which round-trips back to storage unchanged.
+ *
+ * That makes this test the only compiler-enforced guarantee left: the `when (original)` below is
+ * exhaustive over [Decision], so adding a new variant stops this file compiling until the variant
+ * is added here — which then forces it through the surrogate round-trip (`toSurrogate().toDomain()`),
+ * failing unless the decoder handles it. Without this, a new variant would encode fine and silently
+ * decode back as [Decision.Unknown].
  */
 class DecisionRoundTripExhaustivenessTest {
     private val samples =
@@ -25,6 +30,7 @@ class DecisionRoundTripExhaustivenessTest {
             Decision.BlockItem(cardId = CardId("c-1"), reason = "dep"),
             Decision.UnblockItem(cardId = CardId("c-1")),
             Decision.AddItem(title = NonBlankTitle("t"), serviceClass = ServiceClass.EXPEDITE),
+            Decision.Unknown(type = "FUTURE_KIND", payload = mapOf("k" to "v")),
         )
 
     @Test
@@ -36,6 +42,7 @@ class DecisionRoundTripExhaustivenessTest {
                     is Decision.BlockItem -> "BLOCK_ITEM"
                     is Decision.UnblockItem -> "UNBLOCK_ITEM"
                     is Decision.AddItem -> "ADD_ITEM"
+                    is Decision.Unknown -> original.type
                 }
             val surrogate = original.toSurrogate()
             assertEquals(expectedTag, surrogate.type)

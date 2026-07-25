@@ -19,6 +19,11 @@ import kotlin.test.assertTrue
  * guarantee: the `when (original)` below is exhaustive over [Decision], so adding a new
  * variant stops this file compiling until the variant is added here — which then forces it
  * through `DecisionRequest.toDomain`, failing unless the decoder handles it.
+ *
+ * Note the deliberate asymmetry with the persistence boundary (GAP-DS): a *persisted* blob is an
+ * immutable read record, so an unrecognised type there degrades to `Decision.Unknown` to keep the
+ * aggregate loadable. A *request* is untrusted input with a caller to answer, so it stays
+ * fail-closed — `Decision.Unknown` must never be minted here.
  */
 class DecisionRequestExhaustivenessTest {
     private val samples =
@@ -48,11 +53,21 @@ class DecisionRequestExhaustivenessTest {
                             "ADD_ITEM",
                             mapOf("title" to original.title.value, "serviceClass" to original.serviceClass.name),
                         )
-                }
+                    // Persistence-only variant: no request wire form exists. Rejection is asserted below.
+                    is Decision.Unknown -> null
+                } ?: return@forEach
             val decoded = request.toDomain()
             assertTrue(decoded.isRight())
             assertEquals(original, decoded.getOrNull())
         }
+    }
+
+    @Test
+    fun `unknown decision type decodes to InvalidDecision instead of the persistence Unknown variant`() {
+        val decoded = DecisionRequest("FUTURE_KIND", mapOf("cardId" to "c-1")).toDomain()
+
+        assertTrue(decoded.isLeft(), "an unrecognised type from a client must be Left")
+        assertIs<SimulationError.InvalidDecision>(decoded.leftOrNull())
     }
 
     @Test

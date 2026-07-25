@@ -29,6 +29,30 @@ class SimulationEngineDecisionBehaviorTest {
     }
 
     @Test
+    fun `given an unknown decision when running day then it is replayed as a no-op`() {
+        val simulation = simulationWithCard(cardId = "card-1", state = CardState.IN_PROGRESS)
+        val unknown = Decision.Unknown(type = "FUTURE_KIND", payload = mapOf("cardId" to "card-1"))
+
+        val withUnknown = SimulationEngine.runDay(simulation, decisions = listOf(unknown), seed = 7L)
+        val withNothing = SimulationEngine.runDay(simulation, decisions = emptyList(), seed = 7L)
+
+        // Same seed, same starting state: an uninterpretable decision must not shift the outcome.
+        assertEquals(
+            withNothing.snapshot.movements.map { it.type to it.cardId },
+            withUnknown.snapshot.movements.map { it.type to it.cardId },
+        )
+        assertEquals(
+            withNothing.simulation.scenario.board.steps
+                .flatMap {
+                    it.cards
+                }.map { it.state },
+            withUnknown.simulation.scenario.board.steps
+                .flatMap { it.cards }
+                .map { it.state },
+        )
+    }
+
+    @Test
     fun `given block and unblock decisions when running day then blocked card returns to in progress`() {
         val simulation = simulationWithCard(cardId = "card-2", state = CardState.IN_PROGRESS)
 
