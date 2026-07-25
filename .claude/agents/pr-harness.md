@@ -134,6 +134,11 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   precisa propagar.
 - **Idempotência / efeitos colaterais:** reprocessar/retry duplica escrita; ordem não-determinística tratada
   como determinística; recurso não fechado.
+- **Regressão de complexidade num refactor "behavior-preserving":** um refactor tell-don't-ask que troca um
+  append de **lote** (`campo = campo + lote`, O(n)) por um `fold` do append **singular**
+  (`lote.fold(agg) { acc, x -> acc.appendUm(x) }`) recopia a coleção acumulada a cada iteração → O(n²) em
+  silêncio (comportamento idêntico, os testes passam). Ao mover lógica para o agregado, dê a ele um método de
+  **lote**, não itere o singular. (#360 P2: `fold(appendDecision)` → `Simulation.appendDecisions(List)`.)
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
 - **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código
