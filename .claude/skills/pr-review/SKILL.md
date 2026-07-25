@@ -37,10 +37,16 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > #    (`gh api --jq` aceita UM argumento — nada de `--arg`; interpole o SHA na própria expressão)
 > gh api repos/<owner>/<repo>/issues/$N/comments --paginate \
 >   --jq ".[] | select(.body | contains(\"pr-harness-report:$SHA\")) | .html_url"   # vazio ⇒ sem parecer
-> # 2) saída vazia → o harness rodou e falhou? (run verde ≠ parecer emitido)
+> # 2) saída vazia → o harness rodou e falhou, ou nem chegou a rodar? (run verde ≠ parecer emitido)
 > gh run list --workflow=pr-review.yml --limit 10 --json databaseId,createdAt,conclusion
-> gh run view <id> --log | grep -E 'Resolved PR|is_error|::warning'
+> gh run view <id> --log | grep -E 'Resolved PR|Nenhum PR aberto|is_error|::warning'
 > ```
+> São **três** estados, não dois, e os dois últimos concluem verde: (a) parecer postado; (b) o harness
+> resolveu o PR e **falhou** (`is_error: true`); (c) o run **nem chegou** ao harness — `Nenhum PR aberto com
+> head == $RUN_SHA … Pulando` (ou o job sai `skipped`). Por isso o grep inclui a linha de "pulando".
+> E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
+> reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
+> exatamente o falso-verde que este bloco existe para matar.
 > Se o parecer não existe, **dispatch manual** (a exceção legítima abaixo) — ou mergeie ciente de que o PR
 > não teve revisão. Nunca registre "harness APPROVE" sem ter lido um parecer real.
 > ⚠️ **Parecer sem o marcador** (postado antes desta convenção) não prova nada sobre o head atual: trate como

@@ -218,17 +218,24 @@ artefatos in-repo — nunca afirme o estado do board sem tê-lo lido.
 
 ## 5. Formato do parecer (a sua saída)
 
-Comece com 1–2 linhas de escopo ("o PR faz X; toca os módulos/skills Y"). Depois:
+A ordem é exatamente esta, sem nada antes do marcador:
 
-A **primeira linha** é um marcador HTML oculto com o SHA revisado (`${REVIEWED}`, o mesmo que ancora os
-inline). Sem ele o report não diz a QUAL commit se refere: num PR que recebeu novo push, um parecer antigo
-continua sendo o único `## PR Review Harness` do PR e faz o head novo passar por revisado (Codex P2 no #365).
+1. **Linha 1 — marcador HTML oculto** com o SHA revisado (`${REVIEWED}`, o mesmo que ancora os inline).
+   **Obrigatório.** Sem ele o report não diz a QUAL commit se refere: num PR que recebeu novo push, um
+   parecer antigo continua sendo o único `## PR Review Harness` do PR e faz o head novo passar por revisado
+   (Codex P2 no #365). O prompt do `.github/workflows/pr-review.yml` exige o mesmo — os dois caminhos de
+   emissão (CI e dispatch manual) têm de produzir o mesmo formato, senão a verificação da skill dá
+   falso "sem parecer" justamente no caminho default.
+2. **Linha 2 — o título** `## PR Review Harness — parecer`.
+3. **Depois do veredito**, 1–2 linhas de escopo ("o PR faz X; toca os módulos/skills Y").
 
 ```
 <!-- pr-harness-report:${REVIEWED} -->
 ## PR Review Harness — parecer
 
 **Veredito:** BLOCK | CHANGES-REQUESTED | APPROVE — <1 linha de racional>
+
+<1–2 linhas de escopo: o PR faz X; toca os módulos/skills Y>
 
 ### Achados
 - **[P1] <título>** — `arquivo:linha`
