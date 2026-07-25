@@ -482,7 +482,7 @@ data class Card(/* … */) {
 // ❌ Ask: o chamador reconstrói o agregado, duplicando a invariante do próprio agregado
 val next = simulation.copy(
     currentDay = SimulationDay(simulation.currentDay.value + 1),   // reimplementa advanceDay()
-    decisions = simulation.decisions + decisions,                 // reimplementa appendDecision()
+    decisions = simulation.decisions + decisions,                 // reimplementa appendDecisions() (lote)
     history = simulation.history + snapshot,                      // reimplementa appendSnapshot()
 )
 
