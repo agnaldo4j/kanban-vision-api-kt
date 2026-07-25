@@ -79,4 +79,16 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     fun `given policy set when id is blank then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { PolicySet(id = "", wipLimit = 1) }
     }
+
+    @Test
+    fun `ServiceClass carries its own scheduling policy — rank order and shuffle tiers`() {
+        // OOD (enum-carrega-comportamento): a política de agendamento mora no enum, não num when do engine.
+        val byRank = ServiceClass.entries.sortedBy { it.schedulingRank }.map { it.name }
+        assertEquals(listOf("EXPEDITE", "FIXED_DATE", "STANDARD", "INTANGIBLE"), byRank)
+
+        assertTrue(ServiceClass.STANDARD.shuffleWithinTier)
+        assertTrue(ServiceClass.INTANGIBLE.shuffleWithinTier)
+        assertEquals(false, ServiceClass.EXPEDITE.shuffleWithinTier)
+        assertEquals(false, ServiceClass.FIXED_DATE.shuffleWithinTier)
+    }
 }
