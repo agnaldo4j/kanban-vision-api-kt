@@ -89,23 +89,29 @@ claro"). **Isso é correto para um monólito** — não é um defeito.
 falha é **reificada** e tratada *fora* do componente que falhou.
 
 **No projeto (bem coberto):**
-- **Bulkhead / isolamento de dependência:** `CircuitBreakerDataSource` (decora o `DataSource`, rejeita checkout
-  com circuito aberto em vez de esgotar o pool — `CircuitBreakerDataSource.kt`), `DbCircuitBreaker`,
-  `RedisCircuitBreaker` (resilience4j). Contém a falha do banco/Redis para não cascatear.
+- **Circuit-breaking + timeouts:** `CircuitBreakerDataSource` (decora o `DataSource`, rejeita checkout
+  com circuito aberto em vez de esperar o timeout do pool — `CircuitBreakerDataSource.kt`), `DbCircuitBreaker`,
+  `RedisCircuitBreaker` (resilience4j). Contém a falha do banco/Redis quando o circuito **já abriu**.
+  ⚠️ **Circuit breaker ≠ bulkhead.** Com o circuito *fechado*, N chamadas lentas concorrentes ainda ocupam todas
+  as threads/conexões até seus timeouts — cascata que o breaker sozinho não previne. O **bulkhead** de verdade é
+  **concorrência limitada** (pool/semáforo dedicado): aqui, o `maximumPoolSize` do HikariCP dá um teto de
+  conexões, mas não há isolamento por-dependência além disso. Ao avaliar, exija o limite de concorrência
+  explicitamente — não trate o breaker como prova de bulkhead.
 - **Falha-como-valor (reificação):** `Either<DomainError, T>` em todas as camadas (ADR-0044) — a exceção não
   propaga como control-flow; a falha é um valor tratado na borda (`/fp-oo-kotlin`).
 - **Degradação graciosa:** `buildFallbackSimulation` (`JdbcSimulationRepository.kt:103`) devolve um resultado
   utilizável quando o estado rico está **ausente/vazio** (`stateJson.isNullOrBlank()`, `:99-100`) — mas note o
   **limite**: JSON malformado ainda **lança** no `decode` → `PersistenceError`/500 (é justamente a lacuna de
   resiliência que o card de decode-tolerante ataca; ver abaixo). No rate-limit, a queda do Redis **degrada para
-  um bucket local semeado** que continua limitando (nunca abre para ilimitado, nunca 5xx — GAP-BZ): degradação
-  graciosa que preserva o limite, não "fail-closed" de negar tudo.
+  um bucket local semeado** que continua limitando **por-pod** (nunca abre para ilimitado, nunca 5xx — GAP-BZ):
+  degradação graciosa, não "fail-closed" de negar tudo — mas o teto *global* dilui até `maxReplicas` (ver Elastic).
 - **Contenção na borda:** `StatusPages` converte `Throwable` em resposta controlada (nunca stack trace ao
   cliente — `/owasp` A10); crash → reinício pelo k8s.
 
 **Perguntas de avaliação:**
-- A dependência externa nova (banco, Redis, HTTP) está atrás de um **bulkhead** (circuit breaker/timeout) e
-  falha **fail-closed**? Ou um timeout dela pode esgotar um pool e derrubar o resto?
+- A dependência externa nova (banco, Redis, HTTP) tem **circuit breaker + timeout** E **concorrência limitada**
+  (pool/semáforo dedicado = bulkhead real)? Só breaker/timeout não basta: com o circuito fechado, chamadas lentas
+  concorrentes ainda podem esgotar threads/conexões antes de o breaker abrir.
 - A falha é **valor tipado** (`Either`/`raise`) ou uma exceção que vaza? (regra do projeto: falha-de-domínio →
   `Either`; precondição → `require`.)
 - Há **fallback** ou a falha de um campo torna o recurso inteiro indisponível? (o **decode intolerante a legado**
@@ -120,7 +126,10 @@ falha é **reificada** e tratada *fora* do componente que falhou.
 - **HPA** (`k8s/06-hpa.yml`) escala réplicas por carga; **PDB** (`k8s/07-pdb.yml`) + `topologySpreadConstraints`
   (`k8s/03-deployment.yml`, ADR-0040) preservam disponibilidade durante o scaling.
 - **App stateless** → horizontalmente escalável; o **rate-limit distribuído em Redis** (token bucket, ADR-0041/42)
-  garante que o limite *global* se mantém sob N réplicas (não dilui — GAP-BZ).
+  mantém o limite *global* sob N réplicas **enquanto o Redis está saudável** (não dilui — GAP-BZ). ⚠️ **Numa queda
+  do Redis** cada pod cai no bucket local (`RedisRateLimiter.degradeTo()`), e o teto global pode **diluir até
+  `maxReplicas`×local (`RedisCircuitBreaker.kt:42-49` documenta isso)** — degradação graciosa (nunca ilimitado,
+  nunca 5xx), mas a garantia global é condicional ao Redis, não incondicional.
 - **Startup rápido** (GraalVM Native Image, ~0,12s — `/graalvm`) = scale-up elástico de verdade (réplica nova
   serve tráfego em sub-segundo).
 
