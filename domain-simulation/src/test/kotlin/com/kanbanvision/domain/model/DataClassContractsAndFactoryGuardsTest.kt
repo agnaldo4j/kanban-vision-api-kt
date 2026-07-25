@@ -1,6 +1,8 @@
 package com.kanbanvision.domain.model
+
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -56,17 +58,17 @@ class DataClassContractsAndFactoryGuardsTest {
         val movement = Movement(type = MovementType.BLOCKED, cardId = CardId("card-1"), day = SimulationDay(2), reason = "blocked")
         val flow = FlowMetrics(throughput = 3, wipCount = 4, blockedCount = 1, avgAgingDays = 2.5)
         val policySet = PolicySet(wipLimit = 5)
-        val decision = Decision.AddItem(title = "Task")
+        val decision = Decision.AddItem(title = NonBlankTitle("Task"))
 
         val movementCopy = movement.copy(reason = "still blocked")
         val flowCopy = flow.copy(wipCount = 5)
         val policyCopy = policySet.copy(wipLimit = 6)
-        val decisionCopy = decision.copy(title = "Task-2")
+        val decisionCopy = decision.copy(title = NonBlankTitle("Task-2"))
 
         assertEquals("still blocked", movementCopy.reason)
         assertEquals(5, flowCopy.wipCount)
         assertEquals(6, policyCopy.wipLimit)
-        assertEquals("Task-2", decisionCopy.title)
+        assertEquals("Task-2", decisionCopy.title.value)
     }
 
     @Test

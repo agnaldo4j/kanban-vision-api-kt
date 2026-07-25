@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.domain.model.kanban.CardId
@@ -12,51 +13,51 @@ import kotlin.test.assertFailsWith
 class CardValidationAndStateMachineBehaviorTest {
     @Test
     fun `given card constructor invalid inputs when creating card then invariants reject invalid ranges`() {
-        assertFailsWith<IllegalArgumentException> { Card(id = CardId(""), step = StepId("s"), title = "x") }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId(""), title = "x") }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "", position = 0) }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "x", position = -1) }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "x", agingDays = -1) }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "x", analysisEffort = -1) }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "x", developmentEffort = -1) }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "x", testEffort = -1) }
-        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = "x", deployEffort = -1) }
+        assertFailsWith<IllegalArgumentException> { Card(id = CardId(""), step = StepId("s"), title = NonBlankTitle("x")) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId(""), title = NonBlankTitle("x")) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle(""), position = 0) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle("x"), position = -1) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle("x"), agingDays = -1) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle("x"), analysisEffort = -1) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle("x"), developmentEffort = -1) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle("x"), testEffort = -1) }
+        assertFailsWith<IllegalArgumentException> { Card(step = StepId("s"), title = NonBlankTitle("x"), deployEffort = -1) }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", analysisEffort = 1, remainingAnalysisEffort = 2)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), analysisEffort = 1, remainingAnalysisEffort = 2)
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", developmentEffort = 1, remainingDevelopmentEffort = 2)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), developmentEffort = 1, remainingDevelopmentEffort = 2)
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", testEffort = 1, remainingTestEffort = 2)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), testEffort = 1, remainingTestEffort = 2)
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", deployEffort = 1, remainingDeployEffort = 2)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), deployEffort = 1, remainingDeployEffort = 2)
         }
     }
 
     @Test
     fun `given negative remaining effort below zero when creating card then lower bound invariants reject`() {
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", analysisEffort = 5, remainingAnalysisEffort = -1)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), analysisEffort = 5, remainingAnalysisEffort = -1)
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", developmentEffort = 5, remainingDevelopmentEffort = -1)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), developmentEffort = 5, remainingDevelopmentEffort = -1)
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", testEffort = 5, remainingTestEffort = -1)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), testEffort = 5, remainingTestEffort = -1)
         }
         assertFailsWith<IllegalArgumentException> {
-            Card(step = StepId("s"), title = "x", deployEffort = 5, remainingDeployEffort = -1)
+            Card(step = StepId("s"), title = NonBlankTitle("x"), deployEffort = 5, remainingDeployEffort = -1)
         }
     }
 
     @Test
     fun `given card states when advancing then transitions follow domain state machine`() {
-        val todo = Card(step = StepId("s"), title = "x", state = CardState.TODO)
-        val inProgress = Card(step = StepId("s"), title = "x", state = CardState.IN_PROGRESS)
-        val blocked = Card(step = StepId("s"), title = "x", state = CardState.BLOCKED)
-        val done = Card(step = StepId("s"), title = "x", state = CardState.DONE)
+        val todo = Card(step = StepId("s"), title = NonBlankTitle("x"), state = CardState.TODO)
+        val inProgress = Card(step = StepId("s"), title = NonBlankTitle("x"), state = CardState.IN_PROGRESS)
+        val blocked = Card(step = StepId("s"), title = NonBlankTitle("x"), state = CardState.BLOCKED)
+        val done = Card(step = StepId("s"), title = NonBlankTitle("x"), state = CardState.DONE)
 
         assertEquals(CardState.IN_PROGRESS, todo.advance().state)
         assertEquals(CardState.DONE, inProgress.advance().state)
@@ -69,7 +70,7 @@ class CardValidationAndStateMachineBehaviorTest {
         val card =
             Card(
                 step = StepId("s"),
-                title = "x",
+                title = NonBlankTitle("x"),
                 analysisEffort = 1,
                 developmentEffort = 2,
                 testEffort = 3,
@@ -84,7 +85,7 @@ class CardValidationAndStateMachineBehaviorTest {
 
     @Test
     fun `given target step and position when moving card then location is updated`() {
-        val card = Card(step = StepId("s-1"), title = "Card", position = 0)
+        val card = Card(step = StepId("s-1"), title = NonBlankTitle("Card"), position = 0)
 
         val moved = card.moveTo(targetStep = StepId("s-2"), newPosition = 3)
 

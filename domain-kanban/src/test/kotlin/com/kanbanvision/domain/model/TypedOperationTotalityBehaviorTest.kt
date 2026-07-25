@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -27,14 +28,14 @@ class TypedOperationTotalityBehaviorTest {
             Step
                 .create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
                 .withWorker(dev)
-        val card = Card(step = step.id, title = "Task", state = CardState.IN_PROGRESS, developmentEffort = 1)
+        val card = Card(step = step.id, title = NonBlankTitle("Task"), state = CardState.IN_PROGRESS, developmentEffort = 1)
 
         assertTrue(step.executeCard(dev, card, mapOf(AbilityName.DEVELOPER to 1), Instant.EPOCH).isRight())
     }
 
     @Test
     fun `given in progress card when blocking then result is Right`() {
-        val inProgress = Card(step = StepId("s-1"), title = "Card").advance()
+        val inProgress = Card(step = StepId("s-1"), title = NonBlankTitle("Card")).advance()
 
         assertTrue(inProgress.block().isRight())
     }

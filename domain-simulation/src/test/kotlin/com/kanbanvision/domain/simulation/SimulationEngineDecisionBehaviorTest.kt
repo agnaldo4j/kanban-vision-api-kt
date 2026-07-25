@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
@@ -126,7 +127,7 @@ class SimulationEngineDecisionBehaviorTest {
                 steps =
                     listOf(
                         step.copy(
-                            cards = listOf(Card(id = CardId(cardId), step = step.id, title = "Task", state = state)),
+                            cards = listOf(Card(id = CardId(cardId), step = step.id, title = NonBlankTitle("Task"), state = state)),
                         ),
                     ),
             )

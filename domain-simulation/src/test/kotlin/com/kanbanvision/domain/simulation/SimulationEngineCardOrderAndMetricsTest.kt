@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -24,10 +25,10 @@ class SimulationEngineCardOrderAndMetricsTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = CardId("s1"), step = step.id, title = "S1", serviceClass = ServiceClass.STANDARD),
-                Card(id = CardId("s2"), step = step.id, title = "S2", serviceClass = ServiceClass.STANDARD),
-                Card(id = CardId("e1"), step = step.id, title = "E1", serviceClass = ServiceClass.EXPEDITE),
-                Card(id = CardId("e2"), step = step.id, title = "E2", serviceClass = ServiceClass.EXPEDITE),
+                Card(id = CardId("s1"), step = step.id, title = NonBlankTitle("S1"), serviceClass = ServiceClass.STANDARD),
+                Card(id = CardId("s2"), step = step.id, title = NonBlankTitle("S2"), serviceClass = ServiceClass.STANDARD),
+                Card(id = CardId("e1"), step = step.id, title = NonBlankTitle("E1"), serviceClass = ServiceClass.EXPEDITE),
+                Card(id = CardId("e2"), step = step.id, title = NonBlankTitle("E2"), serviceClass = ServiceClass.EXPEDITE),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 2)
 
@@ -61,10 +62,10 @@ class SimulationEngineCardOrderAndMetricsTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = CardId("wip1"), step = step.id, title = "W1", state = CardState.IN_PROGRESS),
-                Card(id = CardId("wip2"), step = step.id, title = "W2", state = CardState.IN_PROGRESS),
-                Card(id = CardId("blk1"), step = step.id, title = "B1", state = CardState.BLOCKED),
-                Card(id = CardId("done1"), step = step.id, title = "D1", state = CardState.DONE),
+                Card(id = CardId("wip1"), step = step.id, title = NonBlankTitle("W1"), state = CardState.IN_PROGRESS),
+                Card(id = CardId("wip2"), step = step.id, title = NonBlankTitle("W2"), state = CardState.IN_PROGRESS),
+                Card(id = CardId("blk1"), step = step.id, title = NonBlankTitle("B1"), state = CardState.BLOCKED),
+                Card(id = CardId("done1"), step = step.id, title = NonBlankTitle("D1"), state = CardState.DONE),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 5)
 
@@ -81,9 +82,9 @@ class SimulationEngineCardOrderAndMetricsTest {
         val step = board.steps.first()
         val cards =
             listOf(
-                Card(id = CardId("c-pos2"), step = step.id, title = "P2", state = CardState.DONE, position = 2),
-                Card(id = CardId("c-pos0"), step = step.id, title = "P0", state = CardState.DONE, position = 0),
-                Card(id = CardId("c-pos1"), step = step.id, title = "P1", state = CardState.DONE, position = 1),
+                Card(id = CardId("c-pos2"), step = step.id, title = NonBlankTitle("P2"), state = CardState.DONE, position = 2),
+                Card(id = CardId("c-pos0"), step = step.id, title = NonBlankTitle("P0"), state = CardState.DONE, position = 0),
+                Card(id = CardId("c-pos1"), step = step.id, title = NonBlankTitle("P1"), state = CardState.DONE, position = 1),
             )
         val sim = boardSim(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = 1)
 
@@ -116,7 +117,7 @@ class SimulationEngineCardOrderAndMetricsTest {
             Card(
                 id = CardId("c1"),
                 step = step.id,
-                title = "Task",
+                title = NonBlankTitle("Task"),
                 state = CardState.IN_PROGRESS,
                 deployEffort = deployEffort,
                 remainingDeployEffort = remainingDeployEffort,

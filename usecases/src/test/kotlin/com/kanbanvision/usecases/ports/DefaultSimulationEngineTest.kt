@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.ports
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.usecases.simulation.fixtureSimulation
 import java.time.Instant
@@ -16,7 +17,7 @@ class DefaultSimulationEngineTest {
         val result =
             engine.runDay(
                 simulation = simulation,
-                decisions = listOf(Decision.AddItem("Card 1")),
+                decisions = listOf(Decision.AddItem(NonBlankTitle("Card 1"))),
                 seed = 42L,
                 now = Instant.EPOCH,
             )

@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.PolicySet
 import com.kanbanvision.domain.model.organization.Squad
@@ -44,7 +45,7 @@ class KanbanDataClassContractsTest {
             Card(
                 id = CardId("c-1"),
                 step = StepId("s-1"),
-                title = "Card",
+                title = NonBlankTitle("Card"),
                 description = "desc",
                 analysisEffort = 2,
                 developmentEffort = 3,

@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.DomainError
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
@@ -337,8 +338,9 @@ private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.Un
 
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
     payload["title"]
-        ?.let { Decision.AddItem(it, decisionServiceClass(payload["serviceClass"])).right() }
-        ?: SimulationError.InvalidDecision("Missing required field 'title' for ADD_ITEM").left()
+        ?.takeIf { it.isNotBlank() }
+        ?.let { Decision.AddItem(NonBlankTitle(it), decisionServiceClass(payload["serviceClass"])).right() }
+        ?: SimulationError.InvalidDecision("Missing or blank required field 'title' for ADD_ITEM").left()
 
 private fun decisionServiceClass(value: String?): ServiceClass =
     value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD

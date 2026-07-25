@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Card
@@ -98,7 +99,7 @@ class CardWorkerBehaviorPropertyTest {
                     Card(
                         id = CardId("card-1"),
                         step = STEP_REF,
-                        title = "T",
+                        title = NonBlankTitle("T"),
                         analysisEffort = effort,
                         remainingAnalysisEffort = effort,
                         developmentEffort = effort,

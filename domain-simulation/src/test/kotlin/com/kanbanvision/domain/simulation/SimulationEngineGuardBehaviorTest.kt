@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -130,7 +131,7 @@ class SimulationEngineGuardBehaviorTest {
             Card(
                 id = CardId("card"),
                 step = step.id,
-                title = "Task",
+                title = NonBlankTitle("Task"),
                 state = CardState.IN_PROGRESS,
                 developmentEffort = 5,
                 remainingDevelopmentEffort = 0,
@@ -154,7 +155,7 @@ class SimulationEngineGuardBehaviorTest {
     ): Simulation {
         val board = Board.create("Board").withStep("Step", AbilityName.DEVELOPER)
         val step = board.steps.first()
-        val card = Card(id = CardId(cardId), step = step.id, title = "Task", state = state, agingDays = agingDays)
+        val card = Card(id = CardId(cardId), step = step.id, title = NonBlankTitle("Task"), state = state, agingDays = agingDays)
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = listOf(card)))), wipLimit = 3)
     }
 
@@ -167,10 +168,10 @@ class SimulationEngineGuardBehaviorTest {
         val step = board.steps.first()
         val cards =
             (1..inProgressCount).map { i ->
-                Card(id = CardId("wip-$i"), step = step.id, title = "WIP $i", state = CardState.IN_PROGRESS)
+                Card(id = CardId("wip-$i"), step = step.id, title = NonBlankTitle("WIP $i"), state = CardState.IN_PROGRESS)
             } +
                 (1..todoCount).map { i ->
-                    Card(id = CardId("todo-$i"), step = step.id, title = "Todo $i", state = CardState.TODO)
+                    Card(id = CardId("todo-$i"), step = step.id, title = NonBlankTitle("Todo $i"), state = CardState.TODO)
                 }
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = wipLimit)
     }

@@ -1,5 +1,6 @@
 package com.kanbanvision.httpapi.routes
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.Decision
@@ -25,7 +26,7 @@ class DecisionRequestExhaustivenessTest {
             Decision.MoveItem(CardId("c-1")),
             Decision.BlockItem(CardId("c-1"), "dep"),
             Decision.UnblockItem(CardId("c-1")),
-            Decision.AddItem("t", ServiceClass.EXPEDITE),
+            Decision.AddItem(NonBlankTitle("t"), ServiceClass.EXPEDITE),
         )
 
     @Test
@@ -45,7 +46,7 @@ class DecisionRequestExhaustivenessTest {
                     is Decision.AddItem ->
                         DecisionRequest(
                             "ADD_ITEM",
-                            mapOf("title" to original.title, "serviceClass" to original.serviceClass.name),
+                            mapOf("title" to original.title.value, "serviceClass" to original.serviceClass.name),
                         )
                 }
             val decoded = request.toDomain()
@@ -62,5 +63,17 @@ class DecisionRequestExhaustivenessTest {
             assertTrue(decoded.isLeft(), "$type with blank cardId must be Left")
             assertIs<SimulationError.InvalidDecision>(decoded.leftOrNull())
         }
+    }
+
+    @Test
+    fun `blank or missing add-item title decodes to InvalidDecision instead of throwing`() {
+        // GAP-DH: NonBlankTitle rejeita branco; a borda deve dobrar isso em 400 tipado, nunca lançar (500).
+        val blank = DecisionRequest("ADD_ITEM", mapOf("title" to "   ")).toDomain()
+        assertTrue(blank.isLeft(), "ADD_ITEM with blank title must be Left")
+        assertIs<SimulationError.InvalidDecision>(blank.leftOrNull())
+
+        val missing = DecisionRequest("ADD_ITEM", emptyMap()).toDomain()
+        assertTrue(missing.isLeft(), "ADD_ITEM without title must be Left")
+        assertIs<SimulationError.InvalidDecision>(missing.leftOrNull())
     }
 }

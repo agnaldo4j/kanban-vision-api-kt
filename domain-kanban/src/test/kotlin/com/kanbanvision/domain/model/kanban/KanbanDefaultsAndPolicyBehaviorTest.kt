@@ -1,4 +1,6 @@
 package com.kanbanvision.domain.model.kanban
+
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.blockOrThrow
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.PolicySet
@@ -22,7 +24,7 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     fun `given minimal constructors when using defaults then kanban entities are created`() {
         val board = Board(id = BoardId("b-1"), name = "Board")
         val step = Step(board = BoardId("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
-        val card = Card(step = StepId("s-1"), title = "Card")
+        val card = Card(step = StepId("s-1"), title = NonBlankTitle("Card"))
         val worker = Worker(name = "Dev", abilities = setOf(ability))
 
         assertTrue(board.steps.isEmpty())
@@ -45,7 +47,7 @@ class KanbanDefaultsAndPolicyBehaviorTest {
 
     @Test
     fun `given in-progress card when blocked then state becomes blocked`() {
-        val card = Card(step = StepId("s-1"), title = "Card").advance()
+        val card = Card(step = StepId("s-1"), title = NonBlankTitle("Card")).advance()
 
         val blocked = card.blockOrThrow()
 
@@ -54,7 +56,7 @@ class KanbanDefaultsAndPolicyBehaviorTest {
 
     @Test
     fun `given non in-progress card when blocked then it is rejected`() {
-        val card = Card(step = StepId("s-1"), title = "Card")
+        val card = Card(step = StepId("s-1"), title = NonBlankTitle("Card"))
 
         assertIs<KanbanError.CardNotInProgress>(card.block().leftOrNull())
     }

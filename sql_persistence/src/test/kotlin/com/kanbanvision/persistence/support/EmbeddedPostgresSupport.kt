@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.support
 
+import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -197,7 +198,7 @@ internal object PersistenceFixtures {
         Card(
             id = CardId(id),
             step = StepId(stepId),
-            title = "Card 1",
+            title = NonBlankTitle("Card 1"),
             description = "desc",
             position = 0,
             serviceClass = ServiceClass.STANDARD,
