@@ -95,7 +95,11 @@ falha é **reificada** e tratada *fora* do componente que falhou.
 - **Falha-como-valor (reificação):** `Either<DomainError, T>` em todas as camadas (ADR-0044) — a exceção não
   propaga como control-flow; a falha é um valor tratado na borda (`/fp-oo-kotlin`).
 - **Degradação graciosa:** `buildFallbackSimulation` (`JdbcSimulationRepository.kt:103`) devolve um resultado
-  utilizável quando o estado rico não decodifica; fail-closed no rate-limit quando o Redis cai (GAP-BZ).
+  utilizável quando o estado rico está **ausente/vazio** (`stateJson.isNullOrBlank()`, `:99-100`) — mas note o
+  **limite**: JSON malformado ainda **lança** no `decode` → `PersistenceError`/500 (é justamente a lacuna de
+  resiliência que o card de decode-tolerante ataca; ver abaixo). No rate-limit, a queda do Redis **degrada para
+  um bucket local semeado** que continua limitando (nunca abre para ilimitado, nunca 5xx — GAP-BZ): degradação
+  graciosa que preserva o limite, não "fail-closed" de negar tudo.
 - **Contenção na borda:** `StatusPages` converte `Throwable` em resposta controlada (nunca stack trace ao
   cliente — `/owasp` A10); crash → reinício pelo k8s.
 
@@ -104,8 +108,9 @@ falha é **reificada** e tratada *fora* do componente que falhou.
   falha **fail-closed**? Ou um timeout dela pode esgotar um pool e derrubar o resto?
 - A falha é **valor tipado** (`Either`/`raise`) ou uma exceção que vaza? (regra do projeto: falha-de-domínio →
   `Either`; precondição → `require`.)
-- Há **fallback** ou a falha de um campo torna o recurso inteiro indisponível? (cf. GAP-DV — decode intolerante
-  = 500 na simulação inteira; é exatamente uma falha de resiliência.)
+- Há **fallback** ou a falha de um campo torna o recurso inteiro indisponível? (o **decode intolerante a legado**
+  — `require`/`valueOf` que lança em dado histórico → 500 na simulação inteira — é exatamente uma falha de
+  resiliência; a regra "decode tolerante a legado" está em `.claude/rules/migrations.md`.)
 
 ### 📈 Elastic — responsivo sob carga variável (REALIZADO na infra; app stateless)
 
