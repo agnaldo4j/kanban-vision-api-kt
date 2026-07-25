@@ -56,22 +56,25 @@ Antes de "aplicar um padrão", pergunte se a linguagem já resolve. A hierarquia
 
 | Padrão | No projeto | Forma idiomática |
 |---|---|---|
-| **Factory Method / Simple Factory** | ✅ **realizado** | `companion object { fun create(...) }` como **smart constructor** — `Board.create`, `Card.create`, `Simulation.create` (`Simulation.kt:20-35`), `Scenario.create`, `ScenarioRules.create` (7 factories no domínio). Validam e devolvem já-válido. |
-| **(smart constructor / value object)** | ✅ **realizado** | `@JvmInline value class NonBlankName(val value)` com `init { require(...) }` — o construtor *é* a factory que rejeita estado ilegal (GAP-DH). |
+| **Factory Method / Simple Factory** | ✅ **realizado** | `companion object { fun create(...) }` — `Board.create`, `Card.create`, `Simulation.create` (`Simulation.kt:20-35`), `Scenario.create`, `ScenarioRules.create` (7 factories no domínio). É uma **factory de conveniência**: monta o `UUID`/defaults e devolve já-válido, mas **não esconde** o construtor primário (a `data class` é pública → o construtor e o `copy()` seguem acessíveis, ex.: hidratação na persistência). Encapsula a *montagem*, não a *impossibilidade de burlar*. |
+| **Smart constructor (invariante imposta pelo tipo)** | ✅ **realizado** | `@JvmInline value class NonBlankName(val value)` com `init { require(...) }` — **este** sim é o smart constructor que *impõe* a invariante: **todo** caminho de construção (inclusive `copy()`) passa pelo `init`, então um nome em branco é irrepresentável (GAP-DH). É a diferença de garantia frente à factory de conveniência acima. |
 | **Builder** | ⚠️ dissolve | `data class` + **named/default args** + `copy()` já é o Builder do Kotlin. Não escreva builder-com-setters (viola imutabilidade). |
 | **Prototype** | ⚠️ dissolve | `data class.copy()` **é** clonagem prototípica — `card.advance()` = `copy(state = ...)`. |
 | **Singleton** | ✅ **realizado** | `object` — `object SimulationEngine` (`SimulationEngine.kt:22`), `object DatabaseFactory`, `object DbCircuitBreaker`. Thread-safe por construção; sem *double-checked locking*. **Só para infra/stateless-de-domínio** — nunca para guardar estado mutável de aplicação. |
 | **Abstract Factory** | 🔷 via DI | Não há família de produtos; o papel de "montar a família de implementações" é do **Koin `AppModule`** (o único seam que liga ports a adapters). |
 
 ```kotlin
-// Factory Method idiomático = smart constructor no companion (Simulation.kt)
-data class Simulation(/* … campos val … */) : Domain<SimulationId> {
+// Factory Method de conveniência no companion (Simulation.kt) — monta UUID/defaults, devolve já-válido.
+// NÃO esconde o construtor: a data class é pública (o `copy()` e o construtor primário seguem acessíveis,
+// ex.: hidratação na persistência). A invariante "nome não-branco" é imposta pelo TIPO do campo, não aqui.
+data class Simulation(val name: NonBlankName, /* … demais campos val … */) : Domain<SimulationId> {
     companion object {
         fun create(name: String, organization: Organization, scenario: Scenario, /* … */): Simulation =
-            Simulation(id = SimulationId(UUID.randomUUID().toString()), name = NonBlankName(name), /* … */)
+            Simulation(name = NonBlankName(name) /* ← o guard real: value class */, /* … */)
     }
 }
-// Chamador nunca vê o construtor cru — recebe um agregado já-válido (encapsulamento na origem).
+// A garantia forte mora no value class NonBlankName (init { require(...) }) — todo caminho de construção
+// passa por ele. A factory apenas conveniência; quem torna o estado ilegal irrepresentável é o tipo.
 ```
 
 ---
@@ -84,7 +87,7 @@ data class Simulation(/* … campos val … */) : Domain<SimulationId> {
 | Padrão | No projeto | Forma idiomática |
 |---|---|---|
 | **Adapter** | ✅ **realizado** | Ports-and-adapters: `DefaultSimulationEngine : SimulationEnginePort` (`DefaultSimulationEngine.kt:9`), `MicrometerEventPublisher : EventPublisherPort` (`MicrometerEventPublisher.kt:9`), os repositórios em `sql_persistence/internal/repositories` adaptam Exposed → porta de `usecases`. O adapter converte o mundo externo (Micrometer, JDBC) no contrato do domínio. |
-| **Decorator** | ✅ **realizado** | `CircuitBreakerDataSource(private val delegate: DataSource) : DataSource` (`CircuitBreakerDataSource.kt:19-20`) **decora** um `DataSource`: adiciona rejeição-com-circuito-aberto e delega o resto. Composição pura (`delegate`), zero herança. É o Decorator canônico do repo. |
+| **Decorator** | ✅ **realizado** | `CircuitBreakerDataSource(delegate: DataSource, circuitBreaker: CircuitBreaker) : DataSource by delegate` (`CircuitBreakerDataSource.kt:19-42`) **decora** um `DataSource`: sobrescreve **ambas** as sobrecargas de `getConnection` para rejeitar o checkout com o circuito aberto (`rejectWhenOpen()` privado) e delega todo o resto via `by delegate`. Composição pura, zero herança. É o Decorator canônico do repo. |
 | **Facade** | ✅ **realizado** | Cada **use case** (`RunDayUseCase`, `CreateSimulationUseCase`) é uma fachada: esconde a orquestração de repositório + engine + publisher atrás de uma operação única (CQS). |
 | **Composite** | ✅ **realizado** (dados) | A árvore `Board → Step → Card` e `Organization → Tribe → Squad` é uma composição hierárquica navegada por transformações puras (`Board.withCards`, `SimulationEngine.kt:255`). |
 | **Proxy** | 🔷 parcial | O circuit breaker também tem sabor de *protection proxy* (controla acesso ao recurso). Um proxy "puro" não é necessário — a resiliência mora no Decorator acima. |
@@ -92,14 +95,26 @@ data class Simulation(/* … campos val … */) : Domain<SimulationId> {
 | **Flyweight** | ⚪ não aplicável | `value class` já elimina alocação de wrappers; sem pressão de memória que justifique pool de instâncias. |
 
 ```kotlin
-// Decorator real — CircuitBreakerDataSource decora DataSource por composição (não por herança de impl)
+// Decorator real (CircuitBreakerDataSource.kt) — decora DataSource por COMPOSIÇÃO, não por herança de impl
 class CircuitBreakerDataSource(
-    private val delegate: DataSource,     // ← o componente decorado
-    private val breaker: DbCircuitBreaker,
-) : DataSource by delegate {               // Kotlin: delegação de interface = boilerplate zero
+    private val delegate: DataSource,            // ← o componente decorado
+    private val circuitBreaker: CircuitBreaker,  // resilience4j (não o object DbCircuitBreaker)
+) : DataSource by delegate {                     // Kotlin: delegação de interface = boilerplate zero
     override fun getConnection(): Connection {
-        breaker.guard()                    // comportamento adicionado
-        return delegate.connection          // resto delegado
+        rejectWhenOpen()                         // comportamento adicionado
+        return delegate.connection               // resto delegado
+    }
+
+    override fun getConnection(username: String?, password: String?): Connection {
+        rejectWhenOpen()                         // a MESMA guarda na sobrecarga credenciada
+        return delegate.getConnection(username, password)
+    }
+
+    private fun rejectWhenOpen() {               // lê circuitBreaker.state; lança se OPEN/FORCED_OPEN
+        val state = circuitBreaker.state
+        if (state == CircuitBreaker.State.OPEN || state == CircuitBreaker.State.FORCED_OPEN) {
+            throw CallNotPermittedException.createCallNotPermittedException(circuitBreaker)
+        }
     }
 }
 ```
@@ -120,7 +135,7 @@ class CircuitBreakerDataSource(
 | **Strategy** | ✅ **realizado** (3 formas) | (a) **Port**: `SimulationEnginePort` troca a estratégia de simulação (`DefaultSimulationEngine` vs. mock). (b) **Enum-carrega-comportamento**: `ServiceClass` guarda `schedulingRank`/`shuffleWithinTier`, e `orderTodoByPriority` (`SimulationEngine.kt:239-253`) ordena genericamente — a política de agendamento mora no enum, não num `when` espalhado. (c) **Função-valor**: `val validate: (String) -> Boolean`. |
 | **Command** | ✅ **realizado** | `sealed interface Decision` (`Decision.kt:7`: `MoveItem`/`BlockItem`/`UnblockItem`/`AddItem`) — cada comando é um objeto-dado imutável que o engine interpreta. E os **Commands de CQS** (`RunDayCommand`, `CreateSimulationCommand`) reificam a intenção do caller. |
 | **Observer / Pub-Sub** | ✅ **realizado** | `EventPublisherPort` (`EventPublisherPort.kt:5`) + `DomainEvent` + `MicrometerEventPublisher`: o use case publica eventos de domínio; o observador (métricas) reage sem o domínio conhecê-lo. DIP + eventos. |
-| **State** | ✅ **realizado** | `CardState` (enum) + transições como métodos do agregado: `Card.advance()`/`Card.block()` fazem `when(state)` e devolvem `copy(state = ...)` (máquina de estados **imutável**, sem objetos-estado mutáveis). |
+| **State** | ✅ **realizado** | `CardState` (enum) + transições como métodos do agregado, máquina de estados **imutável** (sem objetos-estado mutáveis). Duas formas convivem: `Card.advance()` (`Card.kt:70`) é uma transição **total** — `when(state)` cobre todo caso e devolve `copy(state = ...)`; `Card.block()` (`Card.kt:79`) é uma transição **parcial com falha tipada** — `ensure(state == IN_PROGRESS) { KanbanError.CardNotInProgress }` e devolve `Either<KanbanError, Card>` (ADR-0044). Regra do projeto: transição total → `copy()` direto; transição que pode ser inválida por regra → `Either`/`raise`. |
 | **Template Method** | ⚠️ vira HOF | O "esqueleto com passos variáveis" é uma **função de alta ordem**: `dbQuery { … }` (`either { catch { transaction { } } }`) fixa o esqueleto (transação + captura de erro) e recebe o passo variável como lambda. Sem `abstract class` + `override`. |
 | **Iterator** | ⚠️ dissolve | `Sequence`/`Iterable` + `map`/`filter`/`fold` da stdlib. Nunca escreva `Iterator` à mão. |
 | **Visitor** | ⚠️ vira `when` | `sealed` + `when` exaustivo externo dá *double-dispatch* sem a cerimônia `accept(visitor)`. O compilador força a exaustividade (novo caso = erro de compilação). |
