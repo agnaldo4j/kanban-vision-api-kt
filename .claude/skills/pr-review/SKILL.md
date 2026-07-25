@@ -21,13 +21,22 @@ posta o parecer como comentário **`[claude]`**. Então, num PR aberto, o **cami
 reports já postados** — não redisparar o harness. Dispatchar `/pr-review` manualmente é **exceção**:
 quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-review pontual.
 
-> 🔴 **Ausência de parecer NÃO é aprovação — o gate de revisão pode ficar silenciosamente VAZIO.**
-> O job do harness é advisory e o passo carrega `continue-on-error`: quando a `claude-code-action` falha
-> (`is_error: true`, tipicamente `num_turns: 1`, `duration_ms` ~300, `total_cost_usd: 0`), **nada é postado
-> no PR** e o run inteiro ainda conclui **verde** (`success`) — o único sinal é um `::warning` enterrado na
-> aba Actions. Some-se o Codex silencioso e o Copilot em quota, e o PR fica **mergeável com todos os checks
-> verdes e ZERO revisão, sem nada vermelho** (aconteceu no #364). É a mesma família do "✅ fabricado" do
-> GAP-CC: silêncio lido como aprovação.
+> 🔴 **Ausência de parecer NÃO é aprovação — mas TAMBÉM não é defeito. Normalmente é SALDO.**
+> A `claude-code-action` é **paga**: sem saldo na conta, ela sai com `is_error: true` (tipicamente
+> `num_turns: 1`, `duration_ms` ~300, `total_cost_usd: 0`) e **nada é postado no PR**. Isso é
+> **comportamento esperado**, não incidente — volta a rodar quando há saldo.
+> ⛔ **NÃO diagnostique, não abra card, não construa visibilidade para isso.** O card GAP-EK nasceu dessa
+> premissa errada e foi **fechado pelo mantenedor** (2026-07-25: *"não tem nada a modificar"*). Não confunda
+> com o GAP-CW, que era `--model` inválido e já foi corrigido.
+> ⛔ **NUNCA dispare o `/pr-review` por conta própria** — inclusive "para puxar melhorias". O harness custa
+> dinheiro; **quem decide quando rodar é o mantenedor**. Se o parecer não existe, **relate e siga**; se achar
+> que vale rodar, **pergunte**.
+>
+> O que **continua** valendo: o job é advisory e o passo carrega `continue-on-error`, então o run conclui
+> **verde** de qualquer forma. Somado ao Codex silencioso e ao Copilot em quota, um PR fica **mergeável com
+> todos os checks verdes e ZERO revisão, sem nada vermelho** (aconteceu no #364). Então **não registre
+> "harness APPROVE" sem ter lido um parecer real**, e decida o merge com a regra de isenção abaixo — mas
+> trate a ausência como *informação*, não como alarme.
 > **Antes de dar um PR como pronto, confirme que o parecer EXISTE para o head SHA** — não presuma:
 > ```bash
 > N=<n>; SHA=$(gh pr view $N --json headRefOid -q .headRefOid)
@@ -42,8 +51,10 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > gh run view <id> --log | grep -E 'Resolved PR|Nenhum PR aberto|is_error|::warning'
 > ```
 > São **três** estados, não dois, e os dois últimos concluem verde: (a) parecer postado; (b) o harness
-> resolveu o PR e **falhou** (`is_error: true`); (c) o run **nem chegou** ao harness — `Nenhum PR aberto com
-> head == $RUN_SHA … Pulando` (ou o job sai `skipped`). Por isso o grep inclui a linha de "pulando".
+> resolveu o PR e **não rodou** (`is_error: true` — quase sempre **sem saldo**, ver acima; nada a consertar);
+> (c) o run **nem chegou** ao harness — `Nenhum PR aberto com head == $RUN_SHA … Pulando` (ou o job sai
+> `skipped`). Por isso o grep inclui a linha de "pulando". Distinguir (b) de (c) serve para **saber**, não
+> para agir: em nenhum dos dois há defeito nosso.
 > E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
 > reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
 > exatamente o falso-verde que este bloco existe para matar.
