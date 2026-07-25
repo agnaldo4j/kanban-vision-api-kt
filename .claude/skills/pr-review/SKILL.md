@@ -50,13 +50,19 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > Se o parecer não existe, o que fazer depende do tipo de PR — mas **por allowlist, não por exclusão**:
 > dispensa revisão **só** o PR em que **TODO** arquivo alterado é doc/processo puro. Qualquer outra coisa
 > exige **dispatch manual antes do merge**.
-> A regra é **executável** — não a reimplemente na mão a cada vez:
+> A regra é **executável e roda sozinha no CI** — o job advisory `Review Exemption Advisory` posta um
+> sticky **Review Exemption Report** em todo PR. Não dependa de lembrar: leia o comentário. Para rodar
+> à mão:
 > ```bash
-> scripts/review-exemption.sh <n>
-> #   exit 0  EXEMPT           → doc/processo puro; merge sem parecer é aceitável (registre no PR)
-> #   exit 1  REVIEW-REQUIRED  → lista os arquivos que chegam em produção/gates ⇒ dispatch manual
-> #   exit 2  INDETERMINATE    → API falhou ou lista vazia ⇒ trate como REVIEW-REQUIRED
+> scripts/review-exemption.sh <n>          # consulta o PR
+> scripts/review-exemption.sh --paths -    # classifica caminhos do stdin (offline, sem token)
+> #   exit  0  EXEMPT           → doc/processo puro; merge sem parecer é aceitável (registre no PR)
+> #   exit  1  REVIEW-REQUIRED  → lista os arquivos que chegam em produção/gates ⇒ dispatch manual
+> #   exit  2  INDETERMINATE    → API falhou ou lista vazia ⇒ trate como REVIEW-REQUIRED
+> #   exit 64  erro de USO      → distinto de 1 de propósito: typo não pode virar "há risco"
 > ```
+> A tabela caminho → esperado vive em `scripts/test-review-exemption.sh` e roda como gate no CI —
+> foi assim que os vazamentos da allowlist apareceram; ler o regex não bastou, duas vezes.
 > O script é a fonte única da allowlist; o `SKILL.md` só explica **por que** ela tem a forma que tem — três
 > decisões que vieram de defeito real, e que não devem ser "simplificadas" de volta:
 > - **Fail-closed em erro de API.** `gh … | grep -v` engole `exit≠0`: token expirado, rate limit ou PR

@@ -577,6 +577,78 @@ jobs:
           body: ${{ steps.flow-report.outputs.body }}
           edit-mode: replace
 
+  review-exemption:
+    name: Review Exemption Advisory
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Gate REAL (`run:`, sem continue-on-error): a tabela caminho → esperado roda OFFLINE, sem token
+      # nem rede. Ela existe porque os vazamentos da allowlist (#368) só apareceram exercitando caminho
+      # a caminho — duas rodadas de leitura do regex não pegaram.
+      - name: Self-test do classificador (offline)
+        run: scripts/test-review-exemption.sh
+
+      # Este PR pode ser mergeado sem parecer do harness? A cadeia #365→#367→#368 mergeou pela metade
+      # três vezes porque a checagem dependia de alguém LEMBRAR de rodá-la — um guard que depende de
+      # memória herda o modo de falha que existe para matar. Aqui ele é advisory e automático: reporta
+      # sempre, nunca bloqueia (o veredito de merge continua humano).
+      - name: Classificar o PR
+        id: exemption
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_REPO: ${{ github.repository }}
+        run: |
+          set +e
+          out=$(scripts/review-exemption.sh "$PR_NUMBER" "$TARGET_REPO" 2>&1)
+          rc=$?
+          set -e
+          case "$rc" in
+            0) verdict='✅ **EXEMPT** — todo arquivo alterado é doc/processo puro. Mergear sem parecer do harness é aceitável; registre isso no PR.' ;;
+            1) verdict='⚠️ **REVIEW-REQUIRED** — este PR chega em produção ou nos gates. Confirme que existe parecer para o head SHA; se não houver, dispare `/pr-review` antes do merge.' ;;
+            2) verdict='❓ **INDETERMINATE** — não deu para classificar (API/lista vazia). Trate como REVIEW-REQUIRED: o lado seguro é exigir revisão.' ;;
+            *) verdict="❗ **Erro do classificador** (exit $rc) — trate como REVIEW-REQUIRED." ;;
+          esac
+          {
+            echo 'body<<REVIEW_EXEMPTION_REPORT'
+            echo '## Review Exemption Report'
+            echo ''
+            echo "$verdict"
+            echo ''
+            echo '```'
+            echo "$out"
+            echo '```'
+            echo ''
+            echo '> Advisory, **nunca** gate de merge — `scripts/review-exemption.sh`. Regra e limitações: `/pr-review`.'
+            echo 'REVIEW_EXEMPTION_REPORT'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing review exemption comment
+        id: find-exemption
+        uses: peter-evans/find-comment@v4
+        continue-on-error: true
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '## Review Exemption Report'
+
+      - name: Post review exemption report on PR
+        uses: peter-evans/create-or-update-comment@v5
+        continue-on-error: true
+        with:
+          comment-id: ${{ steps.find-exemption.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ steps.exemption.outputs.body }}
+          edit-mode: replace
+
   config-lint:
     name: Config Lint (Alertmanager + Prometheus)
     runs-on: ubuntu-latest
