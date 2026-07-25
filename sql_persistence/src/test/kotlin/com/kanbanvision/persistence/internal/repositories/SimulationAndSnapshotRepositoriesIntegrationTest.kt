@@ -14,8 +14,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SimulationAndSnapshotRepositoriesIntegrationTest {
@@ -32,6 +34,22 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun cleanDatabase() {
         EmbeddedPostgresSupport.refreshDataSource()
         EmbeddedPostgresSupport.resetDatabase()
+    }
+
+    @Test
+    fun `organizations name CHECK (V3) rejects a blank name at the relational edge`() {
+        // GAP-DH: o CHECK ck_organizations_name_not_blank espelha o invariante Organization.name → NonBlankName.
+        // Um seed externo com nome em branco falha no banco, antes de chegar ao decode NonBlankName(row[...]).
+        val ex =
+            assertFailsWith<Exception> {
+                EmbeddedPostgresSupport.insertOrganization(id = "org-blank", name = "   ")
+            }
+        assertTrue(
+            generateSequence(ex as Throwable?) { it.cause }.any {
+                it.message?.contains("ck_organizations_name_not_blank") == true
+            },
+            "esperava violação de ck_organizations_name_not_blank, veio: ${ex.message ?: "(sem mensagem)"}",
+        )
     }
 
     @Test
