@@ -38,7 +38,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given simulation aggregate when saving and finding by id then repository restores serialized state`() =
         runBlocking {
             val simulation = PersistenceFixtures.simulation()
-            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
+            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
 
             simulationRepository.save(simulation).getOrElse { error("save simulation failed: $it") }
             val loaded = simulationRepository.findById(simulation.id).getOrElse { error("find simulation failed: $it") }
@@ -64,7 +64,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given existing simulation id when saving again then repository upserts simulation row and state`() =
         runBlocking {
             val simulation = PersistenceFixtures.simulation()
-            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
+            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
             simulationRepository.save(simulation).getOrElse { error("first save simulation failed: $it") }
 
             val changed = simulation.copy(name = "Simulation Updated", currentDay = SimulationDay(4))
@@ -98,7 +98,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
                     ).getOrElse { error("find fallback simulation failed: $it") }
 
             assertEquals(simulationId, loaded.id.value)
-            assertEquals("Fallback Org", loaded.organization.name)
+            assertEquals("Fallback Org", loaded.organization.name.value)
             assertEquals(1, loaded.currentDay.value)
             assertEquals(3, loaded.scenario.rules.wipLimit)
         }
@@ -119,7 +119,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
             val found = organizationRepository.findById(organizationId).getOrElse { error("find org failed: $it") }
 
             assertEquals(organizationId, found.id)
-            assertEquals("Org persisted", found.name)
+            assertEquals("Org persisted", found.name.value)
         }
 
     @Test
@@ -128,7 +128,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
             val simulation = PersistenceFixtures.simulation()
             val dayTwo = PersistenceFixtures.snapshot(simulation.id.value, day = 2)
             val dayThree = PersistenceFixtures.snapshot(simulation.id.value, day = 3).copy(id = "c0000000-0000-0000-0000-000000000099")
-            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
+            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
             simulationRepository.save(simulation).getOrElse { error("save simulation failed: $it") }
 
             snapshotRepository.save(dayTwo).getOrElse { error("save dayTwo failed: $it") }
@@ -148,7 +148,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
             val simulation = PersistenceFixtures.simulation()
             val dayTwo = PersistenceFixtures.snapshot(simulation.id.value, day = 2)
             val changedDayTwo = dayTwo.copy(id = "c0000000-0000-0000-0000-000000000222")
-            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
+            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
             simulationRepository.save(simulation).getOrElse { error("save simulation failed: $it") }
 
             snapshotRepository.save(dayTwo).getOrElse { error("first snapshot save failed: $it") }
@@ -163,7 +163,7 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
     fun `given simulation without snapshots when finding by day then repository returns null without error`() =
         runBlocking {
             val simulation = PersistenceFixtures.simulation()
-            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name)
+            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
             simulationRepository.save(simulation).getOrElse { error("save simulation failed: $it") }
 
             val byDay = snapshotRepository.findByDay(simulation.id, SimulationDay(9)).getOrElse { error("find day failed: $it") }

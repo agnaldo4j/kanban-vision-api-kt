@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -85,7 +86,8 @@ class SimulationEnginePurityBehaviorTest {
     private fun executableDevBoard(): Board {
         val base = Board.create(name = "Main").withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
         val devStep = base.steps.first { it.requiredAbility == AbilityName.DEVELOPER }
-        val developer = Worker(name = "Dev", abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
+        val developer =
+            Worker(name = NonBlankName("Dev"), abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)))
         return base.copy(
             steps =
                 base.steps.map { step ->

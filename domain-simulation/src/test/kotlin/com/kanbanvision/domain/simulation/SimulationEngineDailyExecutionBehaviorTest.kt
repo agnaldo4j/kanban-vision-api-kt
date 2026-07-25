@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -122,7 +123,7 @@ class SimulationEngineDailyExecutionBehaviorTest {
     ): Board {
         val developer =
             Worker(
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
 

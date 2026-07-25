@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -48,7 +49,7 @@ class StepValidationAndExecutionBehaviorTest {
     fun `given step workers list with incompatible ability when constructing then step rejects invalid assignment`() {
         val incompatible =
             Worker(
-                name = "PM",
+                name = NonBlankName("PM"),
                 abilities = setOf(Ability(name = AbilityName.PRODUCT_MANAGER, seniority = Seniority.JR)),
             )
 
@@ -66,7 +67,7 @@ class StepValidationAndExecutionBehaviorTest {
     fun `given assigned worker when unassigning then step no longer keeps worker`() {
         val worker =
             Worker(
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
         val step =
@@ -83,12 +84,12 @@ class StepValidationAndExecutionBehaviorTest {
     fun `given incompatible worker executing step when invoking execution then operation is rejected`() {
         val developer =
             Worker(
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
         val tester =
             Worker(
-                name = "Tester",
+                name = NonBlankName("Tester"),
                 abilities =
                     setOf(
                         Ability(name = AbilityName.TESTER, seniority = Seniority.PL),
@@ -116,7 +117,7 @@ class StepValidationAndExecutionBehaviorTest {
     fun `given worker already assigned to step when assigning again then operation is rejected`() {
         val worker =
             Worker(
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
         val step =
@@ -131,7 +132,7 @@ class StepValidationAndExecutionBehaviorTest {
     fun `given empty daily capacities map when executing card then zero effort is consumed`() {
         val worker =
             Worker(
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
         val step =
@@ -150,7 +151,7 @@ class StepValidationAndExecutionBehaviorTest {
     fun `given card already completed for step ability when executing then execution consumes zero and reports completed`() {
         val worker =
             Worker(
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
             )
         val step =

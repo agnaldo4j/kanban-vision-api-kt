@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -64,14 +65,14 @@ class SimulationEngineWorkerAllocationOrderBehaviorTest {
     private fun workerA(): Worker =
         Worker(
             id = "worker-a",
-            name = "A",
+            name = NonBlankName("A"),
             abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
         )
 
     private fun workerB(): Worker =
         Worker(
             id = "worker-b",
-            name = "B",
+            name = NonBlankName("B"),
             abilities = setOf(Ability(name = AbilityName.DEVELOPER, seniority = Seniority.PL)),
         )
 

@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.BoardId
 import com.kanbanvision.domain.model.organization.Organization
@@ -16,7 +17,7 @@ import kotlin.test.assertFailsWith
 class EntityIdentityBehaviorTest {
     @Test
     fun `given blank ids in domain entities when constructing then creation is rejected`() {
-        assertFailsWith<IllegalArgumentException> { Organization(id = "", name = "Org") }
+        assertFailsWith<IllegalArgumentException> { Organization(id = "", name = NonBlankName("Org")) }
         assertFailsWith<IllegalArgumentException> { Board(id = BoardId(""), name = "Board") }
         assertFailsWith<IllegalArgumentException> {
             Scenario(

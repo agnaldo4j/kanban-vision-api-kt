@@ -3,6 +3,7 @@ package com.kanbanvision.persistence.internal.repositories
 import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.common.errors.DomainError
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.persistence.dbQuery
@@ -24,7 +25,7 @@ class JdbcOrganizationRepository : OrganizationRepository {
                 ?.let { row ->
                     Organization(
                         id = row[OrganizationsTable.id],
-                        name = row[OrganizationsTable.name],
+                        name = NonBlankName(row[OrganizationsTable.name]),
                     )
                 }
         }.fold(

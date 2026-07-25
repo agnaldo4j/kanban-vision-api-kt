@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.Squad
 import com.kanbanvision.domain.model.organization.Tribe
@@ -34,7 +35,7 @@ class AggregateInvariantPropertyTest {
     fun `Tribe rejects any blank name`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                runCatching { Tribe(name = blank) }.isFailure
+                runCatching { Tribe(name = NonBlankName(blank)) }.isFailure
             }
         }
     }
@@ -43,7 +44,7 @@ class AggregateInvariantPropertyTest {
     fun `Tribe accepts any non-blank name`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
-                runCatching { Tribe(name = name) }.isSuccess
+                runCatching { Tribe(name = NonBlankName(name)) }.isSuccess
             }
         }
     }
@@ -52,7 +53,7 @@ class AggregateInvariantPropertyTest {
     fun `Squad rejects any blank name`() {
         runBlocking {
             forAll(ARB_BLANK) { blank ->
-                runCatching { Squad(name = blank) }.isFailure
+                runCatching { Squad(name = NonBlankName(blank)) }.isFailure
             }
         }
     }
@@ -61,7 +62,7 @@ class AggregateInvariantPropertyTest {
     fun `Squad accepts any non-blank name`() {
         runBlocking {
             forAll(ARB_NON_BLANK) { name ->
-                runCatching { Squad(name = name) }.isSuccess
+                runCatching { Squad(name = NonBlankName(name)) }.isSuccess
             }
         }
     }

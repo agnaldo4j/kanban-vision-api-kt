@@ -1,5 +1,6 @@
 package com.kanbanvision.persistence.support
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -141,7 +142,7 @@ internal object PersistenceFixtures {
             Ability(id = "30000000-0000-0000-0000-000000000003", name = AbilityName.DEPLOYER, seniority = Seniority.SR)
         return Worker(
             id = "40000000-0000-0000-0000-000000000001",
-            name = "worker-1",
+            name = NonBlankName("worker-1"),
             abilities = setOf(developerAbility, testerAbility, deployerAbility),
         )
     }
@@ -187,8 +188,11 @@ internal object PersistenceFixtures {
         worker: Worker,
     ) = Organization(
         id = organizationId,
-        name = "Org 1",
-        tribes = listOf(Tribe(name = "Tribe A", squads = listOf(Squad(name = "Squad A", workers = listOf(worker))))),
+        name = NonBlankName("Org 1"),
+        tribes =
+            listOf(
+                Tribe(name = NonBlankName("Tribe A"), squads = listOf(Squad(name = NonBlankName("Squad A"), workers = listOf(worker)))),
+            ),
     )
 
     fun card(

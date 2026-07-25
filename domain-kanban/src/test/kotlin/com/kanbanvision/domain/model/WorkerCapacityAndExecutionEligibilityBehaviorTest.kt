@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -16,15 +17,21 @@ import kotlin.test.assertTrue
 class WorkerCapacityAndExecutionEligibilityBehaviorTest {
     @Test
     fun `given invalid worker setup when creating worker then constructor guards are enforced`() {
-        assertFailsWith<IllegalArgumentException> { Worker(id = "", name = "x", abilities = setOf(ability(AbilityName.DEVELOPER))) }
-        assertFailsWith<IllegalArgumentException> { Worker(name = "", abilities = setOf(ability(AbilityName.DEVELOPER))) }
-        assertFailsWith<IllegalArgumentException> { Worker(name = "x", abilities = emptySet()) }
+        assertFailsWith<IllegalArgumentException> {
+            Worker(
+                id = "",
+                name = NonBlankName("x"),
+                abilities = setOf(ability(AbilityName.DEVELOPER)),
+            )
+        }
+        assertFailsWith<IllegalArgumentException> { Worker(name = NonBlankName(""), abilities = setOf(ability(AbilityName.DEVELOPER))) }
+        assertFailsWith<IllegalArgumentException> { Worker(name = NonBlankName("x"), abilities = emptySet()) }
     }
 
     @Test
     fun `given step and worker abilities when checking execution eligibility then can execute mirrors ability match`() {
-        val developer = Worker(name = "Dev", abilities = setOf(ability(AbilityName.DEVELOPER)))
-        val tester = Worker(name = "Tester", abilities = setOf(ability(AbilityName.TESTER), ability(AbilityName.DEPLOYER)))
+        val developer = Worker(name = NonBlankName("Dev"), abilities = setOf(ability(AbilityName.DEVELOPER)))
+        val tester = Worker(name = NonBlankName("Tester"), abilities = setOf(ability(AbilityName.TESTER), ability(AbilityName.DEPLOYER)))
         val devStep = Step.create(board = BoardId("b-1"), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
 
         assertTrue(developer.canExecute(devStep))
@@ -33,7 +40,7 @@ class WorkerCapacityAndExecutionEligibilityBehaviorTest {
 
     @Test
     fun `given invalid random capacity boundaries when generating capacities then input validation fails`() {
-        val worker = Worker(name = "Dev", abilities = setOf(ability(AbilityName.DEVELOPER)))
+        val worker = Worker(name = NonBlankName("Dev"), abilities = setOf(ability(AbilityName.DEVELOPER)))
 
         assertFailsWith<IllegalArgumentException> {
             worker.generateDailyCapacities(random = Random(1), minPoints = -1, maxPoints = 1)
@@ -47,7 +54,7 @@ class WorkerCapacityAndExecutionEligibilityBehaviorTest {
     fun `given same random seed when generating capacities then generation is deterministic for non deploy abilities`() {
         val worker =
             Worker(
-                name = "Multi",
+                name = NonBlankName("Multi"),
                 abilities =
                     setOf(
                         ability(AbilityName.PRODUCT_MANAGER),

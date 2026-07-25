@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model.kanban
 
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.PolicySet
@@ -35,7 +36,7 @@ class KanbanDataClassContractsTest {
         assertEquals(BoardId("b-1"), step.board)
         assertEquals(audit, step.audit)
 
-        val worker = Worker(name = "Dev", abilities = setOf(ability), audit = audit)
+        val worker = Worker(name = NonBlankName("Dev"), abilities = setOf(ability), audit = audit)
         assertEquals(audit, worker.audit)
     }
 
@@ -63,9 +64,9 @@ class KanbanDataClassContractsTest {
 
     @Test
     fun `given organization entities when reading audit then getters expose the constructor value`() {
-        assertEquals(audit, Organization(id = "o-1", name = "Org", audit = audit).audit)
-        assertEquals(audit, Squad(name = "Squad", audit = audit).audit)
-        assertEquals(audit, Tribe(name = "Tribe", audit = audit).audit)
+        assertEquals(audit, Organization(id = "o-1", name = NonBlankName("Org"), audit = audit).audit)
+        assertEquals(audit, Squad(name = NonBlankName("Squad"), audit = audit).audit)
+        assertEquals(audit, Tribe(name = NonBlankName("Tribe"), audit = audit).audit)
         assertEquals(audit, PolicySet(wipLimit = 3, audit = audit).audit)
     }
 
@@ -73,10 +74,10 @@ class KanbanDataClassContractsTest {
     fun `given blank identifiers or names when constructing entities then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { Ability(id = "", name = AbilityName.DEVELOPER, seniority = Seniority.PL) }
         assertFailsWith<IllegalArgumentException> { Board(id = BoardId("b-1"), name = "") }
-        assertFailsWith<IllegalArgumentException> { Organization(id = "", name = "Org") }
-        assertFailsWith<IllegalArgumentException> { Organization(id = "o-1", name = "") }
-        assertFailsWith<IllegalArgumentException> { Squad(id = "", name = "Squad") }
-        assertFailsWith<IllegalArgumentException> { Tribe(id = "", name = "Tribe") }
+        assertFailsWith<IllegalArgumentException> { Organization(id = "", name = NonBlankName("Org")) }
+        assertFailsWith<IllegalArgumentException> { Organization(id = "o-1", name = NonBlankName("")) }
+        assertFailsWith<IllegalArgumentException> { Squad(id = "", name = NonBlankName("Squad")) }
+        assertFailsWith<IllegalArgumentException> { Tribe(id = "", name = NonBlankName("Tribe")) }
     }
 
     @Test

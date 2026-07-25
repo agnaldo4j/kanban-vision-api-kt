@@ -1,4 +1,6 @@
 package com.kanbanvision.domain.model
+
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.BoardId
@@ -21,32 +23,19 @@ class OrganizationTopologyAndAbilityBehaviorTest {
     @Test
     fun `given tribe hierarchy when organization is created then structure is preserved`() {
         val worker = worker(name = "Ana", abilities = setOf(ability(AbilityName.DEVELOPER)))
-        val squad = Squad(name = "Payments", workers = listOf(worker))
-        val tribe = Tribe(name = "Core", squads = listOf(squad))
+        val squad = Squad(name = NonBlankName("Payments"), workers = listOf(worker))
+        val tribe = Tribe(name = NonBlankName("Core"), squads = listOf(squad))
 
         val organization = Organization.create(name = "Acme", tribes = listOf(tribe))
 
-        assertEquals("Acme", organization.name)
+        val firstTribe = organization.tribes.first()
+        val firstSquad = firstTribe.squads.first()
+        val firstWorker = firstSquad.workers.first()
+        assertEquals("Acme", organization.name.value)
         assertEquals(1, organization.tribes.size)
-        assertEquals("Core", organization.tribes.first().name)
-        assertEquals(
-            "Payments",
-            organization.tribes
-                .first()
-                .squads
-                .first()
-                .name,
-        )
-        assertEquals(
-            "Ana",
-            organization.tribes
-                .first()
-                .squads
-                .first()
-                .workers
-                .first()
-                .name,
-        )
+        assertEquals("Core", firstTribe.name.value)
+        assertEquals("Payments", firstSquad.name.value)
+        assertEquals("Ana", firstWorker.name.value)
     }
 
     @Test
@@ -98,5 +87,5 @@ class OrganizationTopologyAndAbilityBehaviorTest {
     private fun worker(
         name: String,
         abilities: Set<Ability>,
-    ): Worker = Worker(name = name, abilities = abilities)
+    ): Worker = Worker(name = NonBlankName(name), abilities = abilities)
 }

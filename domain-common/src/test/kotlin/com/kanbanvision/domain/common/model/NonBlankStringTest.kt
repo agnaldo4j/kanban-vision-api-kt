@@ -15,4 +15,15 @@ class NonBlankStringTest {
         assertFailsWith<IllegalArgumentException> { NonBlankTitle("") }
         assertFailsWith<IllegalArgumentException> { NonBlankTitle("   ") }
     }
+
+    @Test
+    fun `NonBlankName accepts a non-blank value and exposes it`() {
+        assertEquals("Acme", NonBlankName("Acme").value)
+    }
+
+    @Test
+    fun `NonBlankName rejects blank and empty values`() {
+        assertFailsWith<IllegalArgumentException> { NonBlankName("") }
+        assertFailsWith<IllegalArgumentException> { NonBlankName("   ") }
+    }
 }

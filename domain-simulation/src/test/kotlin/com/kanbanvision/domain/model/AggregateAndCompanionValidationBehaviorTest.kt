@@ -1,4 +1,6 @@
 package com.kanbanvision.domain.model
+
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
@@ -28,8 +30,8 @@ class AggregateAndCompanionValidationBehaviorTest {
     fun `given blank names when creating top level aggregates then creation is rejected`() {
         assertFailsWith<IllegalArgumentException> { Organization.create(name = "") }
         assertFailsWith<IllegalArgumentException> { Board.create(name = "") }
-        assertFailsWith<IllegalArgumentException> { Tribe(name = "") }
-        assertFailsWith<IllegalArgumentException> { Squad(name = "") }
+        assertFailsWith<IllegalArgumentException> { Tribe(name = NonBlankName("")) }
+        assertFailsWith<IllegalArgumentException> { Squad(name = NonBlankName("")) }
     }
 
     @Test

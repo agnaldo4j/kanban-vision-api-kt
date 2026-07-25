@@ -1,6 +1,7 @@
 package com.kanbanvision.domain.model
 
 import com.kanbanvision.domain.common.model.Audit
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
@@ -60,7 +61,7 @@ class DefaultArgumentContractsBehaviorTest {
         assertEquals("ab-1", ability.id)
         assertEquals(fixedInstant, ability.audit.createdAt)
 
-        val worker = Worker(id = "w-1", name = "Dev", abilities = setOf(ability), audit = explicitAudit)
+        val worker = Worker(id = "w-1", name = NonBlankName("Dev"), abilities = setOf(ability), audit = explicitAudit)
         assertEquals("w-1", worker.id)
 
         val step =
@@ -84,13 +85,13 @@ class DefaultArgumentContractsBehaviorTest {
 
     @Test
     fun `organization entities accept explicit id and audit or generate defaults`() {
-        val squad = Squad(id = "sq-1", name = "Alpha", audit = explicitAudit)
+        val squad = Squad(id = "sq-1", name = NonBlankName("Alpha"), audit = explicitAudit)
         assertTrue(squad.workers.isEmpty())
 
-        val tribe = Tribe(id = "t-1", name = "Core", squads = listOf(squad), audit = explicitAudit)
+        val tribe = Tribe(id = "t-1", name = NonBlankName("Core"), squads = listOf(squad), audit = explicitAudit)
         assertEquals("t-1", tribe.id)
 
-        val org = Organization(id = "o-1", name = "Org", tribes = listOf(tribe), audit = explicitAudit)
+        val org = Organization(id = "o-1", name = NonBlankName("Org"), tribes = listOf(tribe), audit = explicitAudit)
         assertEquals("o-1", org.id)
 
         val policySet = PolicySet(id = "p-1", wipLimit = 3, audit = explicitAudit)
