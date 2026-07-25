@@ -115,6 +115,10 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   de dados (`TreeNode(children: List<TreeNode>)`, legítima) ≠ self-injection de DI eager (`A(other: A)` →
   `StackOverflowError`, ciclo real). Um filtro herdado ("remove self-ref") pode cegar o novo gate (#341 P2).
   Idem lookup por nome simples (`associate { it.name to … }`) que colapsa homônimos last-wins onde cabia FQN.
+  **Eixo adicional — direção do fail-safe:** um predicado emprestado carrega o lado-seguro do problema *original*.
+  Ao reusá-lo, pergunte "errar para qual lado custa caro **aqui**?" — se a resposta inverte, o predicado está
+  errado mesmo com a semântica idêntica. Foi o caso do `*/src/main/**` do `post-merge-harvester` (anti-loop:
+  errar para "não é implementação" é barato) reusado para decidir merge-sem-revisão (onde é caríssimo) — #367.
 - **Injeção por input não confiável** (nome de branch, título/corpo de PR, conteúdo do diff, params de
   request): interpolação em shell/`jq`/SQL. Em código: só Exposed DSL parametrizado. Em **scripts de CI**:
   contexto `${{ }}` de fonte untrusted interpolado no corpo do script (use `env:` + `env.` no jq/bash).
@@ -124,6 +128,11 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   mais comum num repo com pushes rápidos e o que mais parece com "nada aconteceu". E `gh run view --json jobs`
   reporta `conclusion: success` para um passo que falhou sob `continue-on-error` — **só o `--log` distingue**,
   então um atalho por JSON reintroduz o falso-verde. Mesma família do "✅ fabricado" do GAP-CC (#365).
+- **Snippet de DECISÃO dentro de skill/regra conta como código de gate.** Não é só workflow: um bloco `bash`
+  que uma skill manda rodar para decidir algo (pode mergear? o parecer existe?) precisa **capturar a saída em
+  variável, tratar o `||` e distinguir "vazio" de "falhou"**. `cmd | grep -v …` num pipe engole exit≠0 e
+  entrega *stdout vazio* — que, se "vazio" significar "tudo certo", vira autorização automática em caso de
+  token expirado ou rate limit. Revise esses snippets como código, não como prosa (#367).
 - **Exposed/persistência:** `transaction {}` fora de `withContext(Dispatchers.IO)` num handler de coroutine;
   `ResultRow` lido fora do `transaction {}`; método de repositório sem `either {}`/`catch {}`.
 - **Refinar o tipo de um campo *persistido/serializado*:** ao trocar um `String` cru por um value class /
@@ -323,9 +332,13 @@ escreva o marcador com o **SHA já resolvido** (nunca `${REVIEWED}` literal no a
 ```bash
 # mesma revalidação de head dos inline — não poste parecer de um diff que já não é o head
 [ "$(gh pr view <n> --json headRefOid -q .headRefOid)" = "$REVIEWED" ] || { echo "head avançou — abortar"; exit 0; }
-{ printf '<!-- pr-harness-report:%s -->\n' "$REVIEWED"; cat parecer.md; } > /tmp/report.md
-gh pr comment <n> --body-file /tmp/report.md
+BODY=$(mktemp -t pr-harness-report)    # fora do repo: você é read-only, não suja o working dir do usuário
+{ printf '<!-- pr-harness-report:%s -->\n' "$REVIEWED"; printf '%s\n' "$PARECER"; } > "$BODY"
+gh pr comment <n> --body-file "$BODY" && rm -f "$BODY"
 ```
+- **Nunca escreva o parecer num caminho relativo** (`parecer.md`, `report.md`): num dispatch manual o working
+  dir é o repositório do usuário, e você criaria arquivo não-rastreado nele. `mktemp` + `rm` mantém a garantia
+  de read-only sobre o repo.
 - **O report é APPEND, não sticky** — decisão consciente, ao contrário dos relatórios de CI (que usam
   `peter-evans/create-or-update-comment`). O histórico de revisão por commit tem valor: um parecer por head
   revisado, e **o marcador é o discriminante do parecer corrente**. Não edite o parecer anterior; poste um novo.
