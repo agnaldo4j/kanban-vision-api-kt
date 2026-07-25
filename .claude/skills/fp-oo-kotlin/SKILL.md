@@ -465,10 +465,12 @@ class/smart constructor faz o guard SER o tipo**:
 @JvmInline value class NonBlankName(val value: String) { init { require(value.isNotBlank()) } }
 // Ninguém consegue construir um nome em branco — a regra não vaza para cada chamador.
 
-// ✅ A regra de transição mora no agregado, não em quem chama (ADR-0044)
-fun Card.block(): Either<KanbanError, Card> = either {
-    ensure(state == CardState.IN_PROGRESS) { KanbanError.CardNotInProgress(id.value) }
-    copy(state = CardState.BLOCKED)
+// ✅ A regra de transição é MÉTODO do agregado (não extensão) — mora dentro dele (ADR-0044)
+data class Card(/* … */) {
+    fun block(): Either<KanbanError, Card> = either {
+        ensure(state == CardState.IN_PROGRESS) { KanbanError.CardNotInProgress(id.value) }
+        copy(state = CardState.BLOCKED)
+    }
 }
 // Board.addStep enforça "nome de step único no board" DENTRO do Board — o caller pede, não fiscaliza.
 ```
@@ -484,8 +486,10 @@ val next = simulation.copy(
     history = simulation.history + snapshot,                      // reimplementa appendSnapshot()
 )
 
-// ✅ Tell: peça as transições ao agregado — ele é o dono da regra
-val next = simulation.advanceDay().appendDecisions(decisions).appendSnapshot(snapshot)
+// ✅ Tell: peça as transições ao agregado — ele é o dono da regra (API real: `appendDecision` é singular)
+val next = decisions
+    .fold(simulation.advanceDay()) { acc, d -> acc.appendDecision(d) }
+    .appendSnapshot(snapshot)
 ```
 
 **Sem estado redundante/vazado (single-source).** Guardar a mesma verdade em dois campos e reconciliar por um
