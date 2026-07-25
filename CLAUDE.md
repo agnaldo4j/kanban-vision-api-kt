@@ -64,6 +64,7 @@ JWT_DEV_MODE=true GRAFANA_ADMIN_PASSWORD=admin docker compose up --build
 | `/c4-model` | Update C4 diagrams in the wiki after architecture changes |
 | `/definition-of-done` | Verify DoD before marking any task complete |
 | `/microservices-modular-monolith` | Evaluate module boundaries, plan extraction |
+| `/reactive-systems` | Evaluate reactivity — Reactive Manifesto traits (Responsive/Resilient/Elastic/Message-Driven) + reactive programming vs reactive systems; classify a change as programming-level (cheap) vs system-level (ADR); avoid message-driven cargo-cult in the monolith |
 | `/opentelemetry` | JSON logs, Prometheus metrics, OTel SDK traces (ADR-0031), Grafana stack |
 | `/load-testing` | k6 load tests — baseline p95, perfis, thresholds e workflow manual (ADR-0027) |
 | `/local-and-production-environment` | Dockerfile, docker-compose, Kubernetes manifests |
