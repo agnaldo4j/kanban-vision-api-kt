@@ -67,7 +67,7 @@ oposto e igualmente real: uma **variante que este release não conhece**, gravad
   (`Decision`/`MovementType`), você reverte, e os pods antigos deixam de ler o histórico **que eles mesmos
   acabaram de gravar**. Sob rolling update/HPA as duas versões convivem por minutos, então o blob misto é o
   caso normal, não a exceção. Decode que faz `error("Unknown …")` ou `enum.valueOf(raw)` transforma isso em
-  `PersistenceError` → 500 em `findById` **e na página inteira** de `findAllByOrganization`.
+  `PersistenceError` → 500 em `findById` **e na página inteira** de `findAll(organizationId, page, size)`.
 - **Regra: preserve o registro, não pule.** Mapeie o irreconhecível para uma variante portadora
   (`Decision.Unknown(type, payload)` / `MovementType.Unknown(raw)`).
   **Descartar é lossy, não é degradação de leitura:** `JdbcSimulationRepository` re-serializa o **agregado
