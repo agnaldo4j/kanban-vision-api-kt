@@ -9,7 +9,8 @@ package com.kanbanvision.domain.model.kanban
  * na ordem [EXPEDITE] → [FIXED_DATE] → [STANDARD] → [INTANGIBLE], com STANDARD/INTANGIBLE embaralhados para evitar
  * inanição e FIXED_DATE preservando a ordem (deadline já ordena por urgência).
  *
- * @property schedulingRank menor = agendado antes (tier de prioridade).
+ * @property schedulingRank menor = agendado antes (tier de prioridade). **Deve ser distinto entre as variantes**
+ *   — é ele que define a ordem total do agendamento (o teste de política ancora essa ordem).
  * @property shuffleWithinTier embaralhar os cards do mesmo rank (anti-starvation) vs. manter a ordem.
  */
 enum class ServiceClass(

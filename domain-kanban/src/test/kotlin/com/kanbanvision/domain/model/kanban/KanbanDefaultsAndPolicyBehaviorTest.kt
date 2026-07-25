@@ -85,6 +85,8 @@ class KanbanDefaultsAndPolicyBehaviorTest {
         // OOD (enum-carrega-comportamento): a política de agendamento mora no enum, não num when do engine.
         val byRank = ServiceClass.entries.sortedBy { it.schedulingRank }.map { it.name }
         assertEquals(listOf("EXPEDITE", "FIXED_DATE", "STANDARD", "INTANGIBLE"), byRank)
+        // ranks distintos definem a ordem total do agendamento (contrato de que o engine depende).
+        assertEquals(ServiceClass.entries.size, ServiceClass.entries.map { it.schedulingRank }.toSet().size)
 
         assertTrue(ServiceClass.STANDARD.shuffleWithinTier)
         assertTrue(ServiceClass.INTANGIBLE.shuffleWithinTier)
