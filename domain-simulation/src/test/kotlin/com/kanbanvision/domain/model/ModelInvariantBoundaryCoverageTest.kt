@@ -55,7 +55,7 @@ class ModelInvariantBoundaryCoverageTest {
 
         val scenario = Scenario.create(name = "Scenario", rules = rules)
 
-        assertEquals("Main Board", scenario.board.name)
+        assertEquals("Main Board", scenario.board.name.value)
     }
 
     @Test

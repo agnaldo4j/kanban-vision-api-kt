@@ -30,12 +30,12 @@ internal fun fixtureScenario(
     seedValue: Long = 42L,
 ): Scenario {
     val board =
-        Board(id = BoardId("board-1"), name = "Main Board")
+        Board(id = BoardId("board-1"), name = NonBlankName("Main Board"))
             .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
             .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
     return Scenario(
         id = ScenarioId(id),
-        name = "Default Simulation Scenario",
+        name = NonBlankName("Default Simulation Scenario"),
         rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = teamSize, seedValue = seedValue),
         board = board,
     )
@@ -51,7 +51,7 @@ internal fun fixtureSimulation(
 ): Simulation =
     Simulation(
         id = SimulationId(id),
-        name = "Simulation",
+        name = NonBlankName("Simulation"),
         currentDay = SimulationDay(day),
         status = status,
         organization = fixtureOrganization(id = organizationId),

@@ -5,13 +5,14 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
+import com.kanbanvision.domain.common.model.NonBlankName
 import java.time.Instant
 import java.util.UUID
 
 data class Step(
     override val id: StepId = StepId(UUID.randomUUID().toString()),
     val board: BoardId,
-    val name: String,
+    val name: NonBlankName,
     val position: Int = 0,
     val requiredAbility: AbilityName,
     val cards: List<Card> = emptyList(),
@@ -25,10 +26,9 @@ data class Step(
     )
 
     init {
-        require(name.isNotBlank()) { "Step name must not be blank" }
         require(position >= 0) { "Step position must be non-negative" }
         require(workers.all { it.hasAbility(requiredAbility) }) {
-            "All workers assigned to step '$name' must have required ability $requiredAbility"
+            "All workers assigned to step '${name.value}' must have required ability $requiredAbility"
         }
     }
 
@@ -39,12 +39,11 @@ data class Step(
             position: Int,
             requiredAbility: AbilityName,
         ): Step {
-            require(name.isNotBlank()) { "Step name must not be blank" }
             require(position >= 0) { "Step position must be non-negative" }
             return Step(
                 id = StepId(UUID.randomUUID().toString()),
                 board = board,
-                name = name,
+                name = NonBlankName(name),
                 position = position,
                 requiredAbility = requiredAbility,
             )

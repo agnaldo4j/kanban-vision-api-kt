@@ -23,16 +23,22 @@ class StepValidationAndExecutionBehaviorTest {
     @Test
     fun `given invalid step constructor and factory inputs when creating then invariants reject invalid values`() {
         assertFailsWith<IllegalArgumentException> {
-            Step(id = StepId(""), board = BoardId("b-1"), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId(""), board = BoardId("b-1"), name = NonBlankName("Dev"), requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step(id = StepId("s-1"), board = BoardId(""), name = "Dev", requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId("s-1"), board = BoardId(""), name = NonBlankName("Dev"), requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step(id = StepId("s-1"), board = BoardId("b-1"), name = "", requiredAbility = AbilityName.DEVELOPER)
+            Step(id = StepId("s-1"), board = BoardId("b-1"), name = NonBlankName(""), requiredAbility = AbilityName.DEVELOPER)
         }
         assertFailsWith<IllegalArgumentException> {
-            Step(id = StepId("s-1"), board = BoardId("b-1"), name = "Dev", position = -1, requiredAbility = AbilityName.DEVELOPER)
+            Step(
+                id = StepId("s-1"),
+                board = BoardId("b-1"),
+                name = NonBlankName("Dev"),
+                position = -1,
+                requiredAbility = AbilityName.DEVELOPER,
+            )
         }
         assertFailsWith<IllegalArgumentException> {
             Step.create(board = BoardId(""), name = "Dev", position = 0, requiredAbility = AbilityName.DEVELOPER)
@@ -56,7 +62,7 @@ class StepValidationAndExecutionBehaviorTest {
         assertFailsWith<IllegalArgumentException> {
             Step(
                 board = BoardId("b-1"),
-                name = "Dev",
+                name = NonBlankName("Dev"),
                 requiredAbility = AbilityName.DEVELOPER,
                 workers = listOf(incompatible),
             )

@@ -16,7 +16,7 @@ import com.kanbanvision.domain.model.simulation.SimulationStatus
 internal fun Simulation.toSurrogate() =
     SimulationSurrogate(
         id = id.value,
-        name = name,
+        name = name.value,
         currentDay = currentDay.value,
         status = status.name,
         organization = organization.toSurrogate(),
@@ -28,7 +28,7 @@ internal fun Simulation.toSurrogate() =
 internal fun SimulationSurrogate.toDomain() =
     Simulation(
         id = SimulationId(id),
-        name = name,
+        name = NonBlankName(name),
         currentDay = SimulationDay(currentDay),
         status = SimulationStatus.valueOf(status),
         organization = organization.toDomain(),

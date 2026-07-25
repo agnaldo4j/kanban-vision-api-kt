@@ -5,23 +5,17 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.model.Audit
 import com.kanbanvision.domain.common.model.Domain
+import com.kanbanvision.domain.common.model.NonBlankName
 import java.util.UUID
 
 data class Board(
     override val id: BoardId,
-    val name: String,
+    val name: NonBlankName,
     val steps: List<Step> = emptyList(),
     override val audit: Audit = Audit(),
 ) : Domain<BoardId> {
-    init {
-        require(name.isNotBlank()) { "Board name must not be blank" }
-    }
-
     companion object {
-        fun create(name: String): Board {
-            require(name.isNotBlank()) { "Board name must not be blank" }
-            return Board(id = BoardId(UUID.randomUUID().toString()), name = name)
-        }
+        fun create(name: String): Board = Board(id = BoardId(UUID.randomUUID().toString()), name = NonBlankName(name))
     }
 
     // ADR-0044: falha de REGRA de domínio → Either (raise KanbanError). A precondição de construção
@@ -31,7 +25,7 @@ data class Board(
         requiredAbility: AbilityName,
     ): Either<KanbanError, Board> =
         either {
-            ensure(steps.none { it.name == name }) { KanbanError.DuplicateStepName(name) }
+            ensure(steps.none { it.name.value == name }) { KanbanError.DuplicateStepName(name) }
             val newStep = Step.create(board = toRef(), name = name, position = steps.size, requiredAbility = requiredAbility)
             copy(steps = steps + newStep)
         }

@@ -276,7 +276,7 @@ internal fun Page<Simulation>.toListResponse() =
 internal fun Simulation.toSummaryResponse() =
     SimulationSummaryResponse(
         id = id.value,
-        name = name,
+        name = name.value,
         status = status.name,
         currentDay = currentDay.value,
     )

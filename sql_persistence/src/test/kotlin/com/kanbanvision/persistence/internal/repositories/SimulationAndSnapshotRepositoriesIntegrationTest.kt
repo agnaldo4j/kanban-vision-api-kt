@@ -1,6 +1,7 @@
 package com.kanbanvision.persistence.internal.repositories
 
 import arrow.core.getOrElse
+import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationError
@@ -85,11 +86,11 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
             EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
             simulationRepository.save(simulation).getOrElse { error("first save simulation failed: $it") }
 
-            val changed = simulation.copy(name = "Simulation Updated", currentDay = SimulationDay(4))
+            val changed = simulation.copy(name = NonBlankName("Simulation Updated"), currentDay = SimulationDay(4))
             simulationRepository.save(changed).getOrElse { error("second save simulation failed: $it") }
 
             val loaded = simulationRepository.findById(simulation.id).getOrElse { error("find simulation failed: $it") }
-            assertEquals("Simulation Updated", loaded.name)
+            assertEquals("Simulation Updated", loaded.name.value)
             assertEquals(4, loaded.currentDay.value)
         }
 
