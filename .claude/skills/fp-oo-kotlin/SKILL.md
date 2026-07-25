@@ -552,7 +552,7 @@ são `sealed`: a soma **fecha o conjunto de variantes** — nenhuma variante for
 > histórico** é o ponto cego. Regra: no `toDomain`/decode, **coaja o valor legado inválido a um sentinel**
 > (ex.: `"(untitled)"`) ou tipe o erro — nunca deixe o `require` do value class lançar cru sobre um registro
 > imutável de leitura. (Alternativa: migração/auditoria Flyway que confirme "zero dados legados inválidos"
-> antes de assumir incompatibilidade zero.) Codex+harness rataram o mesmo ponto como P1/P2 no #355.
+> antes de assumir incompatibilidade zero.) Codex+harness pegaram o mesmo ponto como P1/P2 no #355.
 
 ---
 
