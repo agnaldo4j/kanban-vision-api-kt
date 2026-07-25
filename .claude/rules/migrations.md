@@ -69,11 +69,26 @@ oposto e igualmente real: uma **variante que este release não conhece**, gravad
   caso normal, não a exceção. Decode que faz `error("Unknown …")` ou `enum.valueOf(raw)` transforma isso em
   `PersistenceError` → 500 em `findById` **e na página inteira** de `findAllByOrganization`.
 - **Regra: preserve o registro, não pule.** Mapeie o irreconhecível para uma variante portadora
-  (`Decision.Unknown(type, payload)` / `MovementType.Unknown(raw)`) que **volta idêntica ao wire no encode**.
+  (`Decision.Unknown(type, payload)` / `MovementType.Unknown(raw)`).
   **Descartar é lossy, não é degradação de leitura:** `JdbcSimulationRepository` re-serializa o **agregado
   inteiro** a cada save (`it[stateJson] = SimulationSerializer.encode(simulation)`), então um `skip`/`filter`
   no decode vira **deleção permanente** no próximo `runDay` — o dado some do banco por um caminho que ninguém
   leu como escrita. Vale para qualquer blob read-modify-write, não só este.
+- **A variante portadora só preserva de fato se carregar o JSON CRU — o tipo do campo é o limite real.**
+  Não afirme "volta idêntica ao wire" a partir de `type` + um mapa tipado: a garantia vale só para o formato
+  que o mapa já aceita. Medido no `DecisionSurrogate` atual (`payload: Map<String, String>`,
+  `Json { ignoreUnknownKeys = true }`):
+
+  | Payload gravado por um release mais novo | Resultado hoje |
+  |---|---|
+  | `{"count":3}` · `{"flag":true}` · `{"tags":["a"]}` · objeto aninhado | **`JsonDecodingException`** — lança **antes** de `Decision.Unknown` existir ⇒ o 500 que a tolerância deveria evitar |
+  | campo extra no **topo** da decisão (fora de `payload`) | decodifica, mas é **descartado em silêncio** por `ignoreUnknownKeys` ⇒ some no próximo save |
+
+  Ou seja: preservar de verdade exige reter o **`JsonElement`/`JsonObject` cru**, não um `Map<String,String>`.
+  Se o carrier tipado for suficiente para o caso conhecido, **diga o escopo** ("payload plano de strings") em
+  vez de prometer identidade de wire — e cubra com teste os dois casos da tabela, que são justamente os que
+  passam despercebidos por serem *futuros*. (Codex P2 no #369; medido, não inferido. O carrier de `Decision`
+  ainda é `Map<String,String>` — fechar isso é o **GAP-EN**.)
 - **Tolerância custa a falha barulhenta — reponha a garantia com teste.** O `else` que antes explodia era o
   que pegava um decoder desatualizado; com um catch-all legítimo, **uma variante nova passa a decodificar
   silenciosamente como `Unknown`**. Como a tag é `String`, o compilador não consegue exaustividade no decode:
