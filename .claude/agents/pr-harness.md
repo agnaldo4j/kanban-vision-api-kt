@@ -220,7 +220,12 @@ artefatos in-repo — nunca afirme o estado do board sem tê-lo lido.
 
 Comece com 1–2 linhas de escopo ("o PR faz X; toca os módulos/skills Y"). Depois:
 
+A **primeira linha** é um marcador HTML oculto com o SHA revisado (`${REVIEWED}`, o mesmo que ancora os
+inline). Sem ele o report não diz a QUAL commit se refere: num PR que recebeu novo push, um parecer antigo
+continua sendo o único `## PR Review Harness` do PR e faz o head novo passar por revisado (Codex P2 no #365).
+
 ```
+<!-- pr-harness-report:${REVIEWED} -->
 ## PR Review Harness — parecer
 
 **Veredito:** BLOCK | CHANGES-REQUESTED | APPROVE — <1 linha de racional>
