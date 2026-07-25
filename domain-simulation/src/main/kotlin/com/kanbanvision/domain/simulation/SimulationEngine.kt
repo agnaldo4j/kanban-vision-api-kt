@@ -80,6 +80,8 @@ object SimulationEngine {
                 is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
                 is Decision.UnblockItem -> applyUnblock(current, decision.cardId, ctx.day)?.let { movements += it }
                 is Decision.AddItem -> applyAdd(current, board, decision.title.value, decision.serviceClass)
+                // An uninterpretable persisted decision carries no instruction — replaying it is a no-op.
+                is Decision.Unknown -> Unit
             }
         }
         return current.toList() to movements.toList()

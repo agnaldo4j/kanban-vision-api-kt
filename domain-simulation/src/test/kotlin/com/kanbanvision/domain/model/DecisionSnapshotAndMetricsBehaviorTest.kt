@@ -34,6 +34,27 @@ class DecisionSnapshotAndMetricsBehaviorTest {
     }
 
     @Test
+    fun `given an uninterpretable persisted decision when creating unknown then type and payload are carried verbatim`() {
+        val unknown = Decision.Unknown(type = "FUTURE_KIND", payload = mapOf("cardId" to "card-9"))
+
+        assertEquals("FUTURE_KIND", unknown.type)
+        assertEquals(mapOf("cardId" to "card-9"), unknown.payload)
+    }
+
+    @Test
+    fun `given movement tags when decoding then known tags resolve and anything else becomes unknown`() {
+        assertEquals(MovementType.MOVED, MovementType.fromTag("MOVED"))
+        assertEquals(MovementType.BLOCKED, MovementType.fromTag("BLOCKED"))
+        assertEquals(MovementType.UNBLOCKED, MovementType.fromTag("UNBLOCKED"))
+        assertEquals(MovementType.COMPLETED, MovementType.fromTag("COMPLETED"))
+
+        val unknown = assertIs<MovementType.Unknown>(MovementType.fromTag("TELEPORTED"))
+        assertEquals("TELEPORTED", unknown.tag)
+        // The tag is the wire representation: it must survive verbatim so a re-encode is lossless.
+        assertEquals("TELEPORTED", MovementType.fromTag("TELEPORTED").tag)
+    }
+
+    @Test
     fun `given invalid flow metric values when constructing metrics then validation fails`() {
         assertFailsWith<IllegalArgumentException> {
             FlowMetrics(throughput = -1, wipCount = 0, blockedCount = 0, avgAgingDays = 0.0)

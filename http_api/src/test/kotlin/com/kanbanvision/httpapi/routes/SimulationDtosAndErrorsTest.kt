@@ -52,7 +52,7 @@ class SimulationDtosAndErrorsTest {
         assertEquals("sim-1", payload.simulationId)
         assertEquals(1, payload.day)
         assertEquals(1, payload.metrics.throughput)
-        assertEquals(MovementType.MOVED.name, payload.movements.first().type)
+        assertEquals(MovementType.MOVED.tag, payload.movements.first().type)
     }
 
     @Test

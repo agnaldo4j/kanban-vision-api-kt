@@ -92,6 +92,8 @@ class RunDayUseCase(
                         add(DomainEvent.CardMoved(simulationId, movement.cardId.value, snapshot.day.value, now))
                     MovementType.UNBLOCKED ->
                         add(DomainEvent.CardUnblocked(simulationId, movement.cardId.value, snapshot.day.value, now))
+                    // A movement whose persisted tag this release does not know maps to no domain event.
+                    is MovementType.Unknown -> Unit
                 }
             }
             add(
