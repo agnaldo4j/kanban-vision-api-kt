@@ -136,8 +136,31 @@ class BoardCardRedistributionBehaviorTest {
                 .withCard(step = analysis.id, title = "Analysis card")
                 .withCard(step = development.id, title = "Development card")
 
-        // `allCards` e `redistributeCards` são o par leitura/escrita do mesmo invariante: ida e volta é identidade.
+        // Par leitura/escrita do mesmo invariante. A ida-e-volta é identidade para um board NORMALIZADO —
+        // cards de cada step já em ordem de `position`, que é como `addCard` os produz. Não é lei geral: o
+        // decode preserva a ordem do array JSON sem reordenar, então um blob fora de ordem volta reordenado.
         assertEquals(boardWithCards, boardWithCards.redistributeCards(boardWithCards.allCards()))
+    }
+
+    @Test
+    fun `given card whose step field disagrees with the step holding it when reading all cards then nesting wins`() {
+        val board = boardWithTwoSteps()
+        val (analysis, development) = board.steps
+        val misfiled = Card.create(step = development.id, title = "Misfiled", position = 0)
+        // Blob inconsistente: o card está guardado em `analysis`, mas seu campo `step` aponta para `development`.
+        val corrupted = board.copy(steps = listOf(analysis.copy(cards = listOf(misfiled)), development))
+
+        val roundTripped = corrupted.redistributeCards(corrupted.allCards())
+
+        // Sem o carimbo do `allCards`, o card seria descartado aqui — e o save seguinte o apagaria do banco.
+        assertEquals(listOf(misfiled.id), roundTripped.allCards().map { it.id })
+        assertEquals(
+            listOf(misfiled.id),
+            roundTripped.steps
+                .single { it.id == analysis.id }
+                .cards
+                .map { it.id },
+        )
     }
 
     @Test
