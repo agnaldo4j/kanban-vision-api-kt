@@ -46,6 +46,11 @@ git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
    `docs/quality/lessons-learned.md`, abrindo um PR de processo `[N]` pronto — não uma lista de tarefas.
 
 Fallback manual (se precisar fazer à mão o passo 1):
+
+> ⚠️ Antes de apagar, confirme que a remota **não recebeu push depois do merge** — um commit pushado após
+> o squash merge não entra no PR, não avisa, e o `push --delete` o deixa órfão. Guard medido (e por que as
+> alternativas óbvias falham): §1.2 do `.claude/agents/post-merge-harvester.md`.
+
 ```bash
 git checkout main && git pull origin main
 git branch -d feat/gap-X-slug

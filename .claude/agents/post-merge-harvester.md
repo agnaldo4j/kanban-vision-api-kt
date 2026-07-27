@@ -34,9 +34,32 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
 
 ## 1. Fechamento (git + board) — só após confirmar MERGED (§0)
 1. `git checkout main && git pull origin main` — confirme que o merge está na main (`git log --oneline -3`).
-2. Apague a branch: `git branch -d <headRefName>`; `git push origin --delete <headRefName> 2>/dev/null || true`
-   (a remota costuma ser auto-deletada no merge — tolere "remote ref does not exist").
-3. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
+2. 🚫 **ANTES de apagar, confirme que a branch não andou ALÉM do merge.** Um commit pushado depois do
+   squash merge **não entra no PR e não avisa**: o PR já está fechado, o commit fica só na branch — e o
+   `push --delete` do passo seguinte o deixa órfão. Compare o tip da remota com o head que o PR mergeou
+   (`headRefOid` **congela** no merge — medido no #374: lista 4 commits terminando em `c320545`,
+   `headRefOid=c320545`, e o `2d94fc1` pushado depois não aparece em nenhum dos dois):
+   ```bash
+   git fetch origin "<headRefName>" 2>/dev/null
+   TIP=$(git rev-parse --verify -q "origin/<headRefName>" || true)   # vazio = remota já apagada, segue
+   # o `|| true` é obrigatório: em ref inexistente o `-q` devolve vazio mas sai **1**, e sob `set -e`
+   # a atribuição abortaria o script (medido) — este snippet acaba copiado para dentro de scripts
+   PR_HEAD=$(gh pr view <n> --json headRefOid --jq .headRefOid)
+   [ -z "$TIP" ] || [ "$TIP" = "$PR_HEAD" ] || echo "PARE: commits pushados após o merge — não apague"
+   ```
+   Se divergir, **não apague nada**: relate os commits extras ao usuário (viraram um PR novo, como o #376
+   resgatou o `2d94fc1` do #374). É a metade complementar do guard da §0 — lá "não apague **antes** do
+   merge" (fecha o PR sem merge), aqui "não apague **além** do merge" (perde commit).
+   > ⚠️ **Não "simplifique" este guard** — as três alternativas óbvias foram medidas e falham:
+   > `git branch -d` **não protege** (sai **0** e apaga, com aviso `…merged to 'refs/remotes/origin/<b>',
+   > but not yet merged to HEAD` **textualmente idêntico** ao do caso benigno — não dá para distinguir);
+   > `git diff main..<branch>` dá **falso alarme sempre que a main anda** (p50 open→merge deste repo é
+   > 0,5 h, então é o regime normal); e `git cherry` dá **falso alarme em branch multi-commit squashada**
+   > (o próprio #376 tem 3 commits). Só a comparação com `headRefOid` acerta os quatro casos.
+3. Apague a branch: `git branch -d <headRefName>`; `git push origin --delete <headRefName> 2>/dev/null || true`
+   (a remota costuma ser auto-deletada no merge — tolere "remote ref does not exist"). A perda mora no
+   **push --delete**: após o `-d` local o commit ainda é alcançável por `remotes/origin/<branch>`.
+4. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
    busque **filtrando pelo status**, e só mova se houver **exatamente 1** match:
    ```bash
    gh project item-list 6 --owner agnaldo4j --format json --limit 500 \

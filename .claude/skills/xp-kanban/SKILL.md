@@ -335,6 +335,11 @@ git checkout -b feat/gap-X-slug
 
 ### 6.2 Encerramento — Após Merge do PR
 
+> ⚠️ Antes de apagar a branch, confirme que a remota **não recebeu push depois do merge** — um commit
+> pushado após o squash merge não entra no PR, não avisa, e o `push --delete` o deixa órfão. Guard medido
+> (e por que `git branch -d`/`git diff`/`git cherry` não servem): §1.2 do
+> `.claude/agents/post-merge-harvester.md`.
+
 ```bash
 # 1. Atualizar main local
 git checkout main && git pull origin main
