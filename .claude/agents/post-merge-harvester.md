@@ -86,8 +86,19 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    | nada mudou desde o passo 2 | apaga, exit 0 | apaga, exit 0 |
    | push de terceiro no meio | **apaga o commit alheio, exit 0** | `! [rejected] (delete) … (stale info)`, **exit 1**, branch preservada |
 
-   Se `$TIP` estiver vazio (remota já auto-deletada no merge, o caso comum) não há o que apagar — pular é
-   o comportamento certo, e evita o "remote ref does not exist" que antes era tolerado com `|| true`.
+   **Este passo é REDE DE SEGURANÇA, não cerimônia.** O repo tem `delete_branch_on_merge=true`, então na
+   maioria das vezes `$TIP` já vem vazio e não há nada a fazer. Ele existe para o caso em que o auto-delete
+   **não** rodou (setting desligado, merge por fora da UI, falha do GitHub): sem ele a branch mergeada fica
+   para trás e o repositório acumula lixo. Por isso: quando `$TIP` **não** está vazio, **avise**
+   ("a remota não tinha sido auto-deletada — apaguei"), para o mantenedor saber que o automatismo falhou;
+   quando está vazio, siga em silêncio.
+
+   Varredura complementar, quando quiser conferir o repo inteiro (branch remota sem PR aberto = candidata
+   a lixo):
+   ```bash
+   gh api repos/<owner>/<repo>/branches --paginate --jq '.[] | select(.name != "main") | .name' | sort \
+     | comm -23 - <(gh pr list --state open --json headRefName -q '.[].headRefName' | sort)
+   ```
 4. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
    busque **filtrando pelo status**, e só mova se houver **exatamente 1** match:
    ```bash
