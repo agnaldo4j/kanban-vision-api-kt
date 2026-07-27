@@ -34,9 +34,55 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
 
 ## 1. Fechamento (git + board) — só após confirmar MERGED (§0)
 1. `git checkout main && git pull origin main` — confirme que o merge está na main (`git log --oneline -3`).
-2. Apague a branch: `git branch -d <headRefName>`; `git push origin --delete <headRefName> 2>/dev/null || true`
-   (a remota costuma ser auto-deletada no merge — tolere "remote ref does not exist").
-3. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
+2. 🚫 **ANTES de apagar, confirme que a branch não andou ALÉM do merge.** Um commit pushado depois do
+   squash merge **não entra no PR e não avisa**: o PR já está fechado, o commit fica só na branch — e o
+   `push --delete` do passo seguinte o deixa órfão. Compare o tip da remota com o head que o PR mergeou
+   (`headRefOid` **congela** no merge — medido no #374: lista 4 commits terminando em `c320545`,
+   `headRefOid=c320545`, e o `2d94fc1` pushado depois não aparece em nenhum dos dois):
+   ```bash
+   git fetch origin "<headRefName>" 2>/dev/null || true
+   TIP=$(git rev-parse --verify -q "origin/<headRefName>" || true)   # vazio = remota já apagada, segue
+   # o `|| true` é obrigatório: em ref inexistente o `-q` devolve vazio mas sai **1**, e sob `set -e`
+   # a atribuição abortaria o script (medido) — este snippet acaba copiado para dentro de scripts
+   PR_HEAD=$(gh pr view <n> --json headRefOid --jq .headRefOid)
+   if [ -n "$TIP" ] && [ "$TIP" != "$PR_HEAD" ]; then
+     echo "PARE: commits pushados após o merge — não apague" >&2
+     exit 1        # numa função, `return 1`. NÃO deixe só o `echo`: ver o callout abaixo
+   fi
+   ```
+   Se divergir, **não apague nada**: relate os commits extras ao usuário (viraram um PR novo, como o #376
+   resgatou o `2d94fc1` do #374). É a metade complementar do guard da §0 — lá "não apague **antes** do
+   merge" (fecha o PR sem merge), aqui "não apague **além** do merge" (perde commit).
+   > ⚠️ **Não "simplifique" este guard** — as três alternativas óbvias foram medidas e falham:
+   > `git branch -d` **não protege** (sai **0** e apaga, com aviso `…merged to 'refs/remotes/origin/<b>',
+   > but not yet merged to HEAD` **textualmente idêntico** ao do caso benigno — não dá para distinguir);
+   > `git diff main..<branch>` dá **falso alarme sempre que a main anda** (p50 open→merge deste repo é
+   > 0,5 h, então é o regime normal); e `git cherry` dá **falso alarme em branch multi-commit squashada**
+   > (o próprio #376 tem 3 commits). Só a comparação com `headRefOid` acerta os quatro casos.
+   > ⚠️ **E o guard tem de PARAR, não só avisar.** A primeira versão terminava em
+   > `… || echo "PARE: …"`: o `echo` **sai 0**, então a cadeia inteira sai 0 e nem `set -e` interrompe —
+   > o passo 3 apagava a branch logo em seguida, com a mensagem de alerta impressa acima. Medido. Guard
+   > que só imprime é o mesmo modo de falha que este arquivo existe para matar. (Codex P1 no #377.)
+3. Apague a branch — a remota **amarrada ao `$TIP` que o passo 2 conferiu**, nunca incondicional:
+   ```bash
+   git branch -d "<headRefName>"
+   [ -z "$TIP" ] || git push origin \
+     --force-with-lease="refs/heads/<headRefName>:$TIP" ":refs/heads/<headRefName>"
+   ```
+   A perda mora no **push da remota**: após o `-d` local o commit ainda é alcançável por
+   `remotes/origin/<branch>`. E o passo 2 sozinho não basta — entre a conferência e o push cabe um push de
+   terceiro, e o `--delete` incondicional apagaria esse commit que ninguém viu (TOCTOU). O
+   `--force-with-lease=<ref>:<TIP>` transforma isso em **falha do lado do servidor** em vez de perda
+   silenciosa. Medido nos dois sentidos:
+
+   | Cenário | `--delete` incondicional | `--force-with-lease=<ref>:$TIP` |
+   |---|---|---|
+   | nada mudou desde o passo 2 | apaga, exit 0 | apaga, exit 0 |
+   | push de terceiro no meio | **apaga o commit alheio, exit 0** | `! [rejected] (delete) … (stale info)`, **exit 1**, branch preservada |
+
+   Se `$TIP` estiver vazio (remota já auto-deletada no merge, o caso comum) não há o que apagar — pular é
+   o comportamento certo, e evita o "remote ref does not exist" que antes era tolerado com `|| true`.
+4. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
    busque **filtrando pelo status**, e só mova se houver **exatamente 1** match:
    ```bash
    gh project item-list 6 --owner agnaldo4j --format json --limit 500 \
