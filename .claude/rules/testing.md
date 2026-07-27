@@ -34,6 +34,14 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
 - **Koin DI in route tests**: register the simulation use cases the route under test needs (e.g. `single { CreateSimulationUseCase(get(), get(), get(), get()) }`, `single { RunDayUseCase(get(), get(), get(), get(), get()) }`) with mocked repositories/ports. Both take a `Clock` last (GAP-DK — provide `single<Clock> { Clock.fixed(...) }`); a use case with a domain clock reads `now` from it, so tests bind a fixed `Clock` for determinism.
 - **Absorbing a signature-change ripple with a test-only overload**: when a production signature gains a parameter (e.g. `SimulationEngine.runDay` gained `now: Instant`, GAP-DK #353), a *test-only* lower-arity overload that delegates to the new member with a fixed default (`internal fun SimulationEngine.runDay(sim, decisions, seed) = runDay(sim, decisions, seed, Instant.EPOCH)`) keeps dozens of behavior call-sites focused without editing each. Two safety conditions, or it's a footgun: (1) **distinct arity** from the member — with the *same* arity Kotlin gives the production **member precedence**, so a same-name same-arity overload is silently shadowed and **never intercepts** those call-sites (the helper is dead, not recursive), defeating its purpose; a *lower* arity has no matching member, so it resolves to the overload; (2) exercise the **new full-arity member** directly in at least one dedicated test so the injected parameter is actually covered (the overload must not become the only path). Keep such helpers in a `*TestSupport.kt`, never in `src/main`.
 - **LargeClass threshold**: 200 lines. Split test files when they grow beyond this.
+- **A property test written alongside the fix must be run against the code WITHOUT the fix.** A generator that
+  never reaches the defective state passes on both sides, and the suite keeps a law that proves nothing — worse
+  than no test, because it *looks* like coverage. The risk peaks on **preservation** properties (no-loss,
+  round-trip), where the benign cases are the easy ones to generate. Measured in GAP-DP/#374: the first
+  generator drew each card's `step` only from the board's **own** steps, so a card pointing at a sibling step
+  was *relocated*, never lost — all four laws passed with the bug present. Only a `StepId` from **outside** the
+  board discriminates. Procedure: revert the production fix, run the property test, confirm it **fails**, then
+  restore. If it still passes, the generator — not the law — is what needs fixing.
 
 ## Coverage
 

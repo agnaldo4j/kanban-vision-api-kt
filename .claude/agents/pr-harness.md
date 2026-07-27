@@ -154,6 +154,22 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   (`lote.fold(agg) { acc, x -> acc.appendUm(x) }`) recopia a coleção acumulada a cada iteração → O(n²) em
   silêncio (comportamento idêntico, os testes passam). Ao mover lógica para o agregado, dê a ele um método de
   **lote**, não itere o singular. (#360 P2: `fold(appendDecision)` → `Simulation.appendDecisions(List)`.)
+- **Widening de visibilidade num refactor "comportamento-preservado":** promover função privada/local a API
+  pública (método de agregado, port, contrato de módulo) é **mudança de contrato**, não só de visibilidade — e o
+  modo de falha "inalcançável por construção" deixa de sê-lo. A semântica preservada para o call site *atual*
+  vira contrato para chamadores **arbitrários**. Pergunte quais entradas a versão privada nunca podia receber —
+  **descarte silencioso**, lookup que não acha, precondição implícita — e exija um destes três desfechos: falha
+  **tipada** (ADR-0044), **preservação** do dado, ou nome/KDoc que **anuncie** o comportamento. Não recomende
+  tipar a falha por reflexo: se o valor descartado for **estado persistido**, tipar só troca a *forma* da perda
+  (o agregado segue não-carregável) e `migrations.md` manda **preservar** — foi o desfecho correto no #374, onde
+  `Board.withCards` (privada, órfão impossível) virou `Board.redistributeCards` (pública, órfão descartado em
+  silêncio → deleção no próximo save, porque o repo re-serializa o agregado inteiro).
+- **Property test novo escrito junto com a correção:** exija que ele tenha sido **executado contra o código sem
+  a correção**. Um gerador que não alcança o estado defeituoso passa nos dois lados e a suíte fica com uma lei
+  que não prova nada — pior que ausência de teste, porque *parece* cobertura. Vale sobretudo para propriedades
+  de **preservação** (não-perda, round-trip): é fácil o gerador produzir só o caso benigno. No #374 a primeira
+  versão sorteava o `step` de cada card só entre os steps **do próprio board** — o que é *relocação*, não perda —
+  e as 4 leis passavam com o bug presente; só um id **fora** do board discrimina.
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
 - **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código
