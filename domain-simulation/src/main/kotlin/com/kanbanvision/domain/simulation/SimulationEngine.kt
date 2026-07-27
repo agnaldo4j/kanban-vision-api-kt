@@ -54,7 +54,7 @@ object SimulationEngine {
                 metrics = calculateMetrics(afterAging, allMovements),
                 movements = allMovements,
             )
-        val updatedScenario = scenario.copy(board = scenario.board.withCards(afterAging))
+        val updatedScenario = scenario.copy(board = scenario.board.redistributeCards(afterAging))
         // Tell, don't ask (OOD): peça as transições ao próprio agregado — `advanceDay`/`appendDecision`/
         // `appendSnapshot` são donos dessas regras (não reconstruir o dia/decisions/history na mão aqui).
         val updatedSimulation =
@@ -254,14 +254,4 @@ private fun orderTodoByPriority(
             val tier = todoIndices.filter { cards[it].serviceClass == serviceClass }
             if (serviceClass.shuffleWithinTier) tier.shuffled(rng) else tier
         }
-}
-
-private fun Board.withCards(cards: List<Card>): Board {
-    val cardsByStep = cards.groupBy { it.step }
-    val updatedSteps =
-        steps.map { step ->
-            val stepCards = cardsByStep[step.id].orEmpty().sortedBy { it.position }
-            step.copy(cards = stepCards)
-        }
-    return copy(steps = updatedSteps)
 }

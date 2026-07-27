@@ -46,5 +46,18 @@ data class Board(
             )
         }
 
+    // OOD/tell-don't-ask (GAP-DP): a distribuição de cards nos steps é invariante do Board — o engine de
+    // simulação pede a redistribuição, não remonta os steps por fora. Substitui (não faz merge com) os cards
+    // atuais de cada step. Cards cujo `step` não pertence a este board são descartados — semântica preservada
+    // do sítio anterior; no engine não ocorre, todo card vem de `board.steps` ou do primeiro step do board.
+    fun redistributeCards(cards: List<Card>): Board {
+        val cardsByStep = cards.groupBy { it.step }
+        val updatedSteps =
+            steps.map { step ->
+                step.copy(cards = cardsByStep[step.id].orEmpty().sortedBy { it.position })
+            }
+        return copy(steps = updatedSteps)
+    }
+
     fun toRef(): BoardId = id
 }
