@@ -37,10 +37,10 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
 - **A property test written alongside the fix must be run against the code WITHOUT the fix.** A generator that
   never reaches the defective state passes on both sides, and the suite keeps a law that proves nothing — worse
   than no test, because it *looks* like coverage. The risk peaks on **preservation** properties (no-loss,
-  round-trip), where the benign cases are the easy ones to generate. Measured in GAP-DP/#374: the first
-  generator drew each card's `step` only from the board's **own** steps, so a card pointing at a sibling step
-  was *relocated*, never lost — all four laws passed with the bug present. Only a `StepId` from **outside** the
-  board discriminates. Procedure: revert the production fix, run the property test, confirm it **fails**, then
+  round-trip), where the benign cases are the easy ones to generate. Measured in **PR #374 (GAP-DP)**: the first
+  generator drew each card's step only from the board's **own** steps, so a card pointing at a sibling step was
+  *relocated*, never lost — all four laws passed with the bug present. Only a step id from **outside** the board
+  discriminates. Procedure: revert the production fix, run the property test, confirm it **fails**, then
   restore. If it still passes, the generator — not the law — is what needs fixing.
 
 ## Coverage

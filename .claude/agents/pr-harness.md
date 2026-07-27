@@ -161,15 +161,17 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   **descarte silencioso**, lookup que não acha, precondição implícita — e exija um destes três desfechos: falha
   **tipada** (ADR-0044), **preservação** do dado, ou nome/KDoc que **anuncie** o comportamento. Não recomende
   tipar a falha por reflexo: se o valor descartado for **estado persistido**, tipar só troca a *forma* da perda
-  (o agregado segue não-carregável) e `migrations.md` manda **preservar** — foi o desfecho correto no #374, onde
-  `Board.withCards` (privada, órfão impossível) virou `Board.redistributeCards` (pública, órfão descartado em
-  silêncio → deleção no próximo save, porque o repo re-serializa o agregado inteiro).
+  (o agregado segue não-carregável) e `migrations.md` manda **preservar**. Caso de origem — **PR #374 (GAP-DP)**,
+  onde uma extensão privada do engine que redistribuía os cards do `Board` foi promovida a método público do
+  agregado: o card órfão, impossível enquanto privada, passou a ser descartado em silêncio pela API pública →
+  deleção no próximo save, porque o repositório re-serializa o agregado inteiro. Preservar foi o desfecho certo.
 - **Property test novo escrito junto com a correção:** exija que ele tenha sido **executado contra o código sem
   a correção**. Um gerador que não alcança o estado defeituoso passa nos dois lados e a suíte fica com uma lei
   que não prova nada — pior que ausência de teste, porque *parece* cobertura. Vale sobretudo para propriedades
-  de **preservação** (não-perda, round-trip): é fácil o gerador produzir só o caso benigno. No #374 a primeira
-  versão sorteava o `step` de cada card só entre os steps **do próprio board** — o que é *relocação*, não perda —
-  e as 4 leis passavam com o bug presente; só um id **fora** do board discrimina.
+  de **preservação** (não-perda, round-trip): é fácil o gerador produzir só o caso benigno. Caso de origem —
+  **PR #374 (GAP-DP)**: a primeira versão sorteava o step de cada card só entre os steps **do próprio board**,
+  o que é *relocação*, não perda, e as 4 leis passavam com o bug presente; só um id de step **fora** do board
+  discrimina. Procedimento: reverta a correção, rode a propriedade, confirme que **falha**, restaure.
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
 - **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código
