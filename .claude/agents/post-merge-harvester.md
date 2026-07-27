@@ -39,13 +39,14 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
 3. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
    busque **filtrando pelo status**, e só mova se houver **exatamente 1** match:
    ```bash
-   gh project item-list 6 --owner agnaldo4j --format json --limit 100 \
+   gh project item-list 6 --owner agnaldo4j --format json --limit 500 \
      | jq -r '[.items[] | select((.status=="Doing" or .status=="Todo") and (.title|startswith("GAP-XX")))]
               | if length==1 then .[0].id
                 elif length==0 then "NENHUM em Doing/Todo — não mover, relatar"
                 else "AMBÍGUO (\(length) matches) — não mover, relatar" end'
    ```
-   (⚠️ o campo `.status` é uma **string**, não objeto.) Se vier NENHUM/AMBÍGUO, **não mova** — relate. Com 1 id,
+   (⚠️ o campo `.status` é uma **string**, não objeto. E `--limit` **alto**: com 100 o board de 132
+   itens truncou e o agente reportou "card não existe" + contagens erradas de coluna — 2026-07-27.) Se vier NENHUM/AMBÍGUO, **não mova** — relate. Com 1 id,
    mova (Project `PVT_kwHNWUfOAUhH_w`, Field `PVTSSF_lAHNWUfOAUhH_84P7ZSQ`, Done `ca259842`):
    ```bash
    gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
