@@ -30,10 +30,10 @@ object SimulationEngine {
         val rng = Random(seed)
         val scenario = simulation.scenario
 
-        val initialCards = scenario.board.steps.flatMap { it.cards }
+        val initialCards = scenario.board.allCards()
         val (afterDecisions, movDecisions) = applyDecisions(initialCards, scenario.board, decisions, ctx)
         val (afterAutoAdvance, movAutoAdvance) = autoAdvance(afterDecisions, scenario.rules.policySet.wipLimit, rng, ctx)
-        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, scenario.board.steps, ctx)
+        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, scenario.board.stepsInExecutionOrder(), ctx)
         val afterAging = afterExecution.map { card -> if (card.state != CardState.DONE) card.incrementAge() else card }
 
         return buildResult(simulation, decisions, afterAging, movDecisions + movAutoAdvance)
@@ -54,7 +54,7 @@ object SimulationEngine {
                 metrics = calculateMetrics(afterAging, allMovements),
                 movements = allMovements,
             )
-        val updatedScenario = scenario.copy(board = scenario.board.withCards(afterAging))
+        val updatedScenario = scenario.copy(board = scenario.board.redistributeCards(afterAging))
         // Tell, don't ask (OOD): peça as transições ao próprio agregado — `advanceDay`/`appendDecision`/
         // `appendSnapshot` são donos dessas regras (não reconstruir o dia/decisions/history na mão aqui).
         val updatedSimulation =
@@ -109,6 +109,8 @@ object SimulationEngine {
         return current.toList() to movements.toList()
     }
 
+    // `steps` chega JÁ na ordem de execução (`Board.stepsInExecutionOrder()`) — não reordenar aqui, senão o
+    // invariante volta a ter dois donos.
     private fun applyAssignedWorkerExecution(
         cards: List<Card>,
         steps: List<Step>,
@@ -116,13 +118,11 @@ object SimulationEngine {
     ): List<Card> {
         if (steps.isEmpty()) return cards
         val current = cards.toMutableList()
-        steps
-            .sortedBy { it.position }
-            .forEach { step ->
-                step.workers.sortedBy { it.id }.forEach { worker ->
-                    applySingleWorkerExecution(current, step, worker, ctx)
-                }
+        steps.forEach { step ->
+            step.workers.sortedBy { it.id }.forEach { worker ->
+                applySingleWorkerExecution(current, step, worker, ctx)
             }
+        }
         return current.toList()
     }
 
@@ -254,14 +254,4 @@ private fun orderTodoByPriority(
             val tier = todoIndices.filter { cards[it].serviceClass == serviceClass }
             if (serviceClass.shuffleWithinTier) tier.shuffled(rng) else tier
         }
-}
-
-private fun Board.withCards(cards: List<Card>): Board {
-    val cardsByStep = cards.groupBy { it.step }
-    val updatedSteps =
-        steps.map { step ->
-            val stepCards = cardsByStep[step.id].orEmpty().sortedBy { it.position }
-            step.copy(cards = stepCards)
-        }
-    return copy(steps = updatedSteps)
 }

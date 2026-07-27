@@ -308,8 +308,9 @@ está sendo feito agora. Este protocolo define como Claude interage com ele.
 
 ```bash
 # 1. Verificar estado atual do board
-gh project item-list 6 --owner agnaldo4j --format json | \
-  jq '.items[] | {title: .title, status: .status}'
+# --limit alto: sem ele o gh trunca em 30 e o board já passou de 130 itens.
+gh project item-list 6 --owner agnaldo4j --limit 500 --format json | \
+  jq '.items[] | {title: .title, status: .status}'   # .status é STRING, não objeto
 
 # 2. Se há item em Doing → continuar aquele item (não iniciar novo)
 # 3. Se Doing vazio → puxar o PRIMEIRO item do topo de Todo
@@ -333,6 +334,11 @@ git checkout -b feat/gap-X-slug
 **Regra de pull**: sempre o item no **topo do Todo** — nunca escolha por conveniência.
 
 ### 6.2 Encerramento — Após Merge do PR
+
+> ⚠️ Antes de apagar a branch, confirme que a remota **não recebeu push depois do merge** — um commit
+> pushado após o squash merge não entra no PR, não avisa, e o `push --delete` o deixa órfão. Guard medido
+> (e por que `git branch -d`/`git diff`/`git cherry` não servem): §1.2 do
+> `.claude/agents/post-merge-harvester.md`.
 
 ```bash
 # 1. Atualizar main local

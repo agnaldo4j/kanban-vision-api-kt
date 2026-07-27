@@ -154,6 +154,33 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   (`lote.fold(agg) { acc, x -> acc.appendUm(x) }`) recopia a coleção acumulada a cada iteração → O(n²) em
   silêncio (comportamento idêntico, os testes passam). Ao mover lógica para o agregado, dê a ele um método de
   **lote**, não itere o singular. (#360 P2: `fold(appendDecision)` → `Simulation.appendDecisions(List)`.)
+- **Widening de visibilidade num refactor "comportamento-preservado":** promover função privada/local a API
+  pública (método de agregado, port, contrato de módulo) é **mudança de contrato**, não só de visibilidade — e o
+  modo de falha "inalcançável por construção" deixa de sê-lo. A semântica preservada para o call site *atual*
+  vira contrato para chamadores **arbitrários**. Pergunte quais entradas a versão privada nunca podia receber —
+  **descarte silencioso**, lookup que não acha, precondição implícita — e exija um destes três desfechos: falha
+  **tipada** (ADR-0044), **preservação** do dado, ou nome/KDoc que **anuncie** o comportamento. Não recomende
+  tipar a falha por reflexo: se o valor descartado for **estado persistido**, tipar só troca a *forma* da perda
+  (o agregado segue não-carregável) e `migrations.md` manda **preservar**. Caso de origem — **PR #374 (GAP-DP)**,
+  onde uma extensão privada do engine que redistribuía os cards do `Board` foi promovida a método público do
+  agregado: o card órfão, impossível enquanto privada, passou a ser descartado em silêncio pela API pública →
+  deleção no próximo save, porque o repositório re-serializa o agregado inteiro. Preservar foi o desfecho certo.
+- **Property test novo escrito junto com a correção:** exija que ele tenha sido **executado contra o código sem
+  a correção**. Um gerador que não alcança o estado defeituoso passa nos dois lados e a suíte fica com uma lei
+  que não prova nada — pior que ausência de teste, porque *parece* cobertura. Vale sobretudo para propriedades
+  de **preservação** (não-perda, round-trip): é fácil o gerador produzir só o caso benigno. Caso de origem —
+  **PR #374 (GAP-DP)**: a primeira versão sorteava o step de cada card só entre os steps **do próprio board**,
+  o que é *relocação*, não perda, e as 4 leis passavam com o bug presente; só um id de step **fora** do board
+  discrimina. Procedimento: reverta a correção, rode a propriedade, confirme que **falha**, restaure.
+- **Corpo do PR desatualizado ou com alegação falsa é achado, não nit — é o insumo do `post-merge-harvester`.**
+  O corpo é de onde este projeto **destila lições duráveis** depois do merge: uma "regra" falsa afirmada ali vira
+  emenda de skill/regra. Cheque três coisas: (a) o corpo cobre **todos** os commits, inclusive os que nasceram da
+  própria revisão — API pública nova acrescentada no meio do PR é o que mais escapa; (b) números conferem
+  (contagem de testes/casos defasa quando o PR ganha commits); (c) toda **afirmação técnica** foi verificada, com
+  atenção a regra de linguagem enunciada de memória. Se o repo já documenta o mecanismo, o corpo não pode
+  contradizê-lo. No #374 o corpo omitia a segunda API pública e invertia a precedência membro-vs-extensão do
+  Kotlin — que `.claude/rules/testing.md` já registra corretamente. **Quarta ocorrência** do padrão "mecanismo
+  afirmado por leitura, refutado por verificação" (#326, #332, #369) — e nas quatro quem mediu foi o revisor.
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
 - **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código

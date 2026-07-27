@@ -6,15 +6,21 @@
 
 ## Session Start — mandatory before any code
 
+> ⚠️ **`--limit` alto e `.status` como STRING — as duas coisas, sempre.** Sem `--limit` o `gh` trunca em
+> **30** itens (o board passou de 130) e sem `.status.name` → `.status` o `jq` **aborta**
+> (`Cannot index string with string "name"`). Qualquer um dos dois faz a checagem devolver vazio, que este
+> protocolo lê como "Doing vazio" → puxa item novo com outro em andamento, **quebrando o WIP=1 que o guard
+> existe para proteger**. Medido em 2026-07-27: o snippet anterior tinha os dois defeitos ao mesmo tempo.
+
 ```bash
 # 1. Check board — is there an item in Doing?
-gh project item-list 6 --owner agnaldo4j --format json | \
-  jq '.items[] | select(.status.name == "Doing") | {title: .title, id: .id}'
+gh project item-list 6 --owner agnaldo4j --limit 500 --format json | \
+  jq '.items[] | select(.status == "Doing") | {title: .title, id: .id}'
 
 # 2a. If Doing has item → continue that item
 # 2b. If Doing is empty → pull the FIRST item from the top of Todo
-gh project item-list 6 --owner agnaldo4j --format json | \
-  jq '[.items[] | select(.status.name == "Todo")] | first | {title: .title, id: .id}'
+gh project item-list 6 --owner agnaldo4j --limit 500 --format json | \
+  jq '[.items[] | select(.status == "Todo")] | first | {title: .title, id: .id}'
 
 # 3. Move item to Doing
 gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
@@ -40,6 +46,11 @@ git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
    `docs/quality/lessons-learned.md`, abrindo um PR de processo `[N]` pronto — não uma lista de tarefas.
 
 Fallback manual (se precisar fazer à mão o passo 1):
+
+> ⚠️ Antes de apagar, confirme que a remota **não recebeu push depois do merge** — um commit pushado após
+> o squash merge não entra no PR, não avisa, e o `push --delete` o deixa órfão. Guard medido (e por que as
+> alternativas óbvias falham): §1.2 do `.claude/agents/post-merge-harvester.md`.
+
 ```bash
 git checkout main && git pull origin main
 git branch -d feat/gap-X-slug

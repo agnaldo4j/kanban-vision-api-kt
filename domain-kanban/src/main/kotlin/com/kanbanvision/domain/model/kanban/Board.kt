@@ -46,5 +46,33 @@ data class Board(
             )
         }
 
+    // Par de leitura do `redistributeCards` (GAP-DP): quem precisa dos cards do board pede a lista achatada
+    // em vez de andar por `steps` para chegar em `cards`. Percorre os steps na ordem em que o board os guarda.
+    //
+    // Carimba cada card com o step que o GUARDA. O `Card.step` é serializado à parte do aninhamento
+    // (`CardSurrogate.stepId` vs `StepSurrogate.cards`) e o decode não reconcilia os dois — divergindo, o card
+    // apontaria para fora e o `redistributeCards` o descartaria. Como o repositório re-serializa o agregado
+    // inteiro a cada save, esse descarte seria DELEÇÃO permanente, não degradação de leitura (`migrations.md`).
+    // O aninhamento é a autoridade: é onde o card de fato está. Em board consistente o carimbo é no-op.
+    fun allCards(): List<Card> = steps.flatMap { step -> step.cards.map { card -> card.copy(step = step.id) } }
+
+    // OOD/tell-don't-ask (GAP-DP): a distribuição de cards nos steps é invariante do Board — o engine de
+    // simulação pede a redistribuição, não remonta os steps por fora. Substitui (não faz merge com) os cards
+    // atuais de cada step. Cards cujo `step` não pertence a este board são descartados — semântica preservada
+    // do sítio anterior; no engine não ocorre, todo card vem de `board.steps` ou do primeiro step do board.
+    fun redistributeCards(cards: List<Card>): Board {
+        val cardsByStep = cards.groupBy { it.step }
+        val updatedSteps =
+            steps.map { step ->
+                step.copy(cards = cardsByStep[step.id].orEmpty().sortedBy { it.position })
+            }
+        return copy(steps = updatedSteps)
+    }
+
+    // A ordem de execução dos steps é do agregado — é o mesmo invariante que `addStep` estabelece ao atribuir
+    // `position = steps.size`. Quem percorre o fluxo pede a ordem, não a reconstrói (GAP-EP, melhoria da revisão
+    // do #374). `sortedBy` é estável: steps de mesma `position` mantêm a ordem de inserção.
+    fun stepsInExecutionOrder(): List<Step> = steps.sortedBy { it.position }
+
     fun toRef(): BoardId = id
 }
