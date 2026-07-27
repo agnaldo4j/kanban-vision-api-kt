@@ -40,7 +40,7 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    (`headRefOid` **congela** no merge — medido no #374: lista 4 commits terminando em `c320545`,
    `headRefOid=c320545`, e o `2d94fc1` pushado depois não aparece em nenhum dos dois):
    ```bash
-   git fetch origin "<headRefName>" 2>/dev/null || true
+   git fetch --prune origin 2>/dev/null || true   # --prune é OBRIGATÓRIO: ver o callout de baixo
    TIP=$(git rev-parse --verify -q "origin/<headRefName>" || true)   # vazio = remota já apagada, segue
    # o `|| true` é obrigatório: em ref inexistente o `-q` devolve vazio mas sai **1**, e sob `set -e`
    # a atribuição abortaria o script (medido) — este snippet acaba copiado para dentro de scripts
@@ -63,6 +63,12 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    > `… || echo "PARE: …"`: o `echo` **sai 0**, então a cadeia inteira sai 0 e nem `set -e` interrompe —
    > o passo 3 apagava a branch logo em seguida, com a mensagem de alerta impressa acima. Medido. Guard
    > que só imprime é o mesmo modo de falha que este arquivo existe para matar. (Codex P1 no #377.)
+   > ⚠️ **`--prune`, não `git fetch origin "<branch>"`.** O GitHub auto-apaga a branch no merge, e um fetch
+   > por refspec **não poda** o ref de rastreamento — ele falha com `couldn't find remote ref` (engolido pelo
+   > `|| true`) e deixa `origin/<branch>` **stale**. Resultado: `$TIP` fica não-vazio no caminho MAIS COMUM e
+   > o passo 3 tenta apagar o que já não existe, levando `! [rejected] … (stale info)`. Medido no primeiro uso
+   > real do guard, apagando a branch do próprio #377. Com `--prune` o ref some, `$TIP` esvazia e o passo 3
+   > pula — que é o comportamento certo.
 3. Apague a branch — a remota **amarrada ao `$TIP` que o passo 2 conferiu**, nunca incondicional:
    ```bash
    git branch -d "<headRefName>"
