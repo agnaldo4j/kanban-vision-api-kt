@@ -108,6 +108,39 @@ class BoardCardRedistributionBehaviorTest {
     }
 
     @Test
+    fun `given cards spread over steps when asking for all cards then they come flattened in step order`() {
+        val board = boardWithTwoSteps()
+        val (analysis, development) = board.steps
+        val boardWithCards =
+            board
+                .withCard(step = analysis.id, title = "Analysis first")
+                .withCard(step = development.id, title = "Development first")
+                .withCard(step = analysis.id, title = "Analysis second")
+
+        val titles = boardWithCards.allCards().map { it.title.value }
+
+        assertEquals(listOf("Analysis first", "Analysis second", "Development first"), titles)
+    }
+
+    @Test
+    fun `given board without cards when asking for all cards then the list is empty`() {
+        assertEquals(emptyList(), boardWithTwoSteps().allCards())
+    }
+
+    @Test
+    fun `given board when redistributing its own cards then the board is unchanged`() {
+        val board = boardWithTwoSteps()
+        val (analysis, development) = board.steps
+        val boardWithCards =
+            board
+                .withCard(step = analysis.id, title = "Analysis card")
+                .withCard(step = development.id, title = "Development card")
+
+        // `allCards` e `redistributeCards` são o par leitura/escrita do mesmo invariante: ida e volta é identidade.
+        assertEquals(boardWithCards, boardWithCards.redistributeCards(boardWithCards.allCards()))
+    }
+
+    @Test
     fun `given empty card list when redistributing then every step is emptied and step identity is preserved`() {
         val board = boardWithTwoSteps()
         val stepId = board.steps.first().id

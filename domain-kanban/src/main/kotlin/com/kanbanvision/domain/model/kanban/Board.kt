@@ -46,6 +46,10 @@ data class Board(
             )
         }
 
+    // Par de leitura do `redistributeCards` (GAP-DP): quem precisa dos cards do board pede a lista achatada
+    // em vez de andar por `steps` para chegar em `cards`. Percorre os steps na ordem em que o board os guarda.
+    fun allCards(): List<Card> = steps.flatMap { it.cards }
+
     // OOD/tell-don't-ask (GAP-DP): a distribuição de cards nos steps é invariante do Board — o engine de
     // simulação pede a redistribuição, não remonta os steps por fora. Substitui (não faz merge com) os cards
     // atuais de cada step. Cards cujo `step` não pertence a este board são descartados — semântica preservada

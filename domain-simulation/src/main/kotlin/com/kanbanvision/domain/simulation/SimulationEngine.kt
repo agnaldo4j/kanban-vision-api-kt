@@ -30,7 +30,7 @@ object SimulationEngine {
         val rng = Random(seed)
         val scenario = simulation.scenario
 
-        val initialCards = scenario.board.steps.flatMap { it.cards }
+        val initialCards = scenario.board.allCards()
         val (afterDecisions, movDecisions) = applyDecisions(initialCards, scenario.board, decisions, ctx)
         val (afterAutoAdvance, movAutoAdvance) = autoAdvance(afterDecisions, scenario.rules.policySet.wipLimit, rng, ctx)
         val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, scenario.board.steps, ctx)
