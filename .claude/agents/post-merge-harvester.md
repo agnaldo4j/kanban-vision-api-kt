@@ -79,9 +79,28 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    > família GAP-CC. Medido: com a branch alvo apagada o fetch da origin inteira sai **0** (o motivo
    > original do `|| true`, que era o `couldn't find remote ref` do fetch por refspec, deixou de existir);
    > remote inacessível sai **128**. (Codex P2 no #378.)
+   > ⚠️ **Efeito colateral do `--prune` no passo 3:** `git branch -d` aceitava a branch como "merged" via
+   > `origin/<branch>`; podado esse ref, e sendo squash merge (commits não são ancestrais da main), o `-d`
+   > passa a **recusar sempre** (`not fully merged`). Por isso o passo 3 compara **conteúdo** com a main e
+   > usa `-D`: é garantia mais forte que o `-d` jamais deu — `git diff --quiet main <branch>` sai **0** com
+   > commits além do que o PR mergeou, e a comparação é contra `$PR_HEAD`, **não contra a main**. Achado ao
+   > executar o guard no pós-merge do próprio #378.
+   > ⚠️ **Nunca compare com a `main` aqui** — nem por commit nem por conteúdo. A primeira correção usava
+   > `git diff --quiet main <branch>`, que é a mesma armadilha listada acima para o `git diff main..<branch>`:
+   > qualquer commit alheio que entre na main torna o diff não-vazio e o guard **aborta a limpeza inteira**
+   > (branch e board) num caso perfeitamente benigno. Passou nos meus testes só porque a main era, naquele
+   > instante, exatamente o squash da branch. Medido com a main andando: `diff --quiet` → exit 1 (falso
+   > alarme); `LOCAL == $PR_HEAD` → segue. O `$PR_HEAD` é imune porque **congela no merge**. (Codex P1 no #379.)
 3. Apague a branch — a remota **amarrada ao `$TIP` que o passo 2 conferiu**, nunca incondicional:
    ```bash
-   git branch -d "<headRefName>"
+   # `-d` NÃO serve aqui: em squash merge os commits da branch não são ancestrais da main, e o `--prune`
+   # do passo 2 removeu o `origin/<branch>` que era a outra via de "merged". Compare o tip LOCAL com o
+   # $PR_HEAD que o passo 2 já buscou — nunca com a main, que anda por conta própria.
+   LOCAL=$(git rev-parse --verify -q "<headRefName>" || true)
+   if [ -n "$LOCAL" ] && [ "$LOCAL" != "$PR_HEAD" ]; then
+     echo "PARE: a branch local tem commits além do head mergeado" >&2; exit 1
+   fi
+   [ -z "$LOCAL" ] || git branch -D "<headRefName>"
    [ -z "$TIP" ] || git push origin \
      --force-with-lease="refs/heads/<headRefName>:$TIP" ":refs/heads/<headRefName>"
    ```
