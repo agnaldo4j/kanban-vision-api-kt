@@ -40,7 +40,8 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    (`headRefOid` **congela** no merge — medido no #374: lista 4 commits terminando em `c320545`,
    `headRefOid=c320545`, e o `2d94fc1` pushado depois não aparece em nenhum dos dois):
    ```bash
-   git fetch origin "<headRefName>" 2>/dev/null || true
+   # --prune obrigatório, e SEM `|| true`: ver os dois callouts de baixo
+   git fetch --prune origin || { echo "PARE: fetch falhou — não dá para conferir a remota" >&2; exit 1; }
    TIP=$(git rev-parse --verify -q "origin/<headRefName>" || true)   # vazio = remota já apagada, segue
    # o `|| true` é obrigatório: em ref inexistente o `-q` devolve vazio mas sai **1**, e sob `set -e`
    # a atribuição abortaria o script (medido) — este snippet acaba copiado para dentro de scripts
@@ -63,6 +64,21 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    > `… || echo "PARE: …"`: o `echo` **sai 0**, então a cadeia inteira sai 0 e nem `set -e` interrompe —
    > o passo 3 apagava a branch logo em seguida, com a mensagem de alerta impressa acima. Medido. Guard
    > que só imprime é o mesmo modo de falha que este arquivo existe para matar. (Codex P1 no #377.)
+   > ⚠️ **`--prune`, não `git fetch origin "<branch>"`.** O GitHub auto-apaga a branch no merge, e um fetch
+   > por refspec **não poda** o ref de rastreamento — ele falha com `couldn't find remote ref` (engolido pelo
+   > `|| true`) e deixa `origin/<branch>` **stale**. Resultado: `$TIP` fica não-vazio no caminho MAIS COMUM e
+   > o passo 3 tenta apagar o que já não existe, levando `! [rejected] … (stale info)`. Medido no primeiro uso
+   > real do guard, apagando a branch do próprio #377. Com `--prune` o ref some, `$TIP` esvazia e o passo 3
+   > pula — que é o comportamento certo.
+   > ⚠️ **E este fetch NÃO leva `|| true`** — ao contrário do `rev-parse` da linha seguinte. A diferença é
+   > se a falha é *esperada e benigna* ou *informação perdida*: `rev-parse -q` sai 1 só porque o ref não
+   > existe, que é um estado legítimo (a resposta é "vazio"); já um `fetch` que falha por rede, auth ou
+   > credencial **não** produz resposta — produz ignorância. Engolindo-a, `$TIP` vem do cache: stale (o
+   > `(stale info)` de volta) ou, se nunca se fez fetch daquela branch, **vazio** — e aí o guard não confere
+   > nada, o passo 3 pula e o harvester reporta limpeza feita sem ter olhado a remota. Falso verde da
+   > família GAP-CC. Medido: com a branch alvo apagada o fetch da origin inteira sai **0** (o motivo
+   > original do `|| true`, que era o `couldn't find remote ref` do fetch por refspec, deixou de existir);
+   > remote inacessível sai **128**. (Codex P2 no #378.)
 3. Apague a branch — a remota **amarrada ao `$TIP` que o passo 2 conferiu**, nunca incondicional:
    ```bash
    git branch -d "<headRefName>"
@@ -80,8 +96,19 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    | nada mudou desde o passo 2 | apaga, exit 0 | apaga, exit 0 |
    | push de terceiro no meio | **apaga o commit alheio, exit 0** | `! [rejected] (delete) … (stale info)`, **exit 1**, branch preservada |
 
-   Se `$TIP` estiver vazio (remota já auto-deletada no merge, o caso comum) não há o que apagar — pular é
-   o comportamento certo, e evita o "remote ref does not exist" que antes era tolerado com `|| true`.
+   **Este passo é REDE DE SEGURANÇA, não cerimônia.** O repo tem `delete_branch_on_merge=true`, então na
+   maioria das vezes `$TIP` já vem vazio e não há nada a fazer. Ele existe para o caso em que o auto-delete
+   **não** rodou (setting desligado, merge por fora da UI, falha do GitHub): sem ele a branch mergeada fica
+   para trás e o repositório acumula lixo. Por isso: quando `$TIP` **não** está vazio, **avise**
+   ("a remota não tinha sido auto-deletada — apaguei"), para o mantenedor saber que o automatismo falhou;
+   quando está vazio, siga em silêncio.
+
+   Varredura complementar, quando quiser conferir o repo inteiro (branch remota sem PR aberto = candidata
+   a lixo):
+   ```bash
+   gh api repos/<owner>/<repo>/branches --paginate --jq '.[] | select(.name != "main") | .name' | sort \
+     | comm -23 - <(gh pr list --state open --json headRefName -q '.[].headRefName' | sort)
+   ```
 4. **Board #6 → Done** (só se o item estiver em **Doing** ou **Todo**; nunca mova de Backlog nem crie estado):
    busque **filtrando pelo status**, e só mova se houver **exatamente 1** match:
    ```bash
