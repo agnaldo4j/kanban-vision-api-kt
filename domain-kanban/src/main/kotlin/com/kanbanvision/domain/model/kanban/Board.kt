@@ -69,5 +69,10 @@ data class Board(
         return copy(steps = updatedSteps)
     }
 
+    // A ordem de execução dos steps é do agregado — é o mesmo invariante que `addStep` estabelece ao atribuir
+    // `position = steps.size`. Quem percorre o fluxo pede a ordem, não a reconstrói (GAP-EP, melhoria da revisão
+    // do #374). `sortedBy` é estável: steps de mesma `position` mantêm a ordem de inserção.
+    fun stepsInExecutionOrder(): List<Step> = steps.sortedBy { it.position }
+
     fun toRef(): BoardId = id
 }

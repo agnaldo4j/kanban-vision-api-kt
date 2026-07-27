@@ -121,6 +121,36 @@ class BoardStepCardExecutionBehaviorTest {
         assertIs<KanbanError.CardNotInProgress>(todo.block().leftOrNull())
     }
 
+    @Test
+    fun `given steps stored out of order when asking for execution order then they come sorted by position`() {
+        val board =
+            Board
+                .create(name = "Flow")
+                .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Deploy", requiredAbility = AbilityName.DEPLOYER)
+        // Um decode que preserva a ordem do array JSON pode devolver os steps em qualquer ordem.
+        val scrambled = board.copy(steps = board.steps.reversed())
+
+        val ordered = scrambled.stepsInExecutionOrder()
+
+        assertEquals(listOf("Analysis", "Development", "Deploy"), ordered.map { it.name.value })
+        assertEquals(listOf(0, 1, 2), ordered.map { it.position })
+    }
+
+    @Test
+    fun `given steps sharing a position when asking for execution order then insertion order is kept`() {
+        val board =
+            Board
+                .create(name = "Flow")
+                .withStep(name = "First", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Second", requiredAbility = AbilityName.TESTER)
+        // `sortedBy` é estável: empate em `position` não embaralha, o que mantém o runDay determinístico.
+        val tied = board.copy(steps = board.steps.map { it.copy(position = 0) })
+
+        assertEquals(listOf("First", "Second"), tied.stepsInExecutionOrder().map { it.name.value })
+    }
+
     private fun worker(name: String): Worker =
         Worker(
             name = NonBlankName(name),
