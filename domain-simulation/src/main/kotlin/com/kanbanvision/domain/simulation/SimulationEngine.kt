@@ -33,7 +33,7 @@ object SimulationEngine {
         val initialCards = scenario.board.allCards()
         val (afterDecisions, movDecisions) = applyDecisions(initialCards, scenario.board, decisions, ctx)
         val (afterAutoAdvance, movAutoAdvance) = autoAdvance(afterDecisions, scenario.rules.policySet.wipLimit, rng, ctx)
-        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, scenario.board.steps, ctx)
+        val afterExecution = applyAssignedWorkerExecution(afterAutoAdvance, scenario.board.stepsInExecutionOrder(), ctx)
         val afterAging = afterExecution.map { card -> if (card.state != CardState.DONE) card.incrementAge() else card }
 
         return buildResult(simulation, decisions, afterAging, movDecisions + movAutoAdvance)
@@ -109,6 +109,8 @@ object SimulationEngine {
         return current.toList() to movements.toList()
     }
 
+    // `steps` chega JÁ na ordem de execução (`Board.stepsInExecutionOrder()`) — não reordenar aqui, senão o
+    // invariante volta a ter dois donos.
     private fun applyAssignedWorkerExecution(
         cards: List<Card>,
         steps: List<Step>,
@@ -116,13 +118,11 @@ object SimulationEngine {
     ): List<Card> {
         if (steps.isEmpty()) return cards
         val current = cards.toMutableList()
-        steps
-            .sortedBy { it.position }
-            .forEach { step ->
-                step.workers.sortedBy { it.id }.forEach { worker ->
-                    applySingleWorkerExecution(current, step, worker, ctx)
-                }
+        steps.forEach { step ->
+            step.workers.sortedBy { it.id }.forEach { worker ->
+                applySingleWorkerExecution(current, step, worker, ctx)
             }
+        }
         return current.toList()
     }
 
