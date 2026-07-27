@@ -172,6 +172,15 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   **PR #374 (GAP-DP)**: a primeira versão sorteava o step de cada card só entre os steps **do próprio board**,
   o que é *relocação*, não perda, e as 4 leis passavam com o bug presente; só um id de step **fora** do board
   discrimina. Procedimento: reverta a correção, rode a propriedade, confirme que **falha**, restaure.
+- **Corpo do PR desatualizado ou com alegação falsa é achado, não nit — é o insumo do `post-merge-harvester`.**
+  O corpo é de onde este projeto **destila lições duráveis** depois do merge: uma "regra" falsa afirmada ali vira
+  emenda de skill/regra. Cheque três coisas: (a) o corpo cobre **todos** os commits, inclusive os que nasceram da
+  própria revisão — API pública nova acrescentada no meio do PR é o que mais escapa; (b) números conferem
+  (contagem de testes/casos defasa quando o PR ganha commits); (c) toda **afirmação técnica** foi verificada, com
+  atenção a regra de linguagem enunciada de memória. Se o repo já documenta o mecanismo, o corpo não pode
+  contradizê-lo. No #374 o corpo omitia a segunda API pública e invertia a precedência membro-vs-extensão do
+  Kotlin — que `.claude/rules/testing.md` já registra corretamente. **Quarta ocorrência** do padrão "mecanismo
+  afirmado por leitura, refutado por verificação" (#326, #332, #369) — e nas quatro quem mediu foi o revisor.
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
 - **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código
