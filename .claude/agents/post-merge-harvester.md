@@ -79,9 +79,19 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    > família GAP-CC. Medido: com a branch alvo apagada o fetch da origin inteira sai **0** (o motivo
    > original do `|| true`, que era o `couldn't find remote ref` do fetch por refspec, deixou de existir);
    > remote inacessível sai **128**. (Codex P2 no #378.)
+   > ⚠️ **Efeito colateral do `--prune` no passo 3:** `git branch -d` aceitava a branch como "merged" via
+   > `origin/<branch>`; podado esse ref, e sendo squash merge (commits não são ancestrais da main), o `-d`
+   > passa a **recusar sempre** (`not fully merged`). Por isso o passo 3 compara **conteúdo** com a main e
+   > usa `-D`: é garantia mais forte que o `-d` jamais deu — `git diff --quiet main <branch>` sai **0** com
+   > conteúdo idêntico e **1** com qualquer diferença (medido), então um commit local não-mergeado **para** a
+   > limpeza em vez de ser apagado. Achado ao executar o guard no pós-merge do próprio #378.
 3. Apague a branch — a remota **amarrada ao `$TIP` que o passo 2 conferiu**, nunca incondicional:
    ```bash
-   git branch -d "<headRefName>"
+   # `-d` NÃO serve aqui: em squash merge os commits da branch não são ancestrais da main, e o `--prune`
+   # do passo 2 removeu o `origin/<branch>` que era a outra via de "merged". Compare CONTEÚDO com a main.
+   git diff --quiet main "<headRefName>" \
+     || { echo "PARE: a branch difere da main — não é o mesmo conteúdo mergeado" >&2; exit 1; }
+   git branch -D "<headRefName>"
    [ -z "$TIP" ] || git push origin \
      --force-with-lease="refs/heads/<headRefName>:$TIP" ":refs/heads/<headRefName>"
    ```
