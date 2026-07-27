@@ -40,7 +40,8 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    (`headRefOid` **congela** no merge — medido no #374: lista 4 commits terminando em `c320545`,
    `headRefOid=c320545`, e o `2d94fc1` pushado depois não aparece em nenhum dos dois):
    ```bash
-   git fetch --prune origin 2>/dev/null || true   # --prune é OBRIGATÓRIO: ver o callout de baixo
+   # --prune obrigatório, e SEM `|| true`: ver os dois callouts de baixo
+   git fetch --prune origin || { echo "PARE: fetch falhou — não dá para conferir a remota" >&2; exit 1; }
    TIP=$(git rev-parse --verify -q "origin/<headRefName>" || true)   # vazio = remota já apagada, segue
    # o `|| true` é obrigatório: em ref inexistente o `-q` devolve vazio mas sai **1**, e sob `set -e`
    # a atribuição abortaria o script (medido) — este snippet acaba copiado para dentro de scripts
@@ -69,6 +70,15 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
    > o passo 3 tenta apagar o que já não existe, levando `! [rejected] … (stale info)`. Medido no primeiro uso
    > real do guard, apagando a branch do próprio #377. Com `--prune` o ref some, `$TIP` esvazia e o passo 3
    > pula — que é o comportamento certo.
+   > ⚠️ **E este fetch NÃO leva `|| true`** — ao contrário do `rev-parse` da linha seguinte. A diferença é
+   > se a falha é *esperada e benigna* ou *informação perdida*: `rev-parse -q` sai 1 só porque o ref não
+   > existe, que é um estado legítimo (a resposta é "vazio"); já um `fetch` que falha por rede, auth ou
+   > credencial **não** produz resposta — produz ignorância. Engolindo-a, `$TIP` vem do cache: stale (o
+   > `(stale info)` de volta) ou, se nunca se fez fetch daquela branch, **vazio** — e aí o guard não confere
+   > nada, o passo 3 pula e o harvester reporta limpeza feita sem ter olhado a remota. Falso verde da
+   > família GAP-CC. Medido: com a branch alvo apagada o fetch da origin inteira sai **0** (o motivo
+   > original do `|| true`, que era o `couldn't find remote ref` do fetch por refspec, deixou de existir);
+   > remote inacessível sai **128**. (Codex P2 no #378.)
 3. Apague a branch — a remota **amarrada ao `$TIP` que o passo 2 conferiu**, nunca incondicional:
    ```bash
    git branch -d "<headRefName>"
