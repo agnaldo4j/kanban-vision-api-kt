@@ -30,6 +30,32 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 - **Kotlin serialization plugin**: applied without version in `http_api` and `sql_persistence` because the plugin is already on the classpath from `buildSrc`.
 - **`/*` inside a KDoc opens a *nested* block comment**: Kotlin supports nested block comments, so a `/*` in doc text — e.g. a backticked glob `` `pkg/sub/**` `` (the `/**`) — starts a comment that never closes → `Unclosed comment` at EOF. Avoid `/*` sequences in doc/KDoc; write `pkg.sub`, not `` `pkg/sub/**` ``. (GAP-BZ/#325 — this, not explicit type args, was the real cause of that build's `Unclosed comment`. Explicit type args on a generic Java method — `commands.evalsha<List<Long>>(…)` — são Kotlin válido; não é uma armadilha.)
 - **Unwrapping a guaranteed-`Right` under a pre-guard is a *dead branch* that quietly lowers coverage.** When a domain op returns `Either<E, T>` but the caller has already pre-guarded the exact condition that would make it `Left` (a call site mirroring an aggregate invariant), `op().getOrNull() ?: return` adds an *uncoverable* branch — JaCoCo drops even while above the gate, and no test can kill it. Absorb the impossible `Left` *inside* Arrow with `.onRight { … }`: the caller stays total, behaviour is identical, and there is no dead branch. Pin the assumption ("under a satisfied pre-guard this is never `Left`") as a **totality test**, not just a comment. (GAP-DN/#350 — `SimulationEngine`'s `executeCard`/`block` sites; applied mid-PR on a harness suggestion.)
+
+  > ⚠️ **Expect a reviewer to suggest the exact opposite — and answer with the measurement, not with this
+  > paragraph.** On #381 the harness filed a P3 on `applyUnblock` asking for `unblock().getOrNull()?.let { }`,
+  > so the `Movement` would depend on the success instead of running beside it. The *form* argument is
+  > sound (if guard and rule ever diverge, a `Movement(UNBLOCKED)` is recorded with no state change → a
+  > `CardUnblocked` event → the metric lies), but applying it here reintroduces this very pitfall — in the
+  > same file where the rule was born, on a suggestion from the same reviewer that taught it. Measured
+  > twice (author in-PR, then independently in the post-merge harvest), with `applyBlock` as the untouched
+  > control:
+  >
+  > | `applyUnblock` form | BRANCH | INSTRUCTION |
+  > |---|---|---|
+  > | `.onRight { }` (current) | **0 missed** / 4 covered | 0 missed / 50 |
+  > | `getOrNull()?.let { }` (suggested) | **1 missed** / 5 covered | **2 missed** / 56 |
+  >
+  > The dead branch is **inherent to conditioning on the `Either`**, not to the syntax chosen: `?.let`,
+  > `?: return null`, `fold` and `map`+unwrap all create an edge whose false path is unreachable while the
+  > pre-guard stands. So neither obey nor dismiss — **measure, then answer with the numbers**, and offer the
+  > maintainer the opposite trade explicitly (accept an uncoverable branch now in exchange for the structural
+  > guarantee) rather than deciding it silently.
+  >
+  > **The real resolution is to dissolve the dilemma, not to relocate it:** inside a HOF
+  > (`mutateCardAt(current, cardId, guard, op)` — **GAP-EA [N]**, already in the #6 Todo) the branch stops
+  > being dead, because the HOF can be tested directly with an `op` that genuinely returns `Left`. The
+  > structure the reviewer wants then exists **once, actually exercised**, instead of three dead branches
+  > spread across `applyMove`/`applyBlock`/`applyUnblock`.
 - **An arm with an EMPTY BODY placed LAST in an exhaustive `when` over a sealed type is scored a *partial*.** Same family as the dead branch above, different mechanism — and the trigger is the **empty body**, not the `is` check. Measured on Kotlin 2.4.10 under JaCoCo 0.8.13/0.8.14 (branch counters read from `org.jacoco.core`):
 
   | last arm | result |
