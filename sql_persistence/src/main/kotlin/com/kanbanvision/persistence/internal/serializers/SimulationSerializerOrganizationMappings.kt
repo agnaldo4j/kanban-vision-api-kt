@@ -1,6 +1,5 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.common.model.NonBlankName
 import com.kanbanvision.domain.model.kanban.Ability
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Seniority
@@ -27,10 +26,11 @@ internal fun Simulation.toSurrogate() =
 
 internal fun SimulationSurrogate.toDomain() =
     Simulation(
-        id = SimulationId(id),
-        name = NonBlankName(name),
+        id = SimulationId(decodeId(id)),
+        name = decodeName(name),
         currentDay = SimulationDay(currentDay),
-        status = SimulationStatus.valueOf(status),
+        // DRAFT é o mesmo default que `buildFallbackSimulation` usa quando não há blob (GAP-DV).
+        status = decodeEnum(status, SimulationStatus.DRAFT),
         organization = organization.toDomain(),
         scenario = scenario.toDomain(),
         decisions = decisions.map { it.toDomain() },
@@ -46,18 +46,18 @@ private fun Organization.toSurrogate() =
 
 private fun OrganizationSurrogate.toDomain() =
     Organization(
-        id = id,
-        name = NonBlankName(name),
+        id = decodeId(id),
+        name = decodeName(name),
         tribes = tribes.map { it.toDomain() },
     )
 
 private fun Tribe.toSurrogate() = TribeSurrogate(id = id, name = name.value, squads = squads.map { it.toSurrogate() })
 
-private fun TribeSurrogate.toDomain() = Tribe(id = id, name = NonBlankName(name), squads = squads.map { it.toDomain() })
+private fun TribeSurrogate.toDomain() = Tribe(id = decodeId(id), name = decodeName(name), squads = squads.map { it.toDomain() })
 
 private fun Squad.toSurrogate() = SquadSurrogate(id = id, name = name.value, workers = workers.map { it.toSurrogate() })
 
-private fun SquadSurrogate.toDomain() = Squad(id = id, name = NonBlankName(name), workers = workers.map { it.toDomain() })
+private fun SquadSurrogate.toDomain() = Squad(id = decodeId(id), name = decodeName(name), workers = workers.map { it.toDomain() })
 
 internal fun Worker.toSurrogate() =
     WorkerSurrogate(
@@ -68,16 +68,34 @@ internal fun Worker.toSurrogate() =
 
 internal fun WorkerSurrogate.toDomain() =
     Worker(
-        id = id,
-        name = NonBlankName(name),
-        abilities = abilities.map { it.toDomain() }.toSet(),
+        id = decodeId(id),
+        name = decodeName(name),
+        abilities = abilities.map { it.toDomain() }.toSet().completedForWorkerInvariants(),
     )
+
+/**
+ * `Worker.init` exige `abilities.isNotEmpty()` e `!hasTester || hasDeployer` (GAP-DV). Um blob que viole
+ * qualquer um dos dois tornaria o agregado inteiro não-carregável, então completamos com o mínimo em vez
+ * de lançar — acrescentar é seguro, ao contrário de remover, que o próximo save tornaria permanente.
+ */
+private fun Set<Ability>.completedForWorkerInvariants(): Set<Ability> {
+    val nonEmpty = ifEmpty { setOf(Ability(name = ABILITY_FALLBACK, seniority = Seniority.JR)) }
+    val hasTester = nonEmpty.any { it.name == AbilityName.TESTER }
+    val hasDeployer = nonEmpty.any { it.name == AbilityName.DEPLOYER }
+    return if (hasTester && !hasDeployer) {
+        nonEmpty + Ability(name = AbilityName.DEPLOYER, seniority = Seniority.JR)
+    } else {
+        nonEmpty
+    }
+}
 
 private fun Ability.toSurrogate() = AbilitySurrogate(id = id, name = name.name, seniority = seniority.name)
 
 private fun AbilitySurrogate.toDomain() =
     Ability(
-        id = id,
-        name = AbilityName.valueOf(name),
-        seniority = Seniority.valueOf(seniority),
+        id = decodeId(id),
+        name = decodeEnum(name, ABILITY_FALLBACK),
+        // JR: seniority não dirige comportamento hoje; se um dia dirigir capacidade, subestimar é a
+        // direção segura de falha.
+        seniority = decodeEnum(seniority, Seniority.JR),
     )
