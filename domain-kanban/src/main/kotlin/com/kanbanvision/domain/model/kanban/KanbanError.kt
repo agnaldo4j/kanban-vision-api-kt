@@ -38,4 +38,8 @@ sealed interface KanbanError : DomainError {
     data class CardNotInProgress(
         val cardId: String,
     ) : KanbanError
+
+    data class CardNotBlocked(
+        val cardId: String,
+    ) : KanbanError
 }

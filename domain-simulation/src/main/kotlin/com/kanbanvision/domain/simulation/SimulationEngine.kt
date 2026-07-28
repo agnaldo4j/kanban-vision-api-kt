@@ -165,13 +165,27 @@ object SimulationEngine {
     }
 }
 
+// Allow-list das transições que uma decisão MoveItem pode disparar (GAP-DU). `when` sobre enum (exaustivo):
+// um CardState novo obriga o autor a classificá-lo aqui, em vez de herdar um default silencioso. A política
+// é do SIMULADOR (que decisão move o quê), não do Kanban BC — por isso vive aqui, não em `CardState`.
+private val CardState.advancesOnMoveDecision: Boolean
+    get() =
+        when (this) {
+            CardState.TODO, CardState.IN_PROGRESS -> true
+            // BLOCKED NÃO: `Card.advance()` mapeia BLOCKED→IN_PROGRESS, então um deny-list de DONE fazia
+            // MoveItem DESBLOQUEAR em silêncio — contornando a transição nomeada UnblockItem e a regra
+            // tipada de block()/unblock(). DONE é terminal.
+            CardState.BLOCKED, CardState.DONE -> false
+        }
+
 private fun applyMove(
     current: MutableList<Card>,
     cardId: CardId,
     day: Int,
 ): Movement? {
     val idx = current.indexOfFirst { it.id == cardId }
-    if (idx < 0 || current[idx].state == CardState.DONE) return null
+    // Recusa silenciosa (`null`) — mesmo idioma de applyBlock/applyUnblock.
+    if (idx < 0 || !current[idx].state.advancesOnMoveDecision) return null
     val card = current[idx]
     val advanced = card.advance()
     val movementType = if (advanced.state == CardState.DONE) MovementType.COMPLETED else MovementType.MOVED
@@ -202,7 +216,10 @@ private fun applyUnblock(
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.BLOCKED) return null
     val card = current[idx]
-    current[idx] = card.advance()
+    // ADR-0044: estado BLOCKED já pré-guardado acima → o `Left` de unblock() é inalcançável; `onRight`
+    // absorve o `Left` impossível dentro do Arrow (sem ramo morto), sem reintroduzir throw. A suposição
+    // está PINADA em TypedOperationTotalityBehaviorTest, não só neste comentário.
+    card.unblock().onRight { current[idx] = it }
     return Movement(
         type = MovementType.UNBLOCKED,
         cardId = card.id,

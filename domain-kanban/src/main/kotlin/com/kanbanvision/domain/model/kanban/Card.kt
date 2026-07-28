@@ -82,6 +82,15 @@ data class Card(
             copy(state = CardState.BLOCKED)
         }
 
+    // ADR-0044: transição de estado inválida (desbloquear card não-BLOCKED) é regra de domínio → Either.
+    // Simétrico a `block()`: BLOCKED→IN_PROGRESS é uma transição NOMEADA, com regra própria. `advance()`
+    // segue como a transição genérica do fluxo — quem quer desbloquear pede `unblock()` (GAP-DU).
+    fun unblock(): Either<KanbanError, Card> =
+        either {
+            ensure(state == CardState.BLOCKED) { KanbanError.CardNotBlocked(id.value) }
+            copy(state = CardState.IN_PROGRESS)
+        }
+
     fun incrementAge(): Card = copy(agingDays = agingDays + 1)
 
     fun remainingEffortFor(ability: AbilityName): Int =

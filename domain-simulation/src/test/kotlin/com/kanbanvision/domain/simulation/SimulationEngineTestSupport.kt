@@ -1,8 +1,13 @@
 package com.kanbanvision.domain.simulation
 
+import com.kanbanvision.domain.model.kanban.Board
+import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.simulation.Decision
+import com.kanbanvision.domain.model.simulation.Scenario
+import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationResult
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 import java.time.Instant
 
 /**
@@ -18,3 +23,24 @@ internal fun SimulationEngine.runDay(
     decisions: List<Decision>,
     seed: Long,
 ): SimulationResult = runDay(simulation, decisions, seed, Instant.EPOCH)
+
+/**
+ * Fixture compartilhado do pacote: monta uma [Simulation] RUNNING em torno de um board já preparado.
+ *
+ * Vive aqui, e não em cada classe de teste, porque o setup era copiado verbatim em três arquivos — uma
+ * mudança de assinatura em `Simulation.create`/`Scenario.create`/`ScenarioRules.create` daria três lugares
+ * para achar, e a divergência entre as cópias não quebraria teste nenhum (review do PR #381).
+ */
+internal fun simulationFrom(
+    board: Board,
+    wipLimit: Int,
+): Simulation {
+    val rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = 2, seedValue = 1L)
+    val scenario = Scenario.create(name = "Scenario", rules = rules, board = board)
+    return Simulation.create(
+        name = "Simulation",
+        organization = Organization.create("Org"),
+        scenario = scenario,
+        status = SimulationStatus.RUNNING,
+    )
+}
