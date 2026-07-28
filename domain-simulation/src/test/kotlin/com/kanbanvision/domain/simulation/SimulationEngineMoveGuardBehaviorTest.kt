@@ -6,13 +6,9 @@ import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.Card
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.CardState
-import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.MovementType
-import com.kanbanvision.domain.model.simulation.Scenario
-import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
-import com.kanbanvision.domain.model.simulation.SimulationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -82,19 +78,5 @@ class SimulationEngineMoveGuardBehaviorTest {
                 Card(id = CardId("todo"), step = step.id, title = NonBlankTitle("Todo"), state = CardState.TODO),
             )
         return simulationFrom(board.copy(steps = listOf(step.copy(cards = cards))), wipLimit = wipLimit)
-    }
-
-    private fun simulationFrom(
-        board: Board,
-        wipLimit: Int,
-    ): Simulation {
-        val rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = 2, seedValue = 1L)
-        val scenario = Scenario.create(name = "Scenario", rules = rules, board = board)
-        return Simulation.create(
-            name = "Simulation",
-            organization = Organization.create("Org"),
-            scenario = scenario,
-            status = SimulationStatus.RUNNING,
-        )
     }
 }

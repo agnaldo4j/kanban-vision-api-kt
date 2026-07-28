@@ -10,13 +10,9 @@ import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.CardState
 import com.kanbanvision.domain.model.kanban.Seniority
 import com.kanbanvision.domain.model.kanban.Worker
-import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.MovementType
-import com.kanbanvision.domain.model.simulation.Scenario
-import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
-import com.kanbanvision.domain.model.simulation.SimulationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -153,19 +149,5 @@ class SimulationEngineMetricsBehaviorTest {
             )
         val stepWithWorker = step.withWorker(worker).copy(cards = listOf(card))
         return simulationFrom(board.copy(steps = listOf(stepWithWorker)), wipLimit = 3)
-    }
-
-    private fun simulationFrom(
-        board: Board,
-        wipLimit: Int,
-    ): Simulation {
-        val rules = ScenarioRules.create(wipLimit = wipLimit, teamSize = 2, seedValue = 1L)
-        val scenario = Scenario.create(name = "Scenario", rules = rules, board = board)
-        return Simulation.create(
-            name = "Simulation",
-            organization = Organization.create("Org"),
-            scenario = scenario,
-            status = SimulationStatus.RUNNING,
-        )
     }
 }
