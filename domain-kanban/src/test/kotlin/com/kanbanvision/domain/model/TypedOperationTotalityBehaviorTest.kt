@@ -40,4 +40,11 @@ class TypedOperationTotalityBehaviorTest {
 
         assertTrue(inProgress.block().isRight())
     }
+
+    @Test
+    fun `given blocked card when unblocking then result is Right`() {
+        val blocked = Card(step = StepId("s-1"), title = NonBlankTitle("Card")).advance().blockOrThrow()
+
+        assertTrue(blocked.unblock().isRight())
+    }
 }

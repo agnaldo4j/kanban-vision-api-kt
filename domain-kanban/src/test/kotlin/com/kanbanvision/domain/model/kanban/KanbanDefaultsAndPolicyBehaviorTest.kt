@@ -63,6 +63,29 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     }
 
     @Test
+    fun `given blocked card when unblocked then state becomes in progress`() {
+        val blocked = Card(step = StepId("s-1"), title = NonBlankTitle("Card")).advance().blockOrThrow()
+
+        assertEquals(CardState.IN_PROGRESS, blocked.unblock().getOrNull()?.state)
+    }
+
+    @Test
+    fun `given non blocked card when unblocked then it is rejected`() {
+        val todo = Card(step = StepId("s-1"), title = NonBlankTitle("Card"))
+
+        val error = assertIs<KanbanError.CardNotBlocked>(todo.unblock().leftOrNull())
+        assertEquals(todo.id.value, error.cardId)
+        assertIs<KanbanError.CardNotBlocked>(todo.advance().unblock().leftOrNull())
+        assertIs<KanbanError.CardNotBlocked>(
+            todo
+                .advance()
+                .advance()
+                .unblock()
+                .leftOrNull(),
+        )
+    }
+
+    @Test
     fun `given policy set when wip limit is valid then defaults are applied`() {
         val policy = PolicySet(wipLimit = 3)
 
