@@ -5,7 +5,6 @@ import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.ScenarioId
-import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -75,23 +74,25 @@ internal object DailySnapshotSerializer {
             reason = reason,
         )
 
+    // Mesma tolerância do eixo histórico (#385 P2): este blob tem os mesmos invariantes e o mesmo
+    // caminho de falha (PersistenceError → 500 em findByDay e na lista inteira de findAllBySimulation).
     private fun SnapshotDailySnapshotSurrogate.toDomain() =
         DailySnapshot(
-            id = id,
-            simulation = SimulationId(simulationId),
-            scenario = ScenarioId(scenarioId),
-            day = SimulationDay(day),
+            id = decodeId(id),
+            simulation = SimulationId(decodeId(simulationId)),
+            scenario = ScenarioId(decodeId(scenarioId)),
+            day = decodeDay(day),
             metrics = metrics.toDomain(),
             movements = movements.map { it.toDomain() },
         )
 
     private fun SnapshotFlowMetricsSurrogate.toDomain() =
         FlowMetrics(
-            id = id,
-            throughput = throughput,
-            wipCount = wipCount,
-            blockedCount = blockedCount,
-            avgAgingDays = avgAgingDays,
+            id = decodeId(id),
+            throughput = throughput.coerceAtLeast(0),
+            wipCount = wipCount.coerceAtLeast(0),
+            blockedCount = blockedCount.coerceAtLeast(0),
+            avgAgingDays = avgAgingDays.coerceAtLeast(0.0),
         )
 
     // Backward-compat (GAP-DS): decode tolerante, espelhando `SimulationSerializerSnapshotMappings`. Esta é a cópia
@@ -99,10 +100,10 @@ internal object DailySnapshotSerializer {
     // derrubar o GET inteiro com 500. `MovementType.Unknown` preserva a tag original no round-trip.
     private fun SnapshotMovementSurrogate.toDomain() =
         Movement(
-            id = id,
+            id = decodeId(id),
             type = MovementType.fromTag(type),
             cardId = decodeCardId(cardId),
-            day = SimulationDay(day),
+            day = decodeDay(day),
             reason = reason,
         )
 }

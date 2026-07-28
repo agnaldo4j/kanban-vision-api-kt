@@ -7,7 +7,6 @@ import com.kanbanvision.domain.model.simulation.FlowMetrics
 import com.kanbanvision.domain.model.simulation.Movement
 import com.kanbanvision.domain.model.simulation.MovementType
 import com.kanbanvision.domain.model.simulation.ScenarioId
-import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
 
 internal fun Decision.toSurrogate(): DecisionSurrogate =
@@ -65,12 +64,17 @@ internal fun DailySnapshot.toSurrogate() =
         movements = movements.map { it.toSurrogate() },
     )
 
+// Tolerância no eixo do HISTÓRICO (#385 P2): o GAP-DV cobriu o estado vivo, mas a subárvore `history`
+// seguia construindo cru — `require(id.isNotBlank())` em DailySnapshot/FlowMetrics/Movement,
+// `SimulationDay >= 1` e os 4 números de FlowMetrics >= 0. Um valor inválido aqui lança pelo MESMO
+// caminho (PersistenceError → 500 em findById e na página inteira de findAll), então a assimetria
+// deixava metade do sintoma de pé.
 internal fun DailySnapshotSurrogate.toDomain() =
     DailySnapshot(
-        id = id,
-        simulation = SimulationId(simulationId),
-        scenario = ScenarioId(scenarioId),
-        day = SimulationDay(day),
+        id = decodeId(id),
+        simulation = SimulationId(decodeId(simulationId)),
+        scenario = ScenarioId(decodeId(scenarioId)),
+        day = decodeDay(day),
         metrics = metrics.toDomain(),
         movements = movements.map { it.toDomain() },
     )
@@ -84,13 +88,14 @@ private fun FlowMetrics.toSurrogate() =
         avgAgingDays = avgAgingDays,
     )
 
+// FlowMetrics.init exige id não-branco e os 4 números >= 0 (#385 P2).
 private fun FlowMetricsSurrogate.toDomain() =
     FlowMetrics(
-        id = id,
-        throughput = throughput,
-        wipCount = wipCount,
-        blockedCount = blockedCount,
-        avgAgingDays = avgAgingDays,
+        id = decodeId(id),
+        throughput = throughput.coerceAtLeast(0),
+        wipCount = wipCount.coerceAtLeast(0),
+        blockedCount = blockedCount.coerceAtLeast(0),
+        avgAgingDays = avgAgingDays.coerceAtLeast(0.0),
     )
 
 private fun Movement.toSurrogate() =
@@ -104,9 +109,9 @@ private fun Movement.toSurrogate() =
 
 private fun MovementSurrogate.toDomain() =
     Movement(
-        id = id,
+        id = decodeId(id),
         type = MovementType.fromTag(type),
         cardId = decodeCardId(cardId),
-        day = SimulationDay(day),
+        day = decodeDay(day),
         reason = reason,
     )

@@ -17,13 +17,19 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * O decode tolerante do GAP-DV degrada um id em branco para um sentinel, o que mantém o agregado
- * carregável. Mas a identidade de topo é diferente dos demais campos: `save` faz upsert **por**
- * `simulation.id`, então um sentinel gravaria uma linha NOVA e deixaria a original órfã — corrupção
- * silenciosa, pior que o 500 que a tolerância evita.
+ * O decode tolerante do GAP-DV degrada um valor inválido para um sentinel, o que mantém o agregado
+ * carregável. Mas **dois** campos têm fonte autoritativa FORA do blob — a linha relacional que a query
+ * já leu — e degradá-los troca um erro de leitura por corrupção silenciosa:
  *
- * A linha relacional é a fonte autoritativa, e `rowToSimulation` reconcilia o id do blob com o dela.
- * (review #383 P1)
+ *  - `simulation.id` — chave do upsert de `save`: um sentinel gravaria uma linha NOVA e deixaria a
+ *    original órfã, com os snapshots seguindo o id errado. (#383 P1)
+ *  - `organization.id` — coluna com FK `REFERENCES organizations(id)` **e** chave de tenancy comparada
+ *    em 5 use cases: um sentinel viola a FK no save e responde 403 ao dono legítimo, deixando o
+ *    registro "tolerado" ilegível na prática. (#384 P2)
+ *
+ * `rowToSimulation` reconcilia os dois com a linha. Os demais campos que `save` regrava
+ * (`wip_limit`/`team_size`/`seed_value`) são projeção do blob, não autoridade — ver o comentário em
+ * `JdbcSimulationRepository.rowToSimulation` para o argumento de fechamento da enumeração.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SimulationIdentityReconciliationTest {

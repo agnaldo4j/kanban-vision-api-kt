@@ -6,6 +6,7 @@ import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.kanban.CardState
 import com.kanbanvision.domain.model.kanban.ServiceClass
+import com.kanbanvision.domain.model.simulation.SimulationDay
 
 /**
  * Decode tolerante a legado dos blobs JSONB (GAP-DH #355 · GAP-DS #366 · GAP-DV).
@@ -33,6 +34,9 @@ internal fun decodeTitle(raw: String): NonBlankTitle = NonBlankTitle(raw.ifBlank
 internal fun decodeCardId(raw: String): CardId = CardId(raw.ifBlank { "(unknown)" })
 
 internal fun decodeId(raw: String): String = raw.ifBlank { "(unknown)" }
+
+/** `SimulationDay.init` exige `value >= 1`; um dia 0/negativo num blob legado lançaria. */
+internal fun decodeDay(raw: Int): SimulationDay = SimulationDay(raw.coerceAtLeast(1))
 
 internal inline fun <reified E : Enum<E>> decodeEnum(
     raw: String,
