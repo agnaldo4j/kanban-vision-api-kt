@@ -50,7 +50,7 @@ dependencies {
     // runtimeClasspath de CADA módulo (e o migrationRuntime do http_api, GAP-DA), então o BOM precisa estar
     // aqui (e não só no http_api). Alinha toda a
     // família tools.jackson a 3.1.5 numa linha. Remover quando o flyway-core puxar >= 3.1.5 nativamente.
-    implementation(platform("tools.jackson:jackson-bom:3.1.5"))
+    implementation(platform("tools.jackson:jackson-bom:3.2.1"))
 
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))
@@ -65,7 +65,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.13")
     implementation("org.flywaydb:flyway-core:13.0.0")
     runtimeOnly("org.flywaydb:flyway-database-postgresql:13.0.0")
-    implementation("ch.qos.logback:logback-classic:1.5.38")
+    implementation("ch.qos.logback:logback-classic:1.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
@@ -75,7 +75,7 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("io.zonky.test:embedded-postgres:2.2.2")
-    testImplementation("io.kotest:kotest-property:6.2.2")
+    testImplementation("io.kotest:kotest-property:6.2.3")
 }
 
 val jacocoExcludes =

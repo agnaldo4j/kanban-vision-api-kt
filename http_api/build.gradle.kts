@@ -212,7 +212,7 @@ dependencies {
     // TODA a família tools.jackson (core/databind/module-kotlin) a 3.1.5 numa linha, evitando drift
     // módulo-a-módulo (mesmo idioma do netty-bom acima). Remover quando logstash-logback-encoder puxar
     // >= 3.1.5 nativamente.
-    implementation(platform("tools.jackson:jackson-bom:3.1.5"))
+    implementation(platform("tools.jackson:jackson-bom:3.2.1"))
 
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))
@@ -224,11 +224,11 @@ dependencies {
     // O jackson-bom precisa ser repetido aqui: `migrationRuntime` é uma configuração própria e NÃO
     // herda o `platform` do `implementation`, então o logstash-logback-encoder abaixo puxaria a família
     // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
-    migrationRuntime(platform("tools.jackson:jackson-bom:3.1.5"))
+    migrationRuntime(platform("tools.jackson:jackson-bom:3.2.1"))
     migrationRuntime(project(":sql_persistence"))
-    migrationRuntime("ch.qos.logback:logback-classic:1.5.38")
+    migrationRuntime("ch.qos.logback:logback-classic:1.6.0")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
-    migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
+    migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
     implementation("io.arrow-kt:arrow-core:2.2.3")
 
@@ -267,14 +267,14 @@ dependencies {
     // instrumentações de biblioteca na linha 2.29.0(-alpha), alinhada ao SDK/API 1.63.0.
     implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.64.0")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.64.0")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.29.0-alpha")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.30.0-alpha")
     // implementation (não runtimeOnly): OpenTelemetryDriver.install() é chamado em código —
     // o driver nasce com noop() e não lê o GlobalOpenTelemetry.
-    implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc:2.29.0-alpha")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc:2.30.0-alpha")
     // Referenciada só pelo logback*.xml — runtime only.
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.29.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
-    implementation("ch.qos.logback:logback-classic:1.5.38")
+    implementation("ch.qos.logback:logback-classic:1.6.0")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
@@ -290,7 +290,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.64.0")
-    testImplementation("io.kotest:kotest-property:6.2.2")
+    testImplementation("io.kotest:kotest-property:6.2.3")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
     testImplementation("au.com.dius.pact.consumer:junit5:4.7.3")
     testImplementation("au.com.dius.pact.provider:junit5:4.7.3")
