@@ -50,7 +50,14 @@ graalvmNative {
         create("migration") {
             imageName.set("kanban-vision-migrate")
             mainClass.set("com.kanbanvision.httpapi.MigrationMainKt")
-            classpath(
+            // setFrom, NÃO classpath(...): desde o plugin 1.1.6 ("Fix custom Gradle binary
+            // classpath wiring", native-build-tools#939) binários customizados JÁ NASCEM com o
+            // runtimeClasspath principal, e `classpath(...)` ACRESCENTA a essa coleção. O bump
+            // 1.1.5→1.1.6 (#370) arrastou Ktor/Netty/Koin/Lettuce para cá em silêncio: 43.898 →
+            // 72.588 compilation units, imagem 282 → 331 MB, e o image heap do Job de 29 para
+            // 55 MB — fora do envelope 256Mi validado na ADR-0036, com --gc=epsilon que nunca
+            // libera. `setFrom` SUBSTITUI, restaurando o classpath enxuto em qualquer versão.
+            classpath.setFrom(
                 sourceSets.main
                     .get()
                     .output.classesDirs,
@@ -68,6 +75,38 @@ graalvmNative {
             buildArgs.add("--gc=epsilon")
         }
     }
+}
+
+// Fitness function do classpath enxuto acima. O vazamento do plugin 1.1.6 só apareceu porque
+// alguém leu o tamanho da imagem no smoke test — nenhum gate reprovou. Aqui a invariante deixa
+// de ser comentário: se um bump futuro voltar a injetar o app inteiro no binário de migração,
+// o `check` reprova em segundos, sem precisar de build nativo.
+val verifyMigrationClasspath =
+    tasks.register("verifyMigrationClasspath") {
+        description = "Fails if the migration native binary classpath leaks app-only dependencies"
+        group = "verification"
+        // Locais, não vals de script: o configuration cache não serializa referência ao objeto
+        // do script, e capturar um val de topo no doLast reprova o `check`.
+        val appOnlyDependencies = listOf("netty", "ktor", "koin", "lettuce")
+        val migrationClasspath = graalvmNative.binaries.getByName("migration").classpath
+        inputs.files(migrationClasspath)
+        doLast {
+            val leaked =
+                migrationClasspath.files
+                    .map { it.name }
+                    .filter { jar -> appOnlyDependencies.any { jar.contains(it, ignoreCase = true) } }
+                    .sorted()
+            check(leaked.isEmpty()) {
+                "O binário nativo de migração deve ver só persistência + logging (ADR-0032), mas " +
+                    "${leaked.size} jar(s) do app vazaram para o classpath: ${leaked.joinToString()}. " +
+                    "Use classpath.setFrom(...) — classpath(...) ACRESCENTA ao runtimeClasspath que o " +
+                    "plugin GraalVM injeta desde 1.1.6 (native-build-tools#939)."
+            }
+        }
+    }
+
+tasks.named("check") {
+    dependsOn(verifyMigrationClasspath)
 }
 
 pitest {
@@ -209,9 +248,9 @@ dependencies {
     // logstash-logback-encoder 9.0 migrou para Jackson 3.x (coordenadas `tools.jackson`, distintas do
     // Jackson 2.x `com.fasterxml.jackson` pinado acima) e puxa a família em 3.1.4 — vulnerável a
     // GHSA-5gvw-p9qm-jgwh (jackson-databind, corrigida em 3.1.5), gate de SCA (ADR-0025). O BOM alinha
-    // TODA a família tools.jackson (core/databind/module-kotlin) a 3.1.5 numa linha, evitando drift
+    // TODA a família tools.jackson (core/databind/module-kotlin) numa linha, evitando drift
     // módulo-a-módulo (mesmo idioma do netty-bom acima). Remover quando logstash-logback-encoder puxar
-    // >= 3.1.5 nativamente.
+    // >= 3.1.5 nativamente — o 9.0 declara tools.jackson 3.0.1, então o pin continua necessário aqui.
     implementation(platform("tools.jackson:jackson-bom:3.2.1"))
 
     implementation(project(":domain-common"))
@@ -264,7 +303,7 @@ dependencies {
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.64.0")
     // ADR-0031: traces em build time (sem javaagent) — SDK autoconfigure lê as envs OTEL_*;
-    // instrumentações de biblioteca na linha 2.29.0(-alpha), alinhada ao SDK/API 1.63.0.
+    // instrumentações de biblioteca na linha 2.30.0(-alpha), alinhada ao SDK/API 1.64.0.
     implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.64.0")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.64.0")
     implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.30.0-alpha")

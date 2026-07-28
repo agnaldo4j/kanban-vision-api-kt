@@ -131,6 +131,19 @@ java -agentlib:native-image-agent=config-output-dir=http_api/src/main/resources/
   compatibilidade oficial no momento do gap.
 - **Fat JAR e native são pipelines separados**: `mergeServiceFiles()` do fat JAR é irrelevante
   no binário nativo — não misturar os dois nem "aproveitar" configs de um no outro.
+- **Binário customizado (`binaries { create("x") }`): `classpath.setFrom(...)`, nunca
+  `classpath(...)`.** Desde o plugin 1.1.6 ("Fix custom Gradle binary classpath wiring",
+  native-build-tools#939) binários customizados **já nascem com o runtimeClasspath principal**, e
+  `classpath(...)` só ACRESCENTA a essa coleção — o classpath enxuto vira "app inteiro + o seu".
+  No bump 1.1.5→1.1.6 (PR #370) o `kanban-vision-migrate` engoliu Ktor/Netty/Koin/Lettuce: 43.898
+  → 72.588 compilation units, imagem 282 → 331 MB, image heap do Job 29 → 55 MB (fora do envelope
+  256Mi da ADR-0036, e com `--gc=epsilon`, que nunca libera). **Nada reprovou** — nem teste, nem
+  SCA, nem o smoke, que só *imprime* o tamanho da imagem. Guard: `:http_api:verifyMigrationClasspath`
+  (no `check`) reprova se `netty|ktor|koin|lettuce` aparecer no classpath do binário de migração.
+- **Tamanho da imagem é sinal, e ninguém o lê por você.** O salto de 49 MB só apareceu porque
+  alguém comparou o número do Smoke Test Report com o dos PRs anteriores (282 MB estável). Ao
+  revisar bump de dependência ou de plugin, compare o `Top 10 origins of code area` do log do
+  `native-image` entre os dois builds: ele nomeia o jar que entrou.
 
 ## 8. Runtime tuning — memória e GC (produção)
 
