@@ -6,6 +6,13 @@
 
 ## Session Start — mandatory before any code
 
+> 🔴 **Nenhum PR sem card priorizado — e o card vem ANTES.** Defeito achado no meio da sessão (tipicamente
+> um achado de revisão de outro PR) não autoriza começar a trabalhar nele. Ou ele **se corrige no PR que o
+> gerou** (o default para achado de revisão — ver "Disposição" em `.claude/skills/pr-review/SKILL.md`), ou
+> vira **pergunta → card → priorização** e só então branch. Abrir o PR primeiro quebra o WIP=1 e tira o board
+> de fonte única (ADR-0023). Precedente: o **#385** nasceu de um achado do Codex no #384 sem card; o GAP-EU foi
+> criado depois para regularizar. Detalhe e os dois destinos legítimos: §4 de `docs/politicas-explicitas.md`.
+
 > ⚠️ **`--limit` alto e `.status` como STRING — as duas coisas, sempre.** Sem `--limit` o `gh` trunca em
 > **30** itens (o board passou de 130) e sem `.status.name` → `.status` o `jq` **aborta**
 > (`Cannot index string with string "name"`). Qualquer um dos dois faz a checagem devolver vazio, que este

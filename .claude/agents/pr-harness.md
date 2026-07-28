@@ -205,6 +205,14 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   contradizê-lo. No #374 o corpo omitia a segunda API pública e invertia a precedência membro-vs-extensão do
   Kotlin — que `.claude/rules/testing.md` já registra corretamente. **Quarta ocorrência** do padrão "mecanismo
   afirmado por leitura, refutado por verificação" (#326, #332, #369) — e nas quatro quem mediu foi o revisor.
+- **PR que REFUTA uma afirmação: grep a redação antiga — ela quase nunca está num lugar só.** Quando o diff
+  existe para corrigir uma afirmação errada (comentário de código, KDoc, regra, corpo de PR), a versão
+  refutada costuma ter sido escrita em **cópias**, e o autor atualiza a que tem em mente. Procedimento: pegue
+  3–5 palavras características da redação antiga e `grep -rn` no repo; toda cópia entra no mesmo PR. No **#385**
+  o comentário do repositório foi atualizado para `#383 P1 · #384 P2`, mas o **KDoc do teste-guarda** seguia
+  com o texto do #383 (*"a identidade de topo é diferente dos demais campos"*) — a afirmação exata que o #384
+  refutou, viva dentro do arquivo cujo próprio teste a contradiz. Doc que afirma um fechamento inexistente é
+  achado (P3), não nit: é o mesmo mecanismo do bullet acima, um nível abaixo do corpo do PR.
 - **GraalVM Native Image:** caminho novo que serializa/reflete sem reachability metadata (classe do GAP-BM —
   o smoke test cobre o caminho de erro, não todos).
 - **Skill/doc que documenta API do domínio:** quando o diff é um skill/regra que cita identificadores do código
@@ -215,6 +223,15 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
 
 Um bug de corretude com cenário de falha plausível é **P1** (quebra em produção / corrompe dado / brecha de
 segurança) ou **P2** (quebra sob condição específica); nunca "só uma melhoria".
+
+> 🔴 **Disposição: a `Correção:` de um achado é para ESTE PR — não proponha "candidato a card".** Política do
+> mantenedor (#385): achado se corrige no PR que o gerou; **só lição durável** é que se avalia agora-ou-depois.
+> Isso vale **inclusive para achado pré-existente na `main`/fora do diff**: se ele é outra instância da classe
+> que o PR já está consertando, dizer "fora do diff, não é pedido de mudança" **adia uma rodada inteira** — foi
+> o que o P2 do #385 (tolerância do decode na subárvore `history`) mostrou, e o mantenedor mandou corrigir ali.
+> Continue **classificando** a origem (no diff vs pré-existente) — é informação honesta e útil —, mas não
+> converta a classificação em dispensa. Cardar só quando o fix é `[E]`/muda contrato ou é outro gap; aí a
+> formulação certa é "candidato ao Todo" na §3.5, nunca uma `Correção:` que ninguém vai aplicar.
 
 ## 3. Coerência de negócio (o que "criterioso" mais exige)
 

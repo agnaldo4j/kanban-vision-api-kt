@@ -45,6 +45,19 @@ campo serializado** — trocar um `String` cru por um value class / smart constr
   só muda a *forma* da falha: o agregado **continua não-carregável**; use isso apenas se falhar o load daquele
   registro for aceitável, o que raramente é para dados históricos.) Cubra com um teste dedicado ("legacy blank …
   decodes to a sentinel instead of crashing the load").
+- **A tolerância vale para a SUBÁRVORE inteira alcançável do nó decodificado — enumere por construtor, não
+  por campo lembrado.** É fácil tolerar o que está na raiz (`Scenario`/`Board`/`Step`/`Card`/`Worker`) e deixar
+  intacta uma subárvore que ninguém cita — em #385 era `history`, cujos `DailySnapshot`/`FlowMetrics`/`Movement`
+  eram construídos **crus** nos **dois** serializers (`state_json` **e** `snapshot_json`), pelo mesmo caminho de
+  500 (`findById` e a página inteira de `findAll`). Procedimento: a partir do nó que o decode constrói, percorra
+  **todo construtor alcançável** e marque os que têm `init`/`require`; cada um é um ponto de lançamento até
+  provar o contrário. Duas armadilhas do "por campo":
+  - **Invariante numérico conta tanto quanto string em branco.** A varredura completa do #385 achou
+    `SimulationDay` (`require(value >= 1)`), que nenhum parecer tinha listado: um `day: 0` legado lançava
+    igual a um id vazio. Daí `decodeDay(raw) = SimulationDay(raw.coerceAtLeast(1))`, ao lado dos
+    `decodeId`/`decodeName`/`decodeTitle`.
+  - **O mesmo tipo decodificado em dois lugares precisa dos dois consertos.** `DailySnapshot` é decodificado
+    pelo serializer do estado vivo **e** pelo do snapshot; corrigir um deixa o outro no caminho de 500.
 - **Alternativa (quando cabe uma migração):** um data-fix Flyway forward-only que sanitize o histórico
   (`UPDATE … SET … WHERE …` sobre o JSONB) — mas só depois de **auditar** que tais registros existem; se o
   campo *sempre* teve guard (ex.: `Card.init` nunca deixou blank), não há legado a tolerar e nada a migrar.
@@ -85,6 +98,28 @@ que a tolerância evita**.
   **uma única linha** é a prova direta do fork (`SimulationIdentityReconciliationTest`). Para o campo com FK a
   prova é ainda mais direta — sem a reconciliação o re-save falha com **violação de constraint**, não com
   asserção.
+
+  > **O que esta regra pede é a LISTA CLASSIFICADA, não a conclusão.** As duas primeiras redações falharam do
+  > mesmo jeito: afirmaram um resultado ("para todos os outros campos o blob é a única fonte"; depois "as DUAS
+  > identidades") em vez de mandar executar um procedimento. Conclusão envelhece em silêncio e não se verifica;
+  > procedimento se roda. O passo, então:
+  >
+  > 1. **Enumere** toda coluna que o `save` escreve **a partir do agregado decodificado** — leia o `insert`/
+  >    `update`, não a memória. Em `simulations` são **cinco**: `id`, `organization_id`, `wip_limit`
+  >    (← `scenario.rules.policySet.wipLimit`), `team_size`, `seed_value`.
+  > 2. **Classifique cada uma** em exatamente um dos dois:
+  >    - **autoridade externa** ⇒ *reconcilie* — algo fora do blob escreve por ela (PK, chave de upsert, FK,
+  >      chave de tenancy/correlação) ou a valida (`CHECK`, constraint);
+  >    - **projeção** ⇒ *não reconcilie* — nada a lê enquanto existe blob, e blob e coluna são escritos na
+  >      **mesma** transação, então não há fonte externa com que reconciliar.
+  > 3. **Registre a condição que move uma projeção para a primeira lista** — sem ela o argumento envelhece
+  >    exatamente como as redações anteriores. Aqui: *"se alguma leitura passar a preferir a coluna, ou se um
+  >    data-fix out-of-band tocar linha e blob separadamente, elas entram na lista"*.
+  >
+  > Aplicado, dá: `id` e `organization_id` = autoridade externa (reconciliados); `wip_limit`/`team_size`/
+  > `seed_value` = projeção — **mesmo `wip_limit` e `team_size` sendo degradados no decode** (`coerceAtLeast(1)`
+  > em `PolicySetSurrogate`/`ScenarioRulesSurrogate`). Ser degradado **não** implica reconciliar; o critério é
+  > a autoridade, não a degradação — e é essa distinção que a conclusão anterior escondia. (Harness P3 no #385.)
 
 - **Um caminho de REPARO novo tem de satisfazer os invariantes CROSS-FIELD do agregado que vai construir.**
   Raciocinar campo-a-campo cobre `require`s de um campo só; não cobre `init`s que **relacionam** campos. Aqui,

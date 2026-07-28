@@ -106,6 +106,21 @@ START OF A WORK SESSION:
 **Golden rule:** never pick an item because it looks easier or more interesting. Always the **top of
 Todo** — the priority was already decided. (Board and field IDs are in `.claude/rules/workflow.md`.)
 
+**Corollary — no PR without a prioritised card, and the card comes FIRST.** A defect you spot mid-session
+(typically from a review finding on another PR) is **not** a licence to start work on it. Two legitimate
+destinations, and neither is "open a PR and card it later":
+
+1. **It belongs to the PR that surfaced it** → fix it *there*, in the same PR. That is the default for any
+   review finding (see "Disposição" in `.claude/skills/pr-review/SKILL.md`).
+2. **It does not fit that PR** — the fix is `[E]`/contract-changing, is a different gap, or the PR that
+   received the finding is doc/process-only and cannot absorb code (the `post-merge-harvester` anti-loop
+   guard keys on `*/src/main/**`) → then it is **question → card → prioritisation**, and only then a branch.
+
+Opening the PR first breaks WIP=1, bypasses the Todo ordering, and takes the board out of being the single
+source of progress (ADR-0023) — it also inflates lead time, since the card's clock starts after the work.
+Precedent: **PR #385** was opened straight from a Codex finding on #384 with no card; GAP-EU had to be created
+afterwards to regularise it. Retro-carding repairs the record but not the ordering decision that was skipped.
+
 ---
 
 ## 5. Closing policy — how to finish work
