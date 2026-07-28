@@ -121,6 +121,16 @@ source of progress (ADR-0023) — it also inflates lead time, since the card's c
 Precedent: **PR #385** was opened straight from a Codex finding on #384 with no card; GAP-EU had to be created
 afterwards to regularise it. Retro-carding repairs the record but not the ordering decision that was skipped.
 
+**Process improvement runs on a batch cadence: one process PR per 10 code PRs.** Harvested lessons queue in
+[`docs/quality/lessons-pending.md`](quality/lessons-pending.md) and ship together as
+`docs(process): lote <N>`. The rule exists because the opposite was measured: the harvester used to open a
+process PR per merged implementation, so a single product cycle produced roughly as many doc PRs as code PRs
+— each one its own review, CI run and slice of maintainer attention, for improvements that were almost never
+urgent. *"Chega de melhoria de processo, precisamos evoluir o produto"* (maintainer, 2026-07-28). Nothing is
+lost; it waits. **Exception:** a lesson whose absence leaves an **active defect or a holed guard** (something
+that lets an improper merge through, masks a gate failure, or loses data) is applied immediately — style,
+comment clarity and rubric enrichment always wait.
+
 ---
 
 ## 5. Closing policy — how to finish work

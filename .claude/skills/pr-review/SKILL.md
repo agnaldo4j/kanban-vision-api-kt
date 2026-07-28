@@ -265,15 +265,20 @@ avaliadas se resolvemos agora ou depois."* Três destinos distintos, e só um de
 
 ## Loop de lições aprendidas
 
-O que o review ensina não pode morrer no comentário do PR. O destino durável é
-**`docs/quality/lessons-learned.md`** (log append-only: PR · lição · onde aplicada) — a metade persistente
-do loop que o rubric §6 dispara. Lições **genéricas** viram emenda em skill/regra/rubric; lições
-**específicas da feature** ficam na ADR / nas notas do gap (não poluem as skills). Ver §6 do
-`.claude/agents/pr-harness.md`.
+O que o review ensina não pode morrer no comentário do PR — mas também **não pode virar um PR por lição**.
+Desde 2026-07-28 a lição entra numa **fila** (`docs/quality/lessons-pending.md`) e é aplicada **em lote, a
+cada 10 PRs de código**; `docs/quality/lessons-learned.md` passa a registrar só o que **já foi aplicado**.
+A razão é de fluxo: um PR de processo por implementação dobrava os ciclos de revisão/CI/atenção com
+melhorias raramente urgentes — *"chega de melhoria de processo, precisamos evoluir o produto"*.
+**Exceção:** lição cuja ausência deixa **defeito ativo ou guard furado** aplica na hora; estilo, clareza e
+enriquecimento de rubric esperam o lote.
+
+Lições **genéricas** viram emenda em skill/regra/rubric; lições **específicas da feature** ficam na ADR /
+nas notas do gap (não poluem as skills). Ver §6 do `.claude/agents/pr-harness.md`.
 
 ## Referências
 
 - Agente: `.claude/agents/pr-harness.md` (a rubrica)
-- Log de lições: `docs/quality/lessons-learned.md`
+- Log de lições **aplicadas**: `docs/quality/lessons-learned.md` · **fila** (a aplicar em lote): `docs/quality/lessons-pending.md`
 - Política: `docs/politicas-explicitas.md` · regras: `.claude/rules/*`
 - Também roda no CI (advisory, não-bloqueante): `.github/workflows/pr-review.yml`

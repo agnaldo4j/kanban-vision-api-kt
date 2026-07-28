@@ -11,6 +11,12 @@ time, a process gap. One entry per lesson. Keep it terse: what happened, the dur
 applied. **What does NOT belong:** feature-specific findings (those live in the ADR / the gap's notes),
 one-off nits, or lessons without a concrete "apply it here."
 
+> 🔴 **Este arquivo registra o que JÁ foi aplicado. O que ainda não foi vive em
+> [`lessons-pending.md`](lessons-pending.md) — a fila.** Desde 2026-07-28 a aplicação é **em lote, a cada 10
+> PRs de código**: antes, cada implementação gerava um PR de processo, o que dava ~1 PR de doc por PR de
+> código e fazia melhoria de processo competir com entrega de produto. A lição não se perde — ela espera.
+> Exceção (aplica na hora): lição cuja ausência deixa **defeito ativo ou guard furado**.
+
 **How the loop runs (automated):** when the author tells the session a PR merged, the
 **`post-merge-harvester` agent** (`.claude/agents/post-merge-harvester.md`) does the closure AND harvests
 this file's lessons — reading the merged PR's *inline* review comments, distilling the durable ones, and
