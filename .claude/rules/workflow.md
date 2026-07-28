@@ -6,6 +6,13 @@
 
 ## Session Start — mandatory before any code
 
+> 🔴 **Nenhum PR sem card priorizado — e o card vem ANTES.** Defeito achado no meio da sessão (tipicamente
+> um achado de revisão de outro PR) não autoriza começar a trabalhar nele. Ou ele **se corrige no PR que o
+> gerou** (o default para achado de revisão — ver "Disposição" em `.claude/skills/pr-review/SKILL.md`), ou
+> vira **pergunta → card → priorização** e só então branch. Abrir o PR primeiro quebra o WIP=1 e tira o board
+> de fonte única (ADR-0023). Precedente: o **#385** nasceu de um achado do Codex no #384 sem card; o GAP-EU foi
+> criado depois para regularizar. Detalhe e os dois destinos legítimos: §4 de `docs/politicas-explicitas.md`.
+
 > ⚠️ **`--limit` alto e `.status` como STRING — as duas coisas, sempre.** Sem `--limit` o `gh` trunca em
 > **30** itens (o board passou de 130) e sem `.status.name` → `.status` o `jq` **aborta**
 > (`Cannot index string with string "name"`). Qualquer um dos dois faz a checagem devolver vazio, que este
@@ -38,12 +45,18 @@ git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
 (`.claude/agents/post-merge-harvester.md`) via a Agent tool. Ele faz as duas metades do pós-merge:
 1. **Limpeza** — sincroniza a main, apaga a branch, e move o card do #6 para **Done** (⚠️ um `[E]` cujo ADR
    mergeou mas a implementação não **fica em Doing**).
-2. **Colheita de lições, aplicada — SÓ após implementação real.** O agente colhe+aplica **apenas quando o
-   PR mergeado toca código de produção** (`*/src/main/**`). PR de **processo/doc/skill/ADR/test-only** →
-   **fechamento-só** (guard anti-loop: uma melhoria nunca dispara outra — o loop termina em 1 nível). Numa
-   implementação real, ele lê a revisão (comentários **inline**, não o resumo), destila as lições
-   **duráveis/generalizáveis** e as **aplica** como emenda de skill/regra/rubric + registro em
-   `docs/quality/lessons-learned.md`, abrindo um PR de processo `[N]` pronto — não uma lista de tarefas.
+2. **Colheita de lições, ENFILEIRADA — SÓ após implementação real.** O agente colhe **apenas quando o PR
+   mergeado toca código de produção** (`*/src/main/**`). PR de **processo/doc/skill/ADR/test-only** →
+   **fechamento-só** (guard anti-loop: uma melhoria nunca dispara outra). Numa implementação real, ele lê a
+   revisão (comentários **inline**, não o resumo), destila as lições **duráveis/generalizáveis** e as
+   **acrescenta a `docs/quality/lessons-pending.md`** — a fila.
+
+> 🔴 **Cadência: PR de processo só a cada 10 PRs de código** (decisão do mantenedor, 2026-07-28). Antes o
+> harvester abria um PR de processo por implementação, o que dava ~1 PR de doc por PR de código: dobrava
+> ciclos de revisão/CI/atenção para melhorias raramente urgentes, e **melhoria de processo passou a competir
+> com entrega de produto**. Agora as lições **acumulam na fila** e saem em **lote**
+> (`docs(process): lote <N> — …`). Como contar os 10 e a exceção (lição cuja ausência deixa **defeito ativo
+> ou guard furado** aplica na hora; estilo/clareza/rubric esperam): `docs/quality/lessons-pending.md`.
 
 Fallback manual (se precisar fazer à mão o passo 1):
 

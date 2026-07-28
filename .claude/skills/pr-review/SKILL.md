@@ -193,6 +193,34 @@ O harness é criterioso, não infalível. Ao receber um achado, as respostas err
 é **medir e responder com o número** — e vale nos dois sentidos, porque quem mede está certo
 independentemente do papel.
 
+### Disposição: o achado se corrige NO PR que o gerou; só a LIÇÃO é que se agenda
+
+🔴 **Política do mantenedor (2026-07-28, no #385):** *"para estas demandas encontradas, corrigir já nesse
+PR, não há necessidade de deixar para depois, o review serve para isso, somente lições aprendidas devem ser
+avaliadas se resolvemos agora ou depois."* Três destinos distintos, e só um deles é adiável:
+
+| Sinal da revisão | Destino | Quem decide "agora ou depois" |
+|---|---|---|
+| **Achado** P1/P2/P3 (defeito) | **corrigir no próprio PR**, com o thread respondido e resolvido | ninguém — é agora |
+| **Melhoria** (§3.5, não é defeito) | candidato; relate ao mantenedor | o mantenedor |
+| **Lição durável** | `post-merge-harvester`, pós-merge | o harvester/mantenedor, no PR de processo |
+
+- **"Pré-existente na main / fora do diff" não é passe para adiar.** No #385 o próprio parecer classificou o
+  P2 como fora do diff e sugeriu "candidato a card `[N]`"; o mantenedor mandou corrigir ali mesmo — e estava
+  certo: o defeito era outra instância **da mesma classe** que o PR já estava consertando (tolerância de
+  decode nos mesmos serializers). Adiar teria criado uma terceira rodada da mesma classe (#383 → #384 →
+  #385), que é precisamente o que o ciclo mostrou custar caro.
+- **Dois limites, e são estruturais — não são desculpa de escopo:**
+  1. **O fix muda contrato/camada/identidade (`[E]`) ou é outro gap.** Aí não cabe no PR: vira
+     **pergunta → card → priorização**, nunca execução direta (§4 de `docs/politicas-explicitas.md`).
+  2. **O PR que recebeu o achado é doc/processo puro e o fix é código.** Ele *não pode* absorver — o guard
+     anti-loop do `post-merge-harvester` classifica por `*/src/main/**`, então código num PR de lições faria
+     uma melhoria disparar outra colheita. Foi o caso do #384 (P2 do Codex num PR de lições): o fix teve de
+     sair noutro PR — e é justamente aí que o **card vem ANTES do PR**. O #385 nasceu sem card por pular esse
+     passo, e o mantenedor cobrou.
+- **Corrigir agora é mais barato que cardar.** O contexto está carregado, o revisor está no thread e o card
+  gasta uma passagem inteira de priorização/WIP para um defeito que já está sob os olhos.
+
 - **Antes de aplicar, cheque se a correção sugerida contradiz uma regra do repo.** Aconteceu no **#381**: o
   harness pediu `getOrNull()?.let { }` num call site **pré-guardado**, que é exatamente o *ramo morto*
   proibido por `.claude/rules/kotlin-quality.md` — regra nascida no **#350, no mesmo arquivo, por sugestão
@@ -214,6 +242,11 @@ independentemente do papel.
   é **meio-consertar**: a divergência silenciosa que o achado descreve continua possível entre as
   remanescentes. Vale para toda família (duplicação, import proibido, caminho que vaza de allowlist) —
   varra a **classe** do problema, não as instâncias listadas. Mesma família de #367/#368 ("enumerar vaza").
+  Segunda ocorrência, e desta vez a varredura **pagou**: no **#385** o parecer listava os ids e as métricas
+  de `FlowMetrics` como pontos que lançavam no decode do `history`; enumerar a subárvore alcançável inteira
+  revelou `SimulationDay.init` (exige `>= 1`), que ninguém tinha citado — um `day: 0` legado lançava pelo
+  mesmo caminho. **A unidade de varredura é o construtor, não o campo citado**: ver o procedimento em
+  `.claude/rules/migrations.md` (subárvore alcançável do nó decodificado).
 - **Depois de responder, resolva o thread** e garanta que o corpo do PR reflita os commits que nasceram da
   revisão — o corpo é o insumo do `post-merge-harvester` (§2.5 do rubric).
 
@@ -232,15 +265,20 @@ independentemente do papel.
 
 ## Loop de lições aprendidas
 
-O que o review ensina não pode morrer no comentário do PR. O destino durável é
-**`docs/quality/lessons-learned.md`** (log append-only: PR · lição · onde aplicada) — a metade persistente
-do loop que o rubric §6 dispara. Lições **genéricas** viram emenda em skill/regra/rubric; lições
-**específicas da feature** ficam na ADR / nas notas do gap (não poluem as skills). Ver §6 do
-`.claude/agents/pr-harness.md`.
+O que o review ensina não pode morrer no comentário do PR — mas também **não pode virar um PR por lição**.
+Desde 2026-07-28 a lição entra numa **fila** (`docs/quality/lessons-pending.md`) e é aplicada **em lote, a
+cada 10 PRs de código**; `docs/quality/lessons-learned.md` passa a registrar só o que **já foi aplicado**.
+A razão é de fluxo: um PR de processo por implementação dobrava os ciclos de revisão/CI/atenção com
+melhorias raramente urgentes — *"chega de melhoria de processo, precisamos evoluir o produto"*.
+**Exceção:** lição cuja ausência deixa **defeito ativo ou guard furado** aplica na hora; estilo, clareza e
+enriquecimento de rubric esperam o lote.
+
+Lições **genéricas** viram emenda em skill/regra/rubric; lições **específicas da feature** ficam na ADR /
+nas notas do gap (não poluem as skills). Ver §6 do `.claude/agents/pr-harness.md`.
 
 ## Referências
 
 - Agente: `.claude/agents/pr-harness.md` (a rubrica)
-- Log de lições: `docs/quality/lessons-learned.md`
+- Log de lições **aplicadas**: `docs/quality/lessons-learned.md` · **fila** (a aplicar em lote): `docs/quality/lessons-pending.md`
 - Política: `docs/politicas-explicitas.md` · regras: `.claude/rules/*`
 - Também roda no CI (advisory, não-bloqueante): `.github/workflows/pr-review.yml`

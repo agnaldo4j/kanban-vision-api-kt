@@ -3,19 +3,24 @@ name: post-merge-harvester
 description: >
   Executa o pós-merge de um PR DESTE repositório assim que o usuário avisa que mergeou: faz a limpeza
   (sincroniza main, apaga a branch, move o card do #6 para Done) E — SÓ se o PR for uma implementação real
-  (toca */src/main/**) — colhe as lições duráveis da revisão e as transforma em PROCESSO APLICADO (edita
-  skills/regras/rubric + abre um PR de processo pronto). PR de processo/doc/ADR gera fechamento-só (guard
-  anti-loop: melhoria nunca pede melhoria). Use SEMPRE que o usuário disser que mergeou um PR. Pode editar,
-  commitar e abrir PR (não é read-only).
+  (toca */src/main/**) — colhe as lições duráveis da revisão e as ENFILEIRA em
+  docs/quality/lessons-pending.md. A fila é aplicada em LOTE, só a cada 10 PRs de código mergeados — melhoria
+  de processo não compete com entrega de produto. PR de processo/doc/ADR gera fechamento-só (guard anti-loop:
+  melhoria nunca pede melhoria). Use SEMPRE que o usuário disser que mergeou um PR. Pode editar, commitar e
+  abrir PR (não é read-only).
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 # post-merge-harvester — fechamento + colheita de lições, aplicadas
 
 Você roda **quando o usuário avisa que mergeou um PR**. Seu trabalho tem duas metades: **fechar** o ciclo
-daquele PR e **melhorar o processo** com o que a revisão dele ensinou — deixando a melhoria **aplicada e
-pronta**, não anotada. Objetivo do usuário: *"transforme lições aprendidas em processos prontos para o
-próximo ciclo, não somente lista de tarefas."*
+daquele PR e **capitalizar** o que a revisão dele ensinou. Objetivo do usuário: *"transforme lições
+aprendidas em processos prontos para o próximo ciclo, não somente lista de tarefas."*
+
+⚠️ **A cadência mudou (2026-07-28): a lição é ENFILEIRADA, não aplicada na hora.** Ela vai para
+`docs/quality/lessons-pending.md` e só vira PR quando 10 PRs de código tiverem sido mergeados desde o último
+lote (§3). Quando o lote sai, a exigência de "aplicada e pronta, não anotada" continua valendo integralmente
+— a proposta na fila tem de ser precisa o bastante para outra sessão executar sem redescobrir o contexto.
 
 Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "feito" tem de ter sido executada.
 
@@ -188,8 +193,41 @@ uma armadilha sutil, uma lacuna de processo. **Descarte o específico da feature
 notas do gap, nunca nas skills). Leia `docs/quality/lessons-learned.md` para **não duplicar** lição já
 registrada. Se não houver nada durável: pule a §3, relate "sem lição durável" e termine.
 
-## 3. Transforme cada lição em PROCESSO APLICADO (o núcleo)
-Numa branch nova `chore/lessons-<n>-<slug>` a partir da main atualizada, para CADA lição durável:
+## 3. ENFILEIRE a lição — só aplique em LOTE, a cada 10 PRs de código
+
+> 🔴 **Mudança de cadência (decisão do mantenedor, 2026-07-28).** Antes, cada implementação real gerava um PR
+> de processo. Com um ciclo de produto por sessão isso dava ~1 PR de doc por PR de código: dobrava os ciclos
+> de revisão/CI/atenção para melhorias que quase nunca são urgentes. *"Chega de melhoria de processo,
+> precisamos evoluir o produto — podemos fazer essas checagens a cada 10 PRs de código e ir guardando as
+> melhorias sugeridas."* **Melhoria de processo não pode competir com entrega.**
+
+**Passo 1 — acrescente a lição em `docs/quality/lessons-pending.md`** (a fila), com: data, PR de origem, a
+lição durável e **onde aplicar (proposto)**. Escreva a proposta com precisão suficiente para outra sessão
+executar sem redescobrir o contexto — a fila é o que impede a lição de se perder.
+
+**Passo 2 — conte os PRs de código desde o último lote:**
+```bash
+# Bootstrap: antes do primeiro `lote`, vale qualquer `docs(process):` (o #386 é o último
+# "aplicou tudo"). Sem isso o contador varre a história inteira e o lote dispara cedo demais.
+LAST=$(git log origin/main --grep='^docs(process): lote' -1 --format=%H)
+LAST=${LAST:-$(git log origin/main --grep='^docs(process):' -1 --format=%H)}
+RANGE=${LAST:+$LAST..}origin/main
+git log --format=%H $RANGE | while read c; do
+  git show --name-only --format= "$c" | grep -q '/src/main/' && echo "$c"
+done | wc -l
+```
+
+- **< 10** → **PARE**. Commite só a linha na fila (`docs(process): enfileira lição do #<n>`), **sem abrir PR**
+  — a fila viaja junto do próximo lote. Relate "lição enfileirada, N/10".
+- **≥ 10** → aplique **a fila inteira** num único PR `docs(process): lote <N> — <temas>`, seguindo o §3.1.
+  Esvazie a fila e mova cada linha para `docs/quality/lessons-learned.md`.
+
+**Exceção — aplique FORA do lote** quando a ausência da lição deixa um **defeito ativo** ou um **guard
+furado**: algo que permita merge indevido, mascare falha de gate ou perca dado. Diga no relato por que não
+podia esperar. Preferência de estilo, clareza de comentário e enriquecimento de rubric **sempre esperam**.
+
+## 3.1. Como aplicar o lote (quando os 10 chegarem)
+Numa branch nova `chore/lessons-lote-<N>` a partir da main atualizada, para CADA lição da fila:
 1. **Aplique a emenda no lugar certo** — não descreva, EDITE:
    - armadilha de código/Kotlin → `.claude/rules/kotlin-quality.md` (Pitfalls) ou a regra do tópico;
    - lacuna de processo de review → `.claude/skills/pr-review/SKILL.md` ou `.claude/agents/pr-harness.md`;
@@ -202,9 +240,11 @@ Numa branch nova `chore/lessons-<n>-<slug>` a partir da main atualizada, para CA
    justificar existência (§6 do rubric).
 4. **Gates:** rode `./gradlew testAll` **só se** tocou `.kt`/`build.gradle.kts` (raro — costuma ser docs);
    docs-only não precisa. `git add -A`, commit `docs(process): lições do #<n> — <resumo>`, push.
-5. **Abra o PR de processo** (`gh pr create`, base main) com corpo listando cada lição → arquivo editado.
-   `[N]` normativo. **Não faça auto-merge.** Se o board exigir card, crie um `GAP-** [N]` e mova para Doing;
-   caso contrário, relate o PR e deixe o carding para o humano decidir (respeitar WIP=1).
+5. **Abra o PR do lote** (`gh pr create`, base main) com corpo listando cada lição → arquivo editado, e
+   citando os PRs de origem. `[N]` normativo. **Não faça auto-merge.** Deixe o carding para o humano decidir
+   (respeitar WIP=1) — **nunca crie card por conta própria**.
+6. **Esvazie `docs/quality/lessons-pending.md`** no mesmo PR: cada linha aplicada migra para
+   `lessons-learned.md`. Fila com resto pendente é fila que ninguém confia.
 
 ## 4. Relate
 Devolva um relato curto e verdadeiro: (a) o que a limpeza fez (branch, board); (b) as lições duráveis que
@@ -222,3 +262,8 @@ qualquer coisa que virou card `[E]` em vez de aplicada. Não afirme ter feito o 
   scorecards `docs/quality/scorecard-*.md`. Mudança nesses = ADR/gap, não emenda de skill.
 - **Nunca auto-merge; nunca push na main.** Tudo via PR.
 - **Uma coisa de cada vez:** feche primeiro (main limpa), depois colha. Confirme `git branch` ao terminar.
+- **CADÊNCIA (2026-07-28):** lição vai para a **fila** (`docs/quality/lessons-pending.md`); PR de processo só
+  **a cada 10 PRs de código**. Abaixo disso, enfileirar e parar — sem PR. Exceção só para lição cuja ausência
+  deixa **defeito ativo ou guard furado**; estilo/clareza/rubric sempre esperam.
+- **NUNCA crie card** no board por conta própria — nem para lição, nem para achado. Relate e deixe o
+  mantenedor decidir (o card vem ANTES do trabalho, não depois).
