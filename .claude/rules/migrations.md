@@ -63,16 +63,28 @@ que a tolerância evita**.
   original órfã e os snapshots seguindo o id errado. O 500 é barulhento e reversível; isto é silencioso e
   permanente. **Pergunte de cada campo que você degrada: alguém escreve POR ele?** (chave primária, chave de
   upsert, chave de correlação/tenant).
-  **A saída não é deixar de tolerar — é reconhecer que aquele campo tem fonte autoritativa FORA do blob.** Para
-  todos os outros campos o blob é a única fonte; a identidade de topo tem a **linha relacional que a query já
-  usou** para chegar até ali. O serializer continua sem lançar (é o ponto do gap) e a autoridade é reposta na
-  camada que a tem:
+  **A saída não é deixar de tolerar — é reconhecer que aquele campo tem fonte autoritativa FORA do blob**: a
+  **linha relacional que a query já usou** para chegar até ali. O serializer continua sem lançar (é o ponto do
+  gap) e a autoridade é reposta na camada que a tem.
+  ⚠️ **Enumere TODOS os campos assim, não só o primeiro que aparecer.** A primeira redação desta regra dizia
+  "para todos os outros campos o blob é a única fonte" e reconciliava só o `simulation.id` — mas
+  `organization.id` também vem da mesma linha, também é regravado pelo `save`, é coluna com **FK**
+  (`REFERENCES organizations(id)`) **e** é a chave de **tenancy** (`ensure(simulation.organization.id ==
+  callerOrganizationId) { Forbidden }` em 5 use cases). Degradá-la dava FK violation no save e **403 para o
+  dono legítimo** — o registro "tolerado" ilegível na prática. Codex P2 no #384, sobre a emenda escrita a
+  partir do P1 do #383: corrigir *um* caso de uma classe não fecha a classe.
   ```kotlin
   // JdbcSimulationRepository.rowToSimulation
-  SimulationSerializer.decode(stateJson).copy(id = SimulationId(row[SimulationsTable.id]))
+  val decoded = SimulationSerializer.decode(stateJson)
+  decoded.copy(
+      id = SimulationId(row[SimulationsTable.id]),
+      organization = decoded.organization.copy(id = row[SimulationsTable.organizationId]),
+  )
   ```
   Fixe em teste a **regravação**, não só a carga: salvar o agregado carregado e assertar que continua havendo
-  **uma única linha** é a prova direta do fork (`SimulationIdentityReconciliationTest`).
+  **uma única linha** é a prova direta do fork (`SimulationIdentityReconciliationTest`). Para o campo com FK a
+  prova é ainda mais direta — sem a reconciliação o re-save falha com **violação de constraint**, não com
+  asserção.
 
 - **Um caminho de REPARO novo tem de satisfazer os invariantes CROSS-FIELD do agregado que vai construir.**
   Raciocinar campo-a-campo cobre `require`s de um campo só; não cobre `init`s que **relacionam** campos. Aqui,
