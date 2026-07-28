@@ -49,6 +49,72 @@ campo serializado** — trocar um `String` cru por um value class / smart constr
   (`UPDATE … SET … WHERE …` sobre o JSONB) — mas só depois de **auditar** que tais registros existem; se o
   campo *sempre* teve guard (ex.: `Card.init` nunca deixou blank), não há legado a tolerar e nada a migrar.
 
+### Coagir a sentinel NÃO basta — dois modos de falha do próprio decode tolerante
+
+A prescrição acima ("coaja o valor inválido a um sentinel") é **por campo**, e é aí que ela falha: o decode não
+entrega campos, entrega um **agregado construído** que alguém vai **regravar**. Os dois furos abaixo foram P1 do
+Codex no **#383 (GAP-DV)** — o autor tinha aplicado a regra à risca e produziu, num caso, algo **pior que o 500
+que a tolerância evita**.
+
+- **Nem todo campo degradado é equivalente: se o campo é a CHAVE DE ESCRITA, degradá-lo troca um erro de
+  leitura por uma corrupção silenciosa.** O decode degradava o `id` de topo do blob para `"(unknown)"`, mas
+  `JdbcSimulationRepository.save` faz **upsert por `simulation.id`** — então a simulação carregada por
+  `findById(idReal)` seria, no `runDay` seguinte, gravada numa **linha nova** sob o sentinel, deixando a
+  original órfã e os snapshots seguindo o id errado. O 500 é barulhento e reversível; isto é silencioso e
+  permanente. **Pergunte de cada campo que você degrada: alguém escreve POR ele?** (chave primária, chave de
+  upsert, chave de correlação/tenant).
+  **A saída não é deixar de tolerar — é reconhecer que aquele campo tem fonte autoritativa FORA do blob**: a
+  **linha relacional que a query já usou** para chegar até ali. O serializer continua sem lançar (é o ponto do
+  gap) e a autoridade é reposta na camada que a tem.
+  ⚠️ **Enumere TODOS os campos assim, não só o primeiro que aparecer.** A primeira redação desta regra dizia
+  "para todos os outros campos o blob é a única fonte" e reconciliava só o `simulation.id` — mas
+  `organization.id` também vem da mesma linha, também é regravado pelo `save`, é coluna com **FK**
+  (`REFERENCES organizations(id)`) **e** é a chave de **tenancy** (`ensure(simulation.organization.id ==
+  callerOrganizationId) { Forbidden }` em 5 use cases). Degradá-la dava FK violation no save e **403 para o
+  dono legítimo** — o registro "tolerado" ilegível na prática. Codex P2 no #384, sobre a emenda escrita a
+  partir do P1 do #383: corrigir *um* caso de uma classe não fecha a classe.
+  ```kotlin
+  // JdbcSimulationRepository.rowToSimulation
+  val decoded = SimulationSerializer.decode(stateJson)
+  decoded.copy(
+      id = SimulationId(row[SimulationsTable.id]),
+      organization = decoded.organization.copy(id = row[SimulationsTable.organizationId]),
+  )
+  ```
+  Fixe em teste a **regravação**, não só a carga: salvar o agregado carregado e assertar que continua havendo
+  **uma única linha** é a prova direta do fork (`SimulationIdentityReconciliationTest`). Para o campo com FK a
+  prova é ainda mais direta — sem a reconciliação o re-save falha com **violação de constraint**, não com
+  asserção.
+
+- **Um caminho de REPARO novo tem de satisfazer os invariantes CROSS-FIELD do agregado que vai construir.**
+  Raciocinar campo-a-campo cobre `require`s de um campo só; não cobre `init`s que **relacionam** campos. Aqui,
+  `Step.init` exige `workers.all { hasAbility(requiredAbility) }`: uma reparação que completava worker sem
+  abilities com o fallback **global** (`DEVELOPER`) era **cega ao contexto** — num step que exigisse `TESTER`,
+  `DEPLOYER` ou `PRODUCT_MANAGER` o `Step.init` continuava lançando, e o agregado seguia não-carregável
+  **exatamente no caso que a tolerância existe para cobrir**. Correção: decodificar a ability do step
+  **primeiro** e repassá-la ao decode de cada worker (`WorkerSurrogate.toDomain(requiredAbility)`).
+  Três condições que a reparação contextual tem de respeitar, e que valem para qualquer uma:
+  1. **A ordem entre reparos importa** — a ability herdada do step entra **antes** da regra `TESTER → DEPLOYER`
+     (`Worker.init`), senão o reparo de um invariante quebra o outro. Cubra o encadeamento em teste.
+  2. **Só acrescenta, nunca remove** — podar o worker incompatível também faria `Step.init` passar, mas é
+     **descarte**, proibido pela seção seguinte: o próximo save o tornaria permanente.
+  3. **Não é só o caso "vazio"** — repare todo worker do step, não apenas o de lista vazia, senão o `init`
+     ainda pode lançar por outra instância. Em blob consistente é no-op.
+
+  > **Por que o *fallback consistente* funciona onde o reparo cego falhou.** Coagir só um lado de um invariante
+  > cross-field o quebra; coagir os **dois lados ao mesmo valor** (o `requiredAbility` do step **e** as
+  > `abilities` dos workers) é um **renomeio consistente** e o preserva — que é o cenário real (release novo
+  > cria uma ability, rollback, ambos os lados carregam o mesmo valor ilegível e degradam juntos). Corolário
+  > para escolher a constante: **o fallback não pode participar de nenhum outro cross-field** — `ABILITY_FALLBACK`
+  > é `DEVELOPER` e não `TESTER` justamente porque `Worker.init` exige `!hasTester || hasDeployer`.
+
+- **Escolha a sentinel pelo COMPORTAMENTO que ela terá no motor, não pela sua neutralidade sintática.** Um
+  estado degradado não fica parado: ele é lido pelo engine no próximo dia. `CARD_STATE_FALLBACK` é `BLOCKED`
+  porque, depois do GAP-DU, BLOCKED é genuinamente **inerte** (`autoAdvance` só toca `TODO`, `applyMove`
+  recusa BLOCKED, a execução só toca `IN_PROGRESS`) — é quarentena visível em `blockedCount`, e sai dela por
+  um `UnblockItem` explícito. `TODO` parece o "neutro" mas **ressuscitaria o trabalho em silêncio**: o card
+  voltaria à fila e seria iniciado no dia seguinte por causa de um dado ilegível.
+
 > **Cobertura em 3 casas — e o gatilho mais fraco.** Esta regra é o *ângulo dado-persistido* (evolução do
 > histórico + a alternativa data-fix Flyway), mas o bug **nasce ao editar um value class / serializer `.kt`**,
 > não uma migração SQL — então mesmo com o glob `**/internal/serializers/**` acima, `migrations.md` é o

@@ -154,6 +154,19 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
   **agregado inteiro** não-carregável (`findById`/`findAll` → 500) — não só o campo. Exija decode tolerante
   (coerção a sentinel / erro tipado) ou migração+auditoria, e um teste do caminho legado. A borda de *entrada*
   nova quase sempre guarda; o **decode de histórico** é o ponto cego (Codex P1 + este harness P2 no #355).
+- **Decode tolerante JÁ ESCRITO — a coerção a sentinel tem dois furos próprios** (dois P1 do Codex no #383,
+  num autor que aplicou a regra acima à risca). Não pare em "degradou sem lançar"; pergunte:
+  (a) **alguém escreve POR esse campo?** Degradar a chave de upsert/PK/correlação troca um 500 barulhento por
+  **fork silencioso de linha** no próximo save — pior que o erro que a tolerância evita. O campo com fonte
+  autoritativa **fora do blob** (a linha relacional que a query já usou) deve ser **reconciliado** na camada
+  que a tem, não coagido. Exija teste que **regrave** o agregado carregado e conte as linhas — carregar não
+  revela o fork.
+  (b) **o reparo satisfaz os invariantes *cross-field* do agregado que ele constrói?** Coerção campo-a-campo
+  não cobre `init` que relaciona campos (`Step.init`: `workers.all { hasAbility(requiredAbility) }`), e um
+  reparo **cego ao contexto** (completar com um fallback global) deixa o `init` lançando **no exato caso que a
+  tolerância cobria**. Sinal de revisão: o autor acertou o raciocínio num campo e **não o estendeu ao caminho
+  de reparo que ele mesmo criou** — verifique o novo caminho contra o construtor-alvo, não contra a regra.
+  Detalhe e as 3 condições do reparo contextual: `.claude/rules/migrations.md`.
 - **CI/workflow (quando o diff toca `.github/`):** `gh api` que sai **exit 0 com corpo vazio** quando o
   GitHub degrada (o modo do #288 — ✅ fabricado); `continue-on-error` num passo que é gate real; permissões
   a mais/a menos; `on:`/`if:` que dispara/pula no evento errado; `set -e`/`pipefail` ausente onde a falha
