@@ -96,13 +96,33 @@ class JdbcSimulationRepository : SimulationRepository {
 
     private fun rowToSimulation(row: ResultRow): Simulation {
         val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
-        // A identidade autoritativa é a LINHA relacional, não o blob. O decode é tolerante a legado
-        // (GAP-DV) e degrada um id em branco para um sentinel — mas `save` faz upsert POR
-        // `simulation.id`, então esse sentinel gravaria uma linha NOVA e deixaria a original órfã,
-        // com os snapshots seguindo o id errado. Corrupção silenciosa é pior que o 500 que a
-        // tolerância evita, então o id do blob é reconciliado com o da linha. (review #383 P1)
+        // As DUAS identidades autoritativas são da LINHA relacional, não do blob. O decode é tolerante
+        // a legado (GAP-DV) e degrada um id em branco para um sentinel — mas ambas são chave de
+        // ESCRITA, e `save` as regrava a partir do agregado decodificado:
+        //
+        //   `simulation.id`              → chave do upsert: um sentinel gravaria uma linha NOVA e
+        //                                  deixaria a original órfã, com os snapshots no id errado.
+        //   `organization.id`            → coluna com FK `REFERENCES organizations(id)`: um sentinel
+        //                                  viola a FK no save E, antes disso, faz os 5 use cases
+        //                                  compararem-no com o caller e devolverem Forbidden — o
+        //                                  registro "tolerado" fica ilegível na prática.
+        //
+        // Corrupção silenciosa é pior que o 500 que a tolerância evita, então as duas voltam da linha.
+        //
+        // Fechando a enumeração (a lição do #384 é "enumere TODOS os campos", não "corrija o primeiro"):
+        // `save` regrava CINCO valores do agregado, não dois — faltam `wip_limit`, `team_size` e
+        // `seed_value`, e os dois primeiros TAMBÉM são degradados no decode (`coerceAtLeast(1)`). Eles
+        // ficam de fora porque são **projeção do blob, não autoridade**: nada os lê enquanto existe blob
+        // (só `buildFallbackSimulation`, no caminho sem blob), e os dois upserts rodam na MESMA transação,
+        // então não há fonte externa com que reconciliar. Se algum dia uma leitura passar a preferir a
+        // coluna, ou um data-fix out-of-band tocar linha e blob separadamente, eles entram nesta lista.
+        // (review #383 P1 · #384 P2 · #385 P3)
         if (!stateJson.isNullOrBlank()) {
-            return SimulationSerializer.decode(stateJson).copy(id = SimulationId(row[SimulationsTable.id]))
+            val decoded = SimulationSerializer.decode(stateJson)
+            return decoded.copy(
+                id = SimulationId(row[SimulationsTable.id]),
+                organization = decoded.organization.copy(id = row[SimulationsTable.organizationId]),
+            )
         }
         return buildFallbackSimulation(row)
     }

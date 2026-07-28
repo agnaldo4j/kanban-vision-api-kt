@@ -185,6 +185,49 @@ class LegacyLiveStateBlobToleranceTest {
         assertEquals("(unknown)", decoded.scenario.board.id.value)
     }
 
+    @Test
+    fun `a history snapshot with blank ids and an out of range day still loads`() {
+        // #385 P2: o GAP-DV cobriu o estado vivo, mas a subárvore `history` seguia construindo cru —
+        // `require(id.isNotBlank())` em DailySnapshot/FlowMetrics/Movement e `SimulationDay >= 1`.
+        // Um valor inválido aqui lança pelo MESMO caminho, então metade do sintoma ficava de pé.
+        val encoded =
+            PersistenceFixtures
+                .simulation()
+                .encoded()
+                .replace(""""id":"c0000000-0000-0000-0000-000000000001"""", """"id":""""")
+                .replace(""""id":"e0000000-0000-0000-0000-000000000001"""", """"id":""""")
+                .replace(""""day":2""", """"day":0""")
+        assertTrue(encoded.contains(""""day":0"""), "the corrupted blob must actually differ")
+
+        val snapshot = SimulationSerializer.decode(encoded).history.first()
+
+        assertEquals("(unknown)", snapshot.id)
+        assertEquals(1, snapshot.day.value, "SimulationDay requires >= 1")
+        assertEquals("(unknown)", snapshot.movements.first().id)
+    }
+
+    @Test
+    fun `history metrics with negative counters are clamped instead of crashing the load`() {
+        // FlowMetrics.init exige os 4 números >= 0.
+        val encoded =
+            PersistenceFixtures
+                .simulation()
+                .encoded()
+                .replace(""""throughput":3""", """"throughput":-1""")
+                .replace(""""avgAgingDays":1.5""", """"avgAgingDays":-2.0""")
+        assertTrue(encoded.contains("-1"), "the corrupted blob must actually differ")
+
+        val metrics =
+            SimulationSerializer
+                .decode(encoded)
+                .history
+                .first()
+                .metrics
+
+        assertEquals(0, metrics.throughput)
+        assertEquals(0.0, metrics.avgAgingDays)
+    }
+
     private fun com.kanbanvision.domain.model.simulation.Simulation.encoded() = SimulationSerializer.encode(this)
 
     private fun com.kanbanvision.domain.model.simulation.Simulation.firstCard() =

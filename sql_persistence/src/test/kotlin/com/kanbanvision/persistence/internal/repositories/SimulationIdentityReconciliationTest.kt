@@ -17,13 +17,19 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * O decode tolerante do GAP-DV degrada um id em branco para um sentinel, o que mantém o agregado
- * carregável. Mas a identidade de topo é diferente dos demais campos: `save` faz upsert **por**
- * `simulation.id`, então um sentinel gravaria uma linha NOVA e deixaria a original órfã — corrupção
- * silenciosa, pior que o 500 que a tolerância evita.
+ * O decode tolerante do GAP-DV degrada um valor inválido para um sentinel, o que mantém o agregado
+ * carregável. Mas **dois** campos têm fonte autoritativa FORA do blob — a linha relacional que a query
+ * já leu — e degradá-los troca um erro de leitura por corrupção silenciosa:
  *
- * A linha relacional é a fonte autoritativa, e `rowToSimulation` reconcilia o id do blob com o dela.
- * (review #383 P1)
+ *  - `simulation.id` — chave do upsert de `save`: um sentinel gravaria uma linha NOVA e deixaria a
+ *    original órfã, com os snapshots seguindo o id errado. (#383 P1)
+ *  - `organization.id` — coluna com FK `REFERENCES organizations(id)` **e** chave de tenancy comparada
+ *    em 5 use cases: um sentinel viola a FK no save e responde 403 ao dono legítimo, deixando o
+ *    registro "tolerado" ilegível na prática. (#384 P2)
+ *
+ * `rowToSimulation` reconcilia os dois com a linha. Os demais campos que `save` regrava
+ * (`wip_limit`/`team_size`/`seed_value`) são projeção do blob, não autoridade — ver o comentário em
+ * `JdbcSimulationRepository.rowToSimulation` para o argumento de fechamento da enumeração.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SimulationIdentityReconciliationTest {
@@ -55,22 +61,60 @@ class SimulationIdentityReconciliationTest {
             assertEquals(1, countSimulationRows(), "re-saving must not fork a second row under the sentinel id")
         }
 
+    @Test
+    fun `a blob with a blank organization keeps the relational tenant instead of becoming unreadable`() =
+        runBlocking {
+            // review #384 P2: `organization.id` é a SEGUNDA identidade relacionalmente autoritativa —
+            // é coluna com FK `REFERENCES organizations(id)` E a chave de tenancy dos 5 use cases.
+            // Degradá-la a um sentinel viola a FK no save e faz o `ensure(org == caller)` devolver
+            // Forbidden: o registro "tolerado" fica ilegível na prática, que é o oposto do objetivo.
+            val simulation = PersistenceFixtures.simulation()
+            EmbeddedPostgresSupport.insertOrganization(simulation.organization.id, simulation.organization.name.value)
+            simulationRepository.save(simulation).getOrElse { error("save failed: $it") }
+            blankOutOrganizationIdInBlob(simulation.id.value, simulation.organization.id)
+
+            val loaded = simulationRepository.findById(simulation.id).getOrElse { error("find failed: $it") }
+            // Sem a reconciliação isto falharia com violação de FK, não com asserção.
+            simulationRepository.save(loaded).getOrElse { error("re-save failed: $it") }
+
+            assertEquals(simulation.organization.id, loaded.organization.id, "the tenant comes from the relational row")
+            assertEquals(1, countSimulationRows())
+        }
+
     /** Simula o blob legado: zera só o `id` de topo, deixando o resto do agregado intacto. */
-    private fun blankOutTopLevelIdInBlob(simulationId: String) {
+    private fun blankOutTopLevelIdInBlob(simulationId: String) =
+        rewriteBlob(simulationId) { blob ->
+            blob.replaceFirst(Regex(""""id"\s*:\s*"${Regex.escape(simulationId)}""""), """"id": """"")
+        }
+
+    /**
+     * A coluna é JSONB: o Postgres guarda o valor PARSEADO e devolve JSON re-renderizado (espaço após
+     * `:`, ordem de chaves própria), então casar o literal do `encode` falha em silêncio. Daí o regex
+     * tolerante a espaçamento — e o `check` anti-vácuo, que foi o que revelou isso.
+     */
+    private fun rewriteBlob(
+        simulationId: String,
+        corrupt: (String) -> String,
+    ) {
         transaction {
             val blob =
                 SimulationStatesTable
                     .selectAll()
                     .where { SimulationStatesTable.simulationId eq simulationId }
                     .single()[SimulationStatesTable.stateJson]
-            // A coluna é JSONB: o Postgres devolve o JSON NORMALIZADO (espaço após `:`, ordem de chaves
-            // própria), então casar o literal `"id":"…"` do encode falha. O regex tolera o espaçamento.
-            val blanked = blob.replaceFirst(Regex(""""id"\s*:\s*"${Regex.escape(simulationId)}""""), """"id": """"")
-            check(blanked != blob) { "the blob must actually change, otherwise the test proves nothing" }
+            val corrupted = corrupt(blob)
+            check(corrupted != blob) { "the blob must actually change, otherwise the test proves nothing" }
             SimulationStatesTable.update({ SimulationStatesTable.simulationId eq simulationId }) {
-                it[stateJson] = blanked
+                it[stateJson] = corrupted
             }
         }
+    }
+
+    private fun blankOutOrganizationIdInBlob(
+        simulationId: String,
+        organizationId: String,
+    ) = rewriteBlob(simulationId) { blob ->
+        blob.replaceFirst(Regex(""""id"\s*:\s*"${Regex.escape(organizationId)}""""), """"id": """"")
     }
 
     private fun countSimulationRows(): Long = transaction { SimulationsTable.selectAll().count() }
