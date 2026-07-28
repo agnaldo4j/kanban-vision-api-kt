@@ -96,7 +96,14 @@ class JdbcSimulationRepository : SimulationRepository {
 
     private fun rowToSimulation(row: ResultRow): Simulation {
         val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
-        if (!stateJson.isNullOrBlank()) return SimulationSerializer.decode(stateJson)
+        // A identidade autoritativa é a LINHA relacional, não o blob. O decode é tolerante a legado
+        // (GAP-DV) e degrada um id em branco para um sentinel — mas `save` faz upsert POR
+        // `simulation.id`, então esse sentinel gravaria uma linha NOVA e deixaria a original órfã,
+        // com os snapshots seguindo o id errado. Corrupção silenciosa é pior que o 500 que a
+        // tolerância evita, então o id do blob é reconciliado com o da linha. (review #383 P1)
+        if (!stateJson.isNullOrBlank()) {
+            return SimulationSerializer.decode(stateJson).copy(id = SimulationId(row[SimulationsTable.id]))
+        }
         return buildFallbackSimulation(row)
     }
 

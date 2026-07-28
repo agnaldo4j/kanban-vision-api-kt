@@ -1,8 +1,6 @@
 package com.kanbanvision.persistence.internal.serializers
 
-import com.kanbanvision.domain.common.model.NonBlankTitle
 import com.kanbanvision.domain.model.kanban.CardId
-import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.Decision
 import com.kanbanvision.domain.model.simulation.FlowMetrics
@@ -56,19 +54,6 @@ private fun DecisionSurrogate.cardIdDecision(): Decision {
 }
 
 private fun DecisionSurrogate.unknown(): Decision.Unknown = Decision.Unknown(type = type, payload = payload)
-
-// Backward-compat (GAP-DH): blobs pré-GAP-DH podem conter um AddItem com título em branco — o mapper HTTP antigo
-// aceitava, e o `applyAdd` num board vazio registrava a decisão sem criar card. `NonBlankTitle` rejeita branco, então
-// um decode cru tornaria a simulação INTEIRA não-carregável (findById/findAll). Coage branco legado a um sentinel
-// para preservar a legibilidade do histórico; entradas novas nunca são brancas (guardadas na borda: DTO + Card.init).
-private fun decodeTitle(raw: String): NonBlankTitle = NonBlankTitle(raw.ifBlank { "(untitled)" })
-
-// Backward-compat (GAP-DS): mesma razão do decode de decisões — um `cardId` branco num movimento legado tornaria o
-// agregado inteiro não-carregável. Coage a um sentinel legível em vez de deixar o `require` de `CardId` lançar.
-internal fun decodeCardId(raw: String): CardId = CardId(raw.ifBlank { "(unknown)" })
-
-private fun surrogateServiceClass(payload: Map<String, String>): ServiceClass =
-    payload["serviceClass"]?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
 
 internal fun DailySnapshot.toSurrogate() =
     DailySnapshotSurrogate(
