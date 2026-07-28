@@ -45,11 +45,13 @@ val exposedVersion = "1.3.1"
 val resilience4jVersion = "2.4.0"
 
 dependencies {
-    // Flyway 12.x migrou para Jackson 3.x (`tools.jackson`) e puxa a família em 3.1.4 — vulnerável a
+    // Flyway 12.x migrou para Jackson 3.x (`tools.jackson`) e puxava a família em 3.1.4 — vulnerável a
     // GHSA-5gvw-p9qm-jgwh (jackson-databind, fix 3.1.5), gate de SCA (ADR-0025). O SBOM agregado varre o
     // runtimeClasspath de CADA módulo (e o migrationRuntime do http_api, GAP-DA), então o BOM precisa estar
-    // aqui (e não só no http_api). Alinha toda a
-    // família tools.jackson a 3.1.5 numa linha. Remover quando o flyway-core puxar >= 3.1.5 nativamente.
+    // aqui (e não só no http_api). Alinha toda a família tools.jackson numa linha.
+    // O critério de remoção JÁ FOI ATINGIDO: o flyway-parent 13.0.0 declara version.jackson=3.1.5, ou
+    // seja, o flyway-core puxa >= 3.1.5 nativamente. Tirar o platform daqui é um follow-up próprio
+    // (mexe no SBOM deste módulo) — validar com osv-scanner sobre o SBOM antes de remover.
     implementation(platform("tools.jackson:jackson-bom:3.2.1"))
 
     implementation(project(":domain-common"))
