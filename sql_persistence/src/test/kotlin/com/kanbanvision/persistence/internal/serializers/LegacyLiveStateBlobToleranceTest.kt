@@ -151,6 +151,31 @@ class LegacyLiveStateBlobToleranceTest {
     }
 
     @Test
+    fun `a worker with no abilities is repaired with its own step ability instead of crashing the load`() {
+        // review #383 P1: completar o worker vazio com o fallback GLOBAL deixaria `Step.init` lançar
+        // quando o step exige outra ability — o agregado seguiria não-carregável. A reparação usa a
+        // ability DO STEP que contém o worker. Aqui o step passa a exigir TESTER, o que encadeia a
+        // regra do DEPLOYER (`Worker.init`: !hasTester || hasDeployer).
+        val encoded =
+            PersistenceFixtures
+                .simulation()
+                .encoded()
+                .replace(""""requiredAbility":"DEVELOPER"""", """"requiredAbility":"TESTER"""")
+                .replace(Regex(""""abilities":\[[^]]*]"""), """"abilities":[]""")
+        assertTrue(encoded.contains(""""abilities":[]"""), "the corrupted blob must actually differ")
+
+        val step =
+            SimulationSerializer
+                .decode(encoded)
+                .scenario.board.steps
+                .first()
+
+        assertEquals(AbilityName.TESTER, step.requiredAbility)
+        assertTrue(step.workers.all { it.hasAbility(AbilityName.TESTER) }, "Step.init requires every worker to have it")
+        assertTrue(step.workers.all { it.hasAbility(AbilityName.DEPLOYER) }, "a TESTER worker must also be a DEPLOYER")
+    }
+
+    @Test
     fun `blank identifiers decode to a sentinel instead of crashing the load`() {
         val encoded = PersistenceFixtures.simulation().encoded().replace(""""id":"60000000-0000-0000-0000-000000000001"""", """"id":""""")
         assertTrue(encoded.contains(""""id":""""), "the corrupted blob must actually differ")

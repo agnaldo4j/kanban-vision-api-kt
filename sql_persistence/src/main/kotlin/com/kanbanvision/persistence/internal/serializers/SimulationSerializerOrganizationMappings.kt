@@ -66,20 +66,37 @@ internal fun Worker.toSurrogate() =
         abilities = abilities.map { it.toSurrogate() },
     )
 
-internal fun WorkerSurrogate.toDomain() =
+/**
+ * [requiredAbility] é a ability do Step que contém este worker, quando há um — o decode do Step a passa
+ * para cá. Sem esse contexto a reparação seria cega ao invariante do Step (review #383 P1): completar um
+ * worker vazio com [ABILITY_FALLBACK] num step que exige TESTER deixaria `Step.init` lançar mesmo assim,
+ * e o agregado seguiria não-carregável. Na ramificação de organização (Squad) não há step, daí o `null`.
+ */
+internal fun WorkerSurrogate.toDomain(requiredAbility: AbilityName? = null) =
     Worker(
         id = decodeId(id),
         name = decodeName(name),
-        abilities = abilities.map { it.toDomain() }.toSet().completedForWorkerInvariants(),
+        abilities = abilities.map { it.toDomain() }.toSet().completedForWorkerInvariants(requiredAbility),
     )
 
 /**
- * `Worker.init` exige `abilities.isNotEmpty()` e `!hasTester || hasDeployer` (GAP-DV). Um blob que viole
- * qualquer um dos dois tornaria o agregado inteiro não-carregável, então completamos com o mínimo em vez
- * de lançar — acrescentar é seguro, ao contrário de remover, que o próximo save tornaria permanente.
+ * `Worker.init` exige `abilities.isNotEmpty()` e `!hasTester || hasDeployer`; `Step.init` exige
+ * `workers.all { hasAbility(requiredAbility) }` (GAP-DV). Um blob que viole qualquer um tornaria o
+ * agregado INTEIRO não-carregável, então completamos com o mínimo em vez de lançar.
+ *
+ * Só ACRESCENTA — remover seria descarte, que o próximo save tornaria permanente. Num blob consistente
+ * todo worker já tem a ability do seu step, então a reparação é no-op; ela só dispara sobre dado
+ * inconsistente, que é exatamente onde se quer. A ordem importa: a ability do step entra primeiro,
+ * porque se ela for TESTER a regra do DEPLOYER passa a valer sobre ela também.
  */
-private fun Set<Ability>.completedForWorkerInvariants(): Set<Ability> {
-    val nonEmpty = ifEmpty { setOf(Ability(name = ABILITY_FALLBACK, seniority = Seniority.JR)) }
+private fun Set<Ability>.completedForWorkerInvariants(requiredAbility: AbilityName?): Set<Ability> {
+    val withStepAbility =
+        if (requiredAbility != null && none { it.name == requiredAbility }) {
+            this + Ability(name = requiredAbility, seniority = Seniority.JR)
+        } else {
+            this
+        }
+    val nonEmpty = withStepAbility.ifEmpty { setOf(Ability(name = ABILITY_FALLBACK, seniority = Seniority.JR)) }
     val hasTester = nonEmpty.any { it.name == AbilityName.TESTER }
     val hasDeployer = nonEmpty.any { it.name == AbilityName.DEPLOYER }
     return if (hasTester && !hasDeployer) {

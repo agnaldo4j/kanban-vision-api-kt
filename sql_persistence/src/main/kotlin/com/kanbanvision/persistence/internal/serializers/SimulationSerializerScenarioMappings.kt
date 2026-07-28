@@ -69,16 +69,20 @@ private fun Step.toSurrogate() =
         workers = workers.map { it.toSurrogate() },
     )
 
-private fun StepSurrogate.toDomain() =
-    Step(
+private fun StepSurrogate.toDomain(): Step {
+    val ability = decodeEnum(requiredAbility, ABILITY_FALLBACK)
+    return Step(
         id = StepId(decodeId(id)),
         board = BoardId(decodeId(boardId)),
         name = decodeName(name),
         position = position.coerceAtLeast(0),
-        requiredAbility = decodeEnum(requiredAbility, ABILITY_FALLBACK),
+        requiredAbility = ability,
         cards = cards.map { it.toDomain() },
-        workers = workers.map { it.toDomain() },
+        // `ability` é repassada ao decode do worker: `Step.init` exige que TODO worker a tenha, então
+        // reparar o worker sem esse contexto deixaria o require lançar assim mesmo (review #383 P1).
+        workers = workers.map { it.toDomain(ability) },
     )
+}
 
 private fun Card.toSurrogate() =
     CardSurrogate(
