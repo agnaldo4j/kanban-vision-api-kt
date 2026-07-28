@@ -46,12 +46,12 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > #    (`gh api --jq` aceita UM argumento — nada de `--arg`; interpole o SHA na própria expressão)
 > gh api repos/<owner>/<repo>/issues/$N/comments --paginate \
 >   --jq ".[] | select(.body | contains(\"pr-harness-report:$SHA\")) | .html_url"   # vazio ⇒ sem parecer
-> # 1b) VAZIO ≠ "ninguém revisou": os achados INLINE carregam o SHA revisado no próprio marcador
-> #     (`<!-- pr-harness:<sha>:P<n>:… -->`) e sobrevivem quando só o report falta. Descubra QUAL head
-> #     foi revisado e compare com o atual — "revisado em X, head é Y, delta = <arquivos>" é acionável;
-> #     "sem parecer" não é.
+> # 1b) VAZIO em (1) não distingue "ninguém rodou" de "rodou e morreu no meio": os achados INLINE carregam
+> #     o SHA no marcador (`<!-- pr-harness:<sha>:P<n>:… -->`) e sobrevivem quando o report não sai.
+> #     Achar inline SEM report é sinal de run ABORTADO — diagnóstico útil (rerode), NÃO prova de revisão:
+> #     quantos achados ficaram por emitir é indeterminado. Só (1) atesta revisão completa.
 > gh api repos/<owner>/<repo>/pulls/$N/comments --paginate \
->   --jq '.[].body' | grep -o 'pr-harness:[a-f0-9]\{40\}' | sort -u    # SHA(s) efetivamente revisados
+>   --jq '.[].body' | grep -o 'pr-harness:[a-f0-9]\{40\}' | sort -u    # SHA(s) que o harness COMEÇOU a revisar
 > git diff --stat <sha-revisado> $SHA                                  # o que mudou DEPOIS da revisão
 > # 2) saída vazia → o harness rodou e falhou, ou nem chegou a rodar? (run verde ≠ parecer emitido)
 > gh run list --workflow=pr-review.yml --limit 10 --json databaseId,createdAt,conclusion
@@ -62,14 +62,22 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > (c) o run **nem chegou** ao harness — `Nenhum PR aberto com head == $RUN_SHA … Pulando` (ou o job sai
 > `skipped`). Por isso o grep inclui a linha de "pulando". Distinguir (b) de (c) serve para **saber**, não
 > para agir: em nenhum dos dois há defeito nosso.
-> E há um **quarto** estado, que o passo (1b) revela: **revisado, porém num head ANTERIOR** — houve revisão
-> real (inline ancorado), o PR ganhou commits depois e o report não cobre o head atual. Foi o caso do
-> **#381**: inline em `d9641430`, merge em `4f00422`, delta **test-only** (o fixture promovido a
-> `TestSupport` pelo P3 aceito). A decisão **não** muda de lado por isso: se o delta pós-revisão toca
-> produção ou gates (`scripts/review-exemption.sh --paths -` sobre os arquivos do `git diff --name-only`),
-> o head novo **exige** parecer; se é test-only/doc e nasceu de um achado aceito, registre no PR "revisado
-> em `<sha>`, delta test-only" e siga. O ganho é não confundir "ninguém olhou" com "olharam o commit de
-> antes" — a checagem que só conta reports dá a mesma resposta para os dois.
+> E há um **quarto** estado, que o passo (1b) revela: **inline ancorado, report em head nenhum**.
+> ⚠️ **Inline NÃO prova revisão completa — prova que a POSTAGEM começou.** O harness publica cada achado
+> conforme o encontra e só ao final emite o veredito; se ele morrer no meio (crash, `Login expired`,
+> timeout, saldo), os inline já publicados sobrevivem e o report nunca sai. **Quantos achados ficaram por
+> emitir é indeterminado por construção** — nenhuma contagem de inline responde isso.
+> Logo o quarto estado é **diagnóstico, não licença**: ele informa "um run começou e não terminou" — o que
+> é acionável (**rerodar**) —, mas **não** converte o head antigo em revisado. Só há revisão completa com
+> **report/veredito ancorado**; sem ele, o PR que exige revisão continua exigindo. Tratar inline órfão como
+> parecer é fail-open da mesma família do `grep -v` engolindo `exit≠0`: transforma um **desconhecido** em
+> **aprovado**.
+> Com report ancorado em `X` e head `Y ≠ X`, aí sim vale a regra do delta: `git diff --name-only X Y` →
+> `scripts/review-exemption.sh --paths -`; se toca produção/gates o head novo **exige** parecer; se é
+> doc/test-only nascido de um achado aceito, registre "revisado em `X`, delta test-only" e siga.
+> **O #381 é exemplo do caso RUIM, não do bom:** dois P3 inline em `d9641430`, **nenhum report em head
+> algum**, e o dispatch manual morreu com `Login expired` — mergeou sem revisão completa de head nenhum.
+> Foi justamente o que motivou esta regra (Codex P1 no #382).
 > E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
 > reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
 > exatamente o falso-verde que este bloco existe para matar.
