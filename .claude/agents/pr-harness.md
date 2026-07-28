@@ -107,6 +107,17 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
 - **`Either`/`Raise` (Arrow):** erro engolido (`catch` largo demais), **fail-open** (exceção vira acesso
   liberado), `raise` faltando num ramo de erro, `getOrNull()`/`!!` mascarando um `Left`, `zipOrAccumulate`
   que deveria acumular mas curto-circuita.
+  **⚠️ Cross-check obrigatório antes de recomendar "condicione o resultado ao `Either`":** se o call site
+  **pré-guarda** exatamente a condição que produziria o `Left`, a sua correção reintroduz o **ramo morto**
+  que `.claude/rules/kotlin-quality.md` proíbe — e ali o remédio é o oposto (`.onRight { }`, que absorve o
+  `Left` impossível sem criar aresta incobrível). Não é hipotético: no **#381** este rubric pediu
+  `unblock().getOrNull()?.let { }` em `applyUnblock`, medido em **+1 BRANCH e +2 INSTRUCTION missed**, no
+  mesmo arquivo (`SimulationEngine`) onde a regra nasceu — **por sugestão deste mesmo harness no #350**.
+  Um pitfall medido de `rules/` **vence** o casamento de forma deste checklist. Então: verifique o
+  pré-guard primeiro; se existir, ou não levante o achado, ou levante-o **declarando o conflito e o custo
+  de cobertura**, e aponte o desfecho que **dissolve** o dilema (mover a estrutura para uma HOF, onde o ramo
+  vira alcançável e testável — GAP-EA) em vez de deslocá-lo. Vale para todo achado: **se a sua correção
+  contradiz uma regra do repo, o achado é sobre a regra, não sobre o diff.**
 - **Bordas e totalidade:** `[0]`/`first()` em coleção possivelmente vazia; `single()` onde cabe
   `singleOrNull()`; off-by-one; `when`/`sealed` não-exaustivo (ou `else` que engole caso novo); nullability
   (`?:` que esconde um caminho inválido).

@@ -46,6 +46,13 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > #    (`gh api --jq` aceita UM argumento — nada de `--arg`; interpole o SHA na própria expressão)
 > gh api repos/<owner>/<repo>/issues/$N/comments --paginate \
 >   --jq ".[] | select(.body | contains(\"pr-harness-report:$SHA\")) | .html_url"   # vazio ⇒ sem parecer
+> # 1b) VAZIO em (1) não distingue "ninguém rodou" de "rodou e morreu no meio": os achados INLINE carregam
+> #     o SHA no marcador (`<!-- pr-harness:<sha>:P<n>:… -->`) e sobrevivem quando o report não sai.
+> #     Achar inline SEM report é sinal de run ABORTADO — diagnóstico útil (rerode), NÃO prova de revisão:
+> #     quantos achados ficaram por emitir é indeterminado. Só (1) atesta revisão completa.
+> gh api repos/<owner>/<repo>/pulls/$N/comments --paginate \
+>   --jq '.[].body' | grep -o 'pr-harness:[a-f0-9]\{40\}' | sort -u    # SHA(s) que o harness COMEÇOU a revisar
+> git diff --stat <sha-revisado> $SHA                                  # o que mudou DEPOIS da revisão
 > # 2) saída vazia → o harness rodou e falhou, ou nem chegou a rodar? (run verde ≠ parecer emitido)
 > gh run list --workflow=pr-review.yml --limit 10 --json databaseId,createdAt,conclusion
 > gh run view <id> --log | grep -E 'Resolved PR|Nenhum PR aberto|is_error|::warning'
@@ -55,6 +62,22 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 > (c) o run **nem chegou** ao harness — `Nenhum PR aberto com head == $RUN_SHA … Pulando` (ou o job sai
 > `skipped`). Por isso o grep inclui a linha de "pulando". Distinguir (b) de (c) serve para **saber**, não
 > para agir: em nenhum dos dois há defeito nosso.
+> E há um **quarto** estado, que o passo (1b) revela: **inline ancorado, report em head nenhum**.
+> ⚠️ **Inline NÃO prova revisão completa — prova que a POSTAGEM começou.** O harness publica cada achado
+> conforme o encontra e só ao final emite o veredito; se ele morrer no meio (crash, `Login expired`,
+> timeout, saldo), os inline já publicados sobrevivem e o report nunca sai. **Quantos achados ficaram por
+> emitir é indeterminado por construção** — nenhuma contagem de inline responde isso.
+> Logo o quarto estado é **diagnóstico, não licença**: ele informa "um run começou e não terminou" — o que
+> é acionável (**rerodar**) —, mas **não** converte o head antigo em revisado. Só há revisão completa com
+> **report/veredito ancorado**; sem ele, o PR que exige revisão continua exigindo. Tratar inline órfão como
+> parecer é fail-open da mesma família do `grep -v` engolindo `exit≠0`: transforma um **desconhecido** em
+> **aprovado**.
+> Com report ancorado em `X` e head `Y ≠ X`, aí sim vale a regra do delta: `git diff --name-only X Y` →
+> `scripts/review-exemption.sh --paths -`; se toca produção/gates o head novo **exige** parecer; se é
+> doc/test-only nascido de um achado aceito, registre "revisado em `X`, delta test-only" e siga.
+> **O #381 é exemplo do caso RUIM, não do bom:** dois P3 inline em `d9641430`, **nenhum report em head
+> algum**, e o dispatch manual morreu com `Login expired` — mergeou sem revisão completa de head nenhum.
+> Foi justamente o que motivou esta regra (Codex P1 no #382).
 > E **não troque o `--log` por `gh run view --json jobs`**: com `continue-on-error` o passo `Run PR harness`
 > reporta `conclusion: success` mesmo com `is_error: true` — a checagem barata por JSON reintroduz
 > exatamente o falso-verde que este bloco existe para matar.
@@ -162,6 +185,37 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
    **aplica** a lição é o agente `post-merge-harvester`, **após o merge de uma implementação real** (guard
    anti-loop: `docs/quality/lessons-learned.md`), transformando-a em emenda + linha no log. Não force lição:
    só quando há sinal real (§6 do rubric).
+
+## Como responder a um achado (lado AUTOR) — medir vence autoridade
+
+O harness é criterioso, não infalível. Ao receber um achado, as respostas erradas são as duas simétricas:
+**obedecer por autoridade** ("o revisor pediu") e **recusar por opinião** ("acho que não procede"). A regra
+é **medir e responder com o número** — e vale nos dois sentidos, porque quem mede está certo
+independentemente do papel.
+
+- **Antes de aplicar, cheque se a correção sugerida contradiz uma regra do repo.** Aconteceu no **#381**: o
+  harness pediu `getOrNull()?.let { }` num call site **pré-guardado**, que é exatamente o *ramo morto*
+  proibido por `.claude/rules/kotlin-quality.md` — regra nascida no **#350, no mesmo arquivo, por sugestão
+  do próprio harness**. Um reviewer não carrega memória das regras que produziu além do que está escrito, e
+  o checklist do rubric casa por **forma**. Medido: `.onRight` = 0 missed; a forma sugerida = 1 BRANCH + 2
+  INSTRUCTION missed, incobríveis por construção. Se contradiz, **meça, recuse com a medição, e cite a
+  regra e o PR de origem** — nunca só "não concordo".
+- **Existe uma terceira saída: dissolver, não deslocar.** Quando o achado está certo na **forma** mas todo
+  remédio local é barrado por outra regra, o desfecho certo não é aplicar nem descartar — é **deferir ao
+  refactor que faz o problema deixar de existir**, dizendo por quê. No #381 o ramo morto some dentro de uma
+  HOF (`mutateCardAt`, **GAP-EA**, já no Todo do #6), onde ele vira alcançável e **testável de verdade**.
+  Registre o achado no card de destino para ele não se perder no thread.
+- **Ofereça o trade oposto ao mantenedor.** Recusar não é fechar a decisão: explicite o que se ganha e o que
+  se perde ("se preferir o branch incobrível agora em troca da garantia estrutural, é sua decisão e eu
+  aplico"). A escolha é do mantenedor, não sua nem do revisor.
+- **A enumeração de um achado é PISO, não teto — faça o grep antes de corrigir.** No #381 o achado de
+  duplicação citava **duas** cópias do fixture `simulationFrom`; havia **três**
+  (`…GuardBehaviorTest`, `…MetricsBehaviorTest` e a nova `…MoveGuardBehaviorTest`). Corrigir só as citadas
+  é **meio-consertar**: a divergência silenciosa que o achado descreve continua possível entre as
+  remanescentes. Vale para toda família (duplicação, import proibido, caminho que vaza de allowlist) —
+  varra a **classe** do problema, não as instâncias listadas. Mesma família de #367/#368 ("enumerar vaza").
+- **Depois de responder, resolva o thread** e garanta que o corpo do PR reflita os commits que nasceram da
+  revisão — o corpo é o insumo do `post-merge-harvester` (§2.5 do rubric).
 
 ## Complementaridade
 
