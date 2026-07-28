@@ -96,13 +96,25 @@ class JdbcSimulationRepository : SimulationRepository {
 
     private fun rowToSimulation(row: ResultRow): Simulation {
         val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
-        // A identidade autoritativa é a LINHA relacional, não o blob. O decode é tolerante a legado
-        // (GAP-DV) e degrada um id em branco para um sentinel — mas `save` faz upsert POR
-        // `simulation.id`, então esse sentinel gravaria uma linha NOVA e deixaria a original órfã,
-        // com os snapshots seguindo o id errado. Corrupção silenciosa é pior que o 500 que a
-        // tolerância evita, então o id do blob é reconciliado com o da linha. (review #383 P1)
+        // As DUAS identidades autoritativas são da LINHA relacional, não do blob. O decode é tolerante
+        // a legado (GAP-DV) e degrada um id em branco para um sentinel — mas ambas são chave de
+        // ESCRITA, e `save` as regrava a partir do agregado decodificado:
+        //
+        //   `simulation.id`              → chave do upsert: um sentinel gravaria uma linha NOVA e
+        //                                  deixaria a original órfã, com os snapshots no id errado.
+        //   `organization.id`            → coluna com FK `REFERENCES organizations(id)`: um sentinel
+        //                                  viola a FK no save E, antes disso, faz os 5 use cases
+        //                                  compararem-no com o caller e devolverem Forbidden — o
+        //                                  registro "tolerado" fica ilegível na prática.
+        //
+        // Corrupção silenciosa é pior que o 500 que a tolerância evita, então as duas voltam da linha.
+        // (review #383 P1 · #384 P2)
         if (!stateJson.isNullOrBlank()) {
-            return SimulationSerializer.decode(stateJson).copy(id = SimulationId(row[SimulationsTable.id]))
+            val decoded = SimulationSerializer.decode(stateJson)
+            return decoded.copy(
+                id = SimulationId(row[SimulationsTable.id]),
+                organization = decoded.organization.copy(id = row[SimulationsTable.organizationId]),
+            )
         }
         return buildFallbackSimulation(row)
     }
