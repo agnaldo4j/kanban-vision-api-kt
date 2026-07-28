@@ -251,7 +251,7 @@ dependencies {
     implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.1")
     // Rate limit distribuído (GAP-BZ/ADR-0041): contador compartilhado em Redis via Lettuce,
     // com circuit-breaker resilience4j (mesmo idioma do DbCircuitBreaker do sql_persistence).
-    implementation("io.lettuce:lettuce-core:6.7.1.RELEASE")
+    implementation("io.lettuce:lettuce-core:7.6.0.RELEASE")
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
     implementation("io.github.resilience4j:resilience4j-micrometer:2.4.0")
     implementation("io.github.resilience4j:resilience4j-kotlin:2.4.0")
