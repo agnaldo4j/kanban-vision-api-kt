@@ -208,7 +208,10 @@ sem cenário, é nit, não achado. Classes de bug desta stack (Kotlin/Ktor/Arrow
 - **PR que REFUTA uma afirmação: grep a redação antiga — ela quase nunca está num lugar só.** Quando o diff
   existe para corrigir uma afirmação errada (comentário de código, KDoc, regra, corpo de PR), a versão
   refutada costuma ter sido escrita em **cópias**, e o autor atualiza a que tem em mente. Procedimento: pegue
-  3–5 palavras características da redação antiga e `grep -rn` no repo; toda cópia entra no mesmo PR. No **#385**
+  3–5 palavras características da redação antiga e **`rg -n`** no repo; toda cópia entra no mesmo PR.
+  Use `rg`, não `grep -rn`: da raiz, o `grep` recursivo varre `.git/` e os `build/` do Gradle, então texto
+  **gerado ou histórico** aparece como se fosse cópia viva a editar (medido: 8 hits no `grep` contra 7 no
+  `rg` para o mesmo termo). O `rg` honra o `.gitignore` por padrão. (Codex P2 no #386.) No **#385**
   o comentário do repositório foi atualizado para `#383 P1 · #384 P2`, mas o **KDoc do teste-guarda** seguia
   com o texto do #383 (*"a identidade de topo é diferente dos demais campos"*) — a afirmação exata que o #384
   refutou, viva dentro do arquivo cujo próprio teste a contradiz. Doc que afirma um fechamento inexistente é
