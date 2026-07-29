@@ -56,8 +56,20 @@ class ConventionsTest {
         // mesmo `SimulationRepository` mas faz tenancy por FILTRO (`findAll(orgId, …)`), e `CreateSimulation`
         // não lê Simulation — os dois devem ficar de fora, e ficam.
         //
-        // Forma de IMPLICAÇÃO, não filtro: `assertTrue` sobre lista vazia lança
-        // KoPreconditionFailedException, e depois do refactor NENHUM use case casa o antecedente.
+        // O nome do receptor é DERIVADO DO TIPO, não fixado no texto (Codex P2 no #387). Casar a literal
+        // `simulationRepository.findById` deixava passar `repo.findById`/`simulationRepo.findById` — um
+        // guard de segurança driblável por renomear um campo não é guard. Aqui a regra pergunta ao tipo
+        // quem são os campos `SimulationRepository` e proíbe `findById` sobre cada um deles.
+        //
+        // E é PROIBIÇÃO PLANA, não implicação: a versão anterior — "contém findById ⟹ contém
+        // loadOwnedSimulation" — agregava em nível de CLASSE, então um use case com uma chamada guardada
+        // E uma carga direta satisfazia as duas substrings e passava (Codex P2, a metade mais séria).
+        // Sem substring de escape não há esse buraco: nenhum `*UseCase` pode chamar `findById` num
+        // `SimulationRepository`, ponto. O único caminho legítimo é `loadOwnedSimulation`, que é função
+        // top-level (não é classe `*UseCase`) e recebe o repositório por parâmetro.
+        //
+        // `CreateSimulationUseCase` fica de fora corretamente: o `findById` dele é de
+        // `OrganizationRepository`, outro tipo. `ListSimulationsUseCase` também: usa `findAll`/`count`.
         //
         // Limite honesto: a regra é shape-based. Ela não prova que existe autorização — prova que a carga
         // direta não é usada. Quem prova a autorização é LoadOwnedSimulationTest + os 5 testes de Forbidden.
@@ -65,9 +77,13 @@ class ConventionsTest {
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("UseCase")
-            .assertTrue { clazz ->
-                !clazz.hasTextContaining("simulationRepository.findById") ||
-                    clazz.hasTextContaining("loadOwnedSimulation")
+            .assertFalse { clazz ->
+                val simulationRepositories =
+                    clazz
+                        .properties()
+                        .filter { it.type?.name == "SimulationRepository" }
+                        .map { it.name }
+                simulationRepositories.any { clazz.hasTextContaining("$it.findById") }
             }
     }
 
