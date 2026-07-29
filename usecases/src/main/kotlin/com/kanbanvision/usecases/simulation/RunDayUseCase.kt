@@ -3,7 +3,6 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
-import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.model.simulation.DailySnapshot
 import com.kanbanvision.domain.model.simulation.MovementType
@@ -34,10 +33,12 @@ class RunDayUseCase(
     suspend fun execute(command: RunDayCommand): Either<DomainError, DailySnapshot> =
         either {
             command.validate().bind()
-            val simulation = simulationRepository.findById(SimulationId(command.simulationId)).bind()
-            ensure(simulation.organization.id == command.callerOrganizationId) {
-                CommonError.Forbidden("Simulation does not belong to the caller's organization")
-            }
+            val simulation =
+                loadOwnedSimulation(
+                    simulationRepository,
+                    SimulationId(command.simulationId),
+                    command.callerOrganizationId,
+                )
             guardDuplicate(simulation.id, simulation.currentDay.value).bind()
 
             val now = clock.instant()
