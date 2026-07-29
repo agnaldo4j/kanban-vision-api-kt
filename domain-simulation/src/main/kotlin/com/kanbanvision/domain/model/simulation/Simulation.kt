@@ -34,6 +34,10 @@ data class Simulation(
             )
     }
 
+    // GAP-DQ: o total de itens é perguntado à simulação, não calculado por quem a lê. Delega ao cenário,
+    // que delega ao board — um salto por nível.
+    fun itemCount(): Int = scenario.itemCount()
+
     fun toRef(): SimulationId = id
 
     fun withStatus(newStatus: SimulationStatus): Simulation = copy(status = newStatus)

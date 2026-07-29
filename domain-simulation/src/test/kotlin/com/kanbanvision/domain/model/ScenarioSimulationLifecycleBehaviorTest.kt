@@ -1,5 +1,6 @@
 package com.kanbanvision.domain.model
 
+import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.Board
 import com.kanbanvision.domain.model.kanban.CardId
 import com.kanbanvision.domain.model.organization.Organization
@@ -115,6 +116,32 @@ class ScenarioSimulationLifecycleBehaviorTest {
         assertFailsWith<IllegalArgumentException> {
             Simulation.create(name = "", organization = organization, scenario = Scenario.create("S", rules, board))
         }
+    }
+
+    @Test
+    fun `given a board with cards when asking the simulation for the item count then it delegates through the scenario`() {
+        // GAP-DQ: um salto por nível (Simulation → Scenario → Board). O teste atravessa os DOIS saltos e
+        // ancora no board, para que quebrar qualquer elo da cadeia falhe aqui.
+        val board =
+            Board
+                .create(name = "Board")
+                .addStep("Analysis", AbilityName.PRODUCT_MANAGER)
+                .getOrNull()!!
+        val step = board.steps.first().id
+        val filled =
+            board
+                .addCard(step, "A1", "")
+                .getOrNull()!!
+                .addCard(step, "A2", "")
+                .getOrNull()!!
+        val rules = ScenarioRules.create(wipLimit = 2, teamSize = 3, seedValue = 99L)
+        val scenario = Scenario.create(name = "Scenario", rules = rules, board = filled)
+        val simulation =
+            Simulation.create(name = "Sim", organization = Organization.create(name = "Org"), scenario = scenario)
+
+        assertEquals(2, filled.itemCount())
+        assertEquals(2, scenario.itemCount())
+        assertEquals(2, simulation.itemCount())
     }
 
     private fun scenario(): Scenario {

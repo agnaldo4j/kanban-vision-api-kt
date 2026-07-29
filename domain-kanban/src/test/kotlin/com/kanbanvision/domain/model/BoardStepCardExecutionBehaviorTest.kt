@@ -151,6 +151,77 @@ class BoardStepCardExecutionBehaviorTest {
         assertEquals(listOf("First", "Second"), tied.stepsInExecutionOrder().map { it.name.value })
     }
 
+    @Test
+    fun `given board without steps when counting items then result is zero`() {
+        assertEquals(0, Board.create(name = "Empty").itemCount())
+    }
+
+    @Test
+    fun `given steps without cards when counting items then result is zero`() {
+        // Distingue "sem steps" de "steps vazios": é este caso que mata o mutante que troca a soma
+        // por uma constante ou ignora os steps sem card.
+        val board =
+            Board
+                .create(name = "Flow")
+                .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+
+        assertEquals(0, board.itemCount())
+    }
+
+    @Test
+    fun `given cards spread across steps when counting items then all of them are summed`() {
+        val board =
+            Board
+                .create(name = "Flow")
+                .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+        val analysis = board.steps[0].id
+        val development = board.steps[1].id
+        val filled =
+            board
+                .withCard(step = analysis, title = "A1")
+                .withCard(step = analysis, title = "A2")
+                .withCard(step = development, title = "D1")
+
+        // Soma ATRAVÉS dos steps — um `first()`/`maxOf` no lugar do `sumOf` daria 2 e passaria despercebido
+        // se todos os cards estivessem num step só.
+        assertEquals(3, filled.itemCount())
+    }
+
+    @Test
+    fun `given board when asking for the first step then it is the head of the execution order`() {
+        val board =
+            Board
+                .create(name = "Flow")
+                .withStep(name = "Analysis", requiredAbility = AbilityName.PRODUCT_MANAGER)
+                .withStep(name = "Development", requiredAbility = AbilityName.DEVELOPER)
+        val scrambled = board.copy(steps = board.steps.reversed())
+
+        assertEquals("Analysis", scrambled.firstStep()?.name?.value)
+    }
+
+    @Test
+    fun `given steps sharing a position when asking for the first step then insertion order decides`() {
+        // Equivalência que o call site do engine dependia implicitamente: `minByOrNull { position }`
+        // devolve o PRIMEIRO mínimo na ordem de iteração, e `sortedBy` é estável — então o head da ordem
+        // de execução é o mesmo elemento. Sem este caso a substituição seria só plausível, não provada.
+        val board =
+            Board
+                .create(name = "Flow")
+                .withStep(name = "First", requiredAbility = AbilityName.DEVELOPER)
+                .withStep(name = "Second", requiredAbility = AbilityName.TESTER)
+        val tied = board.copy(steps = board.steps.map { it.copy(position = 0) })
+
+        assertEquals("First", tied.firstStep()?.name?.value)
+        assertEquals(tied.steps.minByOrNull { it.position }, tied.firstStep())
+    }
+
+    @Test
+    fun `given board without steps when asking for the first step then result is null`() {
+        assertEquals(null, Board.create(name = "Empty").firstStep())
+    }
+
     private fun worker(name: String): Worker =
         Worker(
             name = NonBlankName(name),
