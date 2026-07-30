@@ -37,8 +37,10 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
   lines and comments do not count, so `wc -l` neither condemns nor absolves. Measured in **#388**: a 240-line
   file passed comfortably (≈172 effective body lines against the 200 limit) because this repo comments its
   tests heavily. Consequences in both directions: do not split a class on the strength of `wc -l`, and do not
-  file a green build under "got lucky" — settle it with `./gradlew :<module>:detektTest --rerun-tasks`, which
-  is cheap and answers exactly. Split test files when Detekt says so. **Splitting a class is not
+  file a green build under "got lucky" — settle it by running Detekt **on the source set the file belongs
+  to**: `detektTest` for tests, `detektMain` for production, `detekt` for both. Running the wrong one is a
+  false green: `detektTest` passes without ever examining a production class (Codex P2 on #389). Always with
+  `--rerun-tasks`, or an UP-TO-DATE task replays the previous run. Split test files when Detekt says so. **Splitting a class is not
   a licence to copy its fixture:** the setup helper goes to the package's `*TestSupport.kt` (which already
   exists for exactly this), not into each new class. A duplicated fixture breaks nothing at runtime — it breaks
   the day `Simulation.create`/`Scenario.create` changes signature or the setup needs one more step: there are
