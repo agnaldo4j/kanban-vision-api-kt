@@ -83,7 +83,7 @@ que a tolerância evita**.
   "para todos os outros campos o blob é a única fonte" e reconciliava só o `simulation.id` — mas
   `organization.id` também vem da mesma linha, também é regravado pelo `save`, é coluna com **FK**
   (`REFERENCES organizations(id)`) **e** é a chave de **tenancy** (`ensure(simulation.organization.id ==
-  callerOrganizationId) { Forbidden }` em 5 use cases). Degradá-la dava FK violation no save e **403 para o
+  callerOrganizationId) { Forbidden }`, hoje num ponto único — `loadOwnedSimulation`, #387 — com os use cases de simulação como call sites). Degradá-la dava FK violation no save e **403 para o
   dono legítimo** — o registro "tolerado" ilegível na prática. Codex P2 no #384, sobre a emenda escrita a
   partir do P1 do #383: corrigir *um* caso de uma classe não fecha a classe.
   ```kotlin

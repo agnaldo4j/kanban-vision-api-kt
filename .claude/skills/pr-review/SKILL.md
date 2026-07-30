@@ -193,6 +193,24 @@ O harness é criterioso, não infalível. Ao receber um achado, as respostas err
 é **medir e responder com o número** — e vale nos dois sentidos, porque quem mede está certo
 independentemente do papel.
 
+### O autor dispõe também dos PRÓPRIOS limites — declarar um furo não o fecha
+
+🔴 **Limite conhecido de um guard vira dívida no instante em que vira código.** No **#387** eu escrevi no
+plano, com todas as letras, que a fitness function era **driblável por renome** (`repo.findById` escapava do
+texto casado) — e entreguei assim mesmo, com o limite documentado no comentário. O Codex abriu P2 sobre
+exatamente isso. Documentar não é mitigar: um guard de **segurança** que se contorna renomeando um campo não
+é guard, e escrever "limitação conhecida" só transfere ao revisor a parte barata do trabalho.
+
+E o corolário, que é o que dói: **limite conhecido quase nunca vem sozinho.** O mesmo P2 trouxe uma segunda
+metade que eu **não** tinha visto — implicação agrega em nível de classe, então uma classe com uma chamada
+guardada *e* uma carga direta passava. Declarar o furo percebido dá a sensação falsa de ter cercado o
+problema quando só se cercou a instância percebida. Antes de escrever "limitação conhecida", pergunte se o
+custo de fechar é mesmo maior que o de conviver — no #387 era **uma linha**.
+
+Aplica-se a qualquer texto de "por enquanto", "não cobre", "driblável", "limitação aceita" num guard,
+`@Suppress` ou gate: se o autor consegue nomear o furo, ele consegue medir o custo de fechá-lo — e essa
+medição vai no PR, não no comentário.
+
 ### Disposição: o achado se corrige NO PR que o gerou; só a LIÇÃO é que se agenda
 
 🔴 **Política do mantenedor (2026-07-28, no #385):** *"para estas demandas encontradas, corrigir já nesse
@@ -269,12 +287,12 @@ avaliadas se resolvemos agora ou depois."* Três destinos distintos, e só um de
 ## Loop de lições aprendidas
 
 O que o review ensina não pode morrer no comentário do PR — mas também **não pode virar um PR por lição**.
-Desde 2026-07-28 a lição entra numa **fila** (`docs/quality/lessons-pending.md`) e é aplicada **em lote, a
-cada 10 PRs de código**; `docs/quality/lessons-learned.md` passa a registrar só o que **já foi aplicado**.
-A razão é de fluxo: um PR de processo por implementação dobrava os ciclos de revisão/CI/atenção com
-melhorias raramente urgentes — *"chega de melhoria de processo, precisamos evoluir o produto"*.
-**Exceção:** lição cuja ausência deixa **defeito ativo ou guard furado** aplica na hora; estilo, clareza e
-enriquecimento de rubric esperam o lote.
+A lição entra **no PR que a aprendeu** — junto do código, enquanto o contexto está fresco. Aquele PR já está
+em revisão, então registrar a lição nele custa **zero ciclo extra**, e `docs/quality/lessons-learned.md` é o
+log do que foi aplicado. Não há fila, contador nem lote: os três existiram entre 2026-07-28 e 2026-07-30,
+nunca dispararam uma vez, e foram removidos no #390.
+
+**Qualquer outra mudança de processo é pergunta ao mantenedor, não ação** — inclusive as que parecem óbvias.
 
 Lições **genéricas** viram emenda em skill/regra/rubric; lições **específicas da feature** ficam na ADR /
 nas notas do gap (não poluem as skills). Ver §6 do `.claude/agents/pr-harness.md`.
@@ -282,6 +300,6 @@ nas notas do gap (não poluem as skills). Ver §6 do `.claude/agents/pr-harness.
 ## Referências
 
 - Agente: `.claude/agents/pr-harness.md` (a rubrica)
-- Log de lições **aplicadas**: `docs/quality/lessons-learned.md` · **fila** (a aplicar em lote): `docs/quality/lessons-pending.md`
+- Log de lições: `docs/quality/lessons-learned.md`
 - Política: `docs/politicas-explicitas.md` · regras: `.claude/rules/*`
 - Também roda no CI (advisory, não-bloqueante): `.github/workflows/pr-review.yml`

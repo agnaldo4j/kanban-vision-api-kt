@@ -952,7 +952,22 @@ Fatos operacionais:
 - **Sanity negativo obrigatório ao criar regra**: sabote a regra localmente
   (ex.: proíba um import que existe), confirme que FALHA, restaure. Regra que
   nunca falhou não protege nada.
-- Regras partem do estado real do código — fitness function não nasce vermelha.
+- Regras que **descrevem** o estado atual partem verdes. Mas uma regra escrita **junto do refactor que a
+  torna verdadeira** nasce vermelha de propósito, e isso é a prova barata que `testing.md` exige: no #387 a
+  regra foi escrita ANTES da extração e falhou listando os 5 use cases violadores, sem precisar de arquivo
+  descartável. A transição 🔴→🟢 ao longo do PR **é** o teste da regra.
+- **Ancore no TIPO, não no texto — e prefira proibição plana a implicação.** Casar a literal
+  `simulationRepository.findById` se dribla renomeando o campo para `repo` (#387, Codex P2): derive o nome
+  do receptor perguntando ao tipo (`clazz.properties().filter { it.type?.name == "X" }`). E implicação
+  ("contém A ⟹ contém B") **agrega em nível de classe**: uma classe com uma chamada guardada E uma carga
+  direta satisfaz as duas substrings e passa. Sem substring de escape não existe esse buraco.
+- **`assertTrue` sobre lista VAZIA lança `KoPreconditionFailedException`.** É o que empurra o autor para a
+  forma de implicação — e a saída certa não é implicação, é **proibição plana + um teste de não-vácuo
+  separado** (ex.: "a função X é declarada exatamente uma vez"), que é inerentemente vermelho se o alvo
+  sumir ou for duplicado.
+- **Probe negativo é barato**: o Konsist lê fontes via PSI e `:architecture:test` **não compila** os módulos
+  de produto — então um arquivo de probe que nem compila serve para provar que a regra morde. Crie, rode,
+  apague, confirme `git status --porcelain` vazio.
 - Detalhes: wiki [Architecture Fitness Functions](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions).
 
 ---
