@@ -247,6 +247,9 @@ avaliadas se resolvemos agora ou depois."* Três destinos distintos, e só um de
   revelou `SimulationDay.init` (exige `>= 1`), que ninguém tinha citado — um `day: 0` legado lançava pelo
   mesmo caminho. **A unidade de varredura é o construtor, não o campo citado**: ver o procedimento em
   `.claude/rules/migrations.md` (subárvore alcançável do nó decodificado).
+  Terceira aplicação, agora fora da revisão: o mesmo piso vale para o **escopo de um card** — os sítios que
+  ele cita são exemplo, não inventário, e "nenhum PR sem card" **não** autoriza entregar menos que a classe
+  nomeada (#388/GAP-DQ; contra-corolário em §4 de `docs/politicas-explicitas.md`).
 - **Depois de responder, resolva o thread** e garanta que o corpo do PR reflita os commits que nasceram da
   revisão — o corpo é o insumo do `post-merge-harvester` (§2.5 do rubric).
 
