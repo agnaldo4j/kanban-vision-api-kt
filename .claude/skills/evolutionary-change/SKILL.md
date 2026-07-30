@@ -203,6 +203,30 @@ A principal causa de degradação de qualidade em sessões longas de LLM é o **
 ```
 → Cada gap tem suas próprias dependências e efeitos colaterais. Sessões compostas degradam qualidade e esgotam contexto.
 
+### Gap slicing (o espelho do anterior — e igualmente caro)
+```
+// EVITAR: "o card cita SimulationDtos.kt:349, então corrijo só essa linha
+//          e abro outro card para o sítio idêntico no SimulationEngine"
+```
+→ Um card nomeia uma **classe de problema**; os sítios que ele cita são exemplo, não inventário. Fatiar
+abaixo da classe troca 1 linha de código por um ciclo inteiro (card + priorização + branch + CI + revisão) e
+deixa a classe meio-consertada no meio-tempo — enquanto isso, a duplicação que o card existe para eliminar
+segue livre para divergir. Medido no **#388/GAP-DQ**: o card dizia "Standalone" e citava um sítio; havia
+dois, e fechar os dois custou 1 linha de produção + 3 testes.
+
+**Como distinguir do gap stacking acima** (e do sinal *"enquanto estamos aqui, vamos também refatorar X"* da
+§6): a pergunta não é "quantos arquivos?", é **"é a mesma classe de problema que o card nomeia?"**.
+
+| Situação | Veredito |
+|---|---|
+| Mesma classe de problema, sítio adjacente que o card não citou | **Dentro** do card — feche agora |
+| Outro defeito, outro agregado, refactor notado de passagem | **Fora** — pergunta → card → priorização |
+| Outro card do board, "porque é pequeno" | **Fora** — é gap stacking |
+
+Varra a classe **no planejamento**, antes de desenhar: assim o escopo é decidido uma vez, e não descoberto no
+meio da implementação. Regra completa (com o contra-corolário do "nenhum PR sem card"): §4 de
+`docs/politicas-explicitas.md`.
+
 ### Designed process (proibido)
 ```
 // EVITAR: "vamos redesenhar toda a estrutura de pacotes para seguir

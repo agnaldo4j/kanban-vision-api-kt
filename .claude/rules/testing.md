@@ -33,7 +33,14 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
 - **`IntegrationTestSetup.closeDataSource()` / `reinitDataSource()`**: use in `@BeforeEach`/`@AfterEach` to force `PersistenceError` paths.
 - **Koin DI in route tests**: register the simulation use cases the route under test needs (e.g. `single { CreateSimulationUseCase(get(), get(), get(), get()) }`, `single { RunDayUseCase(get(), get(), get(), get(), get()) }`) with mocked repositories/ports. Both take a `Clock` last (GAP-DK — provide `single<Clock> { Clock.fixed(...) }`); a use case with a domain clock reads `now` from it, so tests bind a fixed `Clock` for determinism.
 - **Absorbing a signature-change ripple with a test-only overload**: when a production signature gains a parameter (e.g. `SimulationEngine.runDay` gained `now: Instant`, GAP-DK #353), a *test-only* lower-arity overload that delegates to the new member with a fixed default (`internal fun SimulationEngine.runDay(sim, decisions, seed) = runDay(sim, decisions, seed, Instant.EPOCH)`) keeps dozens of behavior call-sites focused without editing each. Two safety conditions, or it's a footgun: (1) **distinct arity** from the member — with the *same* arity Kotlin gives the production **member precedence**, so a same-name same-arity overload is silently shadowed and **never intercepts** those call-sites (the helper is dead, not recursive), defeating its purpose; a *lower* arity has no matching member, so it resolves to the overload; (2) exercise the **new full-arity member** directly in at least one dedicated test so the injected parameter is actually covered (the overload must not become the only path). Keep such helpers in a `*TestSupport.kt`, never in `src/main`.
-- **LargeClass threshold**: 200 lines. Split test files when they grow beyond this. **Splitting a class is not
+- **LargeClass threshold**: 200 lines — of the class *body* as Detekt counts it, **not** of the file. Blank
+  lines and comments do not count, so `wc -l` neither condemns nor absolves. Measured in **#388**: a 240-line
+  file passed comfortably (≈172 effective body lines against the 200 limit) because this repo comments its
+  tests heavily. Consequences in both directions: do not split a class on the strength of `wc -l`, and do not
+  file a green build under "got lucky" — settle it by running Detekt **on the source set the file belongs
+  to**: `detektTest` for tests, `detektMain` for production, `detekt` for both. Running the wrong one is a
+  false green: `detektTest` passes without ever examining a production class (Codex P2 on #389). Always with
+  `--rerun-tasks`, or an UP-TO-DATE task replays the previous run. Split test files when Detekt says so. **Splitting a class is not
   a licence to copy its fixture:** the setup helper goes to the package's `*TestSupport.kt` (which already
   exists for exactly this), not into each new class. A duplicated fixture breaks nothing at runtime — it breaks
   the day `Simulation.create`/`Scenario.create` changes signature or the setup needs one more step: there are
@@ -49,6 +56,19 @@ fun `execute returns ValidationError when name is blank`() = runTest { ... }  //
   *relocated*, never lost — all four laws passed with the bug present. Only a step id from **outside** the board
   discriminates. Procedure: revert the production fix, run the property test, confirm it **fails**, then
   restore. If it still passes, the generator — not the law — is what needs fixing.
+- **When production starts calling a helper, the test that validates it must KEEP its own computation.** Third
+  member of the vacuum family above, and the easiest to introduce by accident: a refactor that extracts
+  `X.foo()` sweeps the call sites, and a test whose oracle *was* the hand-written computation looks like just
+  another call site. Rewrite it and the law degenerates to `f(x) == f(x)` — green, and proving nothing, while
+  the diff reads like tidying up. Measured in **#388 (GAP-DQ)**: `Board.itemCount()` replaced
+  `scenario.board.steps.sumOf { it.cards.size }` in the DTO mapper, and `DtoMappingPropertyTest` was
+  deliberately **left** with the manual sum as its oracle. Rule of thumb: an oracle that shares code with the
+  subject is not an oracle. The *other* direction of the same coin — when you keep a second computation of the
+  same value **on purpose**, for performance (here `itemCount()` counts in place instead of delegating to
+  `allCards().size`, which stamps `copy(step = step.id)` on N cards just to count them) — the two are only
+  allowed to coexist while they agree, so bind them with a property (`board.itemCount() == board.allCards().size`)
+  and prove the law is not vacuous by sabotaging one side (`+ 1`) and watching it fail. An optimisation without
+  a law tying it to the reference implementation is a divergence waiting for its first silent day.
 - **A test that CORRUPTS a fixture must assert the corruption actually happened.** Same vacuum as the property
   test above, one level earlier: a legacy/tolerance test that mangles a stored blob (`replace`, `replaceFirst`,
   a hand-edited JSON) and then asserts "it still loads" proves **nothing** if the mangling silently matched

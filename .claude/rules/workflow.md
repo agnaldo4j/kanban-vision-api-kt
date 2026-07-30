@@ -13,6 +13,17 @@
 > de fonte única (ADR-0023). Precedente: o **#385** nasceu de um achado do Codex no #384 sem card; o GAP-EU foi
 > criado depois para regularizar. Detalhe e os dois destinos legítimos: §4 de `docs/politicas-explicitas.md`.
 
+> 🔴 **E o inverso NÃO vale: essa regra não estreita card.** Ela governa *qual* problema você pode pegar,
+> nunca *quanto* dele você entrega. O card nomeia uma **classe de problema** e os sítios que ele cita são
+> exemplo, não inventário — deixar o sítio vizinho da mesma classe para "outro card" gasta outra
+> priorização, outro branch, outro CI e outra revisão por uma linha que caberia aqui: é o lead time que a
+> regra existe para **reduzir**. "Standalone" no card significa independente de **outros cards**, não licença
+> para meio-conserto. Precedente: o **#388** (GAP-DQ) citava um sítio de `board.steps` cru e havia **dois**
+> na produção; a sessão propôs adiar o segundo alegando esta regra e o mantenedor reverteu — incluir custou
+> 1 linha de produção + 3 testes e zerou a classe. Limite: **mesma classe, sítio adjacente → termine agora**;
+> defeito diferente → continua sendo pergunta → card. Contra-corolário completo: §4 de
+> `docs/politicas-explicitas.md`.
+
 > ⚠️ **`--limit` alto e `.status` como STRING — as duas coisas, sempre.** Sem `--limit` o `gh` trunca em
 > **30** itens (o board passou de 130) e sem `.status.name` → `.status` o `jq` **aborta**
 > (`Cannot index string with string "name"`). Qualquer um dos dois faz a checagem devolver vazio, que este

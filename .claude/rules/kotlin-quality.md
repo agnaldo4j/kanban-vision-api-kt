@@ -19,7 +19,14 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 ## Rules
 
 - `@Suppress` only with a comment justifying why — no justification = PR rejected.
-- `LargeClass` threshold: 200 lines. Split test files into focused classes (e.g., `ScenarioCreationRoutesTest`, `ScenarioRunDayRoutesTest`).
+- `LargeClass` threshold: 200 lines — of the class **body**, not of the file: blanks and comments do not count. In #388 a **240-line** test file sat comfortably under the limit (~174 body lines excluding blanks/comments), so `wc -l` alarms in the wrong direction. **Confirm by running Detekt on the source set the file belongs to**, in either direction:
+  ```bash
+  ./gradlew :<module>:detektMain --rerun-tasks   # produção
+  ./gradlew :<module>:detektTest --rerun-tasks   # testes
+  ./gradlew :<module>:detekt     --rerun-tasks   # ambos, quando em dúvida
+  ```
+  ⚠️ **Pick the task that matches the file, or the check is a false green.** `detektTest` analyses only the *test* source set: run it against a production class near the threshold and it passes without ever looking at that class — the same "green because nothing was examined" failure this rule exists to prevent. `--rerun-tasks` matters too: without it an UP-TO-DATE task reports the previous run. (Codex P2 on #389, on the very amendment that introduced the command.)
+  Split test files into focused classes (e.g., `ScenarioCreationRoutesTest`, `ScenarioRunDayRoutesTest`) — see `.claude/rules/testing.md` for the fixture caveat.
 - Zero Detekt violations before opening a PR.
 - Run `./gradlew ktlintFormat` before committing.
 

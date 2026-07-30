@@ -121,6 +121,28 @@ source of progress (ADR-0023) — it also inflates lead time, since the card's c
 Precedent: **PR #385** was opened straight from a Codex finding on #384 with no card; GAP-EU had to be created
 afterwards to regularise it. Retro-carding repairs the record but not the ordering decision that was skipped.
 
+**Counter-corollary — the rule forbids WIDENING past the card, never NARROWING below it.** "No PR without a
+card" governs *which problem* you may work on. It says nothing about how much of that problem you must
+finish, and invoking it to ship only the site the card happens to quote turns the rule against the flow it
+protects: every site left behind needs another card, another prioritisation, another branch, another CI run
+and another review — exactly the lead time this section exists to *reduce*. A card names a **class of
+problem**; the sites it lists are examples, not the inventory. `Standalone` on a card means *independent of
+other cards*, not *licence to leave half the defect in place*.
+
+Precedent: **PR #388** (GAP-DQ). The card quoted one raw chain over `board.steps`
+(`SimulationDtos.kt:349`) and said `Standalone`; sweeping the class found a second one in production —
+`SimulationEngine.applyAdd`, re-implementing `minByOrNull { it.position }`, the ordering criterion
+`Board.stepsInExecutionOrder()` already owns. The session *proposed deferring it* on the strength of the
+corollary above and the maintainer **reverted that** ("*por que não puxar isso nesse card?*"). Including it
+cost one production line plus three tests and left **zero** raw `board.steps` in production; deferring
+would have spent a whole cycle on that same line.
+
+The boundary, so this does not become licence to widen: stay inside the class the card names. Same class,
+adjacent site → finish it, in this PR. A different defect, a different aggregate, a refactor you noticed on
+the way → still question → card → prioritisation. This is "enumeration is a floor, not a ceiling"
+(#381 — see `.claude/skills/pr-review/SKILL.md`) applied to the **card's scope** instead of to a review
+finding's; sweep the class while *planning*, so scope is decided once rather than discovered mid-implementation.
+
 **Process improvement runs on a batch cadence: one process PR per 10 code PRs.** Harvested lessons queue in
 [`docs/quality/lessons-pending.md`](quality/lessons-pending.md) and ship together as
 `docs(process): lote <N>`. The rule exists because the opposite was measured: the harvester used to open a
