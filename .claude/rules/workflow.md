@@ -89,7 +89,11 @@ LOCAL=$(git rev-parse --verify -q feat/gap-X-slug || true)
 # `-D`, não `-d`: com o ref de rastreamento podado, o `-d` recusa sempre em squash merge —
 # e quando aceita, aceita apagando (sai 0 mesmo com commit a perder). A garantia é a comparação acima.
 [ -z "$LOCAL" ] || git branch -D feat/gap-X-slug
-[ -z "$TIP" ]   || git push origin --delete feat/gap-X-slug
+# TOCTOU: entre a conferência acima e este push cabe um push de terceiro, e `--delete` incondicional
+# apagaria esse commit que ninguém viu. O `--force-with-lease` transforma isso em falha do SERVIDOR
+# (`! [rejected] … (stale info)`, exit 1, branch preservada) em vez de perda silenciosa — medido no §1.2.
+[ -z "$TIP" ]   || git push origin \
+  --force-with-lease="refs/heads/feat/gap-X-slug:$TIP" ":refs/heads/feat/gap-X-slug"
 ```
 
 ```bash

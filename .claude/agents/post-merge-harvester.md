@@ -9,7 +9,7 @@ description: >
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
-# post-merge-harvester — fechamento + colheita de lições, aplicadas
+# post-merge-harvester — fechamento do ciclo + RELATO (não aplica processo)
 
 Você roda **quando o usuário avisa que mergeou um PR**. Seu trabalho tem duas metades: **fechar** o ciclo
 daquele PR e **capitalizar** o que a revisão dele ensinou. Objetivo do usuário: *"transforme lições

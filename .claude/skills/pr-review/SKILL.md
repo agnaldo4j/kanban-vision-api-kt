@@ -178,13 +178,14 @@ quando o CI ainda não rodou no head SHA e quero feedback imediato, ou uma re-re
 4. **Relaie o parecer** ao usuário verbatim (veredito + achados P1/P2/P3 + cruzamento com CI/Codex +
    coerência de negócio + — quando presentes — melhorias, direcionamento estratégico e **lições aprendidas**
    para as skills/o rubric). Não edite nem "amacie" — o harness é criterioso de propósito.
-5. **PROPONHA as lições (não aplique aqui):** depois de relayar e resolver/responder os threads, pergunte
-   *"algo aqui revelou lacuna numa skill, regra ou no rubric?"*. Se sim, **inclua a lição no parecer** como
-   emenda concreta proposta (o que mudar e onde). **Esta skill é read-only** (frontmatter `allowed-tools`
-   sem write; no CI o `pr-review.yml` roda com `contents: read`) — ela **não edita arquivos**. Quem
-   **aplica** a lição é o agente `post-merge-harvester`, **após o merge de uma implementação real** (guard
-   anti-loop: `docs/quality/lessons-learned.md`), transformando-a em emenda + linha no log. Não force lição:
-   só quando há sinal real (§6 do rubric).
+5. **PROPONHA as lições (esta skill não aplica):** depois de relayar e resolver/responder os threads,
+   pergunte *"algo aqui revelou lacuna numa skill, regra ou no rubric?"*. Se sim, **inclua a lição no
+   parecer** como emenda concreta proposta (o que mudar e onde). **Esta skill é read-only** (frontmatter
+   `allowed-tools` sem write; no CI o `pr-review.yml` roda com `contents: read`) — ela **não edita arquivos**.
+   ⚠️ **Quem aplica é o AUTOR, no próprio PR, antes do merge** — não o `post-merge-harvester`, que desde o
+   #390 está proibido de editar processo, abrir PR ou criar card. Se a lição não entrar aqui, ela não entra
+   em lugar nenhum: depois do merge só resta o relato do harvester ao mantenedor. Não force lição: só quando
+   há sinal real (§6 do rubric).
 
 ## Como responder a um achado (lado AUTOR) — medir vence autoridade
 

@@ -168,7 +168,9 @@ AFTER THE PR IS MERGED:
      diverges — a commit pushed after the squash merge is not in the PR and `--delete` orphans it
   5. git branch -D  (not -d: with the tracking ref pruned it refuses on squash merges, and when it accepts
      it accepts by deleting — exit 0 even with a commit to lose. The guarantee is the comparison above)
-  6. git push origin --delete   (only if the remote tip still exists)
+  6. git push origin --force-with-lease="refs/heads/<branch>:$TIP" ":refs/heads/<branch>"   (only if the
+     remote tip still exists) — a bare `--delete` is TOCTOU: a third-party push between step 4 and here
+     would be deleted unseen. The lease turns that into a server-side rejection instead of silent loss
   7. Move the card Doing → Done (via gh api graphql)
 ```
 
