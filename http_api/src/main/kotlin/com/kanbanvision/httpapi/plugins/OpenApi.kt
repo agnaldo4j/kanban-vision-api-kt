@@ -13,11 +13,6 @@ import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("OpenApi")
 
-/**
- * Reads the `ENABLE_SWAGGER` flag. Default-off, mirroring `JWT_DEV_MODE`: the OpenAPI spec and
- * Swagger UI are exposed only when explicitly enabled (`security.md` §3). The `env` seam keeps this
- * unit-testable without touching real environment variables (same idiom as `Cors.loadCorsOrigins`).
- */
 internal fun swaggerEnabled(env: (String) -> String? = System::getenv): Boolean = env("ENABLE_SWAGGER")?.lowercase() == "true"
 
 // LongMethod: the OpenAPI info/tags/security block is a flat declarative config, not branching logic.

@@ -75,16 +75,12 @@ data class Card(
             CardState.DONE -> this
         }
 
-    // ADR-0044: transição de estado inválida (bloquear card não-IN_PROGRESS) é regra de domínio → Either.
     fun block(): Either<KanbanError, Card> =
         either {
             ensure(state == CardState.IN_PROGRESS) { KanbanError.CardNotInProgress(id.value) }
             copy(state = CardState.BLOCKED)
         }
 
-    // ADR-0044: transição de estado inválida (desbloquear card não-BLOCKED) é regra de domínio → Either.
-    // Simétrico a `block()`: BLOCKED→IN_PROGRESS é uma transição NOMEADA, com regra própria. `advance()`
-    // segue como a transição genérica do fluxo — quem quer desbloquear pede `unblock()` (GAP-DU).
     fun unblock(): Either<KanbanError, Card> =
         either {
             ensure(state == CardState.BLOCKED) { KanbanError.CardNotBlocked(id.value) }

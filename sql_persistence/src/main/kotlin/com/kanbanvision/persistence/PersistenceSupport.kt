@@ -10,8 +10,6 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.Logger
 
-// Holder não-nulo: executeSupplier é API Java e o null-check de platform type do Kotlin
-// rejeitaria blocos que legitimamente retornam null (ex.: findByDay sem snapshot).
 private class DbResult<T>(
     val value: T,
 )

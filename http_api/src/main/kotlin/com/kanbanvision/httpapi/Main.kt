@@ -26,10 +26,6 @@ import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
-// EngineMain carrega o application.conf do classpath (database.*, jwt.*,
-// ktor.application.modules) e faz graceful shutdown via ktor.deployment.shutdown* —
-// o embeddedServer programático usado antes NÃO lia o conf e quebrava o fat JAR em
-// runtime ("Property database.url not found"; descoberto no baseline do GAP-AR).
 fun main(args: Array<String>) =
     io.ktor.server.netty.EngineMain
         .main(args)
@@ -40,13 +36,9 @@ fun Application.module() {
         modules(AppModule.koinModule)
     }
 
-    // Telemetria ANTES do pool: o driver JDBC OTel e o withSpan dependem do
-    // GlobalOpenTelemetry já registrado quando a primeira conexão é criada (ADR-0031).
     val telemetry = configureTelemetry()
 
     val migrationsEnabled = System.getenv("FLYWAY_ENABLED")?.lowercase() != "false"
-    // meterRegistry: o pool publica hikaricp_* (GAP-BW). Passado no init porque o tracker tem de
-    // existir quando as primeiras conexões nascem — e porque assim não há como criar pool sem métrica.
     val meterRegistry: PrometheusMeterRegistry by inject()
     DatabaseFactory.init(
         instrumentDatabaseConfig(buildDatabaseConfig(), telemetryEnabled = telemetry != null),
@@ -79,9 +71,6 @@ private fun Application.buildDatabaseConfig(): DatabaseConfig {
             user = dbConfig.property("user").getString(),
             password = dbConfig.property("password").getString(),
             poolSize = poolSize,
-            // minimumIdle sem base no .conf: ausente OU vazio ⇒ = poolSize (pool fixo, comportamento
-            // atual). O isNotBlank() blinda o boot contra um DATABASE_MIN_IDLE="" (passthrough do
-            // Compose com host unset, ou configmap mal preenchido): "".toInt() derrubaria o startup.
             minimumIdle =
                 dbConfig
                     .propertyOrNull("minimumIdle")
@@ -93,8 +82,6 @@ private fun Application.buildDatabaseConfig(): DatabaseConfig {
             keepaliveTimeMs = dbConfig.property("keepaliveTimeMs").getString().toLong(),
             leakDetectionThresholdMs = dbConfig.property("leakDetectionThresholdMs").getString().toLong(),
         )
-    // Native Image (ADR-0032): a imagem nativa seta FLYWAY_LOCATIONS=filesystem:/app/db/migration
-    // porque o ClassPathScanner do Flyway não lê resources do binário; JVM usa o default.
     val locations = System.getenv("FLYWAY_LOCATIONS")
     return if (locations.isNullOrBlank()) base else base.copy(migrationsLocation = locations)
 }

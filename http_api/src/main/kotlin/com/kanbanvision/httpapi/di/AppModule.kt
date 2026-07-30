@@ -27,9 +27,8 @@ import java.time.Clock
 object AppModule {
     val koinModule =
         module {
-            // bind MeterRegistry: o Koin não resolve por subtipo — sem o binding da
-            // interface, o wiring do publisher quebrava em produção com
-            // NoDefinitionFoundException (testes não pegam: mockam o port).
+            // O `bind` é obrigatório: o Koin não resolve por subtipo, e sem ele o publisher quebra só em
+            // produção com NoDefinitionFoundException — os testes mockam o port e não alcançam esse caminho.
             single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) } bind MeterRegistry::class
             single<EventPublisherPort> { MicrometerEventPublisher(get()) }
 
@@ -38,8 +37,6 @@ object AppModule {
             single<SnapshotRepository> { JdbcSnapshotRepository() }
             single<SimulationEnginePort> { DefaultSimulationEngine() }
 
-            // Clock injected at the edge so the engine/use cases stay pure functions of their
-            // inputs (`now` threaded like `seed`) — GAP-DK. Tests bind a fixed Clock.
             single<Clock> { Clock.systemUTC() }
 
             single { CreateSimulationUseCase(get(), get(), get(), get()) }

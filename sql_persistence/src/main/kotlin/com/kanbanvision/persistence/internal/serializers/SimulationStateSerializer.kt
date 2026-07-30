@@ -89,8 +89,6 @@ internal data class PolicySetSurrogate(
 internal data class ScenarioRulesSurrogate(
     val id: String,
     val policySet: PolicySetSurrogate,
-    // Legacy wire field, still emitted so older releases can decode blobs written by this one.
-    // The domain derives the WIP limit from policySet alone, so decode ignores this value.
     val wipLimit: Int,
     val teamSize: Int,
     val seedValue: Long,

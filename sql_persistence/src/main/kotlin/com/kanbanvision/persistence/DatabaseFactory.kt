@@ -14,20 +14,13 @@ data class DatabaseConfig(
     val driver: String,
     val user: String,
     val password: String,
-    // Parâmetros do pool Hikari — todos configuráveis por env (GAP-BX). Defaults = valores
-    // históricos, então nenhum ambiente muda de comportamento se as DATABASE_* não forem setadas.
     val poolSize: Int = DEFAULT_POOL_SIZE,
-    // minimumIdle default = poolSize ⇒ pool de tamanho FIXO (o comportamento implícito de antes,
-    // quando o Hikari igualava minimumIdle ao máximo). Setar < poolSize torna o pool elástico.
     val minimumIdle: Int = poolSize,
     val connectionTimeoutMs: Long = DEFAULT_CONNECTION_TIMEOUT_MS,
     val maxLifetimeMs: Long = DEFAULT_MAX_LIFETIME_MS,
     val keepaliveTimeMs: Long = DEFAULT_KEEPALIVE_TIME_MS,
     val leakDetectionThresholdMs: Long = DEFAULT_LEAK_DETECTION_THRESHOLD_MS,
     val baselineOnMigrate: Boolean = false,
-    // Native Image (ADR-0032): o ClassPathScanner do Flyway não suporta o protocolo
-    // "resource" do binário — a imagem nativa usa "filesystem:/app/db/migration"
-    // (migrations copiadas como arquivos). Na JVM o default classpath permanece.
     val migrationsLocation: String = "classpath:db/migration",
 ) {
     companion object {
@@ -40,8 +33,6 @@ data class DatabaseConfig(
 }
 
 object DatabaseFactory {
-    // Timeouts do pool migraram para DatabaseConfig (campos com default) — GAP-BX os tornou
-    // configuráveis por env. POOL_NAME (identidade da métrica) e os de readiness ficam fixos.
     private const val POOL_NAME = "KanbanVisionPool"
     private const val READINESS_VALIDATION_TIMEOUT_SECS = 2
     private const val READINESS_CHECK_TIMEOUT_MS = 3_000L
@@ -80,14 +71,6 @@ object DatabaseFactory {
         if (::dataSource.isInitialized) dataSource.close()
     }
 
-    /**
-     * @param meterRegistry quando presente, o pool publica `hikaricp_*` nele. O binding vive AQUI, no
-     * nascimento do pool, e não num `bindMetrics()` posterior: pool e suas métricas têm o mesmo ciclo
-     * de vida, então é impossível criar um sem o outro. O alerta `HikariPoolExhaustion` existia desde
-     * o GAP-U consultando `hikaricp_connections_active`, que NUNCA foi exposto — a métrica nunca foi
-     * bindada e o alerta nunca pôde disparar (GAP-BW). Um `bindMetrics()` opcional reabriria essa
-     * porta. Null só nos casos sem Micrometer (Job de migração, testes de unidade).
-     */
     fun init(
         config: DatabaseConfig,
         migrationsEnabled: Boolean = true,
@@ -132,8 +115,6 @@ object DatabaseFactory {
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             leakDetectionThreshold = config.leakDetectionThresholdMs
             poolName = POOL_NAME
-            // Antes do HikariDataSource ser construído: o tracker precisa existir quando as
-            // primeiras conexões nascem, senão os contadores começam incompletos.
             meterRegistry?.let { metricsTrackerFactory = MicrometerMetricsTrackerFactory(it) }
             validate()
         }

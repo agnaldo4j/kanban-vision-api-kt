@@ -26,11 +26,6 @@ internal fun Decision.toSurrogate(): DecisionSurrogate =
         is Decision.Unknown -> DecisionSurrogate(type = type, payload = payload)
     }
 
-// Backward-compat (GAP-DS): o decode roda sobre um registro imutável de leitura, então nunca pode lançar — um único
-// blob com tipo desconhecido (release mais nova revertida) ou `cardId` ausente/branco derrubaria a Simulation INTEIRA
-// (findById/findAll → 500), não só aquela decisão. O que não dá para interpretar vira `Decision.Unknown`, que preserva
-// tipo e payload crus e volta idêntico ao wire no `toSurrogate` — tolerar sem perder o dado. Entradas novas continuam
-// guardadas na borda (DTO + value classes).
 internal fun DecisionSurrogate.toDomain(): Decision =
     when (type) {
         "MOVE_ITEM", "BLOCK_ITEM", "UNBLOCK_ITEM" -> cardIdDecision()
@@ -38,11 +33,6 @@ internal fun DecisionSurrogate.toDomain(): Decision =
         else -> unknown()
     }
 
-/**
- * The three card-scoped decision kinds. A missing or blank `cardId` leaves nothing to point at, so the
- * decision degrades to [Decision.Unknown] rather than fabricating a card reference. The final branch is
- * `UNBLOCK_ITEM` — the only caller is the `when` above, which reaches here for exactly these three tags.
- */
 private fun DecisionSurrogate.cardIdDecision(): Decision {
     val raw = payload["cardId"]?.takeIf { it.isNotBlank() } ?: return unknown()
     return when (type) {
@@ -64,11 +54,6 @@ internal fun DailySnapshot.toSurrogate() =
         movements = movements.map { it.toSurrogate() },
     )
 
-// Tolerância no eixo do HISTÓRICO (#385 P2): o GAP-DV cobriu o estado vivo, mas a subárvore `history`
-// seguia construindo cru — `require(id.isNotBlank())` em DailySnapshot/FlowMetrics/Movement,
-// `SimulationDay >= 1` e os 4 números de FlowMetrics >= 0. Um valor inválido aqui lança pelo MESMO
-// caminho (PersistenceError → 500 em findById e na página inteira de findAll), então a assimetria
-// deixava metade do sintoma de pé.
 internal fun DailySnapshotSurrogate.toDomain() =
     DailySnapshot(
         id = decodeId(id),
@@ -88,7 +73,6 @@ private fun FlowMetrics.toSurrogate() =
         avgAgingDays = avgAgingDays,
     )
 
-// FlowMetrics.init exige id não-branco e os 4 números >= 0 (#385 P2).
 private fun FlowMetricsSurrogate.toDomain() =
     FlowMetrics(
         id = decodeId(id),

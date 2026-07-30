@@ -6,23 +6,6 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * In-memory **true token bucket** limiter (continuous refill), replacing Ktor's built-in
- * `DefaultRateLimiter` — which is a *fixed-window* counter (hard reset) and admits a 2× burst on the
- * window boundary. This one refills proportionally to elapsed time, so `/auth` no longer allows the
- * 5-just-before + 5-just-after burst (ADR-0042, OWASP A07).
- *
- * State (`tokens`, `ts`) lives in a single [AtomicReference] mutated by a CAS loop, so concurrent
- * requests sharing this instance (Ktor caches one limiter per client key) stay correct without locks.
- *
- * **Seedable** via [initialTokens]: the default (`= limit`, a full bucket) matches "fresh client";
- * a partial seed is what a degraded fallback will use in PR-2 to avoid re-granting a full window.
- *
- * @param limit bucket capacity, in whole tokens (must be > 0; enforced by the caller).
- * @param refillPeriodMillis time to refill the whole bucket, in millis (must be > 0).
- * @param initialTokens starting token count (default: full).
- * @param clock epoch-millis source; injectable for deterministic tests.
- */
 class LocalTokenBucketRateLimiter(
     private val limit: Int,
     private val refillPeriodMillis: Long,

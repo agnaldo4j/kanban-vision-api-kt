@@ -10,12 +10,6 @@ import java.sql.SQLException
 import java.sql.SQLTimeoutException
 import java.time.Duration
 
-/**
- * Circuit breaker único para o acesso ao banco (ADR-0020).
- *
- * Singleton deliberado: `dbQuery` é função top-level e os repositórios não recebem
- * dependências via Koin, então o breaker segue o mesmo padrão do [DatabaseFactory].
- */
 object DbCircuitBreaker {
     private const val CIRCUIT_NAME = "database"
     private const val SLIDING_WINDOW_SIZE = 10
@@ -35,10 +29,6 @@ object DbCircuitBreaker {
 
     fun reset() = circuitBreaker.reset()
 
-    /**
-     * Transição manual para FORCED_OPEN (kill-switch). Encapsula o tipo resilience4j,
-     * que não está no classpath dos módulos consumidores. Reverta com [reset].
-     */
     fun forceOpen() {
         circuitBreaker.transitionToForcedOpenState()
     }
@@ -57,13 +47,12 @@ object DbCircuitBreaker {
             .slowCallRateThreshold(SLOW_CALL_RATE_THRESHOLD_PCT)
             .slowCallDurationThreshold(Duration.ofSeconds(SLOW_CALL_DURATION_SECS))
             .waitDurationInOpenState(Duration.ofSeconds(WAIT_IN_OPEN_STATE_SECS))
-            // Sem isto o pod sai do load balancer, nenhum tráfego atravessa o breaker e
-            // OPEN nunca vira HALF_OPEN — o circuito ficaria aberto para sempre após a
-            // recuperação do banco. FORCED_OPEN (kill-switch) não é afetado.
+            // Sem transição automática o circuito trava aberto: o pod sai do load balancer, nada atravessa
+            // o breaker e OPEN nunca chega a HALF_OPEN, mesmo com o banco já recuperado.
             .automaticTransitionFromOpenToHalfOpenEnabled(true)
             .permittedNumberOfCallsInHalfOpenState(PERMITTED_CALLS_IN_HALF_OPEN)
             .recordExceptions(SQLException::class.java, SQLTimeoutException::class.java)
-            // Rejeição do gate (CircuitBreakerDataSource) não é sucesso nem falha do banco.
+            // A rejeição do próprio gate não é sucesso nem falha do banco — contá-la realimentaria o breaker.
             .ignoreExceptions(CallNotPermittedException::class.java)
             .build()
 }

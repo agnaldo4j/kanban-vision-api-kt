@@ -52,7 +52,6 @@ data class Step(
 
     fun canAssign(worker: Worker): Boolean = worker.hasAbility(requiredAbility)
 
-    // ADR-0044: regras de domínio (elegibilidade/duplicidade de worker) → Either.
     fun assignWorker(worker: Worker): Either<KanbanError, Step> =
         either {
             ensure(canAssign(worker)) { KanbanError.WorkerCannotExecuteStep(worker.id, id.value) }
@@ -81,8 +80,6 @@ data class Step(
             val available = dailyCapacities[requiredAbility] ?: 0
             val consumed =
                 when (requiredAbility) {
-                    // DEPLOYER consome tudo que resta (deploy é atômico); as demais habilidades
-                    // consomem só o que a capacidade diária do worker permite.
                     AbilityName.DEPLOYER -> remaining
                     AbilityName.PRODUCT_MANAGER,
                     AbilityName.DEVELOPER,

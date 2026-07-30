@@ -13,12 +13,6 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 
-/**
- * Extrai um path parameter obrigatório respondendo 400 quando ausente.
- * O caminho nulo é defensivo: o Ktor só invoca o handler quando o segmento
- * casou (ausência vira 404 no roteamento) — centralizar aqui elimina as 6
- * cópias de guard inalcançável que existiam nos handlers (ADR-0029).
- */
 suspend fun ApplicationCall.requiredPathParam(
     name: String,
     message: String,
@@ -31,13 +25,6 @@ suspend fun ApplicationCall.requiredPathParam(
     return value
 }
 
-/**
- * Resolve o organizationId do JWT do chamador (fonte da verdade de tenancy). O plugin de
- * autenticação (`validate`) já rejeita tokens sem o claim ou com claim em branco, então aqui basta
- * tratar a ausência de principal — caminho defensivo (rota mal-configurada fora de `authenticate`):
- * responde 401 (fail closed) em vez de assumir acesso (security.md §A10). Um claim eventualmente em
- * branco que escapasse ainda é barrado pela validação de `isNotBlank` na query/command a jusante.
- */
 suspend fun ApplicationCall.callerOrganizationId(): String? {
     val principal = principal<JWTPrincipal>()
     if (principal == null) {
@@ -83,10 +70,6 @@ suspend fun ApplicationCall.respondWithDomainError(error: DomainError) {
                 HttpStatusCode.ServiceUnavailable,
                 DomainErrorResponse(error = "Service temporarily unavailable", requestId = requestId),
             )
-        // Fail-closed (ADR-0038 / security.md §Fail Closed): DomainError é interface aberta, então um
-        // erro não previsto vira 500 genérico em vez de vazar detalhe ou escapar sem resposta. Cada
-        // grupo (CommonError/KanbanError/SimulationError) é sealed, então uma variante nova dentro de
-        // um grupo é pega no code review; um erro fora dos grupos cai aqui, seguro.
         else ->
             respond(
                 HttpStatusCode.InternalServerError,

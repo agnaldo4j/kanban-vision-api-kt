@@ -5,9 +5,6 @@ import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.Table
 import org.postgresql.util.PGobject
 
-// Custom Exposed column type for PostgreSQL JSONB columns.
-// Uses PGobject to pass the value with the correct type hint so PostgreSQL
-// accepts the insert without requiring an explicit ::jsonb cast in the query.
 internal class JsonbColumnType : ColumnType<String>() {
     override fun sqlType(): String = "JSONB"
 

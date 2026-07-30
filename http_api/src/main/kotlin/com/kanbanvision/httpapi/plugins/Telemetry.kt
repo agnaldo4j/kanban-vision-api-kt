@@ -9,50 +9,23 @@ import io.opentelemetry.instrumentation.ktor.v3_0.KtorServerTelemetry
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk
 
-/**
- * Traces em build time — ADR-0031 (supersede parcialmente a ADR-0009).
- *
- * Substitui o OTel Java Agent: o SDK é montado via autoconfigure (lê as mesmas envs
- * `OTEL_*` que o agente lia) e a instrumentação HTTP vem do plugin de biblioteca
- * [KtorServerTelemetry]. Quando o exporter de traces está ausente ou `none` — via
- * `-Dotel.traces.exporter` ou `OTEL_TRACES_EXPORTER` (default do ConfigMap k8s) —
- * nada é instalado e o custo é zero — mesmo comportamento de rodar sem o agente.
- */
 internal const val OTEL_JDBC_URL_PREFIX = "jdbc:otel:"
 internal const val OTEL_JDBC_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver"
 
 fun Application.configureTelemetry(openTelemetry: OpenTelemetrySdk? = autoConfiguredSdk(resolvedTracesExporter())): OpenTelemetrySdk? {
     if (openTelemetry == null) return null
-    // Leak de contexto entre requests (GAP-BC, diagnóstico fechado): o SuspendFunctionGun
-    // do Ktor deixa updateThreadContext sem restore pareado (KTOR-9431; otel #16430) e o
-    // Instrumenter suprime novos spans SERVER. Na JVM o fix do Ktor 3.4.3 resolveu (safety
-    // net em TelemetryContextIsolationTest); no binário nativo o leak persiste e a mitigação
-    // é -Dio.ktor.internal.disable.sfg=true no ENTRYPOINT do Dockerfile — validada com
-    // isolamento total e rotas nomeadas (docs/quality/otel-context-leak-native-2026-07.md).
     install(KtorServerTelemetry) {
         setOpenTelemetry(openTelemetry)
     }
-    // O OpenTelemetryDriver NÃO lê o GlobalOpenTelemetry — nasce com noop() e exige
-    // install() na instância registrada no DriverManager ANTES do pool ser criado
-    // (o Hikari resolve o driver registrado por nome de classe, não cria outro).
-    OpenTelemetryDriver.install(openTelemetry)
+    openTelemetry.installOnJdbcDriverThatIgnoresTheGlobalSdk()
     monitor.subscribe(ApplicationStopped) { openTelemetry.close() }
     return openTelemetry
 }
 
-/**
- * Resolve o exporter de traces pelas duas vias padrão do OTel, na ordem de precedência
- * do autoconfigure: system property (`-Dotel.traces.exporter=...`) antes da env var.
- */
+private fun OpenTelemetrySdk.installOnJdbcDriverThatIgnoresTheGlobalSdk() = OpenTelemetryDriver.install(this)
+
 internal fun resolvedTracesExporter(): String? = System.getProperty("otel.traces.exporter") ?: System.getenv("OTEL_TRACES_EXPORTER")
 
-/**
- * Monta o SDK via autoconfigure quando há exporter de traces configurado; `null` desliga.
- *
- * [setAsGlobal] registra o SDK no `GlobalOpenTelemetry` — necessário em produção para o
- * [withSpan] e para o driver JDBC OTel, mas o registro global é write-once por JVM:
- * testes devem passar `false`.
- */
 internal fun autoConfiguredSdk(
     tracesExporter: String?,
     setAsGlobal: Boolean = true,
@@ -61,8 +34,6 @@ internal fun autoConfiguredSdk(
     return AutoConfiguredOpenTelemetrySdk
         .builder()
         .addPropertiesSupplier {
-            // Defaults sobrescrevíveis por env/system property: só traces saem pelo OTLP;
-            // métricas continuam Micrometer/Prometheus e logs continuam SLF4J (ADR-0009).
             mapOf(
                 "otel.service.name" to "kanban-vision-api",
                 "otel.metrics.exporter" to "none",
@@ -73,11 +44,6 @@ internal fun autoConfiguredSdk(
         .openTelemetrySdk
 }
 
-/**
- * Roteia o JDBC pelo driver OTel ([OTEL_JDBC_DRIVER]) quando a telemetria está ativa —
- * spans de query sem nenhuma dependência OTel em `sql_persistence/`: o wrap acontece por
- * configuração (URL `jdbc:otel:` + driver delegante), e o driver real segue no classpath.
- */
 internal fun instrumentDatabaseConfig(
     config: DatabaseConfig,
     telemetryEnabled: Boolean,

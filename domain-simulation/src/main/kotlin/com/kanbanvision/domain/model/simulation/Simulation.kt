@@ -34,8 +34,6 @@ data class Simulation(
             )
     }
 
-    // GAP-DQ: o total de itens é perguntado à simulação, não calculado por quem a lê. Delega ao cenário,
-    // que delega ao board — um salto por nível.
     fun itemCount(): Int = scenario.itemCount()
 
     fun toRef(): SimulationId = id
@@ -46,7 +44,7 @@ data class Simulation(
 
     fun appendDecision(decision: Decision): Simulation = copy(decisions = decisions + decision)
 
-    // Batch: uma única concatenação (O(atual + lote)) — evita o O(n²) de dobrar `appendDecision` num lote.
+    // Uma única concatenação, O(atual + lote): dobrar `appendDecision` sobre o lote seria O(n²).
     fun appendDecisions(newDecisions: List<Decision>): Simulation = copy(decisions = decisions + newDecisions)
 
     fun appendSnapshot(snapshot: DailySnapshot): Simulation = copy(history = history + snapshot)
