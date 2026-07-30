@@ -56,18 +56,16 @@ git checkout main && git pull origin main && git checkout -b feat/gap-X-slug
 (`.claude/agents/post-merge-harvester.md`) via a Agent tool. Ele faz as duas metades do pós-merge:
 1. **Limpeza** — sincroniza a main, apaga a branch, e move o card do #6 para **Done** (⚠️ um `[E]` cujo ADR
    mergeou mas a implementação não **fica em Doing**).
-2. **Colheita de lições, ENFILEIRADA — SÓ após implementação real.** O agente colhe **apenas quando o PR
-   mergeado toca código de produção** (`*/src/main/**`). PR de **processo/doc/skill/ADR/test-only** →
-   **fechamento-só** (guard anti-loop: uma melhoria nunca dispara outra). Numa implementação real, ele lê a
-   revisão (comentários **inline**, não o resumo), destila as lições **duráveis/generalizáveis** e as
-   **acrescenta a `docs/quality/lessons-pending.md`** — a fila.
+2. **Colheita de lições — o agente RELATA, não aplica.** A lição durável entra no **PR que a aprendeu**,
+   escrita pelo autor enquanto o contexto está fresco: aquele PR já está em revisão, então custa **zero ciclo
+   extra**. O harvester chega depois do merge; o que ele achar de durável e que **não** esteja registrado no
+   PR vira **relato ao mantenedor** — ele não edita skill/regra/rubric, não abre PR e não cria card.
 
-> 🔴 **Cadência: PR de processo só a cada 10 PRs de código** (decisão do mantenedor, 2026-07-28). Antes o
-> harvester abria um PR de processo por implementação, o que dava ~1 PR de doc por PR de código: dobrava
-> ciclos de revisão/CI/atenção para melhorias raramente urgentes, e **melhoria de processo passou a competir
-> com entrega de produto**. Agora as lições **acumulam na fila** e saem em **lote**
-> (`docs(process): lote <N> — …`). Como contar os 10 e a exceção (lição cuja ausência deixa **defeito ativo
-> ou guard furado** aplica na hora; estilo/clareza/rubric esperam): `docs/quality/lessons-pending.md`.
+> 🔴 **Processo não se mexe sem decisão do mantenedor, tomada ANTES da ação.** Entre 2026-07-28 e 2026-07-30
+> existiu uma cadência de fila/contador/lote para diluir PRs de processo. Ela **nunca disparou uma única vez**
+> — o contador se auto-zerava (o commit de enfileirar casava o próprio grep do marco) e a fila fragmentou
+> entre a main e uma branch órfã. Removida no #390. A regra que ficou é mais simples e não tem peça móvel:
+> **a lição vai no PR que a aprendeu; qualquer outra mudança de processo é pergunta, não ação.**
 
 Fallback manual (se precisar fazer à mão o passo 1):
 
@@ -77,8 +75,28 @@ Fallback manual (se precisar fazer à mão o passo 1):
 
 ```bash
 git checkout main && git pull origin main
-git branch -d feat/gap-X-slug
-git push origin --delete feat/gap-X-slug 2>/dev/null || true
+
+# O guard, na ordem que importa (§1.2 do agente explica por que as alternativas óbvias falham):
+git fetch --prune origin            # SEM `|| true`: fetch que falha é ignorância, não resposta
+PR_HEAD=$(gh pr view <n> --json headRefOid --jq .headRefOid)   # congela no merge
+TIP=$(git rev-parse --verify -q origin/feat/gap-X-slug || true)  # vazio = auto-delete já rodou
+LOCAL=$(git rev-parse --verify -q feat/gap-X-slug || true)
+
+# Compare com $PR_HEAD, NUNCA com a main (a main anda; o head do PR não)
+[ -z "$TIP" ]   || [ "$TIP" = "$PR_HEAD" ]   || { echo "PARE: commits pushados após o merge" >&2; exit 1; }
+[ -z "$LOCAL" ] || [ "$LOCAL" = "$PR_HEAD" ] || { echo "PARE: commits locais não mergeados" >&2; exit 1; }
+
+# `-D`, não `-d`: com o ref de rastreamento podado, o `-d` recusa sempre em squash merge —
+# e quando aceita, aceita apagando (sai 0 mesmo com commit a perder). A garantia é a comparação acima.
+[ -z "$LOCAL" ] || git branch -D feat/gap-X-slug
+# TOCTOU: entre a conferência acima e este push cabe um push de terceiro, e `--delete` incondicional
+# apagaria esse commit que ninguém viu. O `--force-with-lease` transforma isso em falha do SERVIDOR
+# (`! [rejected] … (stale info)`, exit 1, branch preservada) em vez de perda silenciosa — medido no §1.2.
+[ -z "$TIP" ]   || git push origin \
+  --force-with-lease="refs/heads/feat/gap-X-slug:$TIP" ":refs/heads/feat/gap-X-slug"
+```
+
+```bash
 gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: {
   projectId: "PVT_kwHNWUfOAUhH_w" itemId: "<ID>"
   fieldId: "PVTSSF_lAHNWUfOAUhH_84P7ZSQ"

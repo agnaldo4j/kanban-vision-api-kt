@@ -341,13 +341,30 @@ git checkout -b feat/gap-X-slug
 > `.claude/agents/post-merge-harvester.md`.
 
 ```bash
-# 1. Atualizar main local
+# 1. Atualizar main local + guard antes de apagar
 git checkout main && git pull origin main
 
-# 2. Deletar branch local e remota
-git branch -d feat/gap-X-slug
-git push origin --delete feat/gap-X-slug  # se necessário
+# O guard, na ordem que importa (§1.2 do agente explica por que as alternativas óbvias falham):
+git fetch --prune origin            # SEM `|| true`: fetch que falha é ignorância, não resposta
+PR_HEAD=$(gh pr view <n> --json headRefOid --jq .headRefOid)   # congela no merge
+TIP=$(git rev-parse --verify -q origin/feat/gap-X-slug || true)  # vazio = auto-delete já rodou
+LOCAL=$(git rev-parse --verify -q feat/gap-X-slug || true)
 
+# Compare com $PR_HEAD, NUNCA com a main (a main anda; o head do PR não)
+[ -z "$TIP" ]   || [ "$TIP" = "$PR_HEAD" ]   || { echo "PARE: commits pushados após o merge" >&2; exit 1; }
+[ -z "$LOCAL" ] || [ "$LOCAL" = "$PR_HEAD" ] || { echo "PARE: commits locais não mergeados" >&2; exit 1; }
+
+# `-D`, não `-d`: com o ref de rastreamento podado, o `-d` recusa sempre em squash merge —
+# e quando aceita, aceita apagando (sai 0 mesmo com commit a perder). A garantia é a comparação acima.
+[ -z "$LOCAL" ] || git branch -D feat/gap-X-slug
+# TOCTOU: entre a conferência acima e este push cabe um push de terceiro, e `--delete` incondicional
+# apagaria esse commit que ninguém viu. O `--force-with-lease` transforma isso em falha do SERVIDOR
+# (`! [rejected] … (stale info)`, exit 1, branch preservada) em vez de perda silenciosa — medido no §1.2.
+[ -z "$TIP" ]   || git push origin \
+  --force-with-lease="refs/heads/feat/gap-X-slug:$TIP" ":refs/heads/feat/gap-X-slug"
+```
+
+```bash
 # 3. Mover card: Doing → Done
 gh api graphql -f query='
 mutation {

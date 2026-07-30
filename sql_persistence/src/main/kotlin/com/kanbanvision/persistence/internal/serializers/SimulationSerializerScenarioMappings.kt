@@ -70,7 +70,7 @@ private fun Step.toSurrogate() =
     )
 
 private fun StepSurrogate.toDomain(): Step {
-    val ability = decodeEnum(requiredAbility, ABILITY_FALLBACK)
+    val ability = decodeEnum(requiredAbility, CROSS_FIELD_NEUTRAL_ABILITY)
     return Step(
         id = StepId(decodeId(id)),
         board = BoardId(decodeId(boardId)),
@@ -112,7 +112,7 @@ private fun CardSurrogate.toDomain() =
         description = description,
         position = position.coerceAtLeast(0),
         serviceClass = decodeEnum(serviceClass, ServiceClass.STANDARD),
-        state = decodeEnum(state, CARD_STATE_FALLBACK),
+        state = decodeEnum(state, QUARANTINE_CARD_STATE),
         agingDays = agingDays.coerceAtLeast(0),
         // Card.init exige cada effort >= 0 e cada remaining em 0..effort (GAP-DV): clamp em vez de
         // lançar. O `analysisEffort.coerceAtLeast(0)` repetido no teto é intencional — o teto tem de

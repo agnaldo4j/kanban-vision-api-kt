@@ -19,6 +19,35 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 ## Rules
 
 - `@Suppress` only with a comment justifying why — no justification = PR rejected.
+- **Comments are for two cases only: genuinely complex code, and a deliberate choice of performance over
+  clean code.** Everything else is expressed by **screaming architecture and clean code** — the name, the
+  type, the structure. A comment that restates a name, narrates history, or repeats what a test enforces is
+  not neutral: it rots, drifts out of sync, and the next reader trusts it over the code.
+
+  **When a comment carries real information, the fix is not to keep it — it is to make the CODE say it:**
+
+  | Instead of commenting | Do this |
+  |---|---|
+  | *"the `copy(step = step.id)` re-stamps the card with the step that holds it"* | extract `Step.cardsStampedWithOwningStep()` — the name says it |
+  | *"`steps` arrives already ordered, do not re-sort"* | rename the parameter to `stepsInExecutionOrder` |
+  | *"BLOCKED because it is the only state inert to the engine"* | name the constant `QUARANTINE_CARD_STATE` |
+  | *"the reason is generic so it does not leak existence"* | write the test: `…then the reason leaks no identifier` |
+
+  The last row is the general escape: **a constraint worth a comment is usually worth a test**, and the test
+  cannot rot. In #387 the same instruction was written *both* as a KDoc line and as a Konsist fitness
+  function — the function is executable, the comment was decoration.
+
+  Measured on this repo (#390), across five production files touched in one session: **from 129 comment
+  lines to one.** The single survivor is the one true performance trade — `Board.itemCount()` not delegating
+  to `allCards().size`, which would allocate a copy per card just to count. Everything else became a name
+  (`cardsStampedWithOwningStep`, `stepsInExecutionOrder`, `QUARANTINE_CARD_STATE`,
+  `CROSS_FIELD_NEUTRAL_ABILITY`, `withIdentitiesOwnedByRow`) or a test. **No test changed expectation** —
+  which is the proof that the prose was not carrying behaviour.
+
+  Two survivors were cut on a second pass after the maintainer rejected the rationale: comments explaining a
+  less-clean form chosen for a **coverage-tool** constraint (`when` arm ordered first for JaCoCo, `onRight`
+  instead of `getOrNull`). Tool constraints are **not** the performance exception — what protects those
+  shapes is the gate itself, not prose beside them.
 - `LargeClass` threshold: 200 lines — of the class **body**, not of the file: blanks and comments do not count. In #388 a **240-line** test file sat comfortably under the limit (~174 body lines excluding blanks/comments), so `wc -l` alarms in the wrong direction. **Confirm by running Detekt on the source set the file belongs to**, in either direction:
   ```bash
   ./gradlew :<module>:detektMain --rerun-tasks   # produção
@@ -89,3 +118,7 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
   The mutants did not become reachable-and-unkilled — **the test that killed them stopped completing**. One more Embedded PostgreSQL class in the module (each boots a fresh DB + Flyway) is enough to push an already-slow test past PITest's per-mutant timeout. **Diagnostic order:** (1) per-file base-vs-head; (2) if the losses are in files you did not touch, read `TIMED_OUT` and the per-test kill counts before writing "coverage regression" anywhere.
 
   ⚠️ **Do not "fix" the score yourself — but do not call the remedies blocked either.** Merging test classes to please a tool *is* the tail wagging the dog, so that one is out. **Raising `timeoutConstInMillis` is a legitimate candidate, not a bypass:** the rule at the top of this file forbids editing `build.gradle.kts` **to bypass violations**, and letting a killer test finish is the opposite — it makes PITest measure what it is supposed to measure (the harvester's own guardrail says `build.gradle.kts` *"exceto adição legítima"*). Note the block is **not** configured today, so the module runs on PITest's default timeout. What stops you is **not** immutability, it is the card-first rule: this is a build-config trade-off with a real cost (a longer timeout makes every run slower, and can mask a genuinely hung mutant), so it is the **maintainer's** call — **measure, record, propose; never tune unilaterally**. While the module stays above its gate, the measurement is the deliverable. (#385; overstatement corrected by Codex P2 on #386.)
+
+- **Deduplicar código DERRUBA o mutation score do módulo sem perder detecção — é efeito de denominador, e a defesa é aritmética por arquivo.** No #387 `usecases` foi de **63,5% → 62,1%** (gate 55) extraindo um guard que estava copiado em 5 use cases. Nada piorou: cada call site perdeu os **2 mutantes do `ensure`** (que estavam **KILLED**, logo saem do numerador *e* do denominador) e o arquivo novo trouxe 9, sendo 5 killed — o resto é andaime de `suspend` (`throwOnFailure`, `NullReturnVals`, `SwitchMutator`), o mesmo perfil que o `Timed.kt` pré-existente já carrega. O guard consolidado ficou **mais** exercitado que qualquer cópia: 5 testes de use case + 3 diretos.
+
+  A leitura ingênua ("a nota caiu, o PR piorou") inverte o sinal de um refactor bom e desincentiva deduplicação. **Antes de aceitar ou negar a queda, faça a conta por arquivo:** quantos mutantes saíram e em que status estavam, quantos entraram e quantos morreram. E compare o perfil do arquivo novo com um **análogo pré-existente do módulo** — é o que separa "andaime do idioma" de "código não testado". Contraste com o mecanismo do #385 logo acima: lá a perda estava em arquivo **não tocado** (teste que parou de completar); aqui está exatamente nos arquivos tocados, e é aritmética esperada. (#387.)

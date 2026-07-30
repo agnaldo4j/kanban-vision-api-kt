@@ -143,15 +143,17 @@ the way → still question → card → prioritisation. This is "enumeration is 
 (#381 — see `.claude/skills/pr-review/SKILL.md`) applied to the **card's scope** instead of to a review
 finding's; sweep the class while *planning*, so scope is decided once rather than discovered mid-implementation.
 
-**Process improvement runs on a batch cadence: one process PR per 10 code PRs.** Harvested lessons queue in
-[`docs/quality/lessons-pending.md`](quality/lessons-pending.md) and ship together as
-`docs(process): lote <N>`. The rule exists because the opposite was measured: the harvester used to open a
-process PR per merged implementation, so a single product cycle produced roughly as many doc PRs as code PRs
-— each one its own review, CI run and slice of maintainer attention, for improvements that were almost never
-urgent. *"Chega de melhoria de processo, precisamos evoluir o produto"* (maintainer, 2026-07-28). Nothing is
-lost; it waits. **Exception:** a lesson whose absence leaves an **active defect or a holed guard** (something
-that lets an improper merge through, masks a gate failure, or loses data) is applied immediately — style,
-comment clarity and rubric enrichment always wait.
+**A durable lesson goes into the PR that learned it** — written while the context is fresh, in a PR that is
+already under review, so it costs **zero extra cycle**. `docs/quality/lessons-learned.md` is the log.
+
+**Every other process change is a question to the maintainer, never an action.** Rules, skills, agents, the
+rubric, this file: a process finding is *information*; turning it into work is the call of whoever
+prioritises, made **before** the work. The reason is measured, not stylistic. A batch cadence
+(queue → counter → batch PR) was introduced on 2026-07-28 to stop process work from competing with product
+delivery; it **never fired once** — the counter re-anchored on its own enqueue commit, the queue fragmented
+across `main` and an orphan branch, and the harvester's own cleanup sweep flagged that branch as garbage. It
+was removed on #390. The lesson is not "the design was wrong", it is **process machinery nobody has exercised
+end to end is untested, not ready** — and product cycles are the wrong place to discover that.
 
 ---
 
@@ -161,9 +163,15 @@ comment clarity and rubric enrichment always wait.
 AFTER THE PR IS MERGED:
   1. Confirm the merge:  gh pr view <N> --json state,mergedAt   → state=MERGED, mergedAt not null
   2. git checkout main && git pull origin main
-  3. git branch -d feat/gap-X-slug
-  4. git push origin --delete feat/gap-X-slug   (if the remote branch still exists)
-  5. Move the card Doing → Done (via gh api graphql)
+  3. git fetch --prune origin                   ← NO `|| true`: a failed fetch is ignorance, not an answer
+  4. Compare BOTH tips against the PR's headRefOid (it freezes at merge; main does not) and STOP if either
+     diverges — a commit pushed after the squash merge is not in the PR and `--delete` orphans it
+  5. git branch -D  (not -d: with the tracking ref pruned it refuses on squash merges, and when it accepts
+     it accepts by deleting — exit 0 even with a commit to lose. The guarantee is the comparison above)
+  6. git push origin --force-with-lease="refs/heads/<branch>:$TIP" ":refs/heads/<branch>"   (only if the
+     remote tip still exists) — a bare `--delete` is TOCTOU: a third-party push between step 4 and here
+     would be deleted unseen. The lease turns that into a server-side rejection instead of silent loss
+  7. Move the card Doing → Done (via gh api graphql)
 ```
 
 > **Never delete the remote branch of a PR that is not confirmed merged** — deleting the branch of
