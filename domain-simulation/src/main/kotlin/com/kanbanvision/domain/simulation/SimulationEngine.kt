@@ -214,7 +214,7 @@ private fun applyAdd(
 ) {
     val firstStep = board.firstStep() ?: return
     val position = current.count { it.step == firstStep.id }
-    current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
+    current.add(Card.create(step = firstStep.toRef(), title = title, position = position, serviceClass = serviceClass))
 }
 
 private data class EngineContext(

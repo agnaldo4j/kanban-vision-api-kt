@@ -102,6 +102,46 @@ class ConventionsTest {
     }
 
     @Test
+    fun `nenhum codigo de producao acessa board steps por receptor explicito`() {
+        // GAP-DQ/#388 tirou da produção os dois sítios que reimplementavam "primeiro step"
+        // (`board.steps.minByOrNull { it.position }`) em vez de perguntar ao agregado. A limpeza foi
+        // por varredura manual e nada impedia a regressão — esta regra é o que faltava.
+        //
+        // Regex e não `hasTextContaining`: `board.stepsInExecutionOrder()` contém `.steps` como
+        // prefixo, e um substring check reprovaria justamente a forma correta.
+        //
+        // LIMITE HONESTO — a âncora é o RECEPTOR EXPLÍCITO, e isso é deliberado. Acesso sem receptor
+        // dentro de uma extension de Board não é coberto, porque é a forma do único acesso cru
+        // legítimo do repositório: `private fun Board.toSurrogate() = …(steps = steps.map { … })` em
+        // `SimulationSerializerScenarioMappings`. Serialização precisa da ordem ARMAZENADA; trocar
+        // por `stepsInExecutionOrder()` ali seria bug de fidelidade de wire, não melhoria.
+        val acessoCru = Regex("""\.steps(?![A-Za-z0-9_])""")
+        Konsist
+            .scopeFromProduction()
+            .files
+            .filterNot { it.path.endsWith("/domain/model/kanban/Board.kt") }
+            .assertFalse { acessoCru.containsMatchIn(it.text) }
+    }
+
+    @Test
+    fun `Board declara uma unica vez o acesso ordenado a steps`() {
+        // Par NÃO-VÁCUO da regra acima, que é vacuamente verdadeira hoje (produção tem zero sítios).
+        // Sem este, apagar `firstStep()` deixaria as duas regras verdes e o encapsulamento morto.
+        val board =
+            Konsist
+                .scopeFromProduction()
+                .classes()
+                .first { it.name == "Board" }
+
+        assertEquals(
+            1,
+            board.functions().count { it.name == "stepsInExecutionOrder" },
+            "Board.stepsInExecutionOrder sumiu ou foi duplicado",
+        )
+        assertEquals(1, board.functions().count { it.name == "firstStep" }, "Board.firstStep sumiu ou foi duplicado")
+    }
+
+    @Test
     fun `classes de commands terminam em Command e de queries em Query`() {
         Konsist
             .scopeFromProduction()
