@@ -74,8 +74,6 @@ internal object DailySnapshotSerializer {
             reason = reason,
         )
 
-    // Mesma tolerância do eixo histórico (#385 P2): este blob tem os mesmos invariantes e o mesmo
-    // caminho de falha (PersistenceError → 500 em findByDay e na lista inteira de findAllBySimulation).
     private fun SnapshotDailySnapshotSurrogate.toDomain() =
         DailySnapshot(
             id = decodeId(id),
@@ -95,9 +93,6 @@ internal object DailySnapshotSerializer {
             avgAgingDays = avgAgingDays.coerceAtLeast(0.0),
         )
 
-    // Backward-compat (GAP-DS): decode tolerante, espelhando `SimulationSerializerSnapshotMappings`. Esta é a cópia
-    // lida para fora (`DailySnapshotResponse`), então uma tag desconhecida degrada só aquele movimento em vez de
-    // derrubar o GET inteiro com 500. `MovementType.Unknown` preserva a tag original no round-trip.
     private fun SnapshotMovementSurrogate.toDomain() =
         Movement(
             id = decodeId(id),

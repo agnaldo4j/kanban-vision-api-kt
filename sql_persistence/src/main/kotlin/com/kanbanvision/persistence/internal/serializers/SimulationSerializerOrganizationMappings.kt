@@ -29,7 +29,6 @@ internal fun SimulationSurrogate.toDomain() =
         id = SimulationId(decodeId(id)),
         name = decodeName(name),
         currentDay = SimulationDay(currentDay),
-        // DRAFT é o mesmo default que `buildFallbackSimulation` usa quando não há blob (GAP-DV).
         status = decodeEnum(status, SimulationStatus.DRAFT),
         organization = organization.toDomain(),
         scenario = scenario.toDomain(),
@@ -66,12 +65,6 @@ internal fun Worker.toSurrogate() =
         abilities = abilities.map { it.toSurrogate() },
     )
 
-/**
- * [requiredAbility] é a ability do Step que contém este worker, quando há um — o decode do Step a passa
- * para cá. Sem esse contexto a reparação seria cega ao invariante do Step (review #383 P1): completar um
- * worker vazio com [CROSS_FIELD_NEUTRAL_ABILITY] num step que exige TESTER deixaria `Step.init` lançar mesmo assim,
- * e o agregado seguiria não-carregável. Na ramificação de organização (Squad) não há step, daí o `null`.
- */
 internal fun WorkerSurrogate.toDomain(requiredAbility: AbilityName? = null) =
     Worker(
         id = decodeId(id),
@@ -79,16 +72,6 @@ internal fun WorkerSurrogate.toDomain(requiredAbility: AbilityName? = null) =
         abilities = abilities.map { it.toDomain() }.toSet().completedForWorkerInvariants(requiredAbility),
     )
 
-/**
- * `Worker.init` exige `abilities.isNotEmpty()` e `!hasTester || hasDeployer`; `Step.init` exige
- * `workers.all { hasAbility(requiredAbility) }` (GAP-DV). Um blob que viole qualquer um tornaria o
- * agregado INTEIRO não-carregável, então completamos com o mínimo em vez de lançar.
- *
- * Só ACRESCENTA — remover seria descarte, que o próximo save tornaria permanente. Num blob consistente
- * todo worker já tem a ability do seu step, então a reparação é no-op; ela só dispara sobre dado
- * inconsistente, que é exatamente onde se quer. A ordem importa: a ability do step entra primeiro,
- * porque se ela for TESTER a regra do DEPLOYER passa a valer sobre ela também.
- */
 private fun Set<Ability>.completedForWorkerInvariants(requiredAbility: AbilityName?): Set<Ability> {
     val withStepAbility =
         if (requiredAbility != null && none { it.name == requiredAbility }) {
@@ -112,7 +95,5 @@ private fun AbilitySurrogate.toDomain() =
     Ability(
         id = decodeId(id),
         name = decodeEnum(name, CROSS_FIELD_NEUTRAL_ABILITY),
-        // JR: seniority não dirige comportamento hoje; se um dia dirigir capacidade, subestimar é a
-        // direção segura de falha.
         seniority = decodeEnum(seniority, Seniority.JR),
     )

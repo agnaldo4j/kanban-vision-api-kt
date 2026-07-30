@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("RequestLimits")
 
-internal const val DEFAULT_MAX_BODY_SIZE = 1_048_576L // 1 MB
+internal const val DEFAULT_MAX_BODY_SIZE = 1_048_576L
 
 private val BODY_METHODS = setOf(HttpMethod.Post, HttpMethod.Put, HttpMethod.Patch)
 

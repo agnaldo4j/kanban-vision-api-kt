@@ -163,10 +163,13 @@ Nunca faça auto-merge de nada. Trabalhe com precisão: cada afirmação de "fei
 real** — nunca de um PR de processo/doc (senão um PR de melhoria pede outro, ao infinito).
 
 ```bash
-gh pr diff <n> --name-only    # arquivos tocados
+# `buildSrc/` também casa `*/src/main/**` — e NÃO é módulo de produto. Sem a exclusão, um PR só do
+# convention plugin passa como "implementação real", contrariando a prosa deste bullet.
+gh pr diff <n> --name-only | grep -E '/src/main/.*\.kt$' | grep -vE '^(buildSrc|architecture)/'
 ```
-- **É implementação real** ⟺ o diff toca **código de produção**: `*/src/main/**` (qualquer `.kt` de módulo
-  de produto). Só então → **prossiga para colher (§2.1) e aplicar (§3)**.
+- **É implementação real** ⟺ o comando acima devolve alguma linha: um `.kt` sob `src/main` de um módulo de
+  **produto**. `buildSrc/` (convention plugin) e `architecture/` (test-only, sem `src/main`) ficam de fora.
+  Só então → **prossiga para colher (§2.1) e RELATAR (§3)**.
 - **NÃO é implementação real** — PR **só** de `docs/**`, `.claude/**` (skills/regras/agentes/rubric), `adr/**`,
   `*/src/test/**`, `.github/**`, YAML de infra, etc. → **é um PR de PROCESSO/doc**: faça **só o fechamento
   (§1) e PARE**. Não colha, não abra outro PR de processo. É isto que garante a terminação do loop.

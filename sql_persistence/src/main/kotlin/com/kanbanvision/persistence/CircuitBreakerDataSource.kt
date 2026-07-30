@@ -5,17 +5,6 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import java.sql.Connection
 import javax.sql.DataSource
 
-/**
- * Decora um [DataSource] rejeitando o checkout de conexões com o circuito aberto (ADR-0020):
- * `getConnection` falha imediatamente com `CallNotPermittedException` em vez de aguardar o
- * timeout do pool.
- *
- * O decorator é um gate puro por estado — não registra sucesso/falha nem toca na API de
- * permits. Em HALF_OPEN o checkout passa direto: os probes são limitados pela camada de
- * `dbQuery` (`PersistenceSupport`), que já adquiriu o permit, e precisam alcançar o banco
- * para validar a recuperação; disputar permits aqui rejeitaria probes legítimos. Registrar
- * aqui também contaria a mesma falha várias vezes (retries do Exposed × camadas).
- */
 class CircuitBreakerDataSource(
     private val delegate: DataSource,
     private val circuitBreaker: CircuitBreaker,
@@ -33,6 +22,9 @@ class CircuitBreakerDataSource(
         return delegate.getConnection(username, password)
     }
 
+    // Gate puro por estado: não adquire permit nem registra sucesso/falha de propósito. Em HALF_OPEN os
+    // probes precisam alcançar o banco para validar a recuperação — disputar permits aqui os rejeitaria,
+    // e registrar aqui contaria a mesma falha uma vez por camada (retries do Exposed × dbQuery).
     private fun rejectWhenOpen() {
         val state = circuitBreaker.state
         if (state == CircuitBreaker.State.OPEN || state == CircuitBreaker.State.FORCED_OPEN) {

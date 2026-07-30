@@ -25,7 +25,6 @@ data class CreateSimulationRequest(
     val teamSize: Int,
     val seedValue: Long = 0L,
 ) {
-    // A organização é derivada do claim organizationId do JWT (tenancy), nunca do corpo (GAP-BJ).
     companion object {
         val example =
             CreateSimulationRequest(
@@ -319,8 +318,6 @@ internal fun DecisionRequest.toDomain(): Either<DomainError, Decision> =
         else -> SimulationError.InvalidDecision("Unknown decision type: $type").left()
     }
 
-// Valida ANTES de construir CardId: o guard isNotBlank do value class lançaria
-// IllegalArgumentException (→ 500 via StatusPages) num cardId em branco. Aqui vira 400.
 private fun DecisionRequest.requireCardId(type: String): Either<DomainError, CardId> =
     payload["cardId"]
         ?.takeIf { it.isNotBlank() }

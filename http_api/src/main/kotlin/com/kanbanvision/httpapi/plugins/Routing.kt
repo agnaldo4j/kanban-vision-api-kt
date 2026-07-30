@@ -20,5 +20,4 @@ fun Application.configureRouting() {
     }
 }
 
-// Short-circuit: com o circuito aberto não se tenta conexão — o probe não gera side effects no breaker.
 private fun isDatabaseReady(): Boolean = !DbCircuitBreaker.isOpen() && DatabaseFactory.isReady()

@@ -8,15 +8,6 @@ import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.api.async.RedisAsyncCommands
 import kotlinx.coroutines.future.await
 
-/**
- * Real Lettuce implementation of the token-bucket gateway: one atomic `EVALSHA` per request.
- *
- * JaCoCo-excluded (`ratelimit.redis`) — it can only run against a live Redis, so it is validated by
- * the CI native smoke, not JVM unit tests. If Redis was flushed/restarted and dropped the cached
- * script, `EVALSHA` raises `NOSCRIPT`; we reload once and retry so a restart does not wedge the breaker
- * open (the client-side SHA1 would need `MessageDigest`, which is a forbidden import — so the SHA comes
- * from `SCRIPT LOAD`).
- */
 internal class LettuceRedisGateway(
     private val commands: RedisAsyncCommands<String, String>,
     private val script: String,

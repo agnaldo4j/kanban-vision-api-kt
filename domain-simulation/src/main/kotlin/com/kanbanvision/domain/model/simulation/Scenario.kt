@@ -27,8 +27,6 @@ data class Scenario(
             )
     }
 
-    // Delegação de UM salto (GAP-DQ): o cenário não sabe contar cards, o board sabe. Um salto por nível é
-    // o que impede que consertar a cadeia do DTO signifique escrever outra cadeia aqui dentro.
     fun itemCount(): Int = board.itemCount()
 
     fun toRef(): ScenarioId = id

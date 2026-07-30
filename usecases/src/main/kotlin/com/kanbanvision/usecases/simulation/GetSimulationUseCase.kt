@@ -19,11 +19,6 @@ class GetSimulationUseCase(
         either {
             query.validate().bind()
             val id = query.simulationId
-            // `timed` mede agora carga + autorização, não só a carga — o guard custa nanossegundos e o
-            // helper não devolve Duration de propósito (contaminaria os outros 4 chamadores). Mesma forma
-            // aninhada que `ListSimulationsUseCase` já usa: o `either` interno abre um Raise novo e o
-            // `bind()` do `timed` re-levanta o Left no Raise externo. No caminho Forbidden o `timed`
-            // levanta ANTES do log — igual a antes, sem log.
             val (simulation, duration) =
                 timed {
                     either { loadOwnedSimulation(simulationRepository, SimulationId(id), query.callerOrganizationId) }

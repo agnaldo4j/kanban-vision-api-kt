@@ -2,9 +2,6 @@ package com.kanbanvision.domain.model.simulation
 
 import com.kanbanvision.domain.common.errors.DomainError
 
-/**
- * Erros do Simulation BC (`:domain-simulation` — GAP-CL/ADR-0038), co-localizados com o agregado.
- */
 sealed interface SimulationError : DomainError {
     data class SimulationNotFound(
         val id: String,

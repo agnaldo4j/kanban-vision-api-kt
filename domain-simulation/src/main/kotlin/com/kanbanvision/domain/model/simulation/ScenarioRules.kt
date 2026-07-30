@@ -12,11 +12,6 @@ data class ScenarioRules(
     val seedValue: Long,
     override val audit: Audit = Audit(),
 ) : Domain<String> {
-    /**
-     * Single source of truth for the WIP limit: [policySet]. This is a delegating accessor, not a
-     * stored field, so a value diverging from the policy set is unrepresentable — no reconciliation
-     * guard is needed, and `PolicySet` already enforces `wipLimit > 0`.
-     */
     val wipLimit: Int get() = policySet.wipLimit
 
     init {

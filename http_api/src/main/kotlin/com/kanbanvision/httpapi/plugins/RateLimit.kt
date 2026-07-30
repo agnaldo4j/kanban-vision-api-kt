@@ -43,23 +43,9 @@ private fun ApplicationCall.clientKey(trustedProxyCount: Int): String =
         trustedProxyCount = trustedProxyCount,
     )
 
-/**
- * Number of trusted reverse proxies in front of the app (`TRUSTED_PROXY_COUNT`, default 0).
- * With 0, `X-Forwarded-For` is ignored entirely and keying falls back to the socket peer —
- * spoof-proof by default. Set it to the proxy chain length (Ingress/LB/mesh) in production.
- * The `env` seam keeps this unit-testable (same idiom as `Cors.loadCorsOrigins`).
- */
 internal fun loadTrustedProxyCount(env: (String) -> String? = System::getenv): Int =
     env("TRUSTED_PROXY_COUNT")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
 
-/**
- * Resolves the rate-limit key from the client-IP chain, resistant to `X-Forwarded-For` spoofing.
- *
- * The real chain is `XFF entries ++ [socket peer]`. With `trustedProxyCount` trusted proxies in
- * front, the genuine client sits at index `size - 1 - trustedProxyCount` — dropping the trusted
- * (right-most) hops. Client-supplied left-most entries can be forged but are never selected unless
- * `trustedProxyCount` is (mis)configured to reach them.
- */
 internal fun clientRateLimitKey(
     xffHeader: String?,
     remoteHost: String,
