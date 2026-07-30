@@ -69,7 +69,7 @@ internal fun Worker.toSurrogate() =
 /**
  * [requiredAbility] é a ability do Step que contém este worker, quando há um — o decode do Step a passa
  * para cá. Sem esse contexto a reparação seria cega ao invariante do Step (review #383 P1): completar um
- * worker vazio com [ABILITY_FALLBACK] num step que exige TESTER deixaria `Step.init` lançar mesmo assim,
+ * worker vazio com [CROSS_FIELD_NEUTRAL_ABILITY] num step que exige TESTER deixaria `Step.init` lançar mesmo assim,
  * e o agregado seguiria não-carregável. Na ramificação de organização (Squad) não há step, daí o `null`.
  */
 internal fun WorkerSurrogate.toDomain(requiredAbility: AbilityName? = null) =
@@ -96,7 +96,7 @@ private fun Set<Ability>.completedForWorkerInvariants(requiredAbility: AbilityNa
         } else {
             this
         }
-    val nonEmpty = withStepAbility.ifEmpty { setOf(Ability(name = ABILITY_FALLBACK, seniority = Seniority.JR)) }
+    val nonEmpty = withStepAbility.ifEmpty { setOf(Ability(name = CROSS_FIELD_NEUTRAL_ABILITY, seniority = Seniority.JR)) }
     val hasTester = nonEmpty.any { it.name == AbilityName.TESTER }
     val hasDeployer = nonEmpty.any { it.name == AbilityName.DEPLOYER }
     return if (hasTester && !hasDeployer) {
@@ -111,7 +111,7 @@ private fun Ability.toSurrogate() = AbilitySurrogate(id = id, name = name.name, 
 private fun AbilitySurrogate.toDomain() =
     Ability(
         id = decodeId(id),
-        name = decodeEnum(name, ABILITY_FALLBACK),
+        name = decodeEnum(name, CROSS_FIELD_NEUTRAL_ABILITY),
         // JR: seniority não dirige comportamento hoje; se um dia dirigir capacidade, subestimar é a
         // direção segura de falha.
         seniority = decodeEnum(seniority, Seniority.JR),

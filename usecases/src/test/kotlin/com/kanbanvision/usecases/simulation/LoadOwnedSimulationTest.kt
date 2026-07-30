@@ -9,9 +9,11 @@ import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 
 /**
@@ -43,6 +45,21 @@ class LoadOwnedSimulationTest {
 
             assertIs<CommonError.Forbidden>(result.leftOrNull())
         }
+
+    @Test
+    fun `given simulation of another organization when loading then the reason leaks no identifier`() {
+        val simulation = fixtureSimulation(id = "sim-1", organizationId = "org-owner")
+        coEvery { simulationRepository.findById(SimulationId("sim-1")) } returns simulation.right()
+
+        val forbidden =
+            runBlocking {
+                either { loadOwnedSimulation(simulationRepository, SimulationId("sim-1"), "org-attacker") }
+            }.leftOrNull()
+
+        val reason = assertIs<CommonError.Forbidden>(forbidden).reason
+        assertFalse(reason.contains("sim-1"), "the reason must not echo the simulation id")
+        assertFalse(reason.contains("org-owner"), "the reason must not reveal the owning organization")
+    }
 
     @Test
     fun `given repository failure when loading then the error is propagated unchanged`() =

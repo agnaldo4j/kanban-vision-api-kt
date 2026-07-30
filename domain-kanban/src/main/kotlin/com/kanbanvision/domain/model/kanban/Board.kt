@@ -18,8 +18,6 @@ data class Board(
         fun create(name: String): Board = Board(id = BoardId(UUID.randomUUID().toString()), name = NonBlankName(name))
     }
 
-    // ADR-0044: falha de REGRA de domínio → Either (raise KanbanError). A precondição de construção
-    // (nome não-vazio) segue `require` no `Step.create`/`Card.create` — fail-fast em bug do chamador.
     fun addStep(
         name: String,
         requiredAbility: AbilityName,
@@ -46,13 +44,10 @@ data class Board(
             )
         }
 
-    // O `copy(step = step.id)` não é redundante: `Card.step` é serializado à parte do aninhamento e o decode
-    // não reconcilia os dois. Divergindo, `redistributeCards` descartaria o card — e como o repositório
-    // re-serializa o agregado inteiro a cada save, o descarte é DELEÇÃO permanente (`migrations.md`).
-    fun allCards(): List<Card> = steps.flatMap { step -> step.cards.map { card -> card.copy(step = step.id) } }
+    fun allCards(): List<Card> = steps.flatMap { it.cardsStampedWithOwningStep() }
 
-    // Substitui os cards de cada step, não faz merge — e card cujo `step` não pertence a este board é
-    // DESCARTADO. Ver o carimbo em `allCards()` para por que isso é perda de dado, não filtro.
+    private fun Step.cardsStampedWithOwningStep(): List<Card> = cards.map { it.copy(step = id) }
+
     fun redistributeCards(cards: List<Card>): Board {
         val cardsByStep = cards.groupBy { it.step }
         val updatedSteps =
@@ -62,14 +57,11 @@ data class Board(
         return copy(steps = updatedSteps)
     }
 
-    // `sortedBy` é estável: empate em `position` mantém a ordem de inserção, e o `runDay` depende disso
-    // para ser determinístico.
     fun stepsInExecutionOrder(): List<Step> = steps.sortedBy { it.position }
 
     fun firstStep(): Step? = stepsInExecutionOrder().firstOrNull()
 
-    // Não delega a `allCards().size`: aquele carimba cada card, alocando N cópias só para contar. A
-    // igualdade entre os dois é lei em `BoardCardRedistributionPropertyTest`.
+    // Não delega a `allCards().size`: aquele aloca uma cópia por card só para contar.
     fun itemCount(): Int = steps.sumOf { it.cards.size }
 
     fun toRef(): BoardId = id

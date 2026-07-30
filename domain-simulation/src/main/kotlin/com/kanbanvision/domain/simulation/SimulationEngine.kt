@@ -74,8 +74,7 @@ object SimulationEngine {
         val movements = mutableListOf<Movement>()
         decisions.forEach { decision ->
             when (decision) {
-                // Primeira posição de propósito: como último arm, o corpo vazio vira partial no JaCoCo
-                // que nenhum teste fecha (kotlin-quality.md).
+                // Primeiro arm de propósito: como último, o corpo vazio vira partial no JaCoCo.
                 is Decision.Unknown -> Unit
                 is Decision.MoveItem -> applyMove(current, decision.cardId, ctx.day)?.let { movements += it }
                 is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
@@ -106,15 +105,14 @@ object SimulationEngine {
         return current.toList() to movements.toList()
     }
 
-    // `steps` chega ordenado por `Board.stepsInExecutionOrder()` — não reordene aqui.
     private fun applyAssignedWorkerExecution(
         cards: List<Card>,
-        steps: List<Step>,
+        stepsInExecutionOrder: List<Step>,
         ctx: EngineContext,
     ): List<Card> {
-        if (steps.isEmpty()) return cards
+        if (stepsInExecutionOrder.isEmpty()) return cards
         val current = cards.toMutableList()
-        steps.forEach { step ->
+        stepsInExecutionOrder.forEach { step ->
             step.workers.sortedBy { it.id }.forEach { worker ->
                 applySingleWorkerExecution(current, step, worker, ctx)
             }
@@ -138,8 +136,7 @@ object SimulationEngine {
         if (targetIndex < 0) return
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
-        // `onRight` e não `getOrNull()`: sob o pré-guard o `Left` é inalcançável, e condicioná-lo cria
-        // ramo morto que nenhum teste cobre (kotlin-quality.md). Vale para os três sítios deste arquivo.
+        // `onRight` e não `getOrNull()` nos três sítios: condicionar ao `Left` inalcançável cria ramo morto.
         step
             .executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
             .onRight { current[targetIndex] = it.updatedCard }
@@ -160,14 +157,10 @@ object SimulationEngine {
     }
 }
 
-// `when` exaustivo em vez de deny-list: um `CardState` novo obriga a classificá-lo aqui, em vez de herdar
-// um default silencioso — foi assim que o BLOCKED escapou.
 private val CardState.advancesOnMoveDecision: Boolean
     get() =
         when (this) {
             CardState.TODO, CardState.IN_PROGRESS -> true
-            // BLOCKED fora: `Card.advance()` mapeia BLOCKED→IN_PROGRESS, então incluí-lo faria MoveItem
-            // desbloquear em silêncio, contornando `UnblockItem`.
             CardState.BLOCKED, CardState.DONE -> false
         }
 
@@ -248,8 +241,6 @@ private fun orderTodoByPriority(
     cards: List<Card>,
     rng: Random,
 ): List<Int> {
-    // A ordem de consumo do `rng` (STANDARD antes de INTANGIBLE) é parte do contrato: mudá-la muda o
-    // resultado de toda simulação semeada.
     val todoIndices = cards.indices.filter { cards[it].state == CardState.TODO }
     return ServiceClass.entries
         .sortedBy { it.schedulingRank }
