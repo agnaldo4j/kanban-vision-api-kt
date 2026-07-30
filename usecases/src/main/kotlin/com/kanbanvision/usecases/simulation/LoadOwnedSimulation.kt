@@ -8,8 +8,6 @@ import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.usecases.repositories.SimulationRepository
 
-// O `reason` é genérico de propósito: distinguir "não existe" de "não é sua" vaza existência para quem
-// sondar ids (security.md, A01). Não o torne específico.
 suspend fun Raise<DomainError>.loadOwnedSimulation(
     repository: SimulationRepository,
     id: SimulationId,

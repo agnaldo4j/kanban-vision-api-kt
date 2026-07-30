@@ -37,11 +37,17 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
   cannot rot. In #387 the same instruction was written *both* as a KDoc line and as a Konsist fitness
   function — the function is executable, the comment was decoration.
 
-  Measured on this repo (#390): `LoadOwnedSimulation.kt` went from **18 comment lines for 7 lines of code**
-  to **zero**, `LegacyDecode.kt` from 65% to zero, `Board.kt` from 32% to one line — the survivor being the
-  one true performance trade (`itemCount()` not delegating to `allCards().size`, which would allocate a copy
-  per card just to count). Nothing was lost: no test changed expectation, and what was load-bearing became a
-  name or a test.
+  Measured on this repo (#390), across five production files touched in one session: **from 129 comment
+  lines to one.** The single survivor is the one true performance trade — `Board.itemCount()` not delegating
+  to `allCards().size`, which would allocate a copy per card just to count. Everything else became a name
+  (`cardsStampedWithOwningStep`, `stepsInExecutionOrder`, `QUARANTINE_CARD_STATE`,
+  `CROSS_FIELD_NEUTRAL_ABILITY`, `withIdentitiesOwnedByRow`) or a test. **No test changed expectation** —
+  which is the proof that the prose was not carrying behaviour.
+
+  Two survivors were cut on a second pass after the maintainer rejected the rationale: comments explaining a
+  less-clean form chosen for a **coverage-tool** constraint (`when` arm ordered first for JaCoCo, `onRight`
+  instead of `getOrNull`). Tool constraints are **not** the performance exception — what protects those
+  shapes is the gate itself, not prose beside them.
 - `LargeClass` threshold: 200 lines — of the class **body**, not of the file: blanks and comments do not count. In #388 a **240-line** test file sat comfortably under the limit (~174 body lines excluding blanks/comments), so `wc -l` alarms in the wrong direction. **Confirm by running Detekt on the source set the file belongs to**, in either direction:
   ```bash
   ./gradlew :<module>:detektMain --rerun-tasks   # produção

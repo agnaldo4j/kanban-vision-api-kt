@@ -96,18 +96,17 @@ class JdbcSimulationRepository : SimulationRepository {
 
     private fun rowToSimulation(row: ResultRow): Simulation {
         val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
-        // `id` e `organization.id` vêm da LINHA, não do blob: `save` faz upsert por eles, então um id
-        // degradado a sentinel pelo decode tolerante gravaria uma linha nova (e o da organização violaria
-        // a FK). As outras colunas que o `save` regrava são projeção do blob, não autoridade.
         if (!stateJson.isNullOrBlank()) {
-            val decoded = SimulationSerializer.decode(stateJson)
-            return decoded.copy(
-                id = SimulationId(row[SimulationsTable.id]),
-                organization = decoded.organization.copy(id = row[SimulationsTable.organizationId]),
-            )
+            return SimulationSerializer.decode(stateJson).withIdentitiesOwnedByRow(row)
         }
         return buildFallbackSimulation(row)
     }
+
+    private fun Simulation.withIdentitiesOwnedByRow(row: ResultRow): Simulation =
+        copy(
+            id = SimulationId(row[SimulationsTable.id]),
+            organization = organization.copy(id = row[SimulationsTable.organizationId]),
+        )
 
     private fun buildFallbackSimulation(row: ResultRow): Simulation {
         val organization =

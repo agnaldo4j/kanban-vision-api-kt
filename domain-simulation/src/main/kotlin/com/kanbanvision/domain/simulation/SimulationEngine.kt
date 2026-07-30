@@ -74,7 +74,6 @@ object SimulationEngine {
         val movements = mutableListOf<Movement>()
         decisions.forEach { decision ->
             when (decision) {
-                // Primeiro arm de propósito: como último, o corpo vazio vira partial no JaCoCo.
                 is Decision.Unknown -> Unit
                 is Decision.MoveItem -> applyMove(current, decision.cardId, ctx.day)?.let { movements += it }
                 is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
@@ -136,7 +135,6 @@ object SimulationEngine {
         if (targetIndex < 0) return
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
-        // `onRight` e não `getOrNull()` nos três sítios: condicionar ao `Left` inalcançável cria ramo morto.
         step
             .executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
             .onRight { current[targetIndex] = it.updatedCard }
