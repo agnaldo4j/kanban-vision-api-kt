@@ -46,20 +46,13 @@ data class Board(
             )
         }
 
-    // Par de leitura do `redistributeCards` (GAP-DP): quem precisa dos cards do board pede a lista achatada
-    // em vez de andar por `steps` para chegar em `cards`. Percorre os steps na ordem em que o board os guarda.
-    //
-    // Carimba cada card com o step que o GUARDA. O `Card.step` é serializado à parte do aninhamento
-    // (`CardSurrogate.stepId` vs `StepSurrogate.cards`) e o decode não reconcilia os dois — divergindo, o card
-    // apontaria para fora e o `redistributeCards` o descartaria. Como o repositório re-serializa o agregado
-    // inteiro a cada save, esse descarte seria DELEÇÃO permanente, não degradação de leitura (`migrations.md`).
-    // O aninhamento é a autoridade: é onde o card de fato está. Em board consistente o carimbo é no-op.
+    // O `copy(step = step.id)` não é redundante: `Card.step` é serializado à parte do aninhamento e o decode
+    // não reconcilia os dois. Divergindo, `redistributeCards` descartaria o card — e como o repositório
+    // re-serializa o agregado inteiro a cada save, o descarte é DELEÇÃO permanente (`migrations.md`).
     fun allCards(): List<Card> = steps.flatMap { step -> step.cards.map { card -> card.copy(step = step.id) } }
 
-    // OOD/tell-don't-ask (GAP-DP): a distribuição de cards nos steps é invariante do Board — o engine de
-    // simulação pede a redistribuição, não remonta os steps por fora. Substitui (não faz merge com) os cards
-    // atuais de cada step. Cards cujo `step` não pertence a este board são descartados — semântica preservada
-    // do sítio anterior; no engine não ocorre, todo card vem de `board.steps` ou do primeiro step do board.
+    // Substitui os cards de cada step, não faz merge — e card cujo `step` não pertence a este board é
+    // DESCARTADO. Ver o carimbo em `allCards()` para por que isso é perda de dado, não filtro.
     fun redistributeCards(cards: List<Card>): Board {
         val cardsByStep = cards.groupBy { it.step }
         val updatedSteps =
@@ -69,23 +62,14 @@ data class Board(
         return copy(steps = updatedSteps)
     }
 
-    // A ordem de execução dos steps é do agregado — é o mesmo invariante que `addStep` estabelece ao atribuir
-    // `position = steps.size`. Quem percorre o fluxo pede a ordem, não a reconstrói (GAP-EP, melhoria da revisão
-    // do #374). `sortedBy` é estável: steps de mesma `position` mantêm a ordem de inserção.
+    // `sortedBy` é estável: empate em `position` mantém a ordem de inserção, e o `runDay` depende disso
+    // para ser determinístico.
     fun stepsInExecutionOrder(): List<Step> = steps.sortedBy { it.position }
 
-    // Head da ordem acima (GAP-DQ): quem cria um item entra pelo primeiro step do fluxo, e o critério de
-    // "primeiro" é do agregado — o engine reimplementava `minByOrNull { it.position }` por fora, duplicando
-    // a mesma regra que `stepsInExecutionOrder` já estabelece. Equivalente ao que havia lá: `minByOrNull`
-    // devolve o primeiro mínimo na ordem de iteração e `sortedBy` é estável, então em empate de `position`
-    // os dois escolhem o mesmo step (fixado em teste, não presumido).
     fun firstStep(): Step? = stepsInExecutionOrder().firstOrNull()
 
-    // Par de CONTAGEM do `allCards()` (GAP-DQ): quem só quer o total pede o número, não a lista — e muito
-    // menos anda por `steps` para somar `cards.size` de fora. Conta direto em vez de delegar a
-    // `allCards().size` de propósito: o `allCards()` carimba cada card (`copy(step = step.id)`), então
-    // delegar alocaria N cópias só para contar. O número é o mesmo — o carimbo não acrescenta nem remove
-    // card —, e a lei em `BoardCardRedistributionPropertyTest` fixa essa igualdade.
+    // Não delega a `allCards().size`: aquele carimba cada card, alocando N cópias só para contar. A
+    // igualdade entre os dois é lei em `BoardCardRedistributionPropertyTest`.
     fun itemCount(): Int = steps.sumOf { it.cards.size }
 
     fun toRef(): BoardId = id

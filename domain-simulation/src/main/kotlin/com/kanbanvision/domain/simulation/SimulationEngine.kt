@@ -55,8 +55,6 @@ object SimulationEngine {
                 movements = allMovements,
             )
         val updatedScenario = scenario.copy(board = scenario.board.redistributeCards(afterAging))
-        // Tell, don't ask (OOD): peça as transições ao próprio agregado — `advanceDay`/`appendDecision`/
-        // `appendSnapshot` são donos dessas regras (não reconstruir o dia/decisions/history na mão aqui).
         val updatedSimulation =
             simulation
                 .advanceDay()
@@ -76,9 +74,8 @@ object SimulationEngine {
         val movements = mutableListOf<Movement>()
         decisions.forEach { decision ->
             when (decision) {
-                // An uninterpretable persisted decision carries no instruction — replaying it is a no-op.
-                // Kept as the FIRST branch: as the last one its `is` check has an unreachable false path,
-                // which JaCoCo scores as a partial that no test can close.
+                // Primeira posição de propósito: como último arm, o corpo vazio vira partial no JaCoCo
+                // que nenhum teste fecha (kotlin-quality.md).
                 is Decision.Unknown -> Unit
                 is Decision.MoveItem -> applyMove(current, decision.cardId, ctx.day)?.let { movements += it }
                 is Decision.BlockItem -> applyBlock(current, decision.cardId, decision.reason, ctx.day)?.let { movements += it }
@@ -109,8 +106,7 @@ object SimulationEngine {
         return current.toList() to movements.toList()
     }
 
-    // `steps` chega JÁ na ordem de execução (`Board.stepsInExecutionOrder()`) — não reordenar aqui, senão o
-    // invariante volta a ter dois donos.
+    // `steps` chega ordenado por `Board.stepsInExecutionOrder()` — não reordene aqui.
     private fun applyAssignedWorkerExecution(
         cards: List<Card>,
         steps: List<Step>,
@@ -142,9 +138,8 @@ object SimulationEngine {
         if (targetIndex < 0) return
         val seedMix = stableExecutionSeed(ctx.seed, ctx.day, worker.id, step.id)
         val capacities = worker.generateDailyCapacities(random = Random(seedMix))
-        // ADR-0044: o `Left` de executeCard (worker inelegível) é inalcançável aqui — o invariante do Step
-        // (`workers.all { hasAbility }`) garante que todo worker de `step.workers` pode executar. `onRight`
-        // absorve o `Left` impossível DENTRO do Arrow (sem ramo morto no engine) e mantém o engine total.
+        // `onRight` e não `getOrNull()`: sob o pré-guard o `Left` é inalcançável, e condicioná-lo cria
+        // ramo morto que nenhum teste cobre (kotlin-quality.md). Vale para os três sítios deste arquivo.
         step
             .executeCard(worker = worker, card = current[targetIndex], dailyCapacities = capacities, now = ctx.now)
             .onRight { current[targetIndex] = it.updatedCard }
@@ -165,16 +160,14 @@ object SimulationEngine {
     }
 }
 
-// Allow-list das transições que uma decisão MoveItem pode disparar (GAP-DU). `when` sobre enum (exaustivo):
-// um CardState novo obriga o autor a classificá-lo aqui, em vez de herdar um default silencioso. A política
-// é do SIMULADOR (que decisão move o quê), não do Kanban BC — por isso vive aqui, não em `CardState`.
+// `when` exaustivo em vez de deny-list: um `CardState` novo obriga a classificá-lo aqui, em vez de herdar
+// um default silencioso — foi assim que o BLOCKED escapou.
 private val CardState.advancesOnMoveDecision: Boolean
     get() =
         when (this) {
             CardState.TODO, CardState.IN_PROGRESS -> true
-            // BLOCKED NÃO: `Card.advance()` mapeia BLOCKED→IN_PROGRESS, então um deny-list de DONE fazia
-            // MoveItem DESBLOQUEAR em silêncio — contornando a transição nomeada UnblockItem e a regra
-            // tipada de block()/unblock(). DONE é terminal.
+            // BLOCKED fora: `Card.advance()` mapeia BLOCKED→IN_PROGRESS, então incluí-lo faria MoveItem
+            // desbloquear em silêncio, contornando `UnblockItem`.
             CardState.BLOCKED, CardState.DONE -> false
         }
 
@@ -184,7 +177,6 @@ private fun applyMove(
     day: Int,
 ): Movement? {
     val idx = current.indexOfFirst { it.id == cardId }
-    // Recusa silenciosa (`null`) — mesmo idioma de applyBlock/applyUnblock.
     if (idx < 0 || !current[idx].state.advancesOnMoveDecision) return null
     val card = current[idx]
     val advanced = card.advance()
@@ -202,8 +194,6 @@ private fun applyBlock(
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.IN_PROGRESS) return null
     val card = current[idx]
-    // ADR-0044: estado IN_PROGRESS já pré-guardado acima → o `Left` de block() é inalcançável; `onRight`
-    // absorve o `Left` impossível dentro do Arrow (sem ramo morto), sem reintroduzir throw.
     card.block().onRight { current[idx] = it }
     return Movement(type = MovementType.BLOCKED, cardId = card.id, day = SimulationDay(day), reason = reason)
 }
@@ -216,9 +206,6 @@ private fun applyUnblock(
     val idx = current.indexOfFirst { it.id == cardId }
     if (idx < 0 || current[idx].state != CardState.BLOCKED) return null
     val card = current[idx]
-    // ADR-0044: estado BLOCKED já pré-guardado acima → o `Left` de unblock() é inalcançável; `onRight`
-    // absorve o `Left` impossível dentro do Arrow (sem ramo morto), sem reintroduzir throw. A suposição
-    // está PINADA em TypedOperationTotalityBehaviorTest, não só neste comentário.
     card.unblock().onRight { current[idx] = it }
     return Movement(
         type = MovementType.UNBLOCKED,
@@ -261,9 +248,8 @@ private fun orderTodoByPriority(
     cards: List<Card>,
     rng: Random,
 ): List<Int> {
-    // Polimorfismo/OOD: a política de agendamento mora no ServiceClass (schedulingRank/shuffleWithinTier),
-    // não num `when` aqui. Percorre os tiers por rank crescente e só embaralha os que pedem — preservando a
-    // MESMA ordem de consumo do `rng` (STANDARD depois INTANGIBLE) para determinismo byte-idêntico.
+    // A ordem de consumo do `rng` (STANDARD antes de INTANGIBLE) é parte do contrato: mudá-la muda o
+    // resultado de toda simulação semeada.
     val todoIndices = cards.indices.filter { cards[it].state == CardState.TODO }
     return ServiceClass.entries
         .sortedBy { it.schedulingRank }

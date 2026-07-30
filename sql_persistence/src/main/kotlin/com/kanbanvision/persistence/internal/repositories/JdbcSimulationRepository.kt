@@ -96,27 +96,9 @@ class JdbcSimulationRepository : SimulationRepository {
 
     private fun rowToSimulation(row: ResultRow): Simulation {
         val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
-        // As DUAS identidades autoritativas são da LINHA relacional, não do blob. O decode é tolerante
-        // a legado (GAP-DV) e degrada um id em branco para um sentinel — mas ambas são chave de
-        // ESCRITA, e `save` as regrava a partir do agregado decodificado:
-        //
-        //   `simulation.id`              → chave do upsert: um sentinel gravaria uma linha NOVA e
-        //                                  deixaria a original órfã, com os snapshots no id errado.
-        //   `organization.id`            → coluna com FK `REFERENCES organizations(id)`: um sentinel
-        //                                  viola a FK no save E, antes disso, faz os 5 use cases
-        //                                  compararem-no com o caller e devolverem Forbidden — o
-        //                                  registro "tolerado" fica ilegível na prática.
-        //
-        // Corrupção silenciosa é pior que o 500 que a tolerância evita, então as duas voltam da linha.
-        //
-        // Fechando a enumeração (a lição do #384 é "enumere TODOS os campos", não "corrija o primeiro"):
-        // `save` regrava CINCO valores do agregado, não dois — faltam `wip_limit`, `team_size` e
-        // `seed_value`, e os dois primeiros TAMBÉM são degradados no decode (`coerceAtLeast(1)`). Eles
-        // ficam de fora porque são **projeção do blob, não autoridade**: nada os lê enquanto existe blob
-        // (só `buildFallbackSimulation`, no caminho sem blob), e os dois upserts rodam na MESMA transação,
-        // então não há fonte externa com que reconciliar. Se algum dia uma leitura passar a preferir a
-        // coluna, ou um data-fix out-of-band tocar linha e blob separadamente, eles entram nesta lista.
-        // (review #383 P1 · #384 P2 · #385 P3)
+        // `id` e `organization.id` vêm da LINHA, não do blob: `save` faz upsert por eles, então um id
+        // degradado a sentinel pelo decode tolerante gravaria uma linha nova (e o da organização violaria
+        // a FK). As outras colunas que o `save` regrava são projeção do blob, não autoridade.
         if (!stateJson.isNullOrBlank()) {
             val decoded = SimulationSerializer.decode(stateJson)
             return decoded.copy(

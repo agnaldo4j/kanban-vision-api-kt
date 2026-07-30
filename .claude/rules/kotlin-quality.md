@@ -19,6 +19,24 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 ## Rules
 
 - `@Suppress` only with a comment justifying why — no justification = PR rejected.
+- **Comment only what the code cannot say. The code is the documentation** (Clean Code + screaming
+  architecture). A comment that restates the name, narrates history, or repeats a rule a test already
+  enforces is not neutral: it rots, it drifts out of sync, and the next reader trusts it over the code.
+
+  | Earns its place | Is noise |
+  |---|---|
+  | a **why** that cost real debugging, where the obvious "simplification" breaks something (`Board.allCards()` stamping each card — dropping it turns into permanent deletion) | restating the name (`loadOwnedSimulation` "loads the simulation and fails if it is not the caller's") |
+  | a decision that **contradicts the obvious choice** (`itemCount()` counting directly instead of `allCards().size`, which would allocate N copies) | history the PR and `git blame` already hold ("this was copied in 5 use cases") |
+  | a constraint whose removal **looks safe** (`onRight` instead of `getOrNull()`; the `when` arm kept first for JaCoCo) | a rule a test/gate already enforces — point at the enforcement or say nothing |
+
+  **Rule with a test needs no comment.** In #387 the same instruction was written *both* as a KDoc line and
+  as a Konsist fitness function: the function is executable, the comment is decoration that will rot. If you
+  trust the guard the comment is noise; if you do not, the problem is the guard.
+
+  Measured on this repo (#390): `LoadOwnedSimulation.kt` carried **18 comment lines for 7 lines of code**
+  (48% of the file) and `LegacyDecode.kt` reached **65%**. Both dropped to a handful with nothing lost — the
+  pruned text was name-restating, PR narrative, or duplicated across three sites in the same file. Density is
+  a smell, not a metric: check *what* each line buys before writing it.
 - `LargeClass` threshold: 200 lines — of the class **body**, not of the file: blanks and comments do not count. In #388 a **240-line** test file sat comfortably under the limit (~174 body lines excluding blanks/comments), so `wc -l` alarms in the wrong direction. **Confirm by running Detekt on the source set the file belongs to**, in either direction:
   ```bash
   ./gradlew :<module>:detektMain --rerun-tasks   # produção
