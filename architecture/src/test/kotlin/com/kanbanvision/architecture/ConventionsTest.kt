@@ -4,6 +4,7 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertFalse
 import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -110,18 +111,45 @@ class ConventionsTest {
         // Regex e não `hasTextContaining`: `board.stepsInExecutionOrder()` contém `.steps` como
         // prefixo, e um substring check reprovaria justamente a forma correta.
         //
-        // LIMITE HONESTO — a âncora é o RECEPTOR EXPLÍCITO, e isso é deliberado. Acesso sem receptor
-        // dentro de uma extension de Board não é coberto, porque é a forma do único acesso cru
-        // legítimo do repositório: `private fun Board.toSurrogate() = …(steps = steps.map { … })` em
-        // `SimulationSerializerScenarioMappings`. Serialização precisa da ordem ARMAZENADA; trocar
-        // por `stepsInExecutionOrder()` ali seria bug de fidelidade de wire, não melhoria.
-        val acessoCru = Regex("""\.steps(?![A-Za-z0-9_])""")
+        // O RECEPTOR VEM DO TIPO, não de `.steps` solto (Codex P2 no #392). Proibir `.steps` em
+        // qualquer receptor pega propriedade homônima de outro tipo: `BoardSurrogate.steps` existe
+        // (`SimulationStateSerializer.kt:79`), e mover o serializer da extension atual para
+        // `surrogate.steps` reprovaria o build sem burlar agregado nenhum. Aqui a regra pergunta ao
+        // tipo quais nomes são `Board` e proíbe `.steps` só sobre esses — o que cobre tanto
+        // `board.steps` quanto `scenario.board.steps`, e deixa `surrogate.steps` passar.
+        //
+        // LIMITES HONESTOS, os dois deliberados:
+        //  (1) acesso SEM receptor dentro de uma extension de Board não é coberto — é a forma do
+        //      único acesso cru legítimo do repo (`private fun Board.toSurrogate() = …(steps =
+        //      steps.map { … })`), onde serialização precisa da ordem ARMAZENADA e trocar por
+        //      `stepsInExecutionOrder()` seria bug de fidelidade de wire;
+        //  (2) `with(board) { steps }` também escapa, mesma família.
+        val nomesDeBoard =
+            Konsist
+                .scopeFromProduction()
+                .let { escopo ->
+                    escopo.properties().filter { it.type?.name == "Board" }.map { it.name } +
+                        escopo
+                            .functions()
+                            .flatMap { it.parameters }
+                            .filter { it.type.name == "Board" }
+                            .map { it.name }
+                }.toSet()
+
+        // Qualificado: `assertTrue` sem pacote resolveria para a extension de List do Konsist.
+        Assertions.assertTrue(nomesDeBoard.isNotEmpty(), "sem nome de tipo Board a regra abaixo seria vacuamente verdadeira")
+
+        val acessoCru = Regex("""\b(${nomesDeBoard.joinToString("|") { Regex.escape(it) }})\.steps(?![A-Za-z0-9_])""")
         Konsist
             .scopeFromProduction()
             .files
             .filterNot { it.path.endsWith("/domain/model/kanban/Board.kt") }
-            .assertFalse { acessoCru.containsMatchIn(it.text) }
+            .assertFalse { acessoCru.containsMatchIn(it.text.semComentarios()) }
     }
+
+    // Comentário citando `board.steps` (ex.: "não use board.steps") não é acesso — a regra acima
+    // olha código. Contrapartida honesta: um literal de string com `//` engole o resto da linha.
+    private fun String.semComentarios(): String = replace(Regex("""/\*[\s\S]*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
 
     @Test
     fun `Board declara uma unica vez o acesso ordenado a steps`() {
