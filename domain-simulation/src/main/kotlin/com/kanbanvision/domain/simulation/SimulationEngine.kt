@@ -234,7 +234,7 @@ private fun applyAdd(
     title: String,
     serviceClass: ServiceClass,
 ) {
-    val firstStep = board.steps.minByOrNull { it.position } ?: return
+    val firstStep = board.firstStep() ?: return
     val position = current.count { it.step == firstStep.id }
     current.add(Card.create(step = firstStep.toRef(), title = title, position = position).copy(serviceClass = serviceClass))
 }

@@ -32,6 +32,19 @@ class BoardCardRedistributionPropertyTest {
     }
 
     @Test
+    fun `itemCount always agrees with the size of allCards`() {
+        // Amarra o par CONTAGEM ⇄ COLEÇÃO (GAP-DQ): `itemCount()` conta direto em `steps` para não alocar
+        // as N cópias que o `allCards()` carimba, e essa otimização só é legítima enquanto os dois
+        // concordarem. A lei é o que impede a divergência silenciosa — o gerador cobre step vazio,
+        // `position` duplicada e `Card.step` divergente, que é onde uma implementação esperta erraria.
+        runBlocking {
+            forAll(ARB_BOARD) { board ->
+                board.itemCount() == board.allCards().size
+            }
+        }
+    }
+
+    @Test
     fun `redistributing orders every step by position`() {
         runBlocking {
             forAll(ARB_BOARD) { board ->

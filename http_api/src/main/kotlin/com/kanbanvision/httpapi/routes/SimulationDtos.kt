@@ -345,9 +345,8 @@ private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddIte
 private fun decisionServiceClass(value: String?): ServiceClass =
     value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
 
-internal fun Simulation.toSimulationResponse(): SimulationResponse {
-    val cardCount = scenario.board.steps.sumOf { it.cards.size }
-    return SimulationResponse(
+internal fun Simulation.toSimulationResponse(): SimulationResponse =
+    SimulationResponse(
         simulationId = id.value,
         organizationId = organization.id,
         wipLimit = scenario.rules.wipLimit,
@@ -358,7 +357,6 @@ internal fun Simulation.toSimulationResponse(): SimulationResponse {
                 currentDay = currentDay.value,
                 wipLimit = scenario.rules.policySet.wipLimit,
                 teamSize = scenario.rules.teamSize,
-                itemCount = cardCount,
+                itemCount = itemCount(),
             ),
     )
-}

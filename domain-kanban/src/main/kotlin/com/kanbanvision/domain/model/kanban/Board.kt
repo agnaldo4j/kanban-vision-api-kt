@@ -74,5 +74,19 @@ data class Board(
     // do #374). `sortedBy` é estável: steps de mesma `position` mantêm a ordem de inserção.
     fun stepsInExecutionOrder(): List<Step> = steps.sortedBy { it.position }
 
+    // Head da ordem acima (GAP-DQ): quem cria um item entra pelo primeiro step do fluxo, e o critério de
+    // "primeiro" é do agregado — o engine reimplementava `minByOrNull { it.position }` por fora, duplicando
+    // a mesma regra que `stepsInExecutionOrder` já estabelece. Equivalente ao que havia lá: `minByOrNull`
+    // devolve o primeiro mínimo na ordem de iteração e `sortedBy` é estável, então em empate de `position`
+    // os dois escolhem o mesmo step (fixado em teste, não presumido).
+    fun firstStep(): Step? = stepsInExecutionOrder().firstOrNull()
+
+    // Par de CONTAGEM do `allCards()` (GAP-DQ): quem só quer o total pede o número, não a lista — e muito
+    // menos anda por `steps` para somar `cards.size` de fora. Conta direto em vez de delegar a
+    // `allCards().size` de propósito: o `allCards()` carimba cada card (`copy(step = step.id)`), então
+    // delegar alocaria N cópias só para contar. O número é o mesmo — o carimbo não acrescenta nem remove
+    // card —, e a lei em `BoardCardRedistributionPropertyTest` fixa essa igualdade.
+    fun itemCount(): Int = steps.sumOf { it.cards.size }
+
     fun toRef(): BoardId = id
 }
