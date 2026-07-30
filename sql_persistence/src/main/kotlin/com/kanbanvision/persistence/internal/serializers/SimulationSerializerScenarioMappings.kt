@@ -31,8 +31,6 @@ private fun ScenarioRules.toSurrogate() =
     ScenarioRulesSurrogate(
         id = id,
         policySet = policySet.toSurrogate(),
-        // Legacy wire field: kept so a pod running an older release can still decode blobs written
-        // by this one during a rolling deploy. Mirrors policySet.wipLimit via the delegating accessor.
         wipLimit = wipLimit,
         teamSize = teamSize,
         seedValue = seedValue,
@@ -41,17 +39,13 @@ private fun ScenarioRules.toSurrogate() =
 private fun ScenarioRulesSurrogate.toDomain() =
     ScenarioRules(
         id = decodeId(id),
-        // policySet is the single source of the WIP limit; the surrogate's own wipLimit is a legacy
-        // wire field and is deliberately ignored, even when a legacy blob has it diverging.
         policySet = policySet.toDomain(),
-        // ScenarioRules.init exige teamSize > 0 (GAP-DV): coage em vez de deixar lançar.
         teamSize = teamSize.coerceAtLeast(1),
         seedValue = seedValue,
     )
 
 private fun PolicySet.toSurrogate() = PolicySetSurrogate(id = id, wipLimit = wipLimit)
 
-// PolicySet.init exige wipLimit > 0 (GAP-DV).
 private fun PolicySetSurrogate.toDomain() = PolicySet(id = decodeId(id), wipLimit = wipLimit.coerceAtLeast(1))
 
 private fun Board.toSurrogate() = BoardSurrogate(id = id.value, name = name.value, steps = steps.map { it.toSurrogate() })
@@ -78,8 +72,6 @@ private fun StepSurrogate.toDomain(): Step {
         position = position.coerceAtLeast(0),
         requiredAbility = ability,
         cards = cards.map { it.toDomain() },
-        // `ability` é repassada ao decode do worker: `Step.init` exige que TODO worker a tenha, então
-        // reparar o worker sem esse contexto deixaria o require lançar assim mesmo (review #383 P1).
         workers = workers.map { it.toDomain(ability) },
     )
 }
@@ -114,15 +106,16 @@ private fun CardSurrogate.toDomain() =
         serviceClass = decodeEnum(serviceClass, ServiceClass.STANDARD),
         state = decodeEnum(state, QUARANTINE_CARD_STATE),
         agingDays = agingDays.coerceAtLeast(0),
-        // Card.init exige cada effort >= 0 e cada remaining em 0..effort (GAP-DV): clamp em vez de
-        // lançar. O `analysisEffort.coerceAtLeast(0)` repetido no teto é intencional — o teto tem de
-        // ser o valor JÁ coagido, senão um effort negativo daria um range invertido em coerceIn.
-        analysisEffort = analysisEffort.coerceAtLeast(0),
-        developmentEffort = developmentEffort.coerceAtLeast(0),
-        testEffort = testEffort.coerceAtLeast(0),
-        deployEffort = deployEffort.coerceAtLeast(0),
-        remainingAnalysisEffort = remainingAnalysisEffort.coerceIn(0, analysisEffort.coerceAtLeast(0)),
-        remainingDevelopmentEffort = remainingDevelopmentEffort.coerceIn(0, developmentEffort.coerceAtLeast(0)),
-        remainingTestEffort = remainingTestEffort.coerceIn(0, testEffort.coerceAtLeast(0)),
-        remainingDeployEffort = remainingDeployEffort.coerceIn(0, deployEffort.coerceAtLeast(0)),
+        analysisEffort = analysisEffort.asEffort(),
+        developmentEffort = developmentEffort.asEffort(),
+        testEffort = testEffort.asEffort(),
+        deployEffort = deployEffort.asEffort(),
+        remainingAnalysisEffort = remainingAnalysisEffort.asRemainingEffortOf(analysisEffort),
+        remainingDevelopmentEffort = remainingDevelopmentEffort.asRemainingEffortOf(developmentEffort),
+        remainingTestEffort = remainingTestEffort.asRemainingEffortOf(testEffort),
+        remainingDeployEffort = remainingDeployEffort.asRemainingEffortOf(deployEffort),
     )
+
+private fun Int.asEffort(): Int = coerceAtLeast(0)
+
+private fun Int.asRemainingEffortOf(effort: Int): Int = coerceIn(0, effort.asEffort())

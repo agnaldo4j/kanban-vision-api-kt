@@ -29,7 +29,6 @@ internal fun SimulationSurrogate.toDomain() =
         id = SimulationId(decodeId(id)),
         name = decodeName(name),
         currentDay = SimulationDay(currentDay),
-        // DRAFT é o mesmo default que `buildFallbackSimulation` usa quando não há blob (GAP-DV).
         status = decodeEnum(status, SimulationStatus.DRAFT),
         organization = organization.toDomain(),
         scenario = scenario.toDomain(),
@@ -112,7 +111,5 @@ private fun AbilitySurrogate.toDomain() =
     Ability(
         id = decodeId(id),
         name = decodeEnum(name, CROSS_FIELD_NEUTRAL_ABILITY),
-        // JR: seniority não dirige comportamento hoje; se um dia dirigir capacidade, subestimar é a
-        // direção segura de falha.
         seniority = decodeEnum(seniority, Seniority.JR),
     )
