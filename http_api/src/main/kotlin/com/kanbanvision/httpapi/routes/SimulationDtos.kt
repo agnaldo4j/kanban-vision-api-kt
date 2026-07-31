@@ -338,11 +338,8 @@ private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.Un
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
     payload["title"]
         ?.takeIf { it.isNotBlank() }
-        ?.let { Decision.AddItem(NonBlankTitle(it), decisionServiceClass(payload["serviceClass"])).right() }
+        ?.let { Decision.AddItem(NonBlankTitle(it), ServiceClass.fromNameOrDefault(payload["serviceClass"])).right() }
         ?: SimulationError.InvalidDecision("Missing or blank required field 'title' for ADD_ITEM").left()
-
-private fun decisionServiceClass(value: String?): ServiceClass =
-    value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
 
 internal fun Simulation.toSimulationResponse(): SimulationResponse =
     SimulationResponse(

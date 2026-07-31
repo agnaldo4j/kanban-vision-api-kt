@@ -170,6 +170,64 @@ class ConventionsTest {
     }
 
     @Test
+    fun `codigo fora do dominio nao escolhe um default que o dominio ja declara`() {
+        // GAP-DT/EW: o adapter escolhia `SimulationDay(1)`, `DRAFT`, `"Default Simulation Scenario"` — e o
+        // use case repetia os mesmos. As regras de `architecture/` governavam direção de dependência e
+        // localização, nunca AUTORIA do default, então a classe inteira era invisível para elas.
+        //
+        // A âncora é DERIVADA do domínio: o conjunto proibido são os defaults que os próprios tipos de
+        // domínio declaram. Nada de lista fixa aqui — acrescentar um default novo no domínio estende a
+        // regra sozinho.
+        //
+        // E a proibição é pela FORMA DA ESCOLHA (`?:` / `getOrDefault` / `getOrElse`), não pela mera
+        // menção. Medido antes de escrever: proibir a menção reprovaria três usos legítimos —
+        // `decodeEnum(status, DRAFT)` nos serializers (fallback de decode, `migrations.md`), o sentinel
+        // nomeado `QUARANTINE_CARD_STATE`, e os rótulos de `when` em `RunDayUseCase`. Nenhum deles
+        // ESCOLHE um default; eles despacham ou toleram legado.
+        //
+        // LIMITE HONESTO: shape-based. Quem escrever `val x: ServiceClass; if (...) x = STANDARD` escapa.
+        // A regra torna difícil o descuido, não impossível a intenção.
+        val (dominio, fora) =
+            Konsist
+                .scopeFromProduction()
+                .files
+                .partition { it.path.contains("/domain-") }
+
+        val defaultsDoDominio =
+            Regex("""=\s*([A-Z][A-Za-z0-9_]*\.[A-Z][A-Z0-9_]{2,})\b""")
+                .let { padrao -> dominio.flatMap { padrao.findAll(it.text).map { m -> m.groupValues[1] } } }
+                .toSet()
+
+        Assertions.assertTrue(
+            defaultsDoDominio.isNotEmpty(),
+            "sem default derivado do domínio a regra abaixo seria vacuamente verdadeira",
+        )
+
+        // O prefixo de pacote opcional NÃO é decoração: o primeiro probe usou o nome totalmente
+        // qualificado e passou impune, porque o regex só casava o nome simples. Mesmo cuidado que a
+        // `ContractPackageTest` já toma (cobre import E FQN).
+        val escolhaDeDefault =
+            Regex(
+                """(\?:|getOrDefault\(|getOrElse\s*\{)\s*(?:[a-z][A-Za-z0-9_]*\.)*""" +
+                    """(${defaultsDoDominio.joinToString("|") { Regex.escape(it) }})\b""",
+            )
+        fora.assertFalse { escolhaDeDefault.containsMatchIn(it.text.semComentarios()) }
+    }
+
+    @Test
+    fun `a politica de parse tolerante de ServiceClass tem exatamente um ponto de declaracao`() {
+        // Par NÃO-VÁCUO da regra acima (GAP-DY): ela proíbe a forma antiga, esta garante que a forma nova
+        // não sumiu nem foi reduplicada nas duas bordas que a consomem (http_api e sql_persistence).
+        val declaracoes =
+            Konsist
+                .scopeFromProduction()
+                .functions(includeNested = true)
+                .filter { it.name == "fromNameOrDefault" }
+
+        assertEquals(1, declaracoes.size, "fromNameOrDefault deve ser declarado uma única vez, no domínio")
+    }
+
+    @Test
     fun `classes de commands terminam em Command e de queries em Query`() {
         Konsist
             .scopeFromProduction()
