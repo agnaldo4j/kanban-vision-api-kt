@@ -193,8 +193,13 @@ class ConventionsTest {
                 .files
                 .partition { it.path.contains("/domain-") }
 
+        // A DECLARAÇÃO de tipo antes do `=` é o que separa default de atribuição comum. Sem ela o
+        // conjunto raspava o corpo do `SimulationEngine`/`Card`/`Worker` e trazia `MovementType.MOVED`,
+        // `CardState.DONE`, `AbilityName.TESTER` — 13 entradas para 4 defaults reais. Não dava falso
+        // verde (era mais estrito), mas o nome desta regra prometia precisão que ela não tinha, e o
+        // primeiro alarme pareceria bug do guard em vez de problema do código.
         val defaultsDoDominio =
-            Regex("""=\s*([A-Z][A-Za-z0-9_]*\.[A-Z][A-Z0-9_]{2,})\b""")
+            Regex(""":\s*[A-Za-z_][A-Za-z0-9_]*\??\s*=\s*([A-Z][A-Za-z0-9_]*\.[A-Z][A-Z0-9_]{2,})\b""")
                 .let { padrao -> dominio.flatMap { padrao.findAll(it.text).map { m -> m.groupValues[1] } } }
                 .toSet()
 
@@ -216,15 +221,37 @@ class ConventionsTest {
 
     @Test
     fun `a politica de parse tolerante de ServiceClass tem exatamente um ponto de declaracao`() {
-        // Par NÃO-VÁCUO da regra acima (GAP-DY): ela proíbe a forma antiga, esta garante que a forma nova
-        // não sumiu nem foi reduplicada nas duas bordas que a consomem (http_api e sql_persistence).
-        val declaracoes =
-            Konsist
-                .scopeFromProduction()
-                .functions(includeNested = true)
-                .filter { it.name == "fromNameOrDefault" }
+        // Par NÃO-VÁCUO da regra acima (GAP-DY). A primeira versão desta regra media a unicidade do
+        // NOME (`fromNameOrDefault` declarado uma vez) e não a da POLÍTICA — ficou verde enquanto
+        // `SimulationSerializerScenarioMappings` reimplementava o mesmo "nome desconhecido → STANDARD"
+        // como `decodeEnum(serviceClass, ServiceClass.STANDARD)`. Nome de fitness function é lido como
+        // a garantia; esta passou a assertar o que promete.
+        //
+        // A âncora é a CONSTANTE DE FALLBACK: quem escreve `ServiceClass.STANDARD` fora do domínio está
+        // reimplementando a política, seja com `?:`, `decodeEnum` ou qualquer outra forma. Dentro do
+        // domínio ela é legítima (é o default declarado de `Card` e de `Decision.AddItem`).
+        Konsist
+            .scopeFromProduction()
+            .files
+            .filterNot { it.path.contains("/domain-") }
+            .assertFalse { it.text.semComentarios().contains("ServiceClass.STANDARD") }
 
-        assertEquals(1, declaracoes.size, "fromNameOrDefault deve ser declarado uma única vez, no domínio")
+        // Contagem SEPARADA por política, e não do conjunto somado (Codex P2 no #395): com um total de 2,
+        // remover `fromNameOrDefault` enquanto se acrescenta um segundo `fromNameOrNull` mantinha a soma
+        // e o guard verde — uma política mascarava o sumiço da outra. E a mensagem afirmava "moram no
+        // domínio" sem que nada verificasse onde estavam declaradas; agora verifica.
+        val funcoes = Konsist.scopeFromProduction().functions(includeNested = true)
+        listOf("fromNameOrDefault", "fromNameOrNull").forEach { politica ->
+            val declaracoes = funcoes.filter { it.name == politica }
+            assertEquals(1, declaracoes.size, "$politica deve ser declarada exatamente uma vez")
+            Assertions.assertTrue(
+                declaracoes
+                    .single()
+                    .containingFile.path
+                    .contains("/domain-kanban/"),
+                "$politica é regra de domínio e deve morar em domain-kanban",
+            )
+        }
     }
 
     @Test

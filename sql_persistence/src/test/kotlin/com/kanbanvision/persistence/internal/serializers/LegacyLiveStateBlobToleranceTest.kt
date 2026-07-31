@@ -2,6 +2,7 @@ package com.kanbanvision.persistence.internal.serializers
 
 import com.kanbanvision.domain.model.kanban.AbilityName
 import com.kanbanvision.domain.model.kanban.CardState
+import com.kanbanvision.domain.model.kanban.ServiceClass
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.persistence.support.PersistenceFixtures
 import kotlin.test.Test
@@ -34,6 +35,20 @@ class LegacyLiveStateBlobToleranceTest {
                 .isNotEmpty(),
             "the rest of the aggregate must survive",
         )
+    }
+
+    @Test
+    fun `a card whose service class was written by a newer release decodes to the domain default`() {
+        // O eixo do CARD, distinto do eixo da DECISÃO que `SimulationSerializerTest` já cobre. Os dois
+        // implementavam a mesma política ("nome desconhecido → STANDARD") em formas diferentes, e
+        // converter só um deixava o outro para trás — foi o que aconteceu no #394.
+        val original = PersistenceFixtures.simulation().encoded()
+        val encoded = original.replace(""""serviceClass":"STANDARD"""", """"serviceClass":"PLATINUM"""")
+        assertTrue(encoded != original, "the corrupted blob must actually differ")
+
+        val decoded = SimulationSerializer.decode(encoded)
+
+        assertEquals(ServiceClass.STANDARD, decoded.firstCard().serviceClass)
     }
 
     @Test
