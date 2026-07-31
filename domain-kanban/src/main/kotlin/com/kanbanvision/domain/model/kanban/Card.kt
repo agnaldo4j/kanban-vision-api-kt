@@ -47,8 +47,9 @@ data class Card(
         fun create(
             step: StepId,
             title: String,
-            description: String = "",
             position: Int,
+            description: String = "",
+            serviceClass: ServiceClass = ServiceClass.STANDARD,
         ): Card =
             Card(
                 id = CardId(UUID.randomUUID().toString()),
@@ -56,6 +57,7 @@ data class Card(
                 title = NonBlankTitle(title),
                 description = description,
                 position = position,
+                serviceClass = serviceClass,
             )
     }
 

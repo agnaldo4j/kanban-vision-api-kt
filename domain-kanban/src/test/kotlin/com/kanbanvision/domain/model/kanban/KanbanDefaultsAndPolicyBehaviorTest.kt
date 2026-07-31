@@ -36,6 +36,20 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     }
 
     @Test
+    fun `given a service class when creating a card through the factory then the factory honours it`() {
+        val expedite = Card.create(step = StepId("s-1"), title = "Card", position = 0, serviceClass = ServiceClass.EXPEDITE)
+
+        assertEquals(ServiceClass.EXPEDITE, expedite.serviceClass)
+    }
+
+    @Test
+    fun `given no service class when creating a card through the factory then it defaults to standard`() {
+        val card = Card.create(step = StepId("s-1"), title = "Card", position = 0)
+
+        assertEquals(ServiceClass.STANDARD, card.serviceClass)
+    }
+
+    @Test
     fun `given minimal constructors when using defaults then organization entities are created`() {
         val org = Organization(id = "o-1", name = NonBlankName("Org"))
         val squad = Squad(name = NonBlankName("Squad"))
