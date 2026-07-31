@@ -3,11 +3,8 @@ package com.kanbanvision.usecases.simulation
 import arrow.core.Either
 import arrow.core.raise.either
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.model.kanban.Board
-import com.kanbanvision.domain.model.simulation.Scenario
 import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
-import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.domain.simulation.events.DomainEvent
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.repositories.OrganizationRepository
@@ -26,10 +23,6 @@ class CreateSimulationUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private companion object {
-        const val SIMULATION_NAME_ID_PREFIX_LENGTH = 8
-    }
-
     suspend fun execute(command: CreateSimulationCommand): Either<DomainError, String> =
         either {
             command.validate().bind()
@@ -41,15 +34,7 @@ class CreateSimulationUseCase(
                     teamSize = command.teamSize,
                     seedValue = command.seedValue,
                 )
-            val board = Board.create(name = "Main Board")
-            val scenario = Scenario.create(name = "Default Simulation Scenario", rules = rules, board = board)
-            val simulation =
-                Simulation.create(
-                    name = "Simulation ${scenario.id.value.take(SIMULATION_NAME_ID_PREFIX_LENGTH)}",
-                    organization = organization,
-                    scenario = scenario,
-                    status = SimulationStatus.DRAFT,
-                )
+            val simulation = Simulation.draftFor(organization = organization, rules = rules)
 
             val (id, duration) = timed { persist(simulation, clock.instant()) }
             log.info("Simulation created: id={} duration={}ms", id, duration.inWholeMilliseconds)

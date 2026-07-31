@@ -8,7 +8,6 @@ import com.kanbanvision.domain.model.organization.Organization
 import com.kanbanvision.domain.model.organization.Squad
 import com.kanbanvision.domain.model.organization.Tribe
 import com.kanbanvision.domain.model.simulation.Simulation
-import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 
@@ -28,7 +27,7 @@ internal fun SimulationSurrogate.toDomain() =
     Simulation(
         id = SimulationId(decodeId(id)),
         name = decodeName(name),
-        currentDay = SimulationDay(currentDay),
+        currentDay = decodeDay(currentDay),
         status = decodeEnum(status, SimulationStatus.DRAFT),
         organization = organization.toDomain(),
         scenario = scenario.toDomain(),

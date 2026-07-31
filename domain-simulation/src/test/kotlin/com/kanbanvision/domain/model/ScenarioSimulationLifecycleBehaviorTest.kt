@@ -22,6 +22,33 @@ import kotlin.test.assertTrue
 
 class ScenarioSimulationLifecycleBehaviorTest {
     @Test
+    fun `given an organization and rules when drafting a simulation then the domain owns every default`() {
+        val organization = Organization.create(name = "Org")
+        val rules = ScenarioRules.create(wipLimit = 3, teamSize = 4, seedValue = 99L)
+
+        val simulation = Simulation.draftFor(organization = organization, rules = rules)
+
+        assertEquals(1, simulation.currentDay.value)
+        assertEquals(SimulationStatus.DRAFT, simulation.status)
+        assertEquals("Default Simulation Scenario", simulation.scenario.name.value)
+        assertEquals("Main Board", simulation.scenario.board.name.value)
+        assertEquals(0, simulation.scenario.board.itemCount())
+        assertEquals(rules, simulation.scenario.rules)
+        assertEquals(organization, simulation.organization)
+    }
+
+    @Test
+    fun `given a drafted simulation when reading its name then it derives from its own id`() {
+        val simulation =
+            Simulation.draftFor(
+                organization = Organization.create(name = "Org"),
+                rules = ScenarioRules.create(wipLimit = 1, teamSize = 1, seedValue = 1L),
+            )
+
+        assertEquals("Simulation ${simulation.id.value.take(8)}", simulation.name.value)
+    }
+
+    @Test
     fun `given scenario rules inputs when creating rules then policy set and constraints are preserved`() {
         val rules = ScenarioRules.create(wipLimit = 3, teamSize = 4, seedValue = 42L)
 

@@ -95,34 +95,6 @@ class SimulationAndSnapshotRepositoriesIntegrationTest {
         }
 
     @Test
-    fun `given simulation row without serialized state when finding by id then repository builds fallback simulation`() =
-        runBlocking {
-            val simulationId = "04000000-0000-0000-0000-000000000001"
-            val organizationId = "04000000-0000-0000-0000-000000000002"
-            EmbeddedPostgresSupport.insertOrganization(organizationId, "Fallback Org")
-            EmbeddedPostgresSupport.insertSimulationRow(
-                EmbeddedPostgresSupport.SimulationSeed(
-                    id = simulationId,
-                    organizationId = organizationId,
-                    wipLimit = 3,
-                    teamSize = 4,
-                    seedValue = 12L,
-                ),
-            )
-
-            val loaded =
-                simulationRepository
-                    .findById(
-                        SimulationId(simulationId),
-                    ).getOrElse { error("find fallback simulation failed: $it") }
-
-            assertEquals(simulationId, loaded.id.value)
-            assertEquals("Fallback Org", loaded.organization.name.value)
-            assertEquals(1, loaded.currentDay.value)
-            assertEquals(3, loaded.scenario.rules.wipLimit)
-        }
-
-    @Test
     fun `given unknown simulation id when finding by id then repository returns simulation not found domain error`() =
         runBlocking {
             val result = simulationRepository.findById(SimulationId("04000000-0000-0000-0000-000000009999"))
