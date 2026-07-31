@@ -2,6 +2,8 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.Either
 import arrow.core.left
+import arrow.core.raise.either
+import arrow.core.raise.ensureNotNull
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.common.model.NonBlankTitle
@@ -336,10 +338,21 @@ private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.Un
     requireCardId("UNBLOCK_ITEM").map { Decision.UnblockItem(it) }
 
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
-    payload["title"]
-        ?.takeIf { it.isNotBlank() }
-        ?.let { Decision.AddItem(NonBlankTitle(it), ServiceClass.fromNameOrDefault(payload["serviceClass"])).right() }
-        ?: SimulationError.InvalidDecision("Missing or blank required field 'title' for ADD_ITEM").left()
+    either {
+        val title =
+            ensureNotNull(payload["title"]?.takeIf { it.isNotBlank() }) {
+                SimulationError.InvalidDecision("Missing or blank required field 'title' for ADD_ITEM")
+            }
+        payload["serviceClass"]
+            ?.let { raw ->
+                val parsed =
+                    ensureNotNull(ServiceClass.fromNameOrNull(raw)) {
+                        SimulationError.InvalidDecision("Unknown value '$raw' for field 'serviceClass'")
+                    }
+                Decision.AddItem(NonBlankTitle(title), parsed)
+            }
+            ?: Decision.AddItem(NonBlankTitle(title))
+    }
 
 internal fun Simulation.toSimulationResponse(): SimulationResponse =
     SimulationResponse(

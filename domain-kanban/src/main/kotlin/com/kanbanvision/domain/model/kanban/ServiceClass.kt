@@ -11,6 +11,8 @@ enum class ServiceClass(
     ;
 
     companion object {
-        fun fromNameOrDefault(raw: String?): ServiceClass = entries.firstOrNull { it.name == raw } ?: STANDARD
+        fun fromNameOrNull(raw: String): ServiceClass? = entries.firstOrNull { it.name == raw }
+
+        fun fromNameOrDefault(raw: String?): ServiceClass = raw?.let { fromNameOrNull(it) } ?: STANDARD
     }
 }
