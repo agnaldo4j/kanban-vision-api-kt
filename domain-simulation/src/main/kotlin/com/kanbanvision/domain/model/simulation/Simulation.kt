@@ -26,9 +26,10 @@ data class Simulation(
             organization: Organization,
             scenario: Scenario,
             status: SimulationStatus = SimulationStatus.DRAFT,
+            id: SimulationId = SimulationId(UUID.randomUUID().toString()),
         ): Simulation =
             Simulation(
-                id = SimulationId(UUID.randomUUID().toString()),
+                id = id,
                 name = NonBlankName(name),
                 currentDay = SimulationDay(1),
                 status = status,
@@ -41,11 +42,9 @@ data class Simulation(
             rules: ScenarioRules,
         ): Simulation {
             val id = SimulationId(UUID.randomUUID().toString())
-            return Simulation(
+            return create(
                 id = id,
-                name = NonBlankName("Simulation ${id.value.take(NAME_ID_PREFIX_LENGTH)}"),
-                currentDay = SimulationDay(1),
-                status = SimulationStatus.DRAFT,
+                name = "Simulation ${id.value.take(NAME_ID_PREFIX_LENGTH)}",
                 organization = organization,
                 scenario = Scenario.create(name = DEFAULT_SCENARIO_NAME, rules = rules),
             )

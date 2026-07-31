@@ -14,6 +14,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.slot
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,10 +23,12 @@ import kotlin.test.assertTrue
 
 class SimulationRoutesDecisionDtoTest {
     @Test
-    fun `given block item decision with reason when running day then api accepts decision`() =
+    fun `given block item decision with reason when running day then the payload reason reaches the command`() =
         testApplication {
             val mocks = SimulationApiMocks()
-            coEvery { mocks.runDayUseCase.execute(any()) } returns fixtureSnapshot(simulationId = "sim-1").right()
+            val commandSlot = slot<RunDayCommand>()
+            coEvery { mocks.runDayUseCase.execute(capture(commandSlot)) } returns
+                fixtureSnapshot(simulationId = "sim-1").right()
             application { configureSimulationApi(mocks) }
 
             val response =
@@ -36,6 +39,8 @@ class SimulationRoutesDecisionDtoTest {
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
+            val decision = assertIs<Decision.BlockItem>(commandSlot.captured.decisions.first())
+            assertEquals("dep", decision.reason)
         }
 
     @Test
@@ -145,22 +150,23 @@ class SimulationRoutesDecisionDtoTest {
         }
 
     @Test
-    fun `given add item decision with invalid service class string when running day then command defaults to standard`() =
+    fun `given add item decision with invalid service class string when running day then api rejects it`() =
         testApplication {
+            // Este teste FIXAVA a coerção silenciosa para STANDARD. Invertido de propósito: `migrations.md`
+            // manda tolerar só o lado persistido — input de cliente é fail-closed. Quem pedia EXPEDITE e
+            // errava a grafia recebia 200 com outra prioridade de agendamento e nunca ficava sabendo.
             val mocks = SimulationApiMocks()
-            val commandSlot = slot<RunDayCommand>()
-            coEvery { mocks.runDayUseCase.execute(capture(commandSlot)) } returns
-                fixtureSnapshot(simulationId = "sim-1").right()
             application { configureSimulationApi(mocks) }
 
-            client.post("/api/v1/simulations/sim-1/run") {
-                withJwt().invoke(this)
-                contentType(ContentType.Application.Json)
-                setBody("""{"decisions":[{"type":"ADD_ITEM","payload":{"title":"T","serviceClass":"INVALID_CLASS"}}]}""")
-            }
+            val response =
+                client.post("/api/v1/simulations/sim-1/run") {
+                    withJwt().invoke(this)
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"decisions":[{"type":"ADD_ITEM","payload":{"title":"T","serviceClass":"INVALID_CLASS"}}]}""")
+                }
 
-            val decision = assertIs<Decision.AddItem>(commandSlot.captured.decisions.first())
-            assertEquals(ServiceClass.STANDARD, decision.serviceClass)
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            coVerify(exactly = 0) { mocks.runDayUseCase.execute(any()) }
         }
 
     @Test

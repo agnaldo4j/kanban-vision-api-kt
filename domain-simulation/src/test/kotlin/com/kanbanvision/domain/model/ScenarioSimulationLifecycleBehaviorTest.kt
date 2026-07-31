@@ -14,6 +14,7 @@ import com.kanbanvision.domain.model.simulation.Scenario
 import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
 import com.kanbanvision.domain.model.simulation.SimulationDay
+import com.kanbanvision.domain.model.simulation.SimulationId
 import com.kanbanvision.domain.model.simulation.SimulationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,6 +36,19 @@ class ScenarioSimulationLifecycleBehaviorTest {
         assertEquals(0, simulation.scenario.board.itemCount())
         assertEquals(rules, simulation.scenario.rules)
         assertEquals(organization, simulation.organization)
+    }
+
+    @Test
+    fun `given an explicit id when creating a simulation then the factory honours it instead of generating one`() {
+        val simulation =
+            Simulation.create(
+                name = "Sim",
+                organization = Organization.create(name = "Org"),
+                scenario = Scenario.create("S", ScenarioRules.create(1, 1, 1L)),
+                id = SimulationId("fixed-id"),
+            )
+
+        assertEquals("fixed-id", simulation.id.value)
     }
 
     @Test

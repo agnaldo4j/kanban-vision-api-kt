@@ -36,6 +36,16 @@ class KanbanDefaultsAndPolicyBehaviorTest {
     }
 
     @Test
+    fun `given a service class name when parsing tolerantly then known names resolve and anything else becomes standard`() {
+        assertEquals(ServiceClass.EXPEDITE, ServiceClass.fromNameOrDefault("EXPEDITE"))
+        assertEquals(ServiceClass.INTANGIBLE, ServiceClass.fromNameOrDefault("INTANGIBLE"))
+        assertEquals(ServiceClass.STANDARD, ServiceClass.fromNameOrDefault("NOT_A_CLASS"))
+        assertEquals(ServiceClass.STANDARD, ServiceClass.fromNameOrDefault(""))
+        assertEquals(ServiceClass.STANDARD, ServiceClass.fromNameOrDefault(null))
+        assertEquals(ServiceClass.STANDARD, ServiceClass.fromNameOrDefault("expedite"), "o parse é sensível a caixa")
+    }
+
+    @Test
     fun `given a service class when creating a card through the factory then the factory honours it`() {
         val expedite = Card.create(step = StepId("s-1"), title = "Card", position = 0, serviceClass = ServiceClass.EXPEDITE)
 

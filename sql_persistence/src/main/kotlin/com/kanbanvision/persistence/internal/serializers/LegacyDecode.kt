@@ -27,5 +27,4 @@ internal val CROSS_FIELD_NEUTRAL_ABILITY = AbilityName.DEVELOPER
 
 internal val QUARANTINE_CARD_STATE = CardState.BLOCKED
 
-internal fun surrogateServiceClass(payload: Map<String, String>): ServiceClass =
-    decodeEnum(payload["serviceClass"].orEmpty(), ServiceClass.STANDARD)
+internal fun surrogateServiceClass(payload: Map<String, String>): ServiceClass = ServiceClass.fromNameOrDefault(payload["serviceClass"])

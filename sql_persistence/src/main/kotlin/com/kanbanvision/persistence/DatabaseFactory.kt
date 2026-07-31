@@ -97,7 +97,7 @@ object DatabaseFactory {
             .migrate()
     }
 
-    private fun buildHikariConfig(
+    internal fun buildHikariConfig(
         config: DatabaseConfig,
         meterRegistry: MeterRegistry?,
     ): HikariConfig =

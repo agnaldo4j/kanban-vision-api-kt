@@ -2,6 +2,8 @@ package com.kanbanvision.httpapi.routes
 
 import arrow.core.Either
 import arrow.core.left
+import arrow.core.raise.either
+import arrow.core.raise.ensureNotNull
 import arrow.core.right
 import com.kanbanvision.domain.common.errors.DomainError
 import com.kanbanvision.domain.common.model.NonBlankTitle
@@ -328,19 +330,29 @@ private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveI
     requireCardId("MOVE_ITEM").map { Decision.MoveItem(it) }
 
 private fun DecisionRequest.toBlockDecision(): Either<DomainError, Decision.BlockItem> =
-    requireCardId("BLOCK_ITEM").map { Decision.BlockItem(it, payload["reason"] ?: "blocked") }
+    requireCardId("BLOCK_ITEM").map { cardId ->
+        payload["reason"]?.let { Decision.BlockItem(cardId, it) } ?: Decision.BlockItem(cardId)
+    }
 
 private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.UnblockItem> =
     requireCardId("UNBLOCK_ITEM").map { Decision.UnblockItem(it) }
 
 private fun DecisionRequest.toAddDecision(): Either<DomainError, Decision.AddItem> =
-    payload["title"]
-        ?.takeIf { it.isNotBlank() }
-        ?.let { Decision.AddItem(NonBlankTitle(it), decisionServiceClass(payload["serviceClass"])).right() }
-        ?: SimulationError.InvalidDecision("Missing or blank required field 'title' for ADD_ITEM").left()
-
-private fun decisionServiceClass(value: String?): ServiceClass =
-    value?.let { runCatching { ServiceClass.valueOf(it) }.getOrNull() } ?: ServiceClass.STANDARD
+    either {
+        val title =
+            ensureNotNull(payload["title"]?.takeIf { it.isNotBlank() }) {
+                SimulationError.InvalidDecision("Missing or blank required field 'title' for ADD_ITEM")
+            }
+        payload["serviceClass"]
+            ?.let { raw ->
+                val parsed =
+                    ensureNotNull(ServiceClass.fromNameOrNull(raw)) {
+                        SimulationError.InvalidDecision("Unknown value '$raw' for field 'serviceClass'")
+                    }
+                Decision.AddItem(NonBlankTitle(title), parsed)
+            }
+            ?: Decision.AddItem(NonBlankTitle(title))
+    }
 
 internal fun Simulation.toSimulationResponse(): SimulationResponse =
     SimulationResponse(

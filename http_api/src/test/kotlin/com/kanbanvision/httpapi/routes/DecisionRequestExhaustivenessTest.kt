@@ -81,6 +81,17 @@ class DecisionRequestExhaustivenessTest {
     }
 
     @Test
+    fun `an unknown serviceClass from a client is rejected instead of coerced to the domain default`() {
+        // Assimetria de `migrations.md`: tolerância é SÓ do lado persistido. O blob degrada para manter o
+        // agregado carregável; input de cliente é fail-closed. A borda coagia silenciosamente para
+        // STANDARD — o cliente pedia EXPEDITE, errava a grafia, e recebia 200 com outra prioridade.
+        val decoded = DecisionRequest("ADD_ITEM", mapOf("title" to "T", "serviceClass" to "EXPEDIT")).toDomain()
+
+        assertTrue(decoded.isLeft(), "um serviceClass irreconhecível vindo do cliente tem de ser Left")
+        assertIs<SimulationError.InvalidDecision>(decoded.leftOrNull())
+    }
+
+    @Test
     fun `blank or missing add-item title decodes to InvalidDecision instead of throwing`() {
         // GAP-DH: NonBlankTitle rejeita branco; a borda deve dobrar isso em 400 tipado, nunca lançar (500).
         val blank = DecisionRequest("ADD_ITEM", mapOf("title" to "   ")).toDomain()
