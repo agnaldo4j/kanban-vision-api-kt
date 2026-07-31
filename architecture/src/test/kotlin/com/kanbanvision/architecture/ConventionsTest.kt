@@ -236,13 +236,22 @@ class ConventionsTest {
             .filterNot { it.path.contains("/domain-") }
             .assertFalse { it.text.semComentarios().contains("ServiceClass.STANDARD") }
 
-        val declaracoes =
-            Konsist
-                .scopeFromProduction()
-                .functions(includeNested = true)
-                .filter { it.name == "fromNameOrDefault" || it.name == "fromNameOrNull" }
-
-        assertEquals(2, declaracoes.size, "as duas políticas (tolerante e estrita) moram no domínio, uma vez cada")
+        // Contagem SEPARADA por política, e não do conjunto somado (Codex P2 no #395): com um total de 2,
+        // remover `fromNameOrDefault` enquanto se acrescenta um segundo `fromNameOrNull` mantinha a soma
+        // e o guard verde — uma política mascarava o sumiço da outra. E a mensagem afirmava "moram no
+        // domínio" sem que nada verificasse onde estavam declaradas; agora verifica.
+        val funcoes = Konsist.scopeFromProduction().functions(includeNested = true)
+        listOf("fromNameOrDefault", "fromNameOrNull").forEach { politica ->
+            val declaracoes = funcoes.filter { it.name == politica }
+            assertEquals(1, declaracoes.size, "$politica deve ser declarada exatamente uma vez")
+            Assertions.assertTrue(
+                declaracoes
+                    .single()
+                    .containingFile.path
+                    .contains("/domain-kanban/"),
+                "$politica é regra de domínio e deve morar em domain-kanban",
+            )
+        }
     }
 
     @Test
