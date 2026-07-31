@@ -18,6 +18,9 @@ data class Simulation(
     override val audit: Audit = Audit(),
 ) : Domain<SimulationId> {
     companion object {
+        private const val DEFAULT_SCENARIO_NAME = "Default Simulation Scenario"
+        private const val NAME_ID_PREFIX_LENGTH = 8
+
         fun create(
             name: String,
             organization: Organization,
@@ -32,6 +35,21 @@ data class Simulation(
                 organization = organization,
                 scenario = scenario,
             )
+
+        fun draftFor(
+            organization: Organization,
+            rules: ScenarioRules,
+        ): Simulation {
+            val id = SimulationId(UUID.randomUUID().toString())
+            return Simulation(
+                id = id,
+                name = NonBlankName("Simulation ${id.value.take(NAME_ID_PREFIX_LENGTH)}"),
+                currentDay = SimulationDay(1),
+                status = SimulationStatus.DRAFT,
+                organization = organization,
+                scenario = Scenario.create(name = DEFAULT_SCENARIO_NAME, rules = rules),
+            )
+        }
     }
 
     fun itemCount(): Int = scenario.itemCount()

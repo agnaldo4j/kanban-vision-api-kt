@@ -37,6 +37,21 @@ class LegacyLiveStateBlobToleranceTest {
     }
 
     @Test
+    fun `a legacy currentDay below one decodes to the first day instead of crashing the load`() {
+        // O último campo que escapou da varredura do #385: `currentDay` era construído por
+        // `SimulationDay(currentDay)` cru enquanto os outros 4 sítios já usavam `decodeDay`.
+        // `SimulationDay.init` exige >= 1, então um 0 legado lançava e derrubava findById E a
+        // página inteira de findAll — invariante numérico custa o mesmo que string em branco.
+        val original = PersistenceFixtures.simulation().encoded()
+        val encoded = original.replace(Regex(""""currentDay"\s*:\s*\d+"""), """"currentDay":0""")
+        assertTrue(encoded != original, "the corrupted blob must actually differ")
+
+        val decoded = SimulationSerializer.decode(encoded)
+
+        assertEquals(1, decoded.currentDay.value)
+    }
+
+    @Test
     fun `a step whose required ability was written by a newer release still loads with its workers intact`() {
         // Cenário real: um release novo cria a ability, o rollback deixa pods antigos lendo o que
         // eles mesmos gravaram. O valor ilegível aparece nos DOIS lados — no requiredAbility do step

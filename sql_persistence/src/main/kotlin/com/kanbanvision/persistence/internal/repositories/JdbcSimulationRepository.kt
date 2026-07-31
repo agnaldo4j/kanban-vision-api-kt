@@ -3,18 +3,11 @@ package com.kanbanvision.persistence.internal.repositories
 import arrow.core.Either
 import arrow.core.left
 import com.kanbanvision.domain.common.errors.DomainError
-import com.kanbanvision.domain.common.model.NonBlankName
-import com.kanbanvision.domain.model.organization.Organization
-import com.kanbanvision.domain.model.simulation.Scenario
-import com.kanbanvision.domain.model.simulation.ScenarioRules
 import com.kanbanvision.domain.model.simulation.Simulation
-import com.kanbanvision.domain.model.simulation.SimulationDay
 import com.kanbanvision.domain.model.simulation.SimulationError
 import com.kanbanvision.domain.model.simulation.SimulationId
-import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.persistence.dbQuery
 import com.kanbanvision.persistence.internal.serializers.SimulationSerializer
-import com.kanbanvision.persistence.internal.tables.OrganizationsTable
 import com.kanbanvision.persistence.internal.tables.SimulationStatesTable
 import com.kanbanvision.persistence.internal.tables.SimulationsTable
 import com.kanbanvision.usecases.repositories.SimulationRepository
@@ -29,10 +22,6 @@ import org.slf4j.LoggerFactory
 
 class JdbcSimulationRepository : SimulationRepository {
     private val log = LoggerFactory.getLogger(javaClass)
-
-    private companion object {
-        const val SIMULATION_NAME_ID_PREFIX_LENGTH = 8
-    }
 
     override suspend fun save(simulation: Simulation): Either<DomainError, Simulation> =
         dbQuery(log) {
@@ -52,11 +41,9 @@ class JdbcSimulationRepository : SimulationRepository {
 
     override suspend fun findById(id: SimulationId): Either<DomainError, Simulation> =
         dbQuery(log) {
-            (
-                SimulationsTable
-                    .join(OrganizationsTable, JoinType.INNER, SimulationsTable.organizationId, OrganizationsTable.id)
-                    .join(SimulationStatesTable, JoinType.LEFT, SimulationsTable.id, SimulationStatesTable.simulationId)
-            ).selectAll()
+            SimulationsTable
+                .join(SimulationStatesTable, JoinType.INNER, SimulationsTable.id, SimulationStatesTable.simulationId)
+                .selectAll()
                 .where(SimulationsTable.id eq id.value)
                 .singleOrNull()
                 ?.let { row -> rowToSimulation(row) }
@@ -74,11 +61,9 @@ class JdbcSimulationRepository : SimulationRepository {
     ): Either<DomainError, List<Simulation>> =
         dbQuery(log) {
             val offset = ((page - 1) * size).toLong()
-            (
-                SimulationsTable
-                    .join(OrganizationsTable, JoinType.INNER, SimulationsTable.organizationId, OrganizationsTable.id)
-                    .join(SimulationStatesTable, JoinType.LEFT, SimulationsTable.id, SimulationStatesTable.simulationId)
-            ).selectAll()
+            SimulationsTable
+                .join(SimulationStatesTable, JoinType.INNER, SimulationsTable.id, SimulationStatesTable.simulationId)
+                .selectAll()
                 .where(SimulationsTable.organizationId eq organizationId)
                 .orderBy(SimulationsTable.id to SortOrder.ASC)
                 .limit(size)
@@ -89,45 +74,18 @@ class JdbcSimulationRepository : SimulationRepository {
     override suspend fun countByOrganization(organizationId: String): Either<DomainError, Long> =
         dbQuery(log) {
             SimulationsTable
+                .join(SimulationStatesTable, JoinType.INNER, SimulationsTable.id, SimulationStatesTable.simulationId)
                 .selectAll()
                 .where(SimulationsTable.organizationId eq organizationId)
                 .count()
         }
 
-    private fun rowToSimulation(row: ResultRow): Simulation {
-        val stateJson = row.getOrNull(SimulationStatesTable.stateJson)
-        if (!stateJson.isNullOrBlank()) {
-            return SimulationSerializer.decode(stateJson).withIdentitiesOwnedByRow(row)
-        }
-        return buildFallbackSimulation(row)
-    }
+    private fun rowToSimulation(row: ResultRow): Simulation =
+        SimulationSerializer.decode(row[SimulationStatesTable.stateJson]).withIdentitiesOwnedByRow(row)
 
     private fun Simulation.withIdentitiesOwnedByRow(row: ResultRow): Simulation =
         copy(
             id = SimulationId(row[SimulationsTable.id]),
             organization = organization.copy(id = row[SimulationsTable.organizationId]),
         )
-
-    private fun buildFallbackSimulation(row: ResultRow): Simulation {
-        val organization =
-            Organization(
-                id = row[SimulationsTable.organizationId],
-                name = NonBlankName(row[OrganizationsTable.name]),
-            )
-        val rules =
-            ScenarioRules.create(
-                wipLimit = row[SimulationsTable.wipLimit],
-                teamSize = row[SimulationsTable.teamSize],
-                seedValue = row[SimulationsTable.seedValue],
-            )
-        val scenario = Scenario.create(name = "Default Simulation Scenario", rules = rules)
-        return Simulation(
-            id = SimulationId(row[SimulationsTable.id]),
-            name = NonBlankName("Simulation ${row[SimulationsTable.id].take(SIMULATION_NAME_ID_PREFIX_LENGTH)}"),
-            currentDay = SimulationDay(1),
-            status = SimulationStatus.DRAFT,
-            organization = organization,
-            scenario = scenario,
-        )
-    }
 }

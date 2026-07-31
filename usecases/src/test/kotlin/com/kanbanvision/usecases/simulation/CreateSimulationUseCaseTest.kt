@@ -6,6 +6,7 @@ import arrow.core.right
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.domain.model.kanban.KanbanError
 import com.kanbanvision.domain.model.simulation.Simulation
+import com.kanbanvision.domain.model.simulation.SimulationStatus
 import com.kanbanvision.domain.simulation.events.DomainEvent
 import com.kanbanvision.usecases.ports.EventPublisherPort
 import com.kanbanvision.usecases.repositories.OrganizationRepository
@@ -47,6 +48,26 @@ class CreateSimulationUseCaseTest {
             assertEquals(3, simulationSlot.captured.scenario.rules.wipLimit)
             assertEquals(4, simulationSlot.captured.scenario.rules.teamSize)
             coVerify(exactly = 1) { simulationRepository.save(any()) }
+        }
+
+    @Test
+    fun `given valid command when creating a simulation then the domain defaults are applied`() =
+        runTest {
+            val organization = fixtureOrganization(id = "org-42", name = "Kanban Vision")
+            val simulationSlot = slot<Simulation>()
+            coEvery { organizationRepository.findById("org-42") } returns organization.right()
+            coEvery { simulationRepository.save(capture(simulationSlot)) } answers { simulationSlot.captured.right() }
+
+            useCase.execute(CreateSimulationCommand("org-42", wipLimit = 3, teamSize = 4, seedValue = 99L))
+
+            val created = simulationSlot.captured
+            assertEquals(1, created.currentDay.value)
+            assertEquals(SimulationStatus.DRAFT, created.status)
+            assertEquals("Default Simulation Scenario", created.scenario.name.value)
+            assertEquals("Main Board", created.scenario.board.name.value)
+            assertEquals(0, created.scenario.board.itemCount())
+            assertTrue(created.name.value.startsWith("Simulation "))
+            assertEquals("Simulation ".length + 8, created.name.value.length)
         }
 
     @Test
