@@ -328,7 +328,9 @@ private fun DecisionRequest.toMoveDecision(): Either<DomainError, Decision.MoveI
     requireCardId("MOVE_ITEM").map { Decision.MoveItem(it) }
 
 private fun DecisionRequest.toBlockDecision(): Either<DomainError, Decision.BlockItem> =
-    requireCardId("BLOCK_ITEM").map { Decision.BlockItem(it, payload["reason"] ?: "blocked") }
+    requireCardId("BLOCK_ITEM").map { cardId ->
+        payload["reason"]?.let { Decision.BlockItem(cardId, it) } ?: Decision.BlockItem(cardId)
+    }
 
 private fun DecisionRequest.toUnblockDecision(): Either<DomainError, Decision.UnblockItem> =
     requireCardId("UNBLOCK_ITEM").map { Decision.UnblockItem(it) }

@@ -22,10 +22,12 @@ import kotlin.test.assertTrue
 
 class SimulationRoutesDecisionDtoTest {
     @Test
-    fun `given block item decision with reason when running day then api accepts decision`() =
+    fun `given block item decision with reason when running day then the payload reason reaches the command`() =
         testApplication {
             val mocks = SimulationApiMocks()
-            coEvery { mocks.runDayUseCase.execute(any()) } returns fixtureSnapshot(simulationId = "sim-1").right()
+            val commandSlot = slot<RunDayCommand>()
+            coEvery { mocks.runDayUseCase.execute(capture(commandSlot)) } returns
+                fixtureSnapshot(simulationId = "sim-1").right()
             application { configureSimulationApi(mocks) }
 
             val response =
@@ -36,6 +38,8 @@ class SimulationRoutesDecisionDtoTest {
                 }
 
             assertEquals(HttpStatusCode.OK, response.status)
+            val decision = assertIs<Decision.BlockItem>(commandSlot.captured.decisions.first())
+            assertEquals("dep", decision.reason)
         }
 
     @Test
