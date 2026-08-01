@@ -140,6 +140,28 @@ class DiWiringCycleTest {
         }
     }
 
+    @Test
+    fun `o parser identifica o TIPO CONSTRUIDO, nao a primeira chamada do corpo`() {
+        // Codex P2 + Copilot no #398: a heurística anterior pegava a primeira chamada `\w+(` do corpo.
+        // `single<Clock> { Clock.systemUTC() }` virava componente `systemUTC` (o KDoc do parser dizia que
+        // viraria sink — e não virava), e `single { audit(); A(get()) }` virava `audit`, deixando `A` e
+        // qualquer ciclo dele FORA do grafo. A completude não pegava: contava 1 componente por
+        // declaração, só que o errado.
+        val bindings =
+            parseKoinBindings(
+                """
+                module {
+                    single<Clock> { Clock.systemUTC() }
+                    single { audit(); Alpha(get()) }
+                    single { run { Beta(get()) } }
+                    single<Port<Foo>> { Gama(get()) }
+                }
+                """.trimIndent(),
+            )
+
+        assertEquals(setOf("Clock", "Alpha", "Beta", "Gama"), bindings.components)
+    }
+
     private fun appModuleText(): String {
         val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
         val file = File(root, APP_MODULE)

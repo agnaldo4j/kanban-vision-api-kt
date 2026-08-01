@@ -29,7 +29,10 @@ internal data class KoinBindings(
  */
 internal fun countKoinDeclarations(appModuleText: String): Int = DECLARACAO_DSL.findAll(stripKotlinComments(appModuleText)).count()
 
-private val DECLARACAO_DSL = Regex("""\b(?:single|factory|scoped)(?:Of)?\s*(?:<[^>]*>)?\s*[({]""")
+// O tipo declarado é casado com aninhamento de UM nível (`<Port<Foo>>`) — `<[^>]*>` parava no `>`
+// interno, a declaração inteira sumia do parser E do contador, então a completude não a pegava
+// (Codex P2 no #398).
+private val DECLARACAO_DSL = Regex("""\b(?:single|factory|scoped)(?:Of)?\s*(?:<[^<>]*(?:<[^<>]*>)?[^<>]*>)?\s*[({]""")
 
 private fun stripKotlinComments(text: String): String =
     Regex("""/\*.*?\*/""", setOf(RegexOption.DOT_MATCHES_ALL))
@@ -67,8 +70,7 @@ internal fun parseKoinBindings(appModuleText: String): KoinBindings {
             } else {
                 val fecha = matchingBrace(cleaned, abre, '{', '}') ?: return@forEach
                 val corpo = cleaned.substring(abre + 1, fecha)
-                val construido = Regex("""\b(\w+)\s*\(""").find(corpo)?.groupValues?.get(1)
-                (construido ?: tipoDeclarado) to fecha
+                (construtorEm(corpo) ?: tipoDeclarado) to fecha
             }
 
         if (impl == null) return@forEach
@@ -83,6 +85,31 @@ internal fun parseKoinBindings(appModuleText: String): KoinBindings {
     }
     return KoinBindings(components, resolvesTo)
 }
+
+/**
+ * Nome do TIPO construído no corpo da lambda — a última chamada `Maiúscula(` do corpo, ou `null`.
+ *
+ * Três defeitos que a heurística "primeira chamada qualquer" tinha (Copilot + Codex P2 no #398):
+ *  - `single<Clock> { Clock.systemUTC() }` extraía `systemUTC` como componente. O KDoc desta função
+ *    dizia que esse caso vira sink pelo tipo declarado — e não virava.
+ *  - `single { audit(); A(get()) }` extraía `audit`, deixando `A` e qualquer ciclo dele fora do grafo.
+ *  - `single { run { A(get()) } }` só funcionava por acaso.
+ *
+ * A completude NÃO pegava nada disso: contava 1 componente por declaração, apenas o componente errado.
+ *
+ * Inicial maiúscula porque em Kotlin construtor e função são indistinguíveis na sintaxe de chamada —
+ * a convenção de nomes é o único sinal disponível numa análise textual. `Clock.systemUTC()` é
+ * descartado porque `systemUTC` é minúsculo, e `Foo.create(...)` cai no tipo declarado, que é o
+ * comportamento correto para uma factory. Limite honesto: `single { Foo.Builder().build() }` extrairia
+ * `Builder`; a completude continua garantindo 1 componente por declaração, e o grafo trata tipo fora
+ * do escopo de produção como sink.
+ */
+private fun construtorEm(corpo: String): String? =
+    Regex("""\b([A-Z]\w*)\s*\(""")
+        .findAll(corpo)
+        .lastOrNull()
+        ?.groupValues
+        ?.get(1)
 
 /** Índice do delimitador que fecha o aberto em [inicio], respeitando aninhamento; `null` se desbalanceado. */
 private fun matchingBrace(
