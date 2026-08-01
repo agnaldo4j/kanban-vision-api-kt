@@ -14,6 +14,18 @@ import org.junit.jupiter.api.Test
  * com nomes descritivos (convenção de testing.md).
  */
 class ConventionsTest {
+    private companion object {
+        // Exige IGUALDADE e verifica os operandos (Codex P2 no #397). A presença dos tokens não
+        // distinguia `==` de `!=`: um guard invertido negaria o dono e liberaria cross-tenant com os
+        // quatro marcadores intactos. A semântica em si é provada por LoadOwnedSimulationTest, que
+        // cobre as duas direções; esta regra impede a forma inequivocamente errada.
+        val COMPARACAO_DE_TENANCY = Regex("""ensure\s*\(\s*[A-Za-z_][\w.]*\.organization\.id\s*==\s*[A-Za-z_]\w*\s*\)""")
+
+        // ASCENDENTE explicitamente (Codex P2 no #397): `sortedBy { -it.position }` e
+        // `sortedByDescending` casavam o padrão anterior e inverteriam a ordem de execução.
+        val ORDENACAO_POR_POSITION = Regex("""sortedBy\s*\{\s*it\.position\s*\}""")
+    }
+
     // A regra "repositórios concretos (Jdbc*/Exposed*) só no AppModule" (ADR-0028) foi
     // subsumida pela `ContractPackageTest` (GAP-BS/ADR-0033): os Jdbc* vivem em
     // `persistence.internal.repositories`, e nenhum pacote `*.internal` pode ser importado
@@ -90,16 +102,36 @@ class ConventionsTest {
 
     @Test
     fun `o guard de tenancy de simulation tem exatamente um ponto de declaracao`() {
-        // Par NÃO-VÁCUO da regra acima, que depois do refactor é vacuamente verdadeira. Aquela proíbe a
-        // forma antiga; esta garante que a forma nova não sumiu nem foi reduplicada — o modo mais provável
-        // de o tripwire virar decoração. Este é inerentemente vermelho se o helper for apagado ou copiado.
+        // Par NÃO-VÁCUO da regra acima, que depois do refactor é vacuamente verdadeira.
+        //
+        // GAP-EX: até aqui esta regra contava `functions.filter { name == "loadOwnedSimulation" }.size == 1`
+        // — a unicidade do NOME, não da POLÍTICA. Exatamente o defeito que o #395 corrigiu para o
+        // `ServiceClass` e que aqui continuou vivo. Ficava verde se:
+        //   (a) o `ensure(org == caller)` fosse removido de dentro do helper — o nome permanece;
+        //   (b) a política fosse reduplicada com outro nome (`fetchOwnedSimulation`);
+        //   (c) o helper fosse relocado para `http_api` — não havia check de path.
+        //
+        // A âncora agora é a FORMA DA POLÍTICA: carga por `findById` + comparação de `organization.id`
+        // + `Forbidden`. Conjunção plana de marcadores, não regex frágil — medido, só uma função de
+        // produção tem os quatro. E a localização é verificada, não afirmada na mensagem.
         val declaracoes =
             Konsist
                 .scopeFromProduction()
-                .functions()
-                .filter { it.name == "loadOwnedSimulation" }
+                .functions(includeNested = true)
+                .filter { fn ->
+                    val corpo = fn.text.semComentarios()
+                    corpo.contains("findById") && corpo.contains("Forbidden") && COMPARACAO_DE_TENANCY.containsMatchIn(corpo)
+                }
 
-        assertEquals(1, declaracoes.size, "loadOwnedSimulation deve ser declarado uma única vez")
+        assertEquals(1, declaracoes.size, "a política de tenancy (findById + ensure(org) + Forbidden) deve existir uma única vez")
+        Assertions.assertTrue(
+            declaracoes
+                .single()
+                .containingFile.path
+                .normalizado()
+                .contains("/usecases/"),
+            "a política de tenancy é regra de aplicação e deve morar em usecases",
+        )
     }
 
     @Test
@@ -143,12 +175,16 @@ class ConventionsTest {
         Konsist
             .scopeFromProduction()
             .files
-            .filterNot { it.path.endsWith("/domain/model/kanban/Board.kt") }
+            .filterNot { it.path.normalizado().endsWith("/domain/model/kanban/Board.kt") }
             .assertFalse { acessoCru.containsMatchIn(it.text.semComentarios()) }
     }
 
     // Comentário citando `board.steps` (ex.: "não use board.steps") não é acesso — a regra acima
     // olha código. Contrapartida honesta: um literal de string com `//` engole o resto da linha.
+    // Separador de path normalizado (Copilot no #397): `contains("/usecases/")` daria falso-negativo
+    // num ambiente com `\` e a sentinela mediria o SO em vez da regra.
+    private fun String.normalizado(): String = replace('\\', '/')
+
     private fun String.semComentarios(): String = replace(Regex("""/\*[\s\S]*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
 
     @Test
@@ -167,6 +203,23 @@ class ConventionsTest {
             "Board.stepsInExecutionOrder sumiu ou foi duplicado",
         )
         assertEquals(1, board.functions().count { it.name == "firstStep" }, "Board.firstStep sumiu ou foi duplicado")
+
+        // GAP-EX: contar o NOME não era o que o nome deste teste promete. `fun stepsInExecutionOrder():
+        // List<Step> = steps` (sem ordenar) deixava ESTA regra e a de cima verdes, com a ordenação morta.
+        // Agora a ordenação é asserida na forma, e o `firstStep` tem de DELEGAR — senão
+        // `firstStep(): Step? = steps.firstOrNull()` devolveria a ordem de inserção em silêncio.
+        val ordenado = board.functions().single { it.name == "stepsInExecutionOrder" }
+        Assertions.assertTrue(
+            ORDENACAO_POR_POSITION.containsMatchIn(ordenado.text.semComentarios()),
+            "Board.stepsInExecutionOrder não ordena ASCENDENTE por position — `-it.position` ou " +
+                "`sortedByDescending` inverteria a ordem de execução e faria `firstStep()` devolver o ÚLTIMO",
+        )
+
+        val primeiro = board.functions().single { it.name == "firstStep" }
+        Assertions.assertTrue(
+            primeiro.text.semComentarios().contains("stepsInExecutionOrder()"),
+            "Board.firstStep tem de delegar a stepsInExecutionOrder(), senão devolve ordem de inserção",
+        )
     }
 
     @Test
@@ -233,7 +286,7 @@ class ConventionsTest {
         Konsist
             .scopeFromProduction()
             .files
-            .filterNot { it.path.contains("/domain-") }
+            .filterNot { it.path.normalizado().contains("/domain-") }
             .assertFalse { it.text.semComentarios().contains("ServiceClass.STANDARD") }
 
         // Contagem SEPARADA por política, e não do conjunto somado (Codex P2 no #395): com um total de 2,
