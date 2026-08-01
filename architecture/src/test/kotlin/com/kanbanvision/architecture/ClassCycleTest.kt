@@ -43,12 +43,24 @@ class ClassCycleTest {
         // coberto por `ClassGraphTest` (7 fixtures sintéticos), mas a EXTRAÇÃO Konsist-facing
         // (`declarationsByPackage`/`toNode`) não tem fixture nenhum. Se `prop.type?.text` passar a
         // devolver null, `refs` fica vazio para tudo e o gate fica verde eterno.
-        assertTrue(porPacote.size >= MIN_PACOTES) {
-            "a extração devolveu ${porPacote.size} pacotes: parou de enxergar declarações, e um gate " +
-                "sobre nada é verde sem significado"
+        assertTrue(porPacote.isNotEmpty()) {
+            "a extração devolveu ZERO pacotes: parou de enxergar declarações, e um gate sobre nada é " +
+                "verde sem significado"
         }
-        assertTrue(porPacote.values.sumOf { decls -> decls.sumOf { it.refs.size } } >= MIN_REFERENCIAS) {
-            "nenhuma referência classe→classe extraída: `prop.type?.text` parou de resolver"
+
+        // Contado SEPARADAMENTE das arestas de parent (Codex P2 no #396). `refs` soma os identificadores
+        // do tipo das propriedades E os nomes dos parents; se `prop.type?.text` voltar null — a regressão
+        // EXATA que esta sentinela existe para pegar — os parents sozinhos mantêm `refs` populado e ela
+        // fica verde. Este oráculo é independente: conta só tipo-de-propriedade resolvido.
+        val tiposDePropriedadeResolvidos =
+            Konsist
+                .scopeFromProduction()
+                .classes(includeNested = true)
+                .sumOf { clazz -> clazz.properties(includeNested = false).count { it.type?.text != null } }
+
+        assertTrue(tiposDePropriedadeResolvidos > 0) {
+            "ZERO tipos de propriedade resolvidos em toda a produção: `prop.type?.text` parou de resolver, " +
+                "e o grafo de composição está cego mesmo com arestas de parent presentes"
         }
 
         val violations =
@@ -88,10 +100,6 @@ class ClassCycleTest {
     }
 
     private companion object {
-        // GAP-EX: pisos deliberadamente folgados — o alvo é pegar o colapso para ~0, não variação normal.
-        const val MIN_PACOTES = 5
-        const val MIN_REFERENCIAS = 10
-
         /** Identificadores nus de um texto de tipo — `List<Card>` → {List, Card}; `Card?` → {Card}. */
         private val IDENTIFIER = Regex("[A-Za-z_][A-Za-z0-9_]*")
 

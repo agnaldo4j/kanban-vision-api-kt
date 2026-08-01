@@ -78,19 +78,24 @@ class HexagonalArchitectureTest {
                 "com.kanbanvision.persistence",
                 "com.kanbanvision.httpapi",
             )
+        // `mapNotNull` SUMIRIA com arquivo sem `package` (Codex P2 no #396) — e esse arquivo não reside
+        // em layer nenhuma, então pode importar cross-layer sem nenhuma asserção acima vê-lo, enquanto
+        // este teste ainda declarava "tudo coberto". Era a classe de defeito deste card dentro do
+        // conserto dela. Agora arquivo sem pacote É violação.
         val forasteiros =
             Konsist
                 .scopeFromProduction()
                 .files
-                .mapNotNull { it.packagee?.name }
-                .filterNot { pacote -> camadas.any { pacote == it || pacote.startsWith("$it.") } }
-                .distinct()
+                .mapNotNull { arquivo ->
+                    val pacote = arquivo.packagee?.name ?: return@mapNotNull "(sem package) ${arquivo.path}"
+                    pacote.takeUnless { p -> camadas.any { p == it || p.startsWith("$it.") } }
+                }.distinct()
                 .sorted()
 
         assertEquals(
             emptyList<String>(),
             forasteiros,
-            "pacote de produção fora das 4 camadas — nenhum `doesNotDependOn` acima o cobre",
+            "arquivo de produção sem pacote, ou em pacote fora das 4 camadas — nenhum `doesNotDependOn` acima o cobre",
         )
     }
 }
