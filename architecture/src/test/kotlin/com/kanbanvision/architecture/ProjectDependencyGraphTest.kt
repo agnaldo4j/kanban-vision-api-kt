@@ -48,7 +48,7 @@ class ProjectDependencyGraphTest {
         // Sem isto, um `:domain-metrics` novo ficaria fora do `rank`, seria filtrado dos deps e nunca
         // iterado — ciclo real de projeto Gradle passando VERDE nos dois testes acima.
         assertEquals(
-            modulosDeDominioDoSettings(),
+            modulosDeDominioDoSettings,
             rank.keys,
             "há módulo domain-* no settings fora do rank (ou vice-versa) — a topologia não o governa",
         )
@@ -96,10 +96,17 @@ class ProjectDependencyGraphTest {
      * com um ciclo real entre módulos Gradle. Agora o universo vem do `settings.gradle.kts`.
      */
     private fun domainProjectDepsOf(module: String): Set<String> =
-        projectDepsIn(buildScriptOf(module)).filter { it in modulosDeDominioDoSettings() }.toSet()
+        projectDepsIn(buildScriptOf(module)).filter { it in modulosDeDominioDoSettings }.toSet()
 
-    /** Módulos de domínio DECLARADOS no settings, não uma lista literal que envelhece em silêncio. */
-    private fun modulosDeDominioDoSettings(): Set<String> {
+    /**
+     * Módulos de domínio DECLARADOS no settings, não uma lista literal que envelhece em silêncio.
+     *
+     * `by lazy` porque era chamado DENTRO do `filter` (Copilot no #397): relia e reparsava o arquivo
+     * uma vez por dep, por módulo.
+     */
+    private val modulosDeDominioDoSettings: Set<String> by lazy { lerModulosDeDominioDoSettings() }
+
+    private fun lerModulosDeDominioDoSettings(): Set<String> {
         val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
         val settings = File(root, "settings.gradle.kts")
         require(settings.isFile) { "settings.gradle.kts não encontrado em ${settings.absolutePath}" }

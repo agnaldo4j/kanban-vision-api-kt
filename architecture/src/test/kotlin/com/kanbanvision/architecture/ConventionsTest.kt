@@ -14,6 +14,18 @@ import org.junit.jupiter.api.Test
  * com nomes descritivos (convenção de testing.md).
  */
 class ConventionsTest {
+    private companion object {
+        // Exige IGUALDADE e verifica os operandos (Codex P2 no #397). A presença dos tokens não
+        // distinguia `==` de `!=`: um guard invertido negaria o dono e liberaria cross-tenant com os
+        // quatro marcadores intactos. A semântica em si é provada por LoadOwnedSimulationTest, que
+        // cobre as duas direções; esta regra impede a forma inequivocamente errada.
+        val COMPARACAO_DE_TENANCY = Regex("""ensure\s*\(\s*[A-Za-z_][\w.]*\.organization\.id\s*==\s*[A-Za-z_]\w*\s*\)""")
+
+        // ASCENDENTE explicitamente (Codex P2 no #397): `sortedBy { -it.position }` e
+        // `sortedByDescending` casavam o padrão anterior e inverteriam a ordem de execução.
+        val ORDENACAO_POR_POSITION = Regex("""sortedBy\s*\{\s*it\.position\s*\}""")
+    }
+
     // A regra "repositórios concretos (Jdbc*/Exposed*) só no AppModule" (ADR-0028) foi
     // subsumida pela `ContractPackageTest` (GAP-BS/ADR-0033): os Jdbc* vivem em
     // `persistence.internal.repositories`, e nenhum pacote `*.internal` pode ser importado
@@ -108,10 +120,7 @@ class ConventionsTest {
                 .functions(includeNested = true)
                 .filter { fn ->
                     val corpo = fn.text.semComentarios()
-                    corpo.contains("findById") &&
-                        corpo.contains("ensure(") &&
-                        corpo.contains("organization.id") &&
-                        corpo.contains("Forbidden")
+                    corpo.contains("findById") && corpo.contains("Forbidden") && COMPARACAO_DE_TENANCY.containsMatchIn(corpo)
                 }
 
         assertEquals(1, declaracoes.size, "a política de tenancy (findById + ensure(org) + Forbidden) deve existir uma única vez")
@@ -119,6 +128,7 @@ class ConventionsTest {
             declaracoes
                 .single()
                 .containingFile.path
+                .normalizado()
                 .contains("/usecases/"),
             "a política de tenancy é regra de aplicação e deve morar em usecases",
         )
@@ -165,12 +175,16 @@ class ConventionsTest {
         Konsist
             .scopeFromProduction()
             .files
-            .filterNot { it.path.endsWith("/domain/model/kanban/Board.kt") }
+            .filterNot { it.path.normalizado().endsWith("/domain/model/kanban/Board.kt") }
             .assertFalse { acessoCru.containsMatchIn(it.text.semComentarios()) }
     }
 
     // Comentário citando `board.steps` (ex.: "não use board.steps") não é acesso — a regra acima
     // olha código. Contrapartida honesta: um literal de string com `//` engole o resto da linha.
+    // Separador de path normalizado (Copilot no #397): `contains("/usecases/")` daria falso-negativo
+    // num ambiente com `\` e a sentinela mediria o SO em vez da regra.
+    private fun String.normalizado(): String = replace('\\', '/')
+
     private fun String.semComentarios(): String = replace(Regex("""/\*[\s\S]*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
 
     @Test
@@ -196,8 +210,9 @@ class ConventionsTest {
         // `firstStep(): Step? = steps.firstOrNull()` devolveria a ordem de inserção em silêncio.
         val ordenado = board.functions().single { it.name == "stepsInExecutionOrder" }
         Assertions.assertTrue(
-            Regex("""sortedBy\s*\{[^}]*position""").containsMatchIn(ordenado.text.semComentarios()),
-            "Board.stepsInExecutionOrder parou de ordenar por position — o nome virou mentira",
+            ORDENACAO_POR_POSITION.containsMatchIn(ordenado.text.semComentarios()),
+            "Board.stepsInExecutionOrder não ordena ASCENDENTE por position — `-it.position` ou " +
+                "`sortedByDescending` inverteria a ordem de execução e faria `firstStep()` devolver o ÚLTIMO",
         )
 
         val primeiro = board.functions().single { it.name == "firstStep" }
@@ -271,7 +286,7 @@ class ConventionsTest {
         Konsist
             .scopeFromProduction()
             .files
-            .filterNot { it.path.contains("/domain-") }
+            .filterNot { it.path.normalizado().contains("/domain-") }
             .assertFalse { it.text.semComentarios().contains("ServiceClass.STANDARD") }
 
         // Contagem SEPARADA por política, e não do conjunto somado (Codex P2 no #395): com um total de 2,
