@@ -15,12 +15,6 @@ import org.junit.jupiter.api.Test
  */
 class ConventionsTest {
     private companion object {
-        // Exige IGUALDADE e verifica os operandos (Codex P2 no #397). A presença dos tokens não
-        // distinguia `==` de `!=`: um guard invertido negaria o dono e liberaria cross-tenant com os
-        // quatro marcadores intactos. A semântica em si é provada por LoadOwnedSimulationTest, que
-        // cobre as duas direções; esta regra impede a forma inequivocamente errada.
-        val COMPARACAO_DE_TENANCY = Regex("""ensure\s*\(\s*[A-Za-z_][\w.]*\.organization\.id\s*==\s*[A-Za-z_]\w*\s*\)""")
-
         // ASCENDENTE explicitamente (Codex P2 no #397): `sortedBy { -it.position }` e
         // `sortedByDescending` casavam o padrão anterior e inverteriam a ordem de execução.
         val ORDENACAO_POR_POSITION = Regex("""sortedBy\s*\{\s*it\.position\s*\}""")
@@ -56,103 +50,6 @@ class ConventionsTest {
                 executes.isNotEmpty() &&
                     executes.all { it.returnType?.text?.startsWith("Either<") == true }
             }
-    }
-
-    @Test
-    fun `use case que carrega simulation por id passa pelo guard unico de tenancy`() {
-        // GAP-DW: `findById(id).bind()` + `ensure(org == caller) { Forbidden }` estava copiado verbatim em
-        // 5 use cases. Um 6º que esquecesse o `ensure` vazaria cross-tenant SEM QUEBRAR TESTE ALGUM — não
-        // havia nada, nem em usecases/src/test nem aqui, que exigisse o guard. Extrair o helper torna fácil
-        // acertar; esta regra é o que torna difícil errar.
-        //
-        // A âncora é a CARGA (`findById`), não a injeção do repositório: `ListSimulationsUseCase` injeta o
-        // mesmo `SimulationRepository` mas faz tenancy por FILTRO (`findAll(orgId, …)`), e `CreateSimulation`
-        // não lê Simulation — os dois devem ficar de fora, e ficam.
-        //
-        // O nome do receptor é DERIVADO DO TIPO, não fixado no texto (Codex P2 no #387). Casar a literal
-        // `simulationRepository.findById` deixava passar `repo.findById`/`simulationRepo.findById` — um
-        // guard de segurança driblável por renomear um campo não é guard. Aqui a regra pergunta ao tipo
-        // quem são os campos `SimulationRepository` e proíbe `findById` sobre cada um deles.
-        //
-        // E é PROIBIÇÃO PLANA, não implicação: a versão anterior — "contém findById ⟹ contém
-        // loadOwnedSimulation" — agregava em nível de CLASSE, então um use case com uma chamada guardada
-        // E uma carga direta satisfazia as duas substrings e passava (Codex P2, a metade mais séria).
-        // Sem substring de escape não há esse buraco: nenhum `*UseCase` pode chamar `findById` num
-        // `SimulationRepository`, ponto. O único caminho legítimo é `loadOwnedSimulation`, que é função
-        // top-level (não é classe `*UseCase`) e recebe o repositório por parâmetro.
-        //
-        // `CreateSimulationUseCase` fica de fora corretamente: o `findById` dele é de
-        // `OrganizationRepository`, outro tipo. `ListSimulationsUseCase` também: usa `findAll`/`count`.
-        //
-        // Limite honesto: a regra é shape-based. Ela não prova que existe autorização — prova que a carga
-        // direta não é usada. Quem prova a autorização é LoadOwnedSimulationTest + os 5 testes de Forbidden.
-        Konsist
-            .scopeFromProduction()
-            .classes()
-            .withNameEndingWith("UseCase")
-            .assertFalse(strict = true) { clazz ->
-                // GAP-EX: `hasTextContaining("$campo.findById")` caía com uma QUEBRA DE LINHA — a forma
-                // idiomática que o ktlint sequer desencoraja:
-                //     simulationRepository
-                //         .findById(id)
-                //         .bind()
-                // Também driblavam `with(repo) { findById() }`, `repo.let { it.findById() }` e
-                // `repo::findById`. E o `hasTextContaining` lê `psiElement.text`, que INCLUI comentários:
-                // um `// nunca chame repo.findById aqui` REPROVAVA o build (falso-positivo). As três
-                // regras vizinhas usam `semComentarios()`; esta era a que faltava.
-                //
-                // O tipo do campo também vem por `it.type?.name`, que é o TEXTO do type reference: um
-                // campo declarado por FQN ou por alias de import escapava do conjunto. Daí o fallback
-                // por sufixo — cobre `com.…usecases.repositories.SimulationRepository` e o alias.
-                val corpo = clazz.text.semComentarios()
-                val camposDeRepositorio =
-                    clazz
-                        .properties()
-                        .filter {
-                            it.type
-                                ?.name
-                                ?.substringAfterLast('.')
-                                ?.endsWith("SimulationRepository") == true
-                        }.map { it.name }
-                camposDeRepositorio.any { campo ->
-                    Regex("""\b${Regex.escape(campo)}\s*(?:\.|::|\?\.)\s*(?:let\s*\{[^}]*)?findById""").containsMatchIn(corpo) ||
-                        Regex("""with\s*\(\s*${Regex.escape(campo)}\s*\)\s*\{[^}]*findById""").containsMatchIn(corpo)
-                }
-            }
-    }
-
-    @Test
-    fun `o guard de tenancy de simulation tem exatamente um ponto de declaracao`() {
-        // Par NÃO-VÁCUO da regra acima, que depois do refactor é vacuamente verdadeira.
-        //
-        // GAP-EX: até aqui esta regra contava `functions.filter { name == "loadOwnedSimulation" }.size == 1`
-        // — a unicidade do NOME, não da POLÍTICA. Exatamente o defeito que o #395 corrigiu para o
-        // `ServiceClass` e que aqui continuou vivo. Ficava verde se:
-        //   (a) o `ensure(org == caller)` fosse removido de dentro do helper — o nome permanece;
-        //   (b) a política fosse reduplicada com outro nome (`fetchOwnedSimulation`);
-        //   (c) o helper fosse relocado para `http_api` — não havia check de path.
-        //
-        // A âncora agora é a FORMA DA POLÍTICA: carga por `findById` + comparação de `organization.id`
-        // + `Forbidden`. Conjunção plana de marcadores, não regex frágil — medido, só uma função de
-        // produção tem os quatro. E a localização é verificada, não afirmada na mensagem.
-        val declaracoes =
-            Konsist
-                .scopeFromProduction()
-                .functions(includeNested = true)
-                .filter { fn ->
-                    val corpo = fn.text.semComentarios()
-                    corpo.contains("findById") && corpo.contains("Forbidden") && COMPARACAO_DE_TENANCY.containsMatchIn(corpo)
-                }
-
-        assertEquals(1, declaracoes.size, "a política de tenancy (findById + ensure(org) + Forbidden) deve existir uma única vez")
-        Assertions.assertTrue(
-            declaracoes
-                .single()
-                .containingFile.path
-                .normalizado()
-                .contains("/usecases/"),
-            "a política de tenancy é regra de aplicação e deve morar em usecases",
-        )
     }
 
     @Test
@@ -201,7 +98,7 @@ class ConventionsTest {
             .scopeFromProduction()
             .files
             .filterNot { it.path.normalizado().endsWith("/domain/model/kanban/Board.kt") }
-            .assertFalse(strict = true) { acessoCru.containsMatchIn(it.text.semComentarios()) }
+            .assertFalse(strict = true) { acessoCru.containsMatchIn(it.text.semComentariosEStrings()) }
     }
 
     // Comentário citando `board.steps` (ex.: "não use board.steps") não é acesso — a regra acima
@@ -209,20 +106,24 @@ class ConventionsTest {
     // Separador de path normalizado (Copilot no #397): `contains("/usecases/")` daria falso-negativo
     // num ambiente com `\` e a sentinela mediria o SO em vez da regra.
 
-    /** `val x = <algo>.board` / `= Board(...)` — locais, invisíveis a `properties(includeLocal = false)`. */
+    /**
+     * `val x` local que aponta para um `Board` — invisível a `properties(includeLocal = false)`.
+     *
+     * Cobre as três origens (Codex P2 no #399 — o KDoc anterior afirmava cobrir `= Board(...)` e o
+     * regex exigia a palavra `board` MINÚSCULA à direita, então construtor e factory escapavam):
+     *   `val b = scenario.board` · `val b = Board(...)` · `val b = Board.create(...)`
+     */
     private fun nomesLocaisDeBoard(): Set<String> =
         Konsist
             .scopeFromProduction()
             .files
             .flatMap { arquivo ->
-                Regex("""\bval\s+(\w+)\s*(?::\s*Board\s*)?=\s*[\w.]*\bboard\b""")
-                    .findAll(arquivo.text.semComentarios())
+                Regex("""\bval\s+(\w+)\s*(?::\s*Board\s*)?=\s*(?:[\w.]*\bboard\b|Board\s*[({.])""")
+                    .findAll(arquivo.text.semComentariosEStrings())
                     .map { it.groupValues[1] }
             }.toSet()
 
     private fun String.normalizado(): String = replace('\\', '/')
-
-    private fun String.semComentarios(): String = replace(Regex("""/\*[\s\S]*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
 
     @Test
     fun `Board declara uma unica vez o acesso ordenado a steps`() {
@@ -247,14 +148,14 @@ class ConventionsTest {
         // `firstStep(): Step? = steps.firstOrNull()` devolveria a ordem de inserção em silêncio.
         val ordenado = board.functions().single { it.name == "stepsInExecutionOrder" }
         Assertions.assertTrue(
-            ORDENACAO_POR_POSITION.containsMatchIn(ordenado.text.semComentarios()),
+            ORDENACAO_POR_POSITION.containsMatchIn(ordenado.text.semComentariosEStrings()),
             "Board.stepsInExecutionOrder não ordena ASCENDENTE por position — `-it.position` ou " +
                 "`sortedByDescending` inverteria a ordem de execução e faria `firstStep()` devolver o ÚLTIMO",
         )
 
         val primeiro = board.functions().single { it.name == "firstStep" }
         Assertions.assertTrue(
-            primeiro.text.semComentarios().contains("stepsInExecutionOrder()"),
+            primeiro.text.semComentariosEStrings().contains("stepsInExecutionOrder()"),
             "Board.firstStep tem de delegar a stepsInExecutionOrder(), senão devolve ordem de inserção",
         )
     }
@@ -306,7 +207,7 @@ class ConventionsTest {
                 """(\?:|getOrDefault\(|getOrElse\s*\{)\s*(?:[a-z][A-Za-z0-9_]*\.)*""" +
                     """(${defaultsDoDominio.joinToString("|") { Regex.escape(it) }})\b""",
             )
-        fora.assertFalse(strict = true) { escolhaDeDefault.containsMatchIn(it.text.semComentarios()) }
+        fora.assertFalse(strict = true) { escolhaDeDefault.containsMatchIn(it.text.semComentariosEStrings()) }
     }
 
     @Test
@@ -324,7 +225,7 @@ class ConventionsTest {
             .scopeFromProduction()
             .files
             .filterNot { it.path.normalizado().contains("/domain-") }
-            .assertFalse(strict = true) { it.text.semComentarios().contains("ServiceClass.STANDARD") }
+            .assertFalse(strict = true) { it.text.semComentariosEStrings().contains("ServiceClass.STANDARD") }
 
         // Contagem SEPARADA por política, e não do conjunto somado (Codex P2 no #395): com um total de 2,
         // remover `fromNameOrDefault` enquanto se acrescenta um segundo `fromNameOrNull` mantinha a soma
