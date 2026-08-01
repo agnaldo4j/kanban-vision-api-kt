@@ -48,21 +48,6 @@ class ClassCycleTest {
                 "verde sem significado"
         }
 
-        // Contado SEPARADAMENTE das arestas de parent (Codex P2 no #396). `refs` soma os identificadores
-        // do tipo das propriedades E os nomes dos parents; se `prop.type?.text` voltar null — a regressão
-        // EXATA que esta sentinela existe para pegar — os parents sozinhos mantêm `refs` populado e ela
-        // fica verde. Este oráculo é independente: conta só tipo-de-propriedade resolvido.
-        val tiposDePropriedadeResolvidos =
-            Konsist
-                .scopeFromProduction()
-                .classes(includeNested = true)
-                .sumOf { clazz -> clazz.properties(includeNested = false).count { it.type?.text != null } }
-
-        assertTrue(tiposDePropriedadeResolvidos > 0) {
-            "ZERO tipos de propriedade resolvidos em toda a produção: `prop.type?.text` parou de resolver, " +
-                "e o grafo de composição está cego mesmo com arestas de parent presentes"
-        }
-
         val violations =
             porPacote.mapNotNull { (pkg, decls) ->
                 findCycle(buildClassGraph(decls))?.let { cycle ->
@@ -87,6 +72,25 @@ class ClassCycleTest {
      * `(fqn, nomeSimples, tiposReferenciados)` — refs de propriedades diretas + supertipos.
      * Agrupamos por FILE (que carrega o pacote) e unimos os pacotes espalhados por vários arquivos.
      */
+    @Test
+    fun `a extracao de composicao ainda enxerga tipo de propriedade`() {
+        // Contado SEPARADAMENTE das arestas de parent (Codex P2 no #396). O `refs` do grafo soma OS DOIS:
+        // identificadores do tipo das propriedades E nomes dos parents. Se `prop.type?.text` voltar null —
+        // a regressão EXATA que esta sentinela existe para pegar — os parents sozinhos mantêm `refs`
+        // populado e a sentinela fica verde com o grafo de composição cego. Oráculo independente: conta
+        // só tipo-de-propriedade resolvido.
+        val tiposResolvidos =
+            Konsist
+                .scopeFromProduction()
+                .classes(includeNested = true)
+                .sumOf { clazz -> clazz.properties(includeNested = false).count { it.type?.text != null } }
+
+        assertTrue(tiposResolvidos > 0) {
+            "ZERO tipos de propriedade resolvidos em toda a produção: `prop.type?.text` parou de resolver, " +
+                "e o grafo de composição está cego mesmo com arestas de parent presentes"
+        }
+    }
+
     private fun declarationsByPackage(): Map<String, List<ClassNode>> {
         val byPackage = mutableMapOf<String, MutableList<ClassNode>>()
         Konsist.scopeFromProduction().files.forEach { file ->
