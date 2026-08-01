@@ -105,18 +105,28 @@ class ConventionsTest {
                 // campo declarado por FQN ou por alias de import escapava do conjunto. Daí o fallback
                 // por sufixo — cobre `com.…usecases.repositories.SimulationRepository` e o alias.
                 val corpo = clazz.text.semComentarios()
+                // O ALIAS de import é resolvido antes de filtrar (Codex P2 no #399): com
+                // `import …SimulationRepository as SimRepo`, `it.type?.name` devolve `SimRepo` e o
+                // sufixo não casava — o PR anterior AFIRMAVA cobrir alias e não cobria.
+                val apelidosDoRepositorio =
+                    clazz.containingFile.imports
+                        .filter { it.name.substringAfterLast('.') == "SimulationRepository" }
+                        .mapNotNull { it.alias?.name }
+                        .toSet()
                 val camposDeRepositorio =
                     clazz
                         .properties()
                         .filter {
-                            it.type
-                                ?.name
-                                ?.substringAfterLast('.')
-                                ?.endsWith("SimulationRepository") == true
+                            val tipo = it.type?.name?.substringAfterLast('.')
+                            tipo?.endsWith("SimulationRepository") == true || tipo in apelidosDoRepositorio
                         }.map { it.name }
                 camposDeRepositorio.any { campo ->
-                    Regex("""\b${Regex.escape(campo)}\s*(?:\.|::|\?\.)\s*(?:let\s*\{[^}]*)?findById""").containsMatchIn(corpo) ||
-                        Regex("""with\s*\(\s*${Regex.escape(campo)}\s*\)\s*\{[^}]*findById""").containsMatchIn(corpo)
+                    val ref = Regex.escape(campo)
+                    // `repo.let { it }.findById(…)` deixa o `findById` FORA do bloco (Copilot no #399):
+                    // qualquer cadeia de escopo entre o campo e a chamada agora conta.
+                    Regex("""\b$ref\s*(?:\.|::|\?\.)\s*(?:\w+\s*\{[^}]*\}\s*[.?]*\s*)*findById""").containsMatchIn(corpo) ||
+                        Regex("""\b$ref\s*(?:\.|::|\?\.)\s*(?:\w+\s*\{[^}]*)?findById""").containsMatchIn(corpo) ||
+                        Regex("""with\s*\(\s*$ref\s*\)\s*\{[^}]*findById""").containsMatchIn(corpo)
                 }
             }
     }
@@ -209,13 +219,19 @@ class ConventionsTest {
     // Separador de path normalizado (Copilot no #397): `contains("/usecases/")` daria falso-negativo
     // num ambiente com `\` e a sentinela mediria o SO em vez da regra.
 
-    /** `val x = <algo>.board` / `= Board(...)` — locais, invisíveis a `properties(includeLocal = false)`. */
+    /**
+     * `val x` local que aponta para um `Board` — invisível a `properties(includeLocal = false)`.
+     *
+     * Cobre as três origens (Codex P2 no #399 — o KDoc anterior afirmava cobrir `= Board(...)` e o
+     * regex exigia a palavra `board` MINÚSCULA à direita, então construtor e factory escapavam):
+     *   `val b = scenario.board` · `val b = Board(...)` · `val b = Board.create(...)`
+     */
     private fun nomesLocaisDeBoard(): Set<String> =
         Konsist
             .scopeFromProduction()
             .files
             .flatMap { arquivo ->
-                Regex("""\bval\s+(\w+)\s*(?::\s*Board\s*)?=\s*[\w.]*\bboard\b""")
+                Regex("""\bval\s+(\w+)\s*(?::\s*Board\s*)?=\s*(?:[\w.]*\bboard\b|Board\s*[({.])""")
                     .findAll(arquivo.text.semComentarios())
                     .map { it.groupValues[1] }
             }.toSet()

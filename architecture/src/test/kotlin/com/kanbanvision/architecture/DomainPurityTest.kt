@@ -31,7 +31,7 @@ class DomainPurityTest {
         )
 
     @Test
-    fun `domain so importa kotlin, tipos de valor da JDK e arrow`() {
+    fun `domain so importa kotlin, coroutines, tipos de valor da JDK e arrow`() {
         // scopeFromProduction() + filtro por prefixo de pacote (não por nome de módulo): pós-extração
         // faseada (ADR-0038) o domínio se espalha por :domain-common/:domain-kanban/:domain-simulation.
         // Só esses usam o prefixo com.kanbanvision.domain, então o filtro cobre exatamente os módulos
@@ -66,7 +66,11 @@ class DomainPurityTest {
                 """javax""",
                 """java\.sql""",
             )
-        val fqnDeFramework = Regex("""\b(${raizesDeFramework.joinToString("|")})\.[A-Z]""")
+        // SUBPACOTES entre a raiz e a classe (Codex P2 + Copilot no #399). O padrão anterior exigia
+        // `[A-Z]` logo após a raiz, então só pegava classe imediatamente abaixo dela —
+        // `io.ktor.server.application.Application`, `javax.crypto.Cipher` e `jakarta.persistence.Entity`,
+        // que são a forma NORMAL de escrever um FQN, passavam verdes. Era a maioria dos casos.
+        val fqnDeFramework = Regex("""\b(${raizesDeFramework.joinToString("|")})(?:\.[a-z]\w*)*\.[A-Z]""")
 
         Konsist
             .scopeFromProduction()
@@ -75,9 +79,17 @@ class DomainPurityTest {
             .assertFalse(strict = true) { file -> fqnDeFramework.containsMatchIn(file.text.semComentariosEStrings()) }
     }
 
-    /** Comentário e literal de string citando um FQN não são uso — a regra olha código. */
+    /**
+     * Comentário e literal de string citando um FQN não são uso — a regra olha código.
+     *
+     * Copilot no #399, dois defeitos: faltava a RAW STRING (`"""…"""`), que podia reprovar o build por
+     * citar um FQN; e a ORDEM estava trocada — comentários saíam ANTES das strings, então um
+     * `"http://exemplo"` perdia o resto da linha para o descarte de `//`. Strings primeiro, depois
+     * comentários.
+     */
     private fun String.semComentariosEStrings(): String =
-        replace(Regex("""/\*[\s\S]*?\*/"""), " ")
-            .replace(Regex("""//[^\n]*"""), " ")
+        replace(Regex(""""{3}[\s\S]*?"{3}"""), "\"\"")
             .replace(Regex(""""(?:[^"\\\n]|\\.)*""""), "\"\"")
+            .replace(Regex("""/\*[\s\S]*?\*/"""), " ")
+            .replace(Regex("""//[^\n]*"""), " ")
 }
