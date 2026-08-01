@@ -4,7 +4,6 @@ import com.lemonappdev.konsist.api.Konsist
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 
@@ -26,11 +25,22 @@ import java.io.File
 class DiWiringCycleTest {
     @Test
     fun `o grafo de injecao por construtor do AppModule e aciclico`() {
-        val bindings = parseKoinBindings(appModuleText())
-        // Anti-vacuidade: o parser realmente enxergou o wiring (senão o gate ficaria verde à toa).
-        assertTrue(bindings.components.containsAll(ANCHORS)) {
-            "parseKoinBindings não reconheceu o wiring esperado do AppModule; encontrou ${bindings.components}"
-        }
+        val texto = appModuleText()
+        val bindings = parseKoinBindings(texto)
+
+        // GAP-EX: a âncora era `containsAll(3 nomes)` — um PISO, não completude. O parser já era cego a
+        // `single<Clock> { Clock.systemUTC() }` e passaria batido por `singleOf(::X)`, `factory { }` ou
+        // lambda com chaves aninhadas: um ciclo real entre dois `singleOf` daria VERDE aqui e
+        // `StackOverflowError` em produção. Agora a contagem do parser é confrontada com um ORÁCULO
+        // INDEPENDENTE (`countKoinDeclarations`), então uma forma nova do DSL reprova o gate em vez de
+        // sumir dele.
+        val declaradas = countKoinDeclarations(texto)
+        assertEquals(
+            declaradas,
+            bindings.components.size,
+            "o parser extraiu ${bindings.components.size} de $declaradas declarações do DSL no AppModule — " +
+                "há forma que ele não reconhece, e o que ele não vê não entra no grafo de ciclos: ${bindings.components}",
+        )
 
         val ctorParams = konsistCtorParamTypes(bindings.components)
         val cycle = findCycle(buildInjectionGraph(bindings) { ctorParams[it].orEmpty() })
@@ -130,6 +140,28 @@ class DiWiringCycleTest {
         }
     }
 
+    @Test
+    fun `o parser identifica o TIPO CONSTRUIDO, nao a primeira chamada do corpo`() {
+        // Codex P2 + Copilot no #398: a heurística anterior pegava a primeira chamada `\w+(` do corpo.
+        // `single<Clock> { Clock.systemUTC() }` virava componente `systemUTC` (o KDoc do parser dizia que
+        // viraria sink — e não virava), e `single { audit(); A(get()) }` virava `audit`, deixando `A` e
+        // qualquer ciclo dele FORA do grafo. A completude não pegava: contava 1 componente por
+        // declaração, só que o errado.
+        val bindings =
+            parseKoinBindings(
+                """
+                module {
+                    single<Clock> { Clock.systemUTC() }
+                    single { audit(); Alpha(get()) }
+                    single { run { Beta(get()) } }
+                    single<Port<Foo>> { Gama(get()) }
+                }
+                """.trimIndent(),
+            )
+
+        assertEquals(setOf("Clock", "Alpha", "Beta", "Gama"), bindings.components)
+    }
+
     private fun appModuleText(): String {
         val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
         val file = File(root, APP_MODULE)
@@ -141,8 +173,5 @@ class DiWiringCycleTest {
 
     private companion object {
         private const val APP_MODULE = "http_api/src/main/kotlin/com/kanbanvision/httpapi/di/AppModule.kt"
-
-        // Âncoras de sanidade: se o parser não achar estas bindings, o gate está cego — falhe alto.
-        private val ANCHORS = setOf("CreateSimulationUseCase", "JdbcOrganizationRepository", "MicrometerEventPublisher")
     }
 }

@@ -40,7 +40,7 @@ class ConventionsTest {
             .scopeFromProduction("http_api")
             .files
             .filter { it.packagee?.name == "com.kanbanvision.httpapi.routes" }
-            .assertFalse { file ->
+            .assertFalse(strict = true) { file ->
                 file.imports.any { it.name.startsWith("com.kanbanvision.persistence") }
             }
     }
@@ -51,7 +51,7 @@ class ConventionsTest {
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("UseCase")
-            .assertTrue { clazz ->
+            .assertTrue(strict = true) { clazz ->
                 val executes = clazz.functions().filter { it.name == "execute" }
                 executes.isNotEmpty() &&
                     executes.all { it.returnType?.text?.startsWith("Either<") == true }
@@ -90,7 +90,7 @@ class ConventionsTest {
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("UseCase")
-            .assertFalse { clazz ->
+            .assertFalse(strict = true) { clazz ->
                 val simulationRepositories =
                     clazz
                         .properties()
@@ -176,7 +176,7 @@ class ConventionsTest {
             .scopeFromProduction()
             .files
             .filterNot { it.path.normalizado().endsWith("/domain/model/kanban/Board.kt") }
-            .assertFalse { acessoCru.containsMatchIn(it.text.semComentarios()) }
+            .assertFalse(strict = true) { acessoCru.containsMatchIn(it.text.semComentarios()) }
     }
 
     // Comentário citando `board.steps` (ex.: "não use board.steps") não é acesso — a regra acima
@@ -269,7 +269,7 @@ class ConventionsTest {
                 """(\?:|getOrDefault\(|getOrElse\s*\{)\s*(?:[a-z][A-Za-z0-9_]*\.)*""" +
                     """(${defaultsDoDominio.joinToString("|") { Regex.escape(it) }})\b""",
             )
-        fora.assertFalse { escolhaDeDefault.containsMatchIn(it.text.semComentarios()) }
+        fora.assertFalse(strict = true) { escolhaDeDefault.containsMatchIn(it.text.semComentarios()) }
     }
 
     @Test
@@ -287,7 +287,7 @@ class ConventionsTest {
             .scopeFromProduction()
             .files
             .filterNot { it.path.normalizado().contains("/domain-") }
-            .assertFalse { it.text.semComentarios().contains("ServiceClass.STANDARD") }
+            .assertFalse(strict = true) { it.text.semComentarios().contains("ServiceClass.STANDARD") }
 
         // Contagem SEPARADA por política, e não do conjunto somado (Codex P2 no #395): com um total de 2,
         // remover `fromNameOrDefault` enquanto se acrescenta um segundo `fromNameOrNull` mantinha a soma
@@ -313,13 +313,13 @@ class ConventionsTest {
             .scopeFromProduction()
             .classes()
             .filter { it.resideInPackage("..commands") }
-            .assertTrue { it.name.endsWith("Command") }
+            .assertTrue(strict = true) { it.name.endsWith("Command") }
 
         Konsist
             .scopeFromProduction()
             .classes()
             .filter { it.resideInPackage("..queries") }
-            .assertTrue { it.name.endsWith("Query") }
+            .assertTrue(strict = true) { it.name.endsWith("Query") }
     }
 
     @Test
@@ -333,6 +333,6 @@ class ConventionsTest {
             .scopeFromTest()
             .functions()
             .filter { fn -> fn.annotations.any { it.fullyQualifiedName in testAnnotations } }
-            .assertTrue { it.name.contains(" ") }
+            .assertTrue(strict = true) { it.name.contains(" ") }
     }
 }
