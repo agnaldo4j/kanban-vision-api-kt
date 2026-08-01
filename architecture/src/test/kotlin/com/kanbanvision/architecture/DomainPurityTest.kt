@@ -78,18 +78,4 @@ class DomainPurityTest {
             .filter { file -> file.packagee?.name?.startsWith("com.kanbanvision.domain") == true }
             .assertFalse(strict = true) { file -> fqnDeFramework.containsMatchIn(file.text.semComentariosEStrings()) }
     }
-
-    /**
-     * Comentário e literal de string citando um FQN não são uso — a regra olha código.
-     *
-     * Copilot no #399, dois defeitos: faltava a RAW STRING (`"""…"""`), que podia reprovar o build por
-     * citar um FQN; e a ORDEM estava trocada — comentários saíam ANTES das strings, então um
-     * `"http://exemplo"` perdia o resto da linha para o descarte de `//`. Strings primeiro, depois
-     * comentários.
-     */
-    private fun String.semComentariosEStrings(): String =
-        replace(Regex(""""{3}[\s\S]*?"{3}"""), "\"\"")
-            .replace(Regex(""""(?:[^"\\\n]|\\.)*""""), "\"\"")
-            .replace(Regex("""/\*[\s\S]*?\*/"""), " ")
-            .replace(Regex("""//[^\n]*"""), " ")
 }
