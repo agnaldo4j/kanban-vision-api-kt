@@ -37,8 +37,22 @@ import org.junit.jupiter.api.Test
 class ClassCycleTest {
     @Test
     fun `nao ha ciclos classe-classe dentro de um pacote de producao`() {
+        val porPacote = declarationsByPackage()
+
+        // GAP-EX — mesma prova que falta no PackageCycleTest, um nível acima: `buildClassGraph` é bem
+        // coberto por `ClassGraphTest` (7 fixtures sintéticos), mas a EXTRAÇÃO Konsist-facing
+        // (`declarationsByPackage`/`toNode`) não tem fixture nenhum. Se `prop.type?.text` passar a
+        // devolver null, `refs` fica vazio para tudo e o gate fica verde eterno.
+        assertTrue(porPacote.size >= MIN_PACOTES) {
+            "a extração devolveu ${porPacote.size} pacotes: parou de enxergar declarações, e um gate " +
+                "sobre nada é verde sem significado"
+        }
+        assertTrue(porPacote.values.sumOf { decls -> decls.sumOf { it.refs.size } } >= MIN_REFERENCIAS) {
+            "nenhuma referência classe→classe extraída: `prop.type?.text` parou de resolver"
+        }
+
         val violations =
-            declarationsByPackage().mapNotNull { (pkg, decls) ->
+            porPacote.mapNotNull { (pkg, decls) ->
                 findCycle(buildClassGraph(decls))?.let { cycle ->
                     "$pkg: ${cycle.joinToString(" -> ")}"
                 }
@@ -74,6 +88,10 @@ class ClassCycleTest {
     }
 
     private companion object {
+        // GAP-EX: pisos deliberadamente folgados — o alvo é pegar o colapso para ~0, não variação normal.
+        const val MIN_PACOTES = 5
+        const val MIN_REFERENCIAS = 10
+
         /** Identificadores nus de um texto de tipo — `List<Card>` → {List, Card}; `Card?` → {Card}. */
         private val IDENTIFIER = Regex("[A-Za-z_][A-Za-z0-9_]*")
 

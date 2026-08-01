@@ -3,6 +3,7 @@ package com.kanbanvision.architecture
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -21,6 +22,16 @@ class PackageCycleTest {
     @Test
     fun `nao ha ciclos entre pacotes de producao`() {
         val graph = buildPackageGraph(Konsist.scopeFromProduction().files)
+
+        // GAP-EX — prova de NÃO-VACUIDADE do construtor de grafo, não do detector. `findCycle` tem par
+        // (`CycleDetectionTest`); `buildPackageGraph` não tinha nenhum. Se ele devolvesse mapa vazio —
+        // porque `import.name` mudou de semântica num upgrade de Konsist, ou porque `resolvePackage`
+        // deixou de resolver — o gate ficaria VERDE PARA SEMPRE, indistinguível de "não há ciclo".
+        assertTrue(graph.size >= MIN_PACOTES_COM_ARESTA) {
+            "o grafo de pacotes tem ${graph.size} nós: o construtor parou de enxergar imports, e um gate " +
+                "sobre grafo vazio é verde sem significado"
+        }
+
         val cycle = findCycle(graph)
         assertNull(cycle) { "Ciclo de pacote detectado: ${cycle.orEmpty().joinToString(" -> ")}" }
     }
@@ -53,6 +64,9 @@ class PackageCycleTest {
     }
 
     private companion object {
+        // GAP-EX: piso deliberadamente folgado — o alvo é pegar o colapso para ~0, não variação normal.
+        const val MIN_PACOTES_COM_ARESTA = 10
+
         private const val PROJECT_ROOT = "com.kanbanvision"
     }
 }
