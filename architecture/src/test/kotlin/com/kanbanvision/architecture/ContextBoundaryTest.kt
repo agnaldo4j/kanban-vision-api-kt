@@ -36,7 +36,7 @@ class ContextBoundaryTest {
             .scopeFromProduction()
             .files
             .filter { file -> kanbanManagementPackages.any { file.packagee?.name?.startsWith(it) == true } }
-            .assertFalse { file ->
+            .assertFalse(strict = true) { file ->
                 val importsCrossBoundary =
                     file.imports.any { import -> simulationPackages.any { import.name.startsWith(it) } }
                 val codeReferencesCrossBoundary =

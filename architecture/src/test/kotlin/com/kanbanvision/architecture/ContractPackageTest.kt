@@ -29,7 +29,7 @@ class ContractPackageTest {
             .scopeFromProduction()
             .files
             .filter { !it.path.endsWith("di/AppModule.kt") }
-            .assertFalse { file ->
+            .assertFalse(strict = true) { file ->
                 val ownModule = moduleOf(file.packagee?.name)
                 INTERNAL_REFERENCE
                     .findAll(stripComments(file.text))

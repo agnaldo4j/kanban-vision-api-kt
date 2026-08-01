@@ -17,7 +17,7 @@ class PortsPlacementTest {
             .scopeFromProduction()
             .interfaces()
             .withNameEndingWith("Repository")
-            .assertTrue { it.resideInPackage("com.kanbanvision.usecases.repositories") }
+            .assertTrue(strict = true) { it.resideInPackage("com.kanbanvision.usecases.repositories") }
     }
 
     @Test
@@ -26,7 +26,7 @@ class PortsPlacementTest {
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("Repository")
-            .assertTrue { it.resideInPackage("com.kanbanvision.persistence.internal.repositories") }
+            .assertTrue(strict = true) { it.resideInPackage("com.kanbanvision.persistence.internal.repositories") }
     }
 
     @Test
@@ -46,7 +46,7 @@ class PortsPlacementTest {
             .scopeFromProduction()
             .classes()
             .withNameEndingWith("Repository")
-            .assertTrue { clazz ->
+            .assertTrue(strict = true) { clazz ->
                 clazz.parents().any { parent -> parent.name in portNames }
             }
     }

@@ -35,7 +35,7 @@ class DomainPurityTest {
             .scopeFromProduction()
             .files
             .filter { file -> file.packagee?.name?.startsWith("com.kanbanvision.domain") == true }
-            .assertFalse { file ->
+            .assertFalse(strict = true) { file ->
                 file.imports.any { import ->
                     forbiddenImportPrefixes.any { prefix -> import.name.startsWith(prefix) }
                 }

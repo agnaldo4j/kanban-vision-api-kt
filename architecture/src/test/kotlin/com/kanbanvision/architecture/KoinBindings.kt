@@ -19,35 +19,89 @@ internal data class KoinBindings(
 )
 
 /**
- * Extrai [KoinBindings] do TEXTO do `AppModule`. Reconhece as três formas do DSL:
+ * Conta as DECLARAÇÕES do DSL Koin no texto — oráculo INDEPENDENTE do parser abaixo.
+ *
+ * GAP-EX: a âncora anterior era `components.containsAll(3 nomes)` — um piso, não completude. O parser
+ * já era cego a `single<Clock> { Clock.systemUTC() }` (13 de 14 bindings do AppModule), e `singleOf`,
+ * `factory` e lambda com chaves aninhadas passavam invisíveis: um ciclo real entre dois `singleOf`
+ * daria VERDE aqui e `StackOverflowError` em produção. Comparando esta contagem com o que o parser
+ * extraiu, uma forma nova do DSL reprova o gate em vez de sumir dele.
+ */
+internal fun countKoinDeclarations(appModuleText: String): Int = DECLARACAO_DSL.findAll(stripKotlinComments(appModuleText)).count()
+
+private val DECLARACAO_DSL = Regex("""\b(?:single|factory|scoped)(?:Of)?\s*(?:<[^>]*>)?\s*[({]""")
+
+private fun stripKotlinComments(text: String): String =
+    Regex("""/\*.*?\*/""", setOf(RegexOption.DOT_MATCHES_ALL))
+        .replace(text, "")
+        .lines()
+        .filterNot { it.trimStart().startsWith("//") }
+        .joinToString("\n")
+
+/**
+ * Extrai [KoinBindings] do TEXTO do `AppModule`. Reconhece as formas do DSL:
  *  - `single<Porta> { Impl(...) }`            → resolvesTo[Porta] = Impl
  *  - `single { Impl(...) } bind Porta::class` → resolvesTo[Porta] = Impl
  *  - `single { Impl(...) }`                   → resolvesTo[Impl]  = Impl
+ *  - `singleOf(::Impl)` / `factoryOf(::Impl)` → resolvesTo[Impl]  = Impl
+ *  - `single<Porta> { Porta.factory() }`      → resolvesTo[Porta] = Porta   (sink: sem construtor)
  * Em todas, o concreto também resolve a si mesmo (o Koin registra o tipo concreto além do bound).
- * Limitação (viés a falso-negativo, como os demais gates): casa corpos de lambda sem chaves aninhadas
- * — exatamente o caso do `AppModule`; uma binding em forma exótica seria pulada, nunca inventada.
+ *
+ * O corpo da lambda é delimitado por CASAMENTO DE CHAVES, não por `[^{}]*` — a versão anterior pulava
+ * silenciosamente qualquer binding com chaves aninhadas (`single { X(get()).also { … } }`).
  */
 internal fun parseKoinBindings(appModuleText: String): KoinBindings {
-    val binding = Regex("""single\s*(?:<([\w.]+)>)?\s*\{\s*(\w+)\s*\([^{}]*\}\s*(?:bind\s+([\w.]+)::class)?""")
-    val cleaned =
-        Regex("""/\*.*?\*/""", setOf(RegexOption.DOT_MATCHES_ALL))
-            .replace(appModuleText, "")
-            .lines()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
+    val cleaned = stripKotlinComments(appModuleText)
     val components = mutableSetOf<String>()
     val resolvesTo = mutableMapOf<String, String>()
-    binding.findAll(cleaned).forEach { match ->
-        val declaredType = match.groupValues[1].ifBlank { null }
-        val impl = match.groupValues[2]
-        val boundType = match.groupValues[3].ifBlank { null }
+
+    DECLARACAO_DSL.findAll(cleaned).forEach { decl ->
+        val tipoDeclarado = Regex("""<([\w.]+)>""").find(decl.value)?.groupValues?.get(1)
+        val abre = decl.range.last
+
+        val (impl, fim) =
+            if (cleaned[abre] == '(') {
+                val fecha = matchingBrace(cleaned, abre, '(', ')') ?: return@forEach
+                val alvo = Regex("""::(\w+)""").find(cleaned.substring(abre, fecha))?.groupValues?.get(1)
+                (alvo ?: tipoDeclarado) to fecha
+            } else {
+                val fecha = matchingBrace(cleaned, abre, '{', '}') ?: return@forEach
+                val corpo = cleaned.substring(abre + 1, fecha)
+                val construido = Regex("""\b(\w+)\s*\(""").find(corpo)?.groupValues?.get(1)
+                (construido ?: tipoDeclarado) to fecha
+            }
+
+        if (impl == null) return@forEach
         components += impl
         resolvesTo[impl] = impl
-        declaredType?.let { resolvesTo[it] = impl }
-        boundType?.let { resolvesTo[it] = impl }
+        tipoDeclarado?.let { resolvesTo[it] = impl }
+        Regex("""^\s*bind\s+([\w.]+)::class""")
+            .find(cleaned.substring(fim + 1))
+            ?.groupValues
+            ?.get(1)
+            ?.let { resolvesTo[it] = impl }
     }
     return KoinBindings(components, resolvesTo)
+}
+
+/** Índice do delimitador que fecha o aberto em [inicio], respeitando aninhamento; `null` se desbalanceado. */
+private fun matchingBrace(
+    text: String,
+    inicio: Int,
+    abre: Char,
+    fecha: Char,
+): Int? {
+    var nivel = 0
+    for (i in inicio until text.length) {
+        when (text[i]) {
+            abre -> nivel++
+            fecha -> {
+                nivel--
+                if (nivel == 0) return i
+            }
+        }
+    }
+    return null
 }
 
 /**
