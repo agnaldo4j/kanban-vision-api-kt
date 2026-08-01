@@ -10,35 +10,74 @@ import org.junit.jupiter.api.Test
  * java.time e java.util (arrow-kt é permitido por ser tipo funcional puro).
  */
 class DomainPurityTest {
-    private val forbiddenImportPrefixes =
+    /**
+     * ALLOW-LIST, não deny-list (GAP-EX). A lista anterior tinha 11 prefixos proibidos e deixava passar
+     * tudo o que ninguém tinha pensado em proibir: `com.fasterxml.jackson`, `org.apache.commons`,
+     * `redis.clients.jedis`, `java.io.File`, `java.net.http`. Deny-list de framework é uma corrida que o
+     * autor da regra sempre perde para o autor do import.
+     *
+     * Medido antes de inverter — o domínio importa hoje exatamente 5 prefixos, todos legítimos:
+     * `com.kanbanvision` (66), `java.util` (15), `arrow.core` (9), `java.time` (5), `kotlin.random` (2).
+     */
+    private val allowedImportPrefixes =
         listOf(
-            "io.ktor.",
-            "org.koin.",
-            "org.jetbrains.exposed.",
-            "java.sql.",
-            "javax.",
-            "jakarta.",
-            "org.slf4j.",
-            "kotlinx.serialization.",
-            "com.zaxxer.",
-            "org.flywaydb.",
-            "io.micrometer.",
+            "com.kanbanvision.domain.",
+            "kotlin.",
+            "kotlinx.coroutines.",
+            "java.time.",
+            "java.util.",
+            "java.math.",
+            "arrow.core.",
         )
 
     @Test
-    fun `domain nao importa frameworks nem infraestrutura`() {
+    fun `domain so importa kotlin, tipos de valor da JDK e arrow`() {
         // scopeFromProduction() + filtro por prefixo de pacote (não por nome de módulo): pós-extração
-        // faseada (ADR-0038) o domínio se espalha por :domain-common/:domain-kanban/:domain. Só esses
-        // três usam o prefixo com.kanbanvision.domain (usecases/persistence/httpapi têm prefixos próprios),
-        // então o filtro cobre exatamente os módulos de domínio e sobrevive a CK/CL.
+        // faseada (ADR-0038) o domínio se espalha por :domain-common/:domain-kanban/:domain-simulation.
+        // Só esses usam o prefixo com.kanbanvision.domain, então o filtro cobre exatamente os módulos
+        // de domínio.
         Konsist
             .scopeFromProduction()
             .files
             .filter { file -> file.packagee?.name?.startsWith("com.kanbanvision.domain") == true }
             .assertFalse(strict = true) { file ->
                 file.imports.any { import ->
-                    forbiddenImportPrefixes.any { prefix -> import.name.startsWith(prefix) }
+                    allowedImportPrefixes.none { prefixo -> import.name.startsWith(prefixo) }
                 }
             }
     }
+
+    @Test
+    fun `domain nao alcanca framework por nome totalmente qualificado`() {
+        // A metade que a regra acima NÃO cobre, com ou sem allow-list: `org.slf4j.LoggerFactory.getLogger(…)`
+        // escrito inline não gera `import` nenhum e é invisível a qualquer inspeção de imports. Mesmo vetor
+        // que `ContextBoundaryTest` e `ContractPackageTest` já cobrem de propósito — este era o inconsistente.
+        val raizesDeFramework =
+            listOf(
+                """io\.ktor""",
+                """org\.koin""",
+                """org\.jetbrains\.exposed""",
+                """org\.slf4j""",
+                """io\.micrometer""",
+                """com\.zaxxer""",
+                """org\.flywaydb""",
+                """kotlinx\.serialization""",
+                """jakarta""",
+                """javax""",
+                """java\.sql""",
+            )
+        val fqnDeFramework = Regex("""\b(${raizesDeFramework.joinToString("|")})\.[A-Z]""")
+
+        Konsist
+            .scopeFromProduction()
+            .files
+            .filter { file -> file.packagee?.name?.startsWith("com.kanbanvision.domain") == true }
+            .assertFalse(strict = true) { file -> fqnDeFramework.containsMatchIn(file.text.semComentariosEStrings()) }
+    }
+
+    /** Comentário e literal de string citando um FQN não são uso — a regra olha código. */
+    private fun String.semComentariosEStrings(): String =
+        replace(Regex("""/\*[\s\S]*?\*/"""), " ")
+            .replace(Regex("""//[^\n]*"""), " ")
+            .replace(Regex(""""(?:[^"\\\n]|\\.)*""""), "\"\"")
 }

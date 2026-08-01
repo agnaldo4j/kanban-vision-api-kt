@@ -91,12 +91,33 @@ class ConventionsTest {
             .classes()
             .withNameEndingWith("UseCase")
             .assertFalse(strict = true) { clazz ->
-                val simulationRepositories =
+                // GAP-EX: `hasTextContaining("$campo.findById")` caía com uma QUEBRA DE LINHA — a forma
+                // idiomática que o ktlint sequer desencoraja:
+                //     simulationRepository
+                //         .findById(id)
+                //         .bind()
+                // Também driblavam `with(repo) { findById() }`, `repo.let { it.findById() }` e
+                // `repo::findById`. E o `hasTextContaining` lê `psiElement.text`, que INCLUI comentários:
+                // um `// nunca chame repo.findById aqui` REPROVAVA o build (falso-positivo). As três
+                // regras vizinhas usam `semComentarios()`; esta era a que faltava.
+                //
+                // O tipo do campo também vem por `it.type?.name`, que é o TEXTO do type reference: um
+                // campo declarado por FQN ou por alias de import escapava do conjunto. Daí o fallback
+                // por sufixo — cobre `com.…usecases.repositories.SimulationRepository` e o alias.
+                val corpo = clazz.text.semComentarios()
+                val camposDeRepositorio =
                     clazz
                         .properties()
-                        .filter { it.type?.name == "SimulationRepository" }
-                        .map { it.name }
-                simulationRepositories.any { clazz.hasTextContaining("$it.findById") }
+                        .filter {
+                            it.type
+                                ?.name
+                                ?.substringAfterLast('.')
+                                ?.endsWith("SimulationRepository") == true
+                        }.map { it.name }
+                camposDeRepositorio.any { campo ->
+                    Regex("""\b${Regex.escape(campo)}\s*(?:\.|::|\?\.)\s*(?:let\s*\{[^}]*)?findById""").containsMatchIn(corpo) ||
+                        Regex("""with\s*\(\s*${Regex.escape(campo)}\s*\)\s*\{[^}]*findById""").containsMatchIn(corpo)
+                }
             }
     }
 
@@ -156,6 +177,10 @@ class ConventionsTest {
         //      steps.map { … })`), onde serialização precisa da ordem ARMAZENADA e trocar por
         //      `stepsInExecutionOrder()` seria bug de fidelidade de wire;
         //  (2) `with(board) { steps }` também escapa, mesma família.
+        //
+        // GAP-EX: `properties()` chama `declarations(includeLocal = false)`, então um `val` LOCAL nunca
+        // entrava no conjunto — `val b = scenario.board; b.steps.minByOrNull { … }`, exatamente o que o
+        // GAP-DQ removeu, passava verde. Os nomes locais entram por varredura textual das atribuições.
         val nomesDeBoard =
             Konsist
                 .scopeFromProduction()
@@ -166,7 +191,7 @@ class ConventionsTest {
                             .flatMap { it.parameters }
                             .filter { it.type.name == "Board" }
                             .map { it.name }
-                }.toSet()
+                }.toSet() + nomesLocaisDeBoard()
 
         // Qualificado: `assertTrue` sem pacote resolveria para a extension de List do Konsist.
         Assertions.assertTrue(nomesDeBoard.isNotEmpty(), "sem nome de tipo Board a regra abaixo seria vacuamente verdadeira")
@@ -183,6 +208,18 @@ class ConventionsTest {
     // olha código. Contrapartida honesta: um literal de string com `//` engole o resto da linha.
     // Separador de path normalizado (Copilot no #397): `contains("/usecases/")` daria falso-negativo
     // num ambiente com `\` e a sentinela mediria o SO em vez da regra.
+
+    /** `val x = <algo>.board` / `= Board(...)` — locais, invisíveis a `properties(includeLocal = false)`. */
+    private fun nomesLocaisDeBoard(): Set<String> =
+        Konsist
+            .scopeFromProduction()
+            .files
+            .flatMap { arquivo ->
+                Regex("""\bval\s+(\w+)\s*(?::\s*Board\s*)?=\s*[\w.]*\bboard\b""")
+                    .findAll(arquivo.text.semComentarios())
+                    .map { it.groupValues[1] }
+            }.toSet()
+
     private fun String.normalizado(): String = replace('\\', '/')
 
     private fun String.semComentarios(): String = replace(Regex("""/\*[\s\S]*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
