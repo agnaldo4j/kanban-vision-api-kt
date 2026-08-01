@@ -44,6 +44,17 @@ class ProjectDependencyGraphTest {
     }
 
     @Test
+    fun `o rank cobre todos os modulos de dominio declarados no settings`() {
+        // Sem isto, um `:domain-metrics` novo ficaria fora do `rank`, seria filtrado dos deps e nunca
+        // iterado — ciclo real de projeto Gradle passando VERDE nos dois testes acima.
+        assertEquals(
+            modulosDeDominioDoSettings(),
+            rank.keys,
+            "há módulo domain-* no settings fora do rank (ou vice-versa) — a topologia não o governa",
+        )
+    }
+
+    @Test
     fun `domain-common nao declara nenhuma dependencia de modulo de dominio`() {
         assertEquals(
             emptySet<String>(),
@@ -76,9 +87,31 @@ class ProjectDependencyGraphTest {
         )
     }
 
-    /** `project(":X")` deps de um módulo, restritas aos módulos de domínio (rank conhecido). */
+    /**
+     * `project(":X")` deps de um módulo, restritas aos módulos de domínio.
+     *
+     * GAP-EX: o filtro `rank.containsKey` fazia o `assertEquals(emptySet(), …)` de
+     * `domain-common nao declara nenhuma dependencia` valer só para os 3 módulos LISTADOS — um
+     * `:domain-metrics` novo passava despercebido, e o mesmo filtro deixava o teste de topologia verde
+     * com um ciclo real entre módulos Gradle. Agora o universo vem do `settings.gradle.kts`.
+     */
     private fun domainProjectDepsOf(module: String): Set<String> =
-        projectDepsIn(buildScriptOf(module)).filter { rank.containsKey(it) }.toSet()
+        projectDepsIn(buildScriptOf(module)).filter { it in modulosDeDominioDoSettings() }.toSet()
+
+    /** Módulos de domínio DECLARADOS no settings, não uma lista literal que envelhece em silêncio. */
+    private fun modulosDeDominioDoSettings(): Set<String> {
+        val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
+        val settings = File(root, "settings.gradle.kts")
+        require(settings.isFile) { "settings.gradle.kts não encontrado em ${settings.absolutePath}" }
+        val declarados =
+            Regex(""""\s*:([A-Za-z0-9_\-]+)\s*"""")
+                .findAll(stripComments(settings.readText()))
+                .map { it.groupValues[1] }
+                .filter { it.startsWith("domain-") }
+                .toSet()
+        require(declarados.isNotEmpty()) { "nenhum módulo domain-* lido do settings — o parser quebrou" }
+        return declarados
+    }
 
     /**
      * Todos os `project(":X")` declarados no texto, tolerante às formas válidas do DSL: qualquer

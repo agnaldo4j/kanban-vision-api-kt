@@ -90,16 +90,38 @@ class ConventionsTest {
 
     @Test
     fun `o guard de tenancy de simulation tem exatamente um ponto de declaracao`() {
-        // Par NÃO-VÁCUO da regra acima, que depois do refactor é vacuamente verdadeira. Aquela proíbe a
-        // forma antiga; esta garante que a forma nova não sumiu nem foi reduplicada — o modo mais provável
-        // de o tripwire virar decoração. Este é inerentemente vermelho se o helper for apagado ou copiado.
+        // Par NÃO-VÁCUO da regra acima, que depois do refactor é vacuamente verdadeira.
+        //
+        // GAP-EX: até aqui esta regra contava `functions.filter { name == "loadOwnedSimulation" }.size == 1`
+        // — a unicidade do NOME, não da POLÍTICA. Exatamente o defeito que o #395 corrigiu para o
+        // `ServiceClass` e que aqui continuou vivo. Ficava verde se:
+        //   (a) o `ensure(org == caller)` fosse removido de dentro do helper — o nome permanece;
+        //   (b) a política fosse reduplicada com outro nome (`fetchOwnedSimulation`);
+        //   (c) o helper fosse relocado para `http_api` — não havia check de path.
+        //
+        // A âncora agora é a FORMA DA POLÍTICA: carga por `findById` + comparação de `organization.id`
+        // + `Forbidden`. Conjunção plana de marcadores, não regex frágil — medido, só uma função de
+        // produção tem os quatro. E a localização é verificada, não afirmada na mensagem.
         val declaracoes =
             Konsist
                 .scopeFromProduction()
-                .functions()
-                .filter { it.name == "loadOwnedSimulation" }
+                .functions(includeNested = true)
+                .filter { fn ->
+                    val corpo = fn.text.semComentarios()
+                    corpo.contains("findById") &&
+                        corpo.contains("ensure(") &&
+                        corpo.contains("organization.id") &&
+                        corpo.contains("Forbidden")
+                }
 
-        assertEquals(1, declaracoes.size, "loadOwnedSimulation deve ser declarado uma única vez")
+        assertEquals(1, declaracoes.size, "a política de tenancy (findById + ensure(org) + Forbidden) deve existir uma única vez")
+        Assertions.assertTrue(
+            declaracoes
+                .single()
+                .containingFile.path
+                .contains("/usecases/"),
+            "a política de tenancy é regra de aplicação e deve morar em usecases",
+        )
     }
 
     @Test
@@ -167,6 +189,22 @@ class ConventionsTest {
             "Board.stepsInExecutionOrder sumiu ou foi duplicado",
         )
         assertEquals(1, board.functions().count { it.name == "firstStep" }, "Board.firstStep sumiu ou foi duplicado")
+
+        // GAP-EX: contar o NOME não era o que o nome deste teste promete. `fun stepsInExecutionOrder():
+        // List<Step> = steps` (sem ordenar) deixava ESTA regra e a de cima verdes, com a ordenação morta.
+        // Agora a ordenação é asserida na forma, e o `firstStep` tem de DELEGAR — senão
+        // `firstStep(): Step? = steps.firstOrNull()` devolveria a ordem de inserção em silêncio.
+        val ordenado = board.functions().single { it.name == "stepsInExecutionOrder" }
+        Assertions.assertTrue(
+            Regex("""sortedBy\s*\{[^}]*position""").containsMatchIn(ordenado.text.semComentarios()),
+            "Board.stepsInExecutionOrder parou de ordenar por position — o nome virou mentira",
+        )
+
+        val primeiro = board.functions().single { it.name == "firstStep" }
+        Assertions.assertTrue(
+            primeiro.text.semComentarios().contains("stepsInExecutionOrder()"),
+            "Board.firstStep tem de delegar a stepsInExecutionOrder(), senão devolve ordem de inserção",
+        )
     }
 
     @Test
