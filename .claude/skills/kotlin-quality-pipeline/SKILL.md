@@ -438,7 +438,7 @@ No contexto deste projeto, property testing é especialmente valioso em:
 Adicione em cada módulo que vai usar property tests:
 
 ```kotlin
-// domain/build.gradle.kts, usecases/build.gradle.kts, etc.
+// <modulo>/build.gradle.kts — em cada modulo que usa property tests
 testImplementation("io.kotest:kotest-property:5.9.1")
 testImplementation("io.kotest:kotest-assertions-core:5.9.1")  // shouldBe, shouldThrow, isLeft(), isRight()
 ```
@@ -775,19 +775,21 @@ O PITest organiza mutadores em grupos cumulativos:
 ### Configuração neste projeto
 
 ```kotlin
-// domain/build.gradle.kts
+// <modulo>/build.gradle.kts — a FORMA; os valores vivos estão em cada módulo
 pitest {
     pitestVersion.set("1.25.3")       // core JAR (ASM com suporte a class files Java 25)
     junit5PluginVersion.set("1.2.3")
 
-    // domain: módulo inteiro (GAP-AT) — model + errors + events + engine
-    targetClasses.set(setOf("com.kanbanvision.domain.*"))
-    targetTests.set(setOf("com.kanbanvision.domain.*"))
+    // targetClasses/targetTests: o escopo daquele módulo
+    targetClasses.set(setOf("com.kanbanvision.<pacote>.*"))
+    targetTests.set(setOf("com.kanbanvision.<pacote>.*"))
 
     mutators.set(setOf("STRONGER"))   // DEFAULT + mutadores opcionais agressivos
 
-    // Gate atual do domain (histórico: 38 → 45 → 58 → 65 → 78 com escopo ampliado).
-    mutationThreshold.set(78)
+    // 🔴 GAP-FC: o valor NÃO se repete aqui. Este bloco já carregou `mutationThreshold.set(78)`
+    // com o targetClasses de outro módulo — espelho stale de gate fora do `.claude/rules/stack.md`.
+    // Gate por módulo: `stack.md` (espelho) · verdade no bloco `pitest` do módulo.
+    mutationThreshold.set(<ver stack.md>)
 
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)     // relatório em path fixo — facilita diff
