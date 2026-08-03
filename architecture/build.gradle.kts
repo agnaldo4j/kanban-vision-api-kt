@@ -62,6 +62,12 @@ tasks.test {
         "claudeMd" to "CLAUDE.md",
         "gradleWrapper" to "gradle/wrapper/gradle-wrapper.properties",
         "buildSrcBuildScript" to "buildSrc/build.gradle.kts",
+        // ESTE arquivo. O `modulosAnalisados` abaixo filtra `architecture` fora — correto para as
+        // pastas de fonte, que aqui não existem, mas isso levava o próprio build script junto. Ele é
+        // varrido pelo `scriptsDeBuild()` como doc viva, então com `org.gradle.caching=true` uma prosa
+        // stale editada aqui restauraria o verde anterior do cache sem rodar guard nenhum.
+        // (Codex P2 no #407.)
+        "architectureBuildScript" to "architecture/build.gradle.kts",
     ).forEach { (nome, caminho) ->
         inputs
             .file(rootDir.resolve(caminho))

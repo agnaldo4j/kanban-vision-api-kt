@@ -3,7 +3,6 @@ package com.kanbanvision.architecture
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.io.File
 
 /**
  * Fitness function do espelho de VERSÕES (GAP-FF).
@@ -31,13 +30,11 @@ import java.io.File
  * que dava para cobrir sem ruído foi o badge.)
  */
 class StackVersionMirrorTest {
-    /** `workingDir` do teste é o projectDir do módulo; a raiz vem por systemProperty (ver build.gradle.kts). */
-    private val raiz = System.getProperty("rootDir")?.let(::File) ?: File("..")
-    private val build = VersoesDoBuild(raiz)
+    private val build = VersoesDoBuild()
 
     @Test
     fun `o espelho em stack md declara a versao vigente de cada componente rastreado`() {
-        val espelho = build.ler(ESPELHO)
+        val espelho = ler(ESPELHO)
         val divergentes =
             build.componentes().filter { it.noEspelho }.mapNotNull { (nome, vigente) ->
                 val declaradas = declaracaoDe(nome).findAll(espelho).map { it.groupValues[1] }.toList()
@@ -129,8 +126,7 @@ class StackVersionMirrorTest {
         // que passaria nas outras regras deste arquivo, já que o `ci.yml` é doc viva e a linha `uses:`
         // continuaria por perto satisfazendo a regra acima.
         val rodape =
-            build
-                .ler(VersoesDoBuild.CI)
+            ler(VersoesDoBuild.CI)
                 .lines()
                 .singleOrNull { it.contains("SBOM: artifact") }
                 ?: error("${VersoesDoBuild.CI} deve ter exatamente uma linha de rodapé do Supply Chain Report")
@@ -198,8 +194,8 @@ class StackVersionMirrorTest {
     }
 
     private fun porLinhaDeDocViva(regra: (String, Int, String) -> Sequence<String>): List<String> =
-        docsVivas(raiz).flatMap { arquivo ->
-            val caminho = arquivo.relativeTo(raiz).path
+        docsVivas().flatMap { arquivo ->
+            val caminho = arquivo.relativeTo(raizDoRepo).path
             arquivo
                 .readText()
                 .lines()
@@ -220,7 +216,6 @@ class StackVersionMirrorTest {
     private fun declaracaoDe(nome: String): Regex = Regex("""\Q$nome\E`?\s*\|?\s*v?([0-9][0-9A-Za-z.\-]*)""")
 
     private companion object {
-        const val ESPELHO = ".claude/rules/stack.md"
         const val ARQUITETURA = ".claude/rules/architecture.md"
 
         // Um `v1.2.3` escrito à mão no rodapé. O derivado usa `%s`, que não casa aqui.

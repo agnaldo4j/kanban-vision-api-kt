@@ -60,11 +60,16 @@ Componentes:
 
 ### Dockerfile Multi-Stage para Kotlin/Ktor + OTel Agent
 
-Multi-stage build: o estágio de build compila o JAR; o estágio de runtime é enxuto
-(sem JDK, sem fontes, sem Gradle) — imagem final ~200MB em vez de ~600MB.
+Multi-stage build: o estágio de build compila o artefato; o estágio de runtime é enxuto
+(sem JDK, sem fontes, sem Gradle).
+
+> ⚠️ **O bloco abaixo ensina a FORMA multi-stage; não é o `Dockerfile` deste repo.** O real compila
+> **GraalVM Native Image** (ADR-0032), não fat JAR, e copia os `build.gradle.kts` antes dos `src` para
+> aproveitar cache de camada. Ao mexer em empacotamento, leia o `Dockerfile` — este trecho ilustra o
+> padrão, e alinhar os dois é card próprio.
 
 ```dockerfile
-# Dockerfile
+# Ilustrativo — o Dockerfile real está na raiz do repo
 # ─────────────────────────────── Estágio 1: Build ───────────────────────────────
 FROM eclipse-temurin:25-jdk AS builder
 
@@ -79,7 +84,9 @@ COPY buildSrc/ buildSrc/
 RUN ./gradlew dependencies --no-daemon -q 2>/dev/null || true
 
 # Copia o código-fonte
-COPY domain/ domain/
+COPY domain-common/ domain-common/
+COPY domain-kanban/ domain-kanban/
+COPY domain-simulation/ domain-simulation/
 COPY usecases/ usecases/
 COPY sql_persistence/ sql_persistence/
 COPY http_api/ http_api/
