@@ -32,7 +32,7 @@ class ContractPackageTest {
             .assertFalse(strict = true) { file ->
                 val ownModule = moduleOf(file.packagee?.name)
                 INTERNAL_REFERENCE
-                    .findAll(stripComments(file.text))
+                    .findAll(file.text.semComentarios())
                     .any { match -> match.groupValues[1] != ownModule }
             }
     }
@@ -40,17 +40,9 @@ class ContractPackageTest {
     /** Módulo dono de um FQN `com.kanbanvision.<modulo>...` (domain/usecases/persistence/httpapi). */
     private fun moduleOf(fqn: String?): String? = fqn?.removePrefix("com.kanbanvision.")?.substringBefore(".")
 
-    private fun stripComments(source: String): String =
-        source
-            .replace(BLOCK_COMMENT, "")
-            .lines()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
     private companion object {
         // Casa import OU referência totalmente qualificada a um pacote *.internal:
         // com.kanbanvision.<modulo>.(…segmentos…).internal.  — captura o <modulo> no grupo 1.
         private val INTERNAL_REFERENCE = Regex("""com\.kanbanvision\.(\w+)\.(?:\w+\.)*internal\.""")
-        private val BLOCK_COMMENT = Regex("""/\*.*?\*/""", setOf(RegexOption.DOT_MATCHES_ALL))
     }
 }

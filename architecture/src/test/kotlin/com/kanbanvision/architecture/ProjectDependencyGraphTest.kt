@@ -14,7 +14,8 @@ import java.io.File
  * só limita a exposição transitiva — não impede alguém de declarar
  * `domain-kanban implementation(project(":domain-simulation"))`. Só a asserção explícita das `project`
  * deps garante a direção do grafo. Konsist 0.17.3 não lê deps de projeto, então este teste faz parse
- * dos `build.gradle.kts` (mesmo padrão texto+regex+stripComments de [ContractPackageTest]).
+ * dos `build.gradle.kts` (mesmo padrão texto+regex de [ContractPackageTest], com o
+ * [semComentarios] compartilhado).
  */
 class ProjectDependencyGraphTest {
     /** Ordem topológica: um módulo só pode depender de outro de rank estritamente menor. */
@@ -112,7 +113,7 @@ class ProjectDependencyGraphTest {
         require(settings.isFile) { "settings.gradle.kts não encontrado em ${settings.absolutePath}" }
         val declarados =
             Regex(""""\s*:([A-Za-z0-9_\-]+)\s*"""")
-                .findAll(stripComments(settings.readText()))
+                .findAll(settings.readText().semComentarios())
                 .map { it.groupValues[1] }
                 .filter { it.startsWith("domain-") }
                 .toSet()
@@ -125,7 +126,7 @@ class ProjectDependencyGraphTest {
      * configuração (`implementation`/`api`/`testImplementation`/…), espaços/quebras de linha, e o
      * argumento nomeado `project(path = ":X")`. Comentários são removidos antes.
      */
-    private fun projectDepsIn(text: String): List<String> = PROJECT_DEP.findAll(stripComments(text)).map { it.groupValues[1] }.toList()
+    private fun projectDepsIn(text: String): List<String> = PROJECT_DEP.findAll(text.semComentarios()).map { it.groupValues[1] }.toList()
 
     private fun buildScriptOf(module: String): String {
         val root = System.getProperty("rootDir")?.let(::File) ?: File("..")
@@ -134,19 +135,11 @@ class ProjectDependencyGraphTest {
         return file.readText()
     }
 
-    private fun stripComments(source: String): String =
-        source
-            .replace(BLOCK_COMMENT, "")
-            .lines()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
     private companion object {
         // Casa QUALQUER configuração seguida de project(":<modulo>") — captura o alvo no grupo 1.
         // Tolerante a espaços/quebras de linha e ao argumento nomeado `project(path = ":X")`, senão
         // uma dep invertida escrita em forma multiline ou nomeada driblaria o gate (revisão PR #302).
         private val PROJECT_DEP =
             Regex("""\w+\s*\(\s*project\s*\(\s*(?:path\s*=\s*)?":([\w-]+)"""")
-        private val BLOCK_COMMENT = Regex("""/\*.*?\*/""", setOf(RegexOption.DOT_MATCHES_ALL))
     }
 }

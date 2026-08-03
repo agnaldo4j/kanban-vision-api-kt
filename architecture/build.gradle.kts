@@ -36,6 +36,21 @@ tasks.test {
         .withPropertyName("settingsScript")
         .withPathSensitivity(PathSensitivity.RELATIVE)
 
+    // GAP-FA: o QualityGateMirrorTest lê mais três arquivos em runtime — o espelho dos gates, o
+    // convention plugin (dono do `minimum` do JaCoCo) e o build.gradle.kts do root (dono do `pitestAll`).
+    // Mesma razão do settings acima: um PR que só edita o espelho restauraria a task do cache e a
+    // asserção nova nunca rodaria — que é exatamente o drift que ela existe para pegar.
+    listOf(
+        "espelhoDosGates" to ".claude/rules/stack.md",
+        "conventionPlugin" to "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts",
+        "rootBuildScript" to "build.gradle.kts",
+    ).forEach { (nome, caminho) ->
+        inputs
+            .file(rootDir.resolve(caminho))
+            .withPropertyName(nome)
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+
     // E a lista de módulos vem do settings, não de um literal: módulo novo entra como input sozinho.
     // Sem isso, as FONTES do módulo novo também ficariam de fora do rastreamento do Gradle.
     val modulosAnalisados =

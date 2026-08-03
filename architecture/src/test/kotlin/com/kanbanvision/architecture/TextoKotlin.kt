@@ -25,6 +25,76 @@ internal fun String.semComentariosEStrings(): String =
         .replace(BLOCO_DE_COMENTARIO, " ")
         .replace(LINHA_DE_COMENTARIO, " ")
 
+/**
+ * Remove comentários e PRESERVA literais — para quem lê valor, não forma.
+ *
+ * Não dá para reusar a [semComentariosEStrings] acima: aquela apaga o texto de string, e um gate como
+ * `minimum = "0.98"` está DENTRO de uma string.
+ *
+ * **Varredura, não regex: um glob dentro de string abre um bloco de comentário que não existe.** A
+ * forma anterior — regex de bloco não-guloso mais descarte das linhas iniciadas por barra-barra —
+ * estava copiada verbatim em `ContextBoundaryTest`, `ContractPackageTest` e
+ * `ProjectDependencyGraphTest`, e todas as três carregam o mesmo defeito: em
+ * `http_api/build.gradle.kts` o `exclude` de `META-INF/native-image` termina em barra-asterisco-asterisco
+ * e abre um bloco que só fecha ~150 linhas abaixo, **engolindo o `mutationThreshold` no caminho**
+ * (medido no GAP-FA — o [QualityGateMirrorTest] nasceu vermelho por isso, e o teste do stripper lá
+ * fixa o caso). Aqui a string é copiada inteira antes de qualquer decisão sobre comentário.
+ *
+ * Nota de escrita: este KDoc evita a sequência literal do glob de propósito — dentro de comentário ela
+ * abriria um bloco ANINHADO e o arquivo pararia de compilar, que é a armadilha vizinha já registrada
+ * em `.claude/rules/kotlin-quality.md`. Custou uma compilação quebrada aqui.
+ */
+internal fun String.semComentarios(): String {
+    val saida = StringBuilder(length)
+    var i = 0
+    while (i < length) {
+        i =
+            when {
+                startsWith("//", i) -> pulaAteFimDaLinha(i)
+                startsWith("/*", i) -> pulaBloco(i)
+                startsWith("\"\"\"", i) -> copiaLiteral(saida, i, "\"\"\"", escapavel = false)
+                this[i] == '"' -> copiaLiteral(saida, i, "\"", escapavel = true)
+                else -> {
+                    saida.append(this[i])
+                    i + 1
+                }
+            }
+    }
+    return saida.toString()
+}
+
+/** O `\n` fica: descartar a linha inteira juntaria tokens de linhas vizinhas. */
+private fun String.pulaAteFimDaLinha(de: Int): Int = indexOf('\n', de).takeIf { it >= 0 } ?: length
+
+private fun String.pulaBloco(de: Int): Int = indexOf("*/", de + 2).takeIf { it >= 0 }?.plus(2) ?: length
+
+/** Copia o literal inteiro, delimitadores incluídos, e devolve o índice logo após ele. */
+private fun String.copiaLiteral(
+    saida: StringBuilder,
+    de: Int,
+    delimitador: String,
+    escapavel: Boolean,
+): Int {
+    var i = de + delimitador.length
+    saida.append(delimitador)
+    while (i < length) {
+        if (escapavel && this[i] == '\\' && i + 1 < length) {
+            saida.append(this, i, i + 2)
+            i += 2
+            continue
+        }
+        if (startsWith(delimitador, i)) {
+            saida.append(delimitador)
+            return i + delimitador.length
+        }
+        // String simples não atravessa linha: sem isso, uma aspa desbalanceada engoliria o resto do arquivo.
+        if (escapavel && this[i] == '\n') return i
+        saida.append(this[i])
+        i++
+    }
+    return length
+}
+
 /** Só as expressões `${'$'}{…}` do literal — o texto literal vira nada. */
 private fun conteudoInterpolado(literal: String): String =
     INTERPOLACAO
