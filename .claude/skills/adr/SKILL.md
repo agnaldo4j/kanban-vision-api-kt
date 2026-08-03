@@ -384,7 +384,7 @@ Use antes de marcar o PR como pronto para revisão.
 
 ### Garantias
 
-- [ ] `./gradlew testAll` verde (Detekt + KtLint + testes + JaCoCo ≥ 97%)
+- [ ] `./gradlew testAll` verde (Detekt + KtLint + testes + JaCoCo ≥ 98%)
 - [ ] Todos os itens do DOD confirmados ou marcados N/A com justificativa
 - [ ] Dependency Rule verificada: nenhum import de framework em `domain/` ou `usecases/`
 - [ ] Diagramas C4 atualizados se um novo módulo, rota ou caso de uso foi adicionado

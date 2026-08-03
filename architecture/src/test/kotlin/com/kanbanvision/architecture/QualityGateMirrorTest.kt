@@ -67,6 +67,81 @@ class QualityGateMirrorTest {
     }
 
     @Test
+    fun `nenhuma doc viva declara um gate de cobertura diferente do autoritativo`() {
+        // Codex P2 no #405: corrigir os dígitos à mão NÃO é conserto. A primeira versão deste PR
+        // acertou 97→98 em oito sítios e deixou todos como cópias FORA do guard — mudar o convention
+        // plugin para 99 as deixaria stale de novo, com o guard verde, que é exatamente o drift que
+        // este PR existe para matar. Pior: a varredura manual perdeu SETE cópias, em quatro arquivos
+        // que nem foram abertos, incluindo um segundo bloco de código ainda em `0.97`.
+        //
+        // Diferente do gate de mutação (que é número POR MÓDULO, e por isso virou ponteiro), a
+        // cobertura é UM número — dá para exigir que toda menção viva bata, sem ambiguidade.
+        val autoritativo = coberturaEm(CONVENTION_PLUGIN)
+        val divergentes =
+            docsVivas().flatMap { arquivo ->
+                arquivo.readText().lines().withIndex().mapNotNull { (i, linha) ->
+                    mençãoDivergente(linha, autoritativo)?.let { "${arquivo.name}:${i + 1} — $it" }
+                }
+            }
+        assertTrue(divergentes.isEmpty()) {
+            "doc viva citando gate de cobertura diferente de $autoritativo% (a verdade é $CONVENTION_PLUGIN):\n" +
+                divergentes.joinToString("\n")
+        }
+    }
+
+    /**
+     * A menção é divergente se fala de cobertura, declara **um** percentual e ele não é o autoritativo.
+     *
+     * "Um" é o que separa declaração de gate de frase histórica: `docs/politicas-explicitas.md` diz
+     * *"ADR-0029 raised coverage from 97% to 98%"*, legítimo dentro de doc viva, e cita DOIS. Uma
+     * declaração de gate afirma um número só — e é essa que tem de bater. Testar "contém o
+     * autoritativo" não serviria: passaria hoje e acusaria a mesma frase histórica no dia em que o
+     * valor mudasse.
+     */
+    private fun mençãoDivergente(
+        linha: String,
+        autoritativo: Int,
+    ): String? {
+        // `NO_COVERAGE` é vocabulário de PITest e aparece ao lado de percentual de MUTAÇÃO — sem tirá-lo
+        // antes, metade do texto de mutação viraria falso-positivo.
+        val texto = linha.replace("NO_COVERAGE", "")
+        if (!FALA_DE_COBERTURA.containsMatchIn(texto)) return null
+        return declaracaoDeGate(texto)?.takeIf { (valor, _) -> valor != autoritativo }?.second
+    }
+
+    /** O valor declarado e como reportá-lo, ou `null` se a linha não declara UM gate. */
+    private fun declaracaoDeGate(texto: String): Pair<Int, String>? {
+        val literal = MINIMUM_LITERAL.find(texto)?.groupValues?.get(1)
+        if (literal != null) {
+            return (literal.toBigDecimal() * PERCENTUAL).toInt() to "minimum = \"$literal\""
+        }
+        val unico =
+            PERCENTUAL_CITADO
+                .findAll(texto)
+                .map { it.groupValues[1].toInt() }
+                .toList()
+                .singleOrNull()
+        return unico?.let { it to "declara $it%" }
+    }
+
+    /**
+     * A árvore `.claude` (regras, skills, agentes) + a política — o que descreve o estado VIGENTE.
+     *
+     * Sem o glob escrito por extenso: em KDoc ele abre um bloco aninhado e o arquivo para de compilar.
+     * Terceira vez neste PR, e a segunda depois de a regra ter sido escrita — o item vale.
+     */
+    private fun docsVivas(): List<File> {
+        val raiz = System.getProperty("rootDir")?.let(::File) ?: File("..")
+        val docs =
+            File(raiz, ".claude").walkTopDown().filter { it.isFile && it.extension == "md" }.toList() +
+                File(raiz, "docs/politicas-explicitas.md")
+        // `adr/**` e `docs/quality/**` ficam DE FORA de propósito: ADR é imutável por política e
+        // scorecard/audit são snapshots datados — os 97% deles são fato histórico, não drift.
+        require(docs.size > 1) { "nenhuma doc viva encontrada — o walk quebrou" }
+        return docs
+    }
+
+    @Test
     fun `o stripper de comentarios nao confunde glob dentro de string com abertura de bloco`() {
         // Regressão medida: a forma anterior (regex `/\*.*?\*/`) tratava o `/**` do glob como abertura
         // de bloco e engolia ~150 linhas do http_api/build.gradle.kts, incluindo o gate. As duas regras
@@ -147,6 +222,16 @@ class QualityGateMirrorTest {
         const val ESPELHO = ".claude/rules/stack.md"
         const val CONVENTION_PLUGIN = "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts"
         val PERCENTUAL = 100.toBigDecimal()
+
+        // A linha fala do gate de COBERTURA? Os três vocabulários em uso no repo. O `NO_COVERAGE` do
+        // PITest casaria `coverage` e por isso é removido da linha antes — sem isso, metade do texto
+        // de mutação viraria falso-positivo.
+        val FALA_DE_COBERTURA = Regex("""(?i)\bjacoco|\bcobertura\b|\bcoverage\b""")
+
+        // `(?<!\d)` obrigatório: sem ele o `\d{2}` casa o "00" de "100%" e vira falso-positivo em
+        // "cobertura de 100% dos arquivos" (medido — dois sítios reprovaram indevidamente).
+        val PERCENTUAL_CITADO = Regex("""(?<!\d)(\d{2})\s*%""")
+        val MINIMUM_LITERAL = Regex("""minimum\s*=\s*"([\d.]+)"""")
 
         val MUTATION_THRESHOLD = Regex("""mutationThreshold\s*\.\s*set\s*\(\s*(\d+)\s*\)""")
         val JACOCO_MINIMUM = Regex("""minimum\s*=\s*"([\d.]+)"""")
