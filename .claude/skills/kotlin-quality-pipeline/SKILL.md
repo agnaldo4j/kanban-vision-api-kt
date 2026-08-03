@@ -965,6 +965,14 @@ Fatos operacionais:
   forma de implicação — e a saída certa não é implicação, é **proibição plana + um teste de não-vácuo
   separado** (ex.: "a função X é declarada exatamente uma vez"), que é inerentemente vermelho se o alvo
   sumir ou for duplicado.
+- **Cada probe precisa ter o MESMO ESCOPO do sujeito — `containingFile.*` nunca tem.** Terceiro eixo de
+  furo, distinto dos dois acima: julgar uma CLASSE por evidência de ARQUIVO. `clazz.containingFile.imports`
+  é compartilhado por todas as classes do arquivo, então com N delas basta **uma** conformar e as outras
+  N−1 passam de carona. Medido no #401: um `Query` acrescentado ao lado de outro, cujo `validate()`
+  devolvia `Either.Right(Unit)` cru, **passava nas três regras**. A saída é ler a declaração da própria
+  classe (`clazz.functions().filter { it.name == "validate" }`) e casar chamada pelos nomes locais — o
+  simples, que também casa o sufixo do FQN, mais o alias de import
+  (`imports.filter { it.name == fqn }.mapNotNull { it.alias?.name }`).
 - **Probe negativo é barato**: o Konsist lê fontes via PSI e `:architecture:test` **não compila** os módulos
   de produto — então um arquivo de probe que nem compila serve para provar que a regra morde. Crie, rode,
   apague, confirme `git status --porcelain` vazio.

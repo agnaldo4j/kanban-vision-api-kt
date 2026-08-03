@@ -34,25 +34,9 @@ pitest {
     targetTests.set(setOf("com.kanbanvision.usecases.*"))
     mutators.set(setOf("STRONGER"))
     // Baseline GAP-AP (2026-07-05): 60% PITest score (159/264; 51% KILLED puros no XML —
-    // PITest conta timeouts como kill). Gate inicial 55% dava margem à variação de timeouts
-    // entre máquinas; a subida gradual prevista (mesmo caminho do domain: 38% → 58%) não é
-    // alcançável neste módulo, e a medição do GAP-EZ (2026-08-03) diz por quê.
-    //
-    // 21% do DENOMINADOR é bytecode sintético, insensível a teste: dos 294 mutantes, 62 são
-    // NO_COVERAGE e 54 deles são o lowering da state machine de coroutine — `throwOnFailure`
-    // (VoidMethodCallMutator) e `invokeSuspend` (NullReturnValsMutator), um par por função
-    // `suspend`. Sobre o código killable o módulo marca 166/232 = 71,6%, não 56,5%.
-    //
-    // Com isso o gate PUNIA a extração de HOF, que é a classe de refactor que domina o board:
-    // ela remove mutantes KILLED dos call sites (saem do numerador E do denominador — efeito
-    // de denominador do #387) e ainda adiciona andaime novo no arquivo extraído. Medido no
-    // #401/GAP-DX: 62,1% → 56,5% com 5 sítios, deixando 10 mutantes de folga; o GAP-EB tem 7.
-    // 50 tolera remover 38 KILLED — `(166-K)/(294-K) ≥ 0,50` — e cobre a fila de HOFs do Todo.
-    //
-    // Não é licença para testar menos: a queda que este número absorve é a de refactor que
-    // DELETA duplicação já coberta. Perda em SURVIVED ou NO_COVERAGE nos arquivos tocados
-    // continua sendo defeito, e a aritmética por arquivo (base vs head) é o que separa os dois.
-    mutationThreshold.set(50)
+    // PITest conta timeouts como kill). Gate inicial 55% dá margem à variação de timeouts
+    // entre máquinas; subida gradual em gaps futuros (mesmo caminho do domain: 38% → 58%).
+    mutationThreshold.set(55)
     outputFormats.set(setOf("XML", "HTML"))
     timestampedReports.set(false)
     failWhenNoMutations.set(true)

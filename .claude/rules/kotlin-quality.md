@@ -134,35 +134,47 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 
 - **Deduplicar código DERRUBA o mutation score do módulo sem perder detecção — é efeito de denominador, e a defesa é aritmética por arquivo.** No #387 `usecases` foi de **63,5% → 62,1%** (gate 55) extraindo um guard que estava copiado em 5 use cases. Nada piorou: cada call site perdeu os **2 mutantes do `ensure`** (que estavam **KILLED**, logo saem do numerador *e* do denominador) e o arquivo novo trouxe 9, sendo 5 killed — o resto é andaime de `suspend` (`throwOnFailure`, `NullReturnVals`, `SwitchMutator`), o mesmo perfil que o `Timed.kt` pré-existente já carrega. O guard consolidado ficou **mais** exercitado que qualquer cópia: 5 testes de use case + 3 diretos.
 
-  A leitura ingênua ("a nota caiu, o PR piorou") inverte o sinal de um refactor bom e desincentiva deduplicação. **Antes de aceitar ou negar a queda, faça a conta por arquivo:** quantos mutantes saíram e em que status estavam, quantos entraram e quantos morreram. E compare o perfil do arquivo novo com um **análogo pré-existente do módulo** — é o que separa "andaime do idioma" de "código não testado". Contraste com o mecanismo do #385 logo acima: lá a perda estava em arquivo **não tocado** (teste que parou de completar); aqui está exatamente nos arquivos tocados, e é aritmética esperada. (#387.)
+  A leitura ingênua ("a nota caiu, o PR piorou") inverte o sinal de um refactor bom e desincentiva deduplicação. **Antes de aceitar ou negar a queda, faça a conta por arquivo:** quantos mutantes saíram e em que status estavam, quantos entraram e quantos morreram. Contraste com o mecanismo do #385 logo acima: lá a perda estava em arquivo **não tocado** (teste que parou de completar); aqui está exatamente nos arquivos tocados, e é aritmética esperada. (#387.)
 
-- **Num módulo de código `suspend`, parte fixa do denominador é bytecode sintético que teste nenhum
-  alcança — e não descontá-la faz o gate punir a extração de HOF.** Quarto membro da família acima, e o
-  que fecha a conta dos outros três. Medido em `usecases` (#401/#402): dos 294 mutantes, **62 são
-  `NO_COVERAGE` e 54 deles são o lowering da state machine de coroutine** — `throwOnFailure`
-  (`VoidMethodCallMutator`) e `invokeSuspend` (`NullReturnValsMutator`), um par por função `suspend`,
-  em linha sintética. Sobre o código killable o módulo marca **166/232 = 71,6%**, não os 56,5% que o
-  gate lê.
+  > 🔴 **A segunda metade desta regra estava ERRADA e foi removida: "compare o perfil do arquivo novo
+  > com um análogo pré-existente do módulo — é o que separa andaime do idioma de código não testado".**
+  > Não separa. O `Timed.kt` e o `LoadOwnedSimulation.kt`, citados aqui como os análogos que legitimavam
+  > o veredito "andaime", carregavam **o mesmo defeito** que o arquivo novo — e o teste que faltava era
+  > o mesmo nos três. **Um análogo não é linha de base de correção; pode ser o mesmo ponto cego,
+  > replicado.** Quando "todo mundo no módulo tem esse perfil" for o argumento, isso é evidência de
+  > causa comum, não de inevitabilidade: procure a causa antes de absolver. Medido no #402 — ver o
+  > item abaixo, que é a causa. (Refutado por P2 do Codex no #402.)
 
-  A consequência é direcional, não cosmética: extrair um HOF `suspend` piora o número **duas vezes** —
-  tira mutantes `KILLED` dos call sites (o efeito de denominador do #387) *e* adiciona andaime novo no
-  arquivo extraído. Com a folga curta, o gate reprova precisamente o refactor que deleta duplicação já
-  coberta.
+- **`NO_COVERAGE` em `invokeSuspend`/`throwOnFailure` não é andaime: é o caminho de resume que nenhum
+  teste exercita — e a causa costuma ser o mock que devolve na hora.** Em `usecases`, **62 dos 294**
+  mutantes eram `NO_COVERAGE`, 54 deles nesse par (`VoidMethodCallMutator` + `NullReturnValsMutator`,
+  um par por função `suspend`, em linha sintética). Parecia bytecode inalcançável. Não era: todo mock
+  do módulo usava `coEvery { … } returns x`, que **resolve na mesma pilha** — a continuation nunca é
+  salva e o resume nunca executa. Em produção executa sempre, porque `dbQuery` faz
+  `withContext(Dispatchers.IO)`.
 
-  **Diagnóstico, antes de qualquer conclusão:** conte `NO_COVERAGE` por mutator. `VoidMethodCall` +
-  `NullReturnVals` em par, em `invokeSuspend`/`throwOnFailure`, é andaime — some do numerador e do
-  denominador para achar o score real. O que sobra é o número sobre o qual vale discutir cobertura.
+  Sete testes com colaborador que suspende de verdade:
 
-  ```bash
-  # NO_COVERAGE por mutator, a partir do relatório do módulo. Uma linha de propósito:
-  # heredoc indentado dentro de bullet não fecha, e o comando quebraria ao ser copiado.
-  python3 -c "import collections,xml.etree.ElementTree as ET;r=ET.parse('usecases/build/reports/pitest/mutations.xml').getroot();print(collections.Counter(x.findtext('mutator').split('.')[-1] for x in r if x.get('status')=='NO_COVERAGE').most_common())"
-  # usecases em 2026-08-03 → [('VoidMethodCallMutator', 27), ('NullReturnValsMutator', 27), …]
+  ```kotlin
+  coEvery { repo.findById(id) } coAnswers { delay(1); withContext(Dispatchers.Default) { x.right() } }
   ```
 
-  **Isso NÃO é licença para baixar gate por conveniência.** A queda que um gate pode legitimamente
-  absorver é a de refactor que **deleta duplicação já coberta** — `SURVIVED` e `NO_COVERAGE` dos
-  arquivos tocados ficam parados e só `KILLED` sai. Perda em `SURVIVED`/`NO_COVERAGE` continua sendo
-  defeito seu, e é a conta por arquivo (base vs head) que separa os dois casos. E, como em #385/#391:
-  **meça, registre, proponha** — mexer no `mutationThreshold` é decisão do mantenedor, tomada antes da
-  ação, nunca tune unilateral para destravar um build.
+  | | KILLED | NO_COVERAGE | score |
+  |---|---|---|---|
+  | antes | 166/294 | 62 | 56,5% |
+  | depois | **215/294** | **8** | **73,1%** |
+
+  `delay` **e** troca de dispatcher: sob `runTest` o `delay` pula o tempo virtual mas a suspensão é
+  real; o `withContext` força despacho. Um mock que resolve na mesma pilha não vale.
+
+  **A consequência prática é sobre gates:** a queda de mutação que parecia estrutural — e que quase
+  virou um `mutationThreshold` mais frouxo — era teste faltando. Antes de propor mexer no número,
+  **verifique se o `NO_COVERAGE` é alcançável**: conte por mutator, e se `VoidMethodCall` +
+  `NullReturnVals` aparecerem em par num módulo `suspend`, escreva o teste de resume primeiro.
+
+  ```bash
+  python3 -c "import collections,xml.etree.ElementTree as ET;r=ET.parse('usecases/build/reports/pitest/mutations.xml').getroot();print(collections.Counter(x.findtext('mutator').split('.')[-1] for x in r if x.get('status')=='NO_COVERAGE').most_common())"
+  ```
+
+  (#402, a partir de um P2 do Codex que refutou a premissa do PR. O PR nasceu para **baixar** o gate de
+  55 para 50 e terminou **sem tocar no gate**, com o módulo em 73,1%.)

@@ -17,7 +17,7 @@
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
 | Testing | JUnit Jupiter 6.1.2 + MockK 1.14.11 |
-| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER; gates: `domain-common` 90% · `domain-kanban` 78% · `domain-simulation` 73% · `usecases` 50% (baixado de 55 no GAP-EZ — 21% do denominador é andaime de coroutine insensível a teste; ver o bloco `pitest` de `usecases/build.gradle.kts`) · `sql_persistence` 65% · `http_api` 45% (plugins/adapters/events)) |
+| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER; gates: `domain-common` 90% · `domain-kanban` 78% · `domain-simulation` 73% · `usecases` 55% · `sql_persistence` 65% · `http_api` 45% (plugins/adapters/events)) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 + JUnit — módulo test-only `architecture/` (ADR-0026); fitness functions (conte com `rg -c '@Test' architecture/src/test` — a contagem muda a cada regra nova e já divergiu em 4 arquivos), incl. o grafo de `project` deps `simulation → kanban → common` (`ProjectDependencyGraphTest`, ADR-0038); roda no `testAll` |
