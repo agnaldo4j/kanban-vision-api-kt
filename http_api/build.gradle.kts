@@ -117,7 +117,7 @@ pitest {
     // domain (só simulation). Rotas ficam FORA por decisão de custo medida: são 74%
     // dos mutantes (1078/1462) e a fábrica de hangs — mutar respond deixa o test
     // client esperando até o timeout do PITest (62 TIMED_OUT; o runner do CI passou
-    // de 24min e o job foi cancelado). Rotas seguem cobertas por JaCoCo 97% +
+    // de 24min e o job foi cancelado). Rotas seguem cobertas por JaCoCo 98% +
     // testApplication + Pact; mutação de rotas = dívida consciente para gap futuro.
     targetClasses.set(
         setOf(
