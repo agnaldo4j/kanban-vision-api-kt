@@ -10,7 +10,7 @@ import com.kanbanvision.domain.common.errors.CommonError
 
 fun accumulateValidation(block: Raise<NonEmptyList<CommonError.ValidationError>>.() -> Unit): Either<CommonError.ValidationError, Unit> =
     either<NonEmptyList<CommonError.ValidationError>, Unit> { block() }
-        .mapLeft { errors -> CommonError.ValidationError(errors.map { it.message }) }
+        .mapLeft { errors -> CommonError.ValidationError(errors.toList().flatMap { it.messages }) }
 
 fun Raise<CommonError.ValidationError>.ensureSimulationId(simulationId: String) =
     ensure(simulationId.isNotBlank()) { CommonError.ValidationError("Simulation id must not be blank") }
