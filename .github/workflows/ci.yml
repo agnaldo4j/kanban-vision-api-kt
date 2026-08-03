@@ -130,7 +130,11 @@ jobs:
             for module in $(grep -oE '":[a-z_-]+"' settings.gradle.kts | tr -d '":'); do
               build="${module}/build.gradle.kts"
               [ -f "$build" ] || continue
-              threshold=$(grep -oE 'mutationThreshold\.set\([0-9]+' "$build" | grep -oE '[0-9]+')
+              # `|| true` OBRIGATÓRIO: o step roda em `bash -eo pipefail`, então o `grep` que não
+              # acha nada (o `architecture`, que de propósito não tem gate) mataria o script AQUI —
+              # antes do `continue` abaixo e antes de fechar o delimitador do heredoc, reprovando o
+              # job inteiro com os gates reais verdes. É o padrão já usado nos `grep -c` deste arquivo.
+              threshold=$(grep -oE 'mutationThreshold\.set\([0-9]+' "$build" | grep -oE '[0-9]+' || true)
               [ -n "$threshold" ] || continue
               echo ''
               printf '### `%s`\n' "$module"

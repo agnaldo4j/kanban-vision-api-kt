@@ -188,6 +188,39 @@ class QualityGateMirrorTest {
     }
 
     @Test
+    fun `o parser reconhece as formas em que um modulo e citado, e so elas`() {
+        // A regra acima varre arquivo inteiro; este teste fixa o PARSER, que é onde ela cega em
+        // silêncio. Cada linha abaixo custou um falso-negativo ou um falso-positivo medido.
+        val reconhecidas =
+            mapOf(
+                "./gradlew :domain-simulation:pitest" to listOf("domain-simulation"),
+                "open domain-simulation/build/reports/pitest/index.html" to listOf("domain-simulation"),
+                // P2 do Codex no #406: o separador `::` do codecov.yml. Sem o `:` no conjunto de
+                // prefixos, NENHUMA mapeação do codecov casava e a config passava verde sem ser lida.
+                """  - "com/kanbanvision/domain/common/::domain-common/src/main/kotlin/x/"""" to listOf("domain-common"),
+                "  usecases/src/main/kotlin/com/kanbanvision/usecases/ \\" to listOf("usecases"),
+            )
+        reconhecidas.forEach { (linha, esperado) ->
+            assertEquals(esperado, modulosCitadosEm(linha), "não reconheceu o módulo em: $linha")
+        }
+
+        val ignoradas =
+            listOf(
+                // Timestamp: sem a âncora em `gradlew`, `HH:mm:ss` vira o módulo `mm` (medido).
+                "logback pattern: %d{HH:mm:ss.SSS} [%thread]",
+                // Metavariável de documentação — ensina a forma, não um módulo.
+                "| `./gradlew :modulo:test` | Apenas testes do módulo |",
+                // Segmento de PACOTE, não de módulo: `/` fica fora dos prefixos de propósito.
+                "com/kanbanvision/domain/src/legado",
+                // Menção em prosa não é citação executável.
+                "o domínio é puro — zero imports de framework",
+            )
+        ignoradas.forEach { linha ->
+            assertEquals(emptyList<String>(), modulosCitadosEm(linha), "reconheceu módulo onde não há: $linha")
+        }
+    }
+
+    @Test
     fun `o stripper de comentarios nao confunde glob dentro de string com abertura de bloco`() {
         // Regressão medida: a forma anterior (regex `/\*.*?\*/`) tratava o `/**` do glob como abertura
         // de bloco e engolia ~150 linhas do http_api/build.gradle.kts, incluindo o gate. As duas regras
@@ -287,8 +320,14 @@ class QualityGateMirrorTest {
         val METAVARIAVEIS = setOf("modulo", "módulo", "mod", "module", "nome-do-modulo")
 
         // `modulo/src` ou `modulo/build` — a forma que aparece em caminho de relatório. Exige começo
-        // de linha ou separador antes, senão `com/kanbanvision/domain/src` casaria o segmento errado.
-        val CAMINHO_DE_MODULO = Regex("""(?:^|[\s"'`(])([a-z][a-z0-9_-]*)/(?:src|build)/""")
+        // de linha ou separador antes, senão `com/kanbanvision/domain/src` casaria o segmento errado
+        // (por isso `/` fica DE FORA do conjunto, de propósito).
+        //
+        // O `:` entrou por P2 do Codex no #406: o `codecov.yml` separa origem e destino com `::`
+        // (`"com/kanbanvision/domain/common/::domain-common/src/main/kotlin/…"`), então NENHUMA
+        // mapeação dele casava — a config entrava na varredura e saía verde sem ser olhada, que é
+        // pior do que não varrer, porque parece cobertura.
+        val CAMINHO_DE_MODULO = Regex("""(?:^|[\s"'`(:])([a-z][a-z0-9_-]*)/(?:src|build)/""")
         val PERCENTUAL = 100.toBigDecimal()
 
         // A linha fala do gate de COBERTURA? Os três vocabulários em uso no repo. O `NO_COVERAGE` do
