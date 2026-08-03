@@ -1,5 +1,6 @@
 package com.kanbanvision.usecases.simulation
 
+import arrow.core.Either
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.usecases.simulation.commands.CreateSimulationCommand
 import com.kanbanvision.usecases.simulation.commands.RunDayCommand
@@ -63,6 +64,41 @@ class SimulationInputValidationTest {
     }
 
     @Test
+    fun `given get simulation query with both fields blank when validating then both messages are accumulated`() {
+        assertBothRefMessagesAccumulated(
+            GetSimulationQuery(simulationId = "", callerOrganizationId = "").validate(),
+        )
+    }
+
+    @Test
+    fun `given get simulation days query with both fields blank when validating then both messages are accumulated`() {
+        assertBothRefMessagesAccumulated(
+            GetSimulationDaysQuery(simulationId = "", callerOrganizationId = "").validate(),
+        )
+    }
+
+    @Test
+    fun `given get simulation cfd query with both fields blank when validating then both messages are accumulated`() {
+        assertBothRefMessagesAccumulated(
+            GetSimulationCfdQuery(simulationId = "", callerOrganizationId = "").validate(),
+        )
+    }
+
+    @Test
+    fun `given run day command with both fields blank when validating then both messages are accumulated`() {
+        assertBothRefMessagesAccumulated(
+            RunDayCommand(simulationId = "", decisions = emptyList(), callerOrganizationId = "").validate(),
+        )
+    }
+
+    @Test
+    fun `given daily snapshot query with the ref pair blank when validating then each message stays a separate entry`() {
+        val result = GetDailySnapshotQuery(simulationId = "", day = 1, callerOrganizationId = "").validate()
+
+        assertBothRefMessagesAccumulated(result)
+    }
+
+    @Test
     fun `given daily snapshot query with invalid inputs when validating then all messages are accumulated`() {
         val result = GetDailySnapshotQuery(simulationId = "", day = 0, callerOrganizationId = "").validate()
 
@@ -108,5 +144,12 @@ class SimulationInputValidationTest {
 
         assertTrue(result.isLeft())
         assertIs<CommonError.ValidationError>(result.leftOrNull())
+    }
+
+    private fun assertBothRefMessagesAccumulated(result: Either<CommonError.ValidationError, Unit>) {
+        val error = result.leftOrNull()
+        assertIs<CommonError.ValidationError>(error)
+        assertContains(error.messages, "Simulation id must not be blank")
+        assertContains(error.messages, "Caller organization id must not be blank")
     }
 }

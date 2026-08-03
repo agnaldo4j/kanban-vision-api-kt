@@ -1,18 +1,13 @@
 package com.kanbanvision.usecases.simulation.queries
 
 import arrow.core.Either
-import arrow.core.raise.either
-import arrow.core.raise.ensure
 import com.kanbanvision.domain.common.errors.CommonError
 import com.kanbanvision.usecases.cqs.Query
+import com.kanbanvision.usecases.cqs.validateSimulationRef
 
 data class GetSimulationCfdQuery(
     val simulationId: String,
     val callerOrganizationId: String,
 ) : Query {
-    override fun validate(): Either<CommonError.ValidationError, Unit> =
-        either {
-            ensure(simulationId.isNotBlank()) { CommonError.ValidationError("Simulation id must not be blank") }
-            ensure(callerOrganizationId.isNotBlank()) { CommonError.ValidationError("Caller organization id must not be blank") }
-        }
+    override fun validate(): Either<CommonError.ValidationError, Unit> = validateSimulationRef(simulationId, callerOrganizationId)
 }
