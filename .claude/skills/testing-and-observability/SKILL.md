@@ -31,7 +31,7 @@ o build está falhando por violação de alguma ferramenta.
 |---|---|---|
 | `config/detekt/detekt.yml` | Detekt | Thresholds, regras ativas, padrões de nomenclatura |
 | `.editorconfig` | KtLint / editores | Estilo de código, tamanho de linha, ordenação de imports |
-| `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` | Convention plugin | JaCoCo gate (97%), JUnit platform, versões de ferramentas |
+| `buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts` | Convention plugin | JaCoCo gate (98%), JUnit platform, versões de ferramentas |
 | `**/build.gradle.kts` | Gradle | Exclusões de JaCoCo por módulo, dependências de teste |
 | `gradle.properties` | Gradle | Versão do Java, flags da JVM |
 
@@ -49,7 +49,7 @@ Build falhou por Detekt / KtLint / JaCoCo?
 
 **Nunca:**
 - Aumentar um threshold (`LongMethod`, `CyclomaticComplexMethod`, `LargeClass`, etc.)
-- Baixar o gate de cobertura (mínimo 97% é fixo)
+- Baixar o gate de cobertura (mínimo 98% é fixo)
 - Adicionar exclusões no JaCoCo sem aprovação explícita do time
 - Desativar uma regra do Detekt
 - Adicionar `@Suppress` sem justificativa documentada no código

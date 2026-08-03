@@ -40,19 +40,8 @@ class ContextBoundaryTest {
                 val importsCrossBoundary =
                     file.imports.any { import -> simulationPackages.any { import.name.startsWith(it) } }
                 val codeReferencesCrossBoundary =
-                    simulationPackages.any { pkg -> stripComments(file.text).contains("$pkg.") }
+                    simulationPackages.any { pkg -> file.text.semComentarios().contains("$pkg.") }
                 importsCrossBoundary || codeReferencesCrossBoundary
             }
-    }
-
-    private fun stripComments(source: String): String =
-        source
-            .replace(BLOCK_COMMENT, "")
-            .lines()
-            .filterNot { it.trimStart().startsWith("//") }
-            .joinToString("\n")
-
-    private companion object {
-        private val BLOCK_COMMENT = Regex("/\\*.*?\\*/", setOf(RegexOption.DOT_MATCHES_ALL))
     }
 }

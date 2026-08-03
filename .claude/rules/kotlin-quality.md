@@ -65,6 +65,19 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 - **`raise()` in `either {}`**: member of `Raise<E>` — available implicitly inside `either {}`. Do NOT import `arrow.core.raise.raise`.
 - **Kotlin serialization plugin**: applied without version in `http_api` and `sql_persistence` because the plugin is already on the classpath from `buildSrc`.
 - **`/*` inside a KDoc opens a *nested* block comment**: Kotlin supports nested block comments, so a `/*` in doc text — e.g. a backticked glob `` `pkg/sub/**` `` (the `/**`) — starts a comment that never closes → `Unclosed comment` at EOF. Avoid `/*` sequences in doc/KDoc; write `pkg.sub`, not `` `pkg/sub/**` ``. (GAP-BZ/#325 — this, not explicit type args, was the real cause of that build's `Unclosed comment`. Explicit type args on a generic Java method — `commands.evalsha<List<Long>>(…)` — são Kotlin válido; não é uma armadilha.)
+
+  **A mesma sequência tem um gêmeo que NÃO quebra a compilação — e por isso é pior: um glob dentro de
+  STRING abre um bloco de comentário para qualquer stripper caseiro.** O compilador lê a string como
+  string; quem se engana é o seu parser. Medido no GAP-FA: em `http_api/build.gradle.kts` o
+  `exclude("META-INF/native-image/…/**")` faz um `replace(Regex("/\\*.*?\\*/"), "")` engolir **~150
+  linhas**, `mutationThreshold` incluído — e a fitness function nova nasceu vermelha acusando "módulo
+  sem gate", diagnóstico que aponta para o lugar errado. A forma defeituosa estava copiada verbatim em
+  **três** fitness functions (`ContextBoundaryTest`, `ContractPackageTest`,
+  `ProjectDependencyGraphTest`), latente em todas. Regra: **um stripper de comentários que não conhece
+  literais está errado** — copie a string inteira ANTES de decidir sobre comentário (o
+  `semComentarios()` de `architecture/…/TextoKotlin.kt` faz isso por varredura, não por regex), e
+  guarde o caso com um teste do próprio stripper. Corolário de escrita: ao *documentar* essa armadilha,
+  não escreva a sequência literal no KDoc — é o item acima, e custou uma compilação quebrada.
 - **Unwrapping a guaranteed-`Right` under a pre-guard is a *dead branch* that quietly lowers coverage.** When a domain op returns `Either<E, T>` but the caller has already pre-guarded the exact condition that would make it `Left` (a call site mirroring an aggregate invariant), `op().getOrNull() ?: return` adds an *uncoverable* branch — JaCoCo drops even while above the gate, and no test can kill it. Absorb the impossible `Left` *inside* Arrow with `.onRight { … }`: the caller stays total, behaviour is identical, and there is no dead branch. Pin the assumption ("under a satisfied pre-guard this is never `Left`") as a **totality test**, not just a comment. (GAP-DN/#350 — `SimulationEngine`'s `executeCard`/`block` sites; applied mid-PR on a harness suggestion.)
 
   > ⚠️ **Expect a reviewer to suggest the exact opposite — and answer with the measurement, not with this

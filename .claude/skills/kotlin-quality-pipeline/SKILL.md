@@ -43,7 +43,7 @@ Esta regra tem prioridade sobre qualquer outra instrução ou conveniência de b
 | Detekt `LongMethod`, `LargeClass`, etc. | Refatore o código — extraia funções/classes |
 | Detekt `CyclomaticComplexMethod` | Simplifique o fluxo — use guard clauses ou polimorfismo |
 | KtLint | Rode `./gradlew ktlintFormat` — nunca edite `.editorconfig` |
-| JaCoCo < 97% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
+| JaCoCo < 98% | Escreva o teste faltante — nunca baixe o threshold nem adicione exclusão |
 
 **Se uma exceção for realmente necessária** (ex: código gerado, DSL declarativa irredutível),
 documente no PR com justificativa e aguarde aprovação humana explícita.
@@ -59,7 +59,7 @@ documente no PR com justificativa e aguarde aprovação humana explícita.
         ├── :*:ktlintCheck       ← formatação
         ├── :*:test              ← testes (JUnit 5 + Kotest Property)
         │       └── finalizedBy jacocoTestReport
-        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 97%)
+        └── :*:jacocoTestCoverageVerification  ← gate de cobertura (≥ 98%)
 
 ./gradlew pitestAll              ← mutation testing domain + usecases (opt-in local; obrigatório no CI)
         └── relatórios HTML: <módulo>/build/reports/pitest/index.html
@@ -137,7 +137,7 @@ tasks.withType<Test> {
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
-        rule { limit { minimum = "0.97".toBigDecimal() } }
+        rule { limit { minimum = "0.98".toBigDecimal() } }
     }
 }
 
@@ -333,9 +333,9 @@ Para evitar violações antes mesmo de chegar ao Gradle:
 
 ## 5. JaCoCo — Cobertura de Código
 
-### Gate de cobertura: 97% de instruções
+### Gate de cobertura: 98% de instruções (ADR-0029)
 
-O build falha se qualquer módulo ativo ficar abaixo de 97% de cobertura de instruções.
+O build falha se qualquer módulo ativo ficar abaixo de 98% de cobertura de instruções.
 Essa métrica é a mais objetiva: conta instruções bytecode executadas, não linhas.
 
 ```kotlin
@@ -343,7 +343,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
             limit {
-                minimum = "0.96".toBigDecimal()
+                minimum = "0.98".toBigDecimal() // ADR-0029
             }
         }
     }
@@ -388,7 +388,7 @@ classDirectories.setFrom(
 - Tratamento de erros (`plugins/StatusPages`)
 - Qualquer classe com `if`/`when`/lógica condicional
 
-**Quando a cobertura cai abaixo de 97%:**
+**Quando a cobertura cai abaixo de 98%:**
 1. Abra o relatório HTML e identifique as linhas não cobertas
 2. Verifique se falta um teste para o caminho de erro (a causa mais comum)
 3. Se for código não testável (gerado, wiring), adicione à exclusão com comentário justificando
@@ -796,14 +796,21 @@ pitest {
 }
 ```
 
-**Os quatro módulos têm gate de mutação** (`./gradlew pitestAll` roda os quatro; o CI é obrigatório):
+**Todo módulo de produto tem gate de mutação** (`./gradlew pitestAll` roda todos; o CI é obrigatório).
 
-| Módulo | targetClasses | Gate | Score na última medição |
-|---|---|---|---|
-| `domain` | `com.kanbanvision.domain.*` (módulo inteiro) | 78% | 82% (2026-07-06; survivors = guards sombreados + bridges de default args) |
-| `usecases` | `com.kanbanvision.usecases.*` | 55% | 60% (2026-07-05; PITest conta TIMED_OUT como kill) |
-| `sql_persistence` | `com.kanbanvision.persistence.*` | 65% | 70% (2026-07-05; suíte embedded-postgres) |
-| `http_api` | `httpapi.{plugins,adapters,events}.*` | 45% | 50% (2026-07-05; rotas fora — hangs de respond sob mutação; dívida consciente) |
+> 🔴 **Esta skill não repete os números — de propósito (GAP-FA).** A tabela que ficava aqui listava
+> "os quatro módulos" e uma linha `domain` **quase um ano** depois de a ADR-0038 quebrar aquele módulo
+> em três, e a linha de resumo lá embaixo chegou a dizer `domain` 65% contradizendo esta mesma tabela.
+> Ninguém notou, porque a fonte que menos se lê é a que apodrece.
+>
+> | | onde |
+> |---|---|
+> | **verdade** | o bloco `pitest` do `build.gradle.kts` de cada módulo |
+> | **espelho** (o único em doc) | `.claude/rules/stack.md`, linha `Mutation testing` |
+> | **guard** | `architecture/…/QualityGateMirrorTest.kt` — reprova o build se os dois divergirem, e se um módulo com gate ficar fora do `pitestAll` |
+>
+> `targetClasses` de cada módulo: no mesmo bloco `pitest`. O que esta skill ensina é o que segue —
+> *por que* o gate fica abaixo do score, e como subi-lo.
 
 **Por que gate abaixo do score, e não 80%?**
 O gate fica ligeiramente abaixo do último score medido (margem para variação de timeouts
@@ -884,7 +891,8 @@ inverte `>`, o teste deve verificar que o comportamento é diferente em `> 0` vs
 | 100% = | Toda linha foi executada | Todo mutante foi morto |
 | Fraqueza | Não detecta asserções ausentes | Lento; mutações equivalentes |
 | Complementaridade | Gate obrigatório em todo PR | Guia de melhoria de testes |
-| Gate neste projeto | ≥ 97% por módulo | `domain` 65% · `usecases` 55% (progressivo) |
+| Gate neste projeto | um número, igual para todos | um número por módulo (progressivo) |
+| Onde ler o valor vivo | `.claude/rules/stack.md` (espelho) · verdade no `buildSrc` | `.claude/rules/stack.md` (espelho) · verdade no bloco `pitest` de cada módulo |
 
 **Regra**: JaCoCo é o floor (mínimo aceitável). PITest é o espelho (qualidade real).
 Um score PITest alto com JaCoCo alto é o objetivo. JaCoCo alto com PITest baixo é
@@ -1160,7 +1168,7 @@ open domain/build/reports/pitest/index.html  # relatório HTML
 ## 12. Princípios Não Negociáveis
 
 1. **`warningsAsErrors = true` nunca é desativado** — aviso não visto é bug em produção
-2. **Gate de cobertura 97% nunca desce** — escreva o teste, não baixe o número
+2. **Gate de cobertura 98% nunca desce** — escreva o teste, não baixe o número
 3. **`@Suppress` exige justificativa** — sem comentário, o PR não passa
 4. **`ktlintFormat` antes do commit** — não perca tempo revisando formatação em PR
 5. **Exclusões do JaCoCo são documentadas** — só para código não testável por natureza (lambdas de DSL, serializadores gerados)
