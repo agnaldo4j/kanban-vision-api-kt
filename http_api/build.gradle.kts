@@ -265,7 +265,7 @@ dependencies {
     // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
     migrationRuntime(platform("tools.jackson:jackson-bom:3.2.1"))
     migrationRuntime(project(":sql_persistence"))
-    migrationRuntime("ch.qos.logback:logback-classic:1.6.0")
+    migrationRuntime("ch.qos.logback:logback-classic:1.6.1")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
     migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
@@ -313,7 +313,7 @@ dependencies {
     // Referenciada só pelo logback*.xml — runtime only.
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
-    implementation("ch.qos.logback:logback-classic:1.6.0")
+    implementation("ch.qos.logback:logback-classic:1.6.1")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
