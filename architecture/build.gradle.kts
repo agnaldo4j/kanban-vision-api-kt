@@ -36,14 +36,26 @@ tasks.test {
         .withPropertyName("settingsScript")
         .withPathSensitivity(PathSensitivity.RELATIVE)
 
-    // GAP-FA: o QualityGateMirrorTest lê mais três arquivos em runtime — o espelho dos gates, o
-    // convention plugin (dono do `minimum` do JaCoCo) e o build.gradle.kts do root (dono do `pitestAll`).
-    // Mesma razão do settings acima: um PR que só edita o espelho restauraria a task do cache e a
-    // asserção nova nunca rodaria — que é exatamente o drift que ela existe para pegar.
+    // O QualityGateMirrorTest lê doc e config em runtime, invisíveis ao Gradle. Mesma razão do
+    // settings acima: sem declarar, um PR que só edita um desses restaura a task do cache e a
+    // asserção nunca roda — que é exatamente o drift que ela existe para pegar.
+    //
+    // 🔴 Esta lista tem de acompanhar `CONFIGS_VIVAS` do QualityGateMirrorTest. O GAP-FA declarou só
+    // `stack.md`, mas o teste já varria a árvore `.claude` INTEIRA — então uma edição em qualquer
+    // outra skill não invalidava nada. Por isso o diretório entra abaixo como input de DIRETÓRIO,
+    // e não arquivo a arquivo: skill nova passa a contar sozinha.
+    inputs
+        .dir(rootDir.resolve(".claude"))
+        .withPropertyName("docsVivasClaude")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
     listOf(
-        "espelhoDosGates" to ".claude/rules/stack.md",
         "conventionPlugin" to "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts",
         "rootBuildScript" to "build.gradle.kts",
+        "politicasExplicitas" to "docs/politicas-explicitas.md",
+        "codecovConfig" to "codecov.yml",
+        "readme" to "README.md",
+        "ciWorkflow" to ".github/workflows/ci.yml",
     ).forEach { (nome, caminho) ->
         inputs
             .file(rootDir.resolve(caminho))

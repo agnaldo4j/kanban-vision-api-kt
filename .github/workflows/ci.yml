@@ -122,16 +122,20 @@ jobs:
           {
             echo 'body<<PITEST_REPORT'
             echo '## PITest Mutation Report'
-            # module|display threshold|target — thresholds mirror the gradle gates
-            for spec in \
-              'domain-common|90|com.kanbanvision.domain.common.*' \
-              'domain-kanban|78|com.kanbanvision.domain.model.{kanban,organization}.*' \
-              'domain-simulation|73|com.kanbanvision.domain.*' \
-              'usecases|55|com.kanbanvision.usecases.*' \
-              'sql_persistence|65|com.kanbanvision.persistence.*' \
-              'http_api|45|com.kanbanvision.httpapi.{plugins,adapters,events}.*'; do
-              module=${spec%%|*}; rest=${spec#*|}
-              threshold=${rest%%|*}; target=${rest#*|}
+            # Módulo e threshold DERIVADOS do Gradle (GAP-FB). A lista hardcoded que morava aqui
+            # dizia de si mesma "thresholds mirror the gradle gates" — e um espelho que ninguém
+            # confere mente: este threshold decide o ✅/❌ impresso abaixo, então um valor velho faz
+            # o report contradizer o build. Módulo sem `mutationThreshold` (hoje `architecture`)
+            # cai fora sozinho, e módulo novo entra sem editar este arquivo.
+            for module in $(grep -oE '":[a-z_-]+"' settings.gradle.kts | tr -d '":'); do
+              build="${module}/build.gradle.kts"
+              [ -f "$build" ] || continue
+              # `|| true` OBRIGATÓRIO: o step roda em `bash -eo pipefail`, então o `grep` que não
+              # acha nada (o `architecture`, que de propósito não tem gate) mataria o script AQUI —
+              # antes do `continue` abaixo e antes de fechar o delimitador do heredoc, reprovando o
+              # job inteiro com os gates reais verdes. É o padrão já usado nos `grep -c` deste arquivo.
+              threshold=$(grep -oE 'mutationThreshold\.set\([0-9]+' "$build" | grep -oE '[0-9]+' || true)
+              [ -n "$threshold" ] || continue
               echo ''
               printf '### `%s`\n' "$module"
               echo ''
@@ -163,7 +167,7 @@ jobs:
                 printf '**Mutation score: %d%% ❌** (threshold: %d%%)\n' "$score" "$threshold"
               fi
               echo ''
-              printf '> Target: `%s` · Mutators: `STRONGER`\n' "$target"
+              printf '> Gate e `targetClasses`: bloco `pitest` de `%s`\n' "$build"
             done
             echo 'PITEST_REPORT'
           } >> "$GITHUB_OUTPUT"
@@ -268,7 +272,10 @@ jobs:
             echo '| Module | main | test |'
             echo '|--------|------|------|'
             total=0
-            for module in domain-simulation usecases sql_persistence http_api; do
+            # Derivado do settings (GAP-FB). A lista hardcoded que morava aqui ficou parada na
+            # estrutura pré-ADR-0038: não olhava `domain-common`, `domain-kanban` nem `architecture`,
+            # e a tabela publicada parecia completa — violação nesses módulos não aparecia no report.
+            for module in $(grep -oE '":[a-z_-]+"' settings.gradle.kts | tr -d '":'); do
               xml="${module}/build/reports/detekt/detekt.xml"
               xml_test="${module}/build/reports/detekt/test.xml"
               if [ -f "$xml" ]; then
