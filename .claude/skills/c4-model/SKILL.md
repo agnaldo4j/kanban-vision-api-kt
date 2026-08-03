@@ -57,8 +57,9 @@ build.gradle.kts (root e cada módulo)
 settings.gradle.kts
 
 # Domínio
-domain/src/main/kotlin/com/kanbanvision/domain/model/
-domain/src/main/kotlin/com/kanbanvision/domain/simulation/
+domain-common/src/main/kotlin/com/kanbanvision/domain/common/
+domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/
+domain-simulation/src/main/kotlin/com/kanbanvision/domain/model/simulation/
 
 # Casos de uso e ports
 usecases/src/main/kotlin/com/kanbanvision/usecases/
@@ -191,7 +192,7 @@ C4Component
 - [ ] Inclui retorno de dados relevantes
 
 ### Diagramas de Classe
-- [ ] Apenas classes do domínio (módulo `domain`)
+- [ ] Apenas classes do domínio (`domain-common`, `domain-kanban`, `domain-simulation`)
 - [ ] Atributos com tipo correto (como no código real)
 - [ ] Relações: composição (`*--`), agregação (`o--`), associação (`-->`)
 - [ ] Não incluir classes de infraestrutura (Ktor, JDBC, Koin)

@@ -24,6 +24,9 @@ import java.io.File
  * quebraria a igualdade com o `pitestAll`.
  */
 class QualityGateMirrorTest {
+    /** `workingDir` do teste é o projectDir do módulo; a raiz vem por systemProperty (ver build.gradle.kts). */
+    private val raiz = System.getProperty("rootDir")?.let(::File) ?: File("..")
+
     @Test
     fun `o espelho em stack md declara o gate de mutacao de cada modulo`() {
         assertEquals(
@@ -80,7 +83,7 @@ class QualityGateMirrorTest {
         val divergentes =
             docsVivas().flatMap { arquivo ->
                 arquivo.readText().lines().withIndex().mapNotNull { (i, linha) ->
-                    mençãoDivergente(linha, autoritativo)?.let { "${arquivo.name}:${i + 1} — $it" }
+                    mençãoDivergente(linha, autoritativo)?.let { "${arquivo.relativeTo(raiz).path}:${i + 1} — $it" }
                 }
             }
         assertTrue(divergentes.isEmpty()) {
@@ -124,20 +127,63 @@ class QualityGateMirrorTest {
         return unico?.let { it to "declara $it%" }
     }
 
+    @Test
+    fun `nenhuma doc ou config viva cita modulo Gradle que nao existe`() {
+        // A ADR-0038 dividiu `:domain` em três e a documentação seguiu mandando rodar
+        // `./gradlew :domain:pitest` e abrir `domain/build/reports/…` por QUASE UM ANO — a mesma
+        // podridão que o GAP-FA citou como motivação, sobrevivendo no arquivo que ele curou. Esta
+        // regra teria pego aquilo no dia, e é a que faltava: o guard do GAP-FA prova que o espelho
+        // CONCORDA com a verdade, não que não existe outra cópia falando de outra coisa.
+        val existentes = modulosDoSettings().toSet()
+        val fantasmas =
+            docsVivas().flatMap { arquivo ->
+                arquivo.readText().lines().withIndex().flatMap { (i, linha) ->
+                    modulosCitadosEm(linha)
+                        .filterNot { it in existentes }
+                        .map { "${arquivo.relativeTo(raiz).path}:${i + 1} — cita `$it`" }
+                }
+            }
+        assertTrue(fantasmas.isEmpty()) {
+            "doc/config viva citando módulo Gradle inexistente (o settings declara $existentes):\n" +
+                fantasmas.joinToString("\n")
+        }
+    }
+
     /**
-     * A árvore `.claude` (regras, skills, agentes) + a política — o que descreve o estado VIGENTE.
+     * Nomes de módulo citados numa linha: a task `:nome:alvo` e o caminho `nome/src` ou `nome/build`.
+     *
+     * As duas formas em que a citação ENVELHECE — comando para copiar e caminho de relatório. Uma
+     * menção em prosa ("o domínio") não é citação de módulo e fica de fora, deliberadamente: o alvo
+     * aqui é o que o leitor executa, não o que ele lê.
+     *
+     * A task exige `gradlew` na linha. Sem essa âncora, `:([a-z…]+):` casa **timestamp**: `HH:mm:ss`
+     * vira o módulo `mm` (medido — dois falso-positivos).
+     */
+    private fun modulosCitadosEm(linha: String): List<String> {
+        val tasks = if (linha.contains("gradlew")) TASK_GRADLE.findAll(linha) else emptySequence()
+        return (tasks + CAMINHO_DE_MODULO.findAll(linha))
+            .map { it.groupValues[1] }
+            .filterNot { it in METAVARIAVEIS }
+            .toList()
+    }
+
+    /**
+     * Doc e config que descrevem o estado VIGENTE: a árvore `.claude`, a política, e as configs de
+     * raiz que repetem gate ou nomeiam módulo.
+     *
+     * `codecov.yml` e `README.md` entraram no GAP-FB: o guard do GAP-FA só varria `.md` sob `.claude`,
+     * e o codecov dizia "JaCoCo >= 96%" — DUAS subidas atrasadas — sem ninguém notar.
      *
      * Sem o glob escrito por extenso: em KDoc ele abre um bloco aninhado e o arquivo para de compilar.
-     * Terceira vez neste PR, e a segunda depois de a regra ter sido escrita — o item vale.
      */
     private fun docsVivas(): List<File> {
-        val raiz = System.getProperty("rootDir")?.let(::File) ?: File("..")
         val docs =
             File(raiz, ".claude").walkTopDown().filter { it.isFile && it.extension == "md" }.toList() +
-                File(raiz, "docs/politicas-explicitas.md")
-        // `adr/**` e `docs/quality/**` ficam DE FORA de propósito: ADR é imutável por política e
+                CONFIGS_VIVAS.map { File(raiz, it) }
+        // `adr` e `docs/quality` ficam DE FORA de propósito: ADR é imutável por política e
         // scorecard/audit são snapshots datados — os 97% deles são fato histórico, não drift.
-        require(docs.size > 1) { "nenhuma doc viva encontrada — o walk quebrou" }
+        require(docs.size > CONFIGS_VIVAS.size) { "nenhuma doc viva encontrada — o walk quebrou" }
+        docs.forEach { require(it.isFile) { "config viva não encontrada: ${it.absolutePath}" } }
         return docs
     }
 
@@ -212,7 +258,6 @@ class QualityGateMirrorTest {
             .toSet()
 
     private fun ler(caminhoRelativo: String): String {
-        val raiz = System.getProperty("rootDir")?.let(::File) ?: File("..")
         val arquivo = File(raiz, caminhoRelativo)
         require(arquivo.isFile) { "arquivo não encontrado: ${arquivo.absolutePath}" }
         return arquivo.readText()
@@ -221,6 +266,29 @@ class QualityGateMirrorTest {
     private companion object {
         const val ESPELHO = ".claude/rules/stack.md"
         const val CONVENTION_PLUGIN = "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts"
+
+        // Config de raiz que repete gate ou nomeia módulo. O `ci.yml` entra porque nomeia módulo nos
+        // caminhos de relatório; os gates dele passaram a ser DERIVADOS do Gradle (GAP-FB), então
+        // não há mais número a espelhar lá.
+        val CONFIGS_VIVAS =
+            listOf(
+                "docs/politicas-explicitas.md",
+                "codecov.yml",
+                "README.md",
+                ".github/workflows/ci.yml",
+            )
+
+        // `:modulo:task` — a forma que o leitor copia e cola. Só vale em linha com `gradlew`.
+        val TASK_GRADLE = Regex(""":([a-z][a-z0-9_-]*):[a-zA-Z]""")
+
+        // Metavariáveis de documentação: `./gradlew :modulo:test` ensina a FORMA, não um módulo.
+        // Lista explícita e curta de propósito — placeholder novo reprova o build, e aí é decisão
+        // consciente de quem escreve, não silêncio.
+        val METAVARIAVEIS = setOf("modulo", "módulo", "mod", "module", "nome-do-modulo")
+
+        // `modulo/src` ou `modulo/build` — a forma que aparece em caminho de relatório. Exige começo
+        // de linha ou separador antes, senão `com/kanbanvision/domain/src` casaria o segmento errado.
+        val CAMINHO_DE_MODULO = Regex("""(?:^|[\s"'`(])([a-z][a-z0-9_-]*)/(?:src|build)/""")
         val PERCENTUAL = 100.toBigDecimal()
 
         // A linha fala do gate de COBERTURA? Os três vocabulários em uso no repo. O `NO_COVERAGE` do

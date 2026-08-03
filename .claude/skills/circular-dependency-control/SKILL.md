@@ -169,27 +169,27 @@ Gradle detecta e rejeita este ciclo em tempo de configuração — o build nem c
 ```bash
 # 1. Encontrar todos os imports de um pacote alvo
 grep -rn "import com.kanbanvision.domain.model.simulation" \
-  domain/src/main/kotlin/com/kanbanvision/domain/model/organization/ \
+  domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/organization/ \
   --include="*.kt"
 # Se retornar resultados + organization/ importa simulation/ E simulation/ importa
 # organization/ → ciclo transitivo
 
 # 2. Verificar se arquivos de sub-pacote importam de volta para root do pacote
 grep -rn "import com.kanbanvision.domain.model\." \
-  domain/src/main/kotlin/com/kanbanvision/domain/model/kanban/ \
+  domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/kanban/ \
   --include="*.kt" | grep -v "\.kanban\." | grep -v "\.organization\." | grep -v "\.simulation\."
 # Imports de volta para root (Refs, Audit, Domain, etc.) são aceitáveis
 # Imports de root que importam de sub → indica ciclo se root também importar sub
 
 # 3. Verificar extension functions que cruzam fronteiras de pacote
 grep -rn "^fun [A-Z].*\." \
-  domain/src/main/kotlin/com/kanbanvision/domain/model/ \
+  domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/ \
   --include="*.kt"
 # Extension functions em arquivos fora da classe receptora → candidatas a ciclo
 
 # 4. Detectar imports bidirecionais entre dois pacotes
-PKG_A="domain/src/main/kotlin/com/kanbanvision/domain/model/organization"
-PKG_B="domain/src/main/kotlin/com/kanbanvision/domain/model/simulation"
+PKG_A="domain-kanban/src/main/kotlin/com/kanbanvision/domain/model/organization"
+PKG_B="domain-simulation/src/main/kotlin/com/kanbanvision/domain/model/simulation"
 echo "=== A importa B ===" && grep -rn "import.*simulation" "$PKG_A" --include="*.kt"
 echo "=== B importa A ===" && grep -rn "import.*organization" "$PKG_B" --include="*.kt"
 # Se ambos retornam resultados → ciclo bidirecional entre pacotes
@@ -199,7 +199,7 @@ echo "=== B importa A ===" && grep -rn "import.*organization" "$PKG_B" --include
 
 ```bash
 # Gradle detecta automaticamente — verificar na saída do build
-./gradlew :domain:compileKotlin 2>&1 | grep -i "circular"
+./gradlew :domain-kanban:compileKotlin 2>&1 | grep -i "circular"
 
 # Listar dependências de um módulo
 ./gradlew :usecases:dependencies --configuration compileClasspath

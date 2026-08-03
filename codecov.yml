@@ -8,7 +8,7 @@ coverage:
         target: auto
         # 2% tolerance: JaCoCo exclusions for Java 25 serialization-generated code
         # (write$Self$, SerializationConstructorMarker) changed what is reported.
-        # Internal gate remains JaCoCo >= 96% per module.
+        # Internal gate remains JaCoCo >= 98% per module (ADR-0029).
         threshold: 2%
     patch:
       default:
@@ -16,7 +16,7 @@ coverage:
         # Same 2% tolerance as project (above). Kotlin null-safety compiler branches
         # (`x?.let {} ?: y`, `isNullOrBlank`) and value-class `init` guards produce
         # partial/unreachable branches on touched lines that cannot be covered by a
-        # test. JaCoCo (>= 96% per module) remains the hard internal gate.
+        # test. JaCoCo (>= 98% per module, ADR-0029) remains the hard internal gate.
         threshold: 2%
 
 fixes:

@@ -30,7 +30,7 @@
 
 ### Architecture
 - [ ] Dependency Rule respected: `domain ← usecases ← http_api / sql_persistence`
-- [ ] Zero framework imports in `domain/` or `usecases/` (except Arrow-kt)
+- [ ] Zero framework imports in the domain modules (`domain-common`, `domain-kanban`, `domain-simulation`) or `usecases/` (except Arrow-kt)
 - [ ] Repository interfaces defined in `usecases/repositories/`, implementations in `sql_persistence/`
 - [ ] Domain errors modelled as `Either<DomainError, T>` — no unhandled exceptions
 

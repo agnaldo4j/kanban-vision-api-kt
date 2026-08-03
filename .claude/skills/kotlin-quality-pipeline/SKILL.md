@@ -824,10 +824,10 @@ Ambos os módulos precisam do launcher Java 25 (`tasks.withType<PitestTask>` com
 
 ```bash
 # Gerar relatório
-./gradlew :domain:pitest
+./gradlew :domain-simulation:pitest
 
 # Abrir
-open domain/build/reports/pitest/index.html
+open domain-simulation/build/reports/pitest/index.html
 ```
 
 No relatório:
@@ -900,10 +900,10 @@ um sinal de testes que executam sem verificar — dívida técnica silenciosa.
 
 ### Incremental analysis — para codebase grande
 
-Quando o projeto crescer e `./gradlew :domain:pitest` demorar demais:
+Quando o projeto crescer e `./gradlew :domain-simulation:pitest` demorar demais:
 
 ```kotlin
-// domain/build.gradle.kts — habilitar análise incremental
+// domain-simulation/build.gradle.kts — habilitar análise incremental
 pitest {
     // ... config existente ...
     withHistory.set(true)  // armazena em java.io.tmpdir automaticamente
@@ -920,24 +920,30 @@ dramaticamente mais rápido para PRs que tocam apenas uma parte do código.
 
 | Task | O que faz |
 |---|---|
-| `./gradlew :domain:pitest` | Mutation testing no `domain/` (foco no SimulationEngine) |
+| `./gradlew :domain-simulation:pitest` | Mutation testing só nesse módulo (foco no SimulationEngine) |
 | `./gradlew pitestAll` | Mutation testing em todos os módulos (mais lento) |
 
 **PITest NÃO está em `check` nem em `testAll`** — é opt-in por ser lento.
-O CI executa `./gradlew pitestAll` (domain + usecases) em step obrigatório, faz upload dos relatórios HTML como artefato e publica o report por módulo como comentário no PR.
+O CI executa `./gradlew pitestAll` (todos os módulos de produto) em step obrigatório, faz upload dos relatórios HTML como artefato e publica o report por módulo como comentário no PR.
 
 ### Elevando o threshold progressivamente
 
-O threshold atual (35%) é o baseline medido. O objetivo de longo prazo:
+Cada módulo tem o seu, e o valor vivo está no bloco `pitest` do `build.gradle.kts` dele — esta
+seção não repete número (GAP-FA/FB: a tabela de marcos que ficava aqui envelheceu num `35%` que
+nenhum módulo tem, e a linha ao lado citava um módulo que a ADR-0038 dividiu em três).
 
-| Marco | Score alvo | Ação necessária |
-|---|---|---|
-| Baseline | 35% | Estado atual — sem ação |
-| Próximo ciclo | 50% | Fortalecer asserções nas top-10 survived mutations |
-| Ciclo intermediário | 65% | Adicionar testes de boundary para condicionais |
-| Meta de maturidade | 80% | Asserções precisas em toda lógica de fila e WIP |
+O método, que é o que não envelhece:
 
-**Nunca eleve o threshold sem primeiro verificar que o score atual supera o novo valor.**
+| Passo | O que fazer |
+|---|---|
+| 1. Medir | `./gradlew :<modulo>:pitest --rerun-tasks` — sem `--rerun-tasks` você lê o relatório anterior |
+| 2. Ler os survivors | Comece pelos 10 mais repetidos: quase sempre são a mesma asserção fraca em N lugares |
+| 3. Fortalecer | Asserção **sobre o valor que a mutação altera** — ver a tabela de mutadores acima |
+| 4. Fixar | Threshold **abaixo** do medido, margem para variação de timeout entre máquinas |
+
+**Nunca eleve o threshold sem primeiro verificar que o score atual supera o novo valor** — e nunca
+o baixe para destravar um build sem medir por arquivo antes: uma queda pode ser **efeito de
+denominador** de um refactor que deletou duplicação já coberta (`.claude/rules/kotlin-quality.md`).
 
 ---
 
@@ -1125,7 +1131,7 @@ Vermelho = instrução nunca executada nos testes.
 
 ```bash
 # Formato: ./gradlew :nome-do-modulo:nome-da-task
-./gradlew :domain:detekt
+./gradlew :domain-kanban:detekt
 ./gradlew :usecases:test
 ./gradlew :http_api:jacocoTestReport
 ./gradlew :sql_persistence:ktlintCheck
@@ -1155,12 +1161,12 @@ open modulo/build/reports/detekt/detekt.html
 ./gradlew compileKotlin
 
 # Rodar só property tests de um módulo (são JUnit 5 normais)
-./gradlew :domain:test --tests "*PropertyTest"
+./gradlew :domain-simulation:test --tests "*PropertyTest"
 
 # PITest — mutation testing (opt-in)
-./gradlew :domain:pitest                     # SimulationEngine — foco principal
-./gradlew pitestAll                          # todos os módulos (lento)
-open domain/build/reports/pitest/index.html  # relatório HTML
+./gradlew :domain-simulation:pitest                     # SimulationEngine — foco principal
+./gradlew pitestAll                                     # todos os módulos (lento)
+open domain-simulation/build/reports/pitest/index.html  # relatório HTML
 ```
 
 ---
