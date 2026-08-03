@@ -134,4 +134,47 @@ All quality tools run via `./gradlew testAll`. **Never edit** `detekt.yml`, `.ed
 
 - **Deduplicar código DERRUBA o mutation score do módulo sem perder detecção — é efeito de denominador, e a defesa é aritmética por arquivo.** No #387 `usecases` foi de **63,5% → 62,1%** (gate 55) extraindo um guard que estava copiado em 5 use cases. Nada piorou: cada call site perdeu os **2 mutantes do `ensure`** (que estavam **KILLED**, logo saem do numerador *e* do denominador) e o arquivo novo trouxe 9, sendo 5 killed — o resto é andaime de `suspend` (`throwOnFailure`, `NullReturnVals`, `SwitchMutator`), o mesmo perfil que o `Timed.kt` pré-existente já carrega. O guard consolidado ficou **mais** exercitado que qualquer cópia: 5 testes de use case + 3 diretos.
 
-  A leitura ingênua ("a nota caiu, o PR piorou") inverte o sinal de um refactor bom e desincentiva deduplicação. **Antes de aceitar ou negar a queda, faça a conta por arquivo:** quantos mutantes saíram e em que status estavam, quantos entraram e quantos morreram. E compare o perfil do arquivo novo com um **análogo pré-existente do módulo** — é o que separa "andaime do idioma" de "código não testado". Contraste com o mecanismo do #385 logo acima: lá a perda estava em arquivo **não tocado** (teste que parou de completar); aqui está exatamente nos arquivos tocados, e é aritmética esperada. (#387.)
+  A leitura ingênua ("a nota caiu, o PR piorou") inverte o sinal de um refactor bom e desincentiva deduplicação. **Antes de aceitar ou negar a queda, faça a conta por arquivo:** quantos mutantes saíram e em que status estavam, quantos entraram e quantos morreram. Contraste com o mecanismo do #385 logo acima: lá a perda estava em arquivo **não tocado** (teste que parou de completar); aqui está exatamente nos arquivos tocados, e é aritmética esperada. (#387.)
+
+  > 🔴 **A segunda metade desta regra estava ERRADA e foi removida: "compare o perfil do arquivo novo
+  > com um análogo pré-existente do módulo — é o que separa andaime do idioma de código não testado".**
+  > Não separa. O `Timed.kt` e o `LoadOwnedSimulation.kt`, citados aqui como os análogos que legitimavam
+  > o veredito "andaime", carregavam **o mesmo defeito** que o arquivo novo — e o teste que faltava era
+  > o mesmo nos três. **Um análogo não é linha de base de correção; pode ser o mesmo ponto cego,
+  > replicado.** Quando "todo mundo no módulo tem esse perfil" for o argumento, isso é evidência de
+  > causa comum, não de inevitabilidade: procure a causa antes de absolver. Medido no #402 — ver o
+  > item abaixo, que é a causa. (Refutado por P2 do Codex no #402.)
+
+- **`NO_COVERAGE` em `invokeSuspend`/`throwOnFailure` não é andaime: é o caminho de resume que nenhum
+  teste exercita — e a causa costuma ser o mock que devolve na hora.** Em `usecases`, **62 dos 294**
+  mutantes eram `NO_COVERAGE`, 54 deles nesse par (`VoidMethodCallMutator` + `NullReturnValsMutator`,
+  um par por função `suspend`, em linha sintética). Parecia bytecode inalcançável. Não era: todo mock
+  do módulo usava `coEvery { … } returns x`, que **resolve na mesma pilha** — a continuation nunca é
+  salva e o resume nunca executa. Em produção executa sempre, porque `dbQuery` faz
+  `withContext(Dispatchers.IO)`.
+
+  Sete testes com colaborador que suspende de verdade:
+
+  ```kotlin
+  coEvery { repo.findById(id) } coAnswers { delay(1); withContext(Dispatchers.Default) { x.right() } }
+  ```
+
+  | | KILLED | NO_COVERAGE | score |
+  |---|---|---|---|
+  | antes | 166/294 | 62 | 56,5% |
+  | depois | **215/294** | **8** | **73,1%** |
+
+  `delay` **e** troca de dispatcher: sob `runTest` o `delay` pula o tempo virtual mas a suspensão é
+  real; o `withContext` força despacho. Um mock que resolve na mesma pilha não vale.
+
+  **A consequência prática é sobre gates:** a queda de mutação que parecia estrutural — e que quase
+  virou um `mutationThreshold` mais frouxo — era teste faltando. Antes de propor mexer no número,
+  **verifique se o `NO_COVERAGE` é alcançável**: conte por mutator, e se `VoidMethodCall` +
+  `NullReturnVals` aparecerem em par num módulo `suspend`, escreva o teste de resume primeiro.
+
+  ```bash
+  python3 -c "import collections,xml.etree.ElementTree as ET;r=ET.parse('usecases/build/reports/pitest/mutations.xml').getroot();print(collections.Counter(x.findtext('mutator').split('.')[-1] for x in r if x.get('status')=='NO_COVERAGE').most_common())"
+  ```
+
+  (#402, a partir de um P2 do Codex que refutou a premissa do PR. O PR nasceu para **baixar** o gate de
+  55 para 50 e terminou **sem tocar no gate**, com o módulo em 73,1%.)
