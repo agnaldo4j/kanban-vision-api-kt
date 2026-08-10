@@ -41,7 +41,7 @@ tasks.register<Exec>("cleanupEmbeddedPostgres") {
     isIgnoreExitValue = true // exit 1 = nenhum processo órfão — estado desejado
 }
 
-val exposedVersion = "1.3.1"
+val exposedVersion = "1.4.0"
 val resilience4jVersion = "2.4.0"
 
 dependencies {
@@ -65,9 +65,9 @@ dependencies {
     implementation("io.github.resilience4j:resilience4j-micrometer:$resilience4jVersion")
     implementation("io.micrometer:micrometer-core:1.17.0")
     implementation("org.postgresql:postgresql:42.7.13")
-    implementation("org.flywaydb:flyway-core:13.0.0")
-    runtimeOnly("org.flywaydb:flyway-database-postgresql:13.0.0")
-    implementation("ch.qos.logback:logback-classic:1.6.0")
+    implementation("org.flywaydb:flyway-core:13.2.0")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:13.2.0")
+    implementation("ch.qos.logback:logback-classic:1.6.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")

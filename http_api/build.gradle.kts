@@ -243,7 +243,7 @@ dependencies {
     // 4.2.15 → 4.2.16: lote de CVEs em netty-codec-http/http2/compression (GHSA-558v/4mp9/6cqp/6jqx/gcjf/
     // jppx/mvh2/q4f6/c69g, High/Medium), fix 4.2.16.Final. Não introduzido por nenhum PR — bump transitivo
     // do OSV; bump quando o Ktor puxar >= 4.2.16 nativamente.
-    implementation(platform("io.netty:netty-bom:4.2.16.Final"))
+    implementation(platform("io.netty:netty-bom:4.2.17.Final"))
 
     // logstash-logback-encoder 9.0 migrou para Jackson 3.x (coordenadas `tools.jackson`, distintas do
     // Jackson 2.x `com.fasterxml.jackson` pinado acima) e puxa a família em 3.1.4 — vulnerável a
@@ -265,7 +265,7 @@ dependencies {
     // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
     migrationRuntime(platform("tools.jackson:jackson-bom:3.2.1"))
     migrationRuntime(project(":sql_persistence"))
-    migrationRuntime("ch.qos.logback:logback-classic:1.6.0")
+    migrationRuntime("ch.qos.logback:logback-classic:1.6.1")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
     migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
@@ -313,7 +313,7 @@ dependencies {
     // Referenciada só pelo logback*.xml — runtime only.
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
-    implementation("ch.qos.logback:logback-classic:1.6.0")
+    implementation("ch.qos.logback:logback-classic:1.6.1")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
@@ -331,6 +331,6 @@ dependencies {
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.64.0")
     testImplementation("io.kotest:kotest-property:6.2.3")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
-    testImplementation("au.com.dius.pact.consumer:junit5:4.7.3")
-    testImplementation("au.com.dius.pact.provider:junit5:4.7.3")
+    testImplementation("au.com.dius.pact.consumer:junit5:4.7.4")
+    testImplementation("au.com.dius.pact.provider:junit5:4.7.4")
 }
