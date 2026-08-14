@@ -41,7 +41,7 @@ tasks.register<Exec>("cleanupEmbeddedPostgres") {
     isIgnoreExitValue = true // exit 1 = nenhum processo órfão — estado desejado
 }
 
-val exposedVersion = "1.3.1"
+val exposedVersion = "1.4.0"
 val resilience4jVersion = "2.4.0"
 
 dependencies {
@@ -65,16 +65,16 @@ dependencies {
     implementation("io.github.resilience4j:resilience4j-micrometer:$resilience4jVersion")
     implementation("io.micrometer:micrometer-core:1.17.0")
     implementation("org.postgresql:postgresql:42.7.13")
-    implementation("org.flywaydb:flyway-core:13.0.0")
-    runtimeOnly("org.flywaydb:flyway-database-postgresql:13.0.0")
-    implementation("ch.qos.logback:logback-classic:1.6.0")
+    implementation("org.flywaydb:flyway-core:13.2.0")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:13.2.0")
+    implementation("ch.qos.logback:logback-classic:1.6.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("io.zonky.test:embedded-postgres:2.2.2")
     testImplementation("io.kotest:kotest-property:6.2.3")
