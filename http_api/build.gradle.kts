@@ -271,14 +271,14 @@ dependencies {
 
     implementation("io.arrow-kt:arrow-core:2.2.3")
 
-    implementation("io.ktor:ktor-server-core-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-netty-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-auth-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-status-pages-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-call-logging-jvm:3.5.1")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-core-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-netty-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-auth-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-auth-jwt-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-status-pages-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-call-logging-jvm:3.5.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.5.2")
 
     implementation("io.insert-koin:koin-core:4.2.2")
     implementation("io.insert-koin:koin-ktor:4.2.2")
@@ -287,15 +287,15 @@ dependencies {
     implementation("io.github.smiley4:ktor-openapi:5.7.0")
     implementation("io.github.smiley4:ktor-swagger-ui:5.7.0")
 
-    implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-rate-limit-jvm:3.5.2")
     // Rate limit distribuído (GAP-BZ/ADR-0041): contador compartilhado em Redis via Lettuce,
     // com circuit-breaker resilience4j (mesmo idioma do DbCircuitBreaker do sql_persistence).
     implementation("io.lettuce:lettuce-core:7.6.0.RELEASE")
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
     implementation("io.github.resilience4j:resilience4j-micrometer:2.4.0")
     implementation("io.github.resilience4j:resilience4j-kotlin:2.4.0")
-    implementation("io.ktor:ktor-server-cors-jvm:3.5.1")
-    implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.1")
+    implementation("io.ktor:ktor-server-cors-jvm:3.5.2")
+    implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.2")
     implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
 
     // OpenTelemetry API — spans manuais somente em http_api
@@ -318,8 +318,8 @@ dependencies {
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
 
-    testImplementation("io.ktor:ktor-server-test-host-jvm:3.5.1")
-    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.1")
+    testImplementation("io.ktor:ktor-server-test-host-jvm:3.5.2")
+    testImplementation("io.ktor:ktor-client-content-negotiation-jvm:3.5.2")
     testImplementation("io.insert-koin:koin-test-junit5:4.2.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.2")
