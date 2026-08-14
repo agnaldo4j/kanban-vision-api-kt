@@ -439,8 +439,8 @@ Adicione em cada módulo que vai usar property tests:
 
 ```kotlin
 // domain/build.gradle.kts, usecases/build.gradle.kts, etc.
-testImplementation("io.kotest:kotest-property:5.9.1")
-testImplementation("io.kotest:kotest-assertions-core:5.9.1")  // shouldBe, shouldThrow, isLeft(), isRight()
+testImplementation("io.kotest:kotest-property:6.2.3")
+testImplementation("io.kotest:kotest-assertions-core:6.2.3")  // shouldBe, shouldThrow, isLeft(), isRight()
 ```
 
 `kotest-property` é **independente** do Kotest test framework — não exige trocar JUnit 5.

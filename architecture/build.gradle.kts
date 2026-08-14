@@ -56,6 +56,12 @@ tasks.test {
         "codecovConfig" to "codecov.yml",
         "readme" to "README.md",
         "ciWorkflow" to ".github/workflows/ci.yml",
+        // GAP-FF: o StackVersionMirrorTest lê os dois em runtime. O CLAUDE.md é doc viva (declara a
+        // versão do Gradle) e o wrapper é a VERDADE dessa versão — sem os dois como input, um bump do
+        // wrapper restauraria a task do cache e o espelho ficaria stale com o gate verde.
+        "claudeMd" to "CLAUDE.md",
+        "gradleWrapper" to "gradle/wrapper/gradle-wrapper.properties",
+        "buildSrcBuildScript" to "buildSrc/build.gradle.kts",
     ).forEach { (nome, caminho) ->
         inputs
             .file(rootDir.resolve(caminho))

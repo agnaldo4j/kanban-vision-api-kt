@@ -153,7 +153,7 @@ Logs JSON são parseados nativamente, permitem filtros por campo (`level`, `trac
 
 ```kotlin
 // http_api/build.gradle.kts
-implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 ```
 
 ### logback.xml — configuração dual (dev texto / prod JSON)
@@ -226,9 +226,9 @@ registry. É o bridge perfeito para este stack.
 
 ```kotlin
 // http_api/build.gradle.kts
-implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.1")
-implementation("io.micrometer:micrometer-registry-prometheus:1.14.4")
-implementation("io.micrometer:micrometer-core:1.14.4")
+implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.2")
+implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
+implementation("io.micrometer:micrometer-core:1.17.0")
 ```
 
 ### Plugin de Métricas no Ktor
@@ -503,7 +503,7 @@ adicione spans manuais:
 
 ```kotlin
 // Dependência adicional para instrumentação manual
-// implementation("io.opentelemetry:opentelemetry-api:1.63.0")
+// implementation("io.opentelemetry:opentelemetry-api:1.65.0")
 
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.StatusCode

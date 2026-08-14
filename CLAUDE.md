@@ -19,7 +19,7 @@ JWT_DEV_MODE=true ./gradlew :http_api:run                # run (dev mode)
 > Use `.sdkmanrc` (`sdk env`) to select Java 25 — the JDK lives in SDKMAN, not in the macOS
 > JVM registry (do NOT use `/usr/libexec/java_home`: only Corretto 17 and 8 are registered there).
 > **Compilation + runtime target: Java 25 LTS.** Daemon, toolchain and runtime share one JDK.
-> Gradle 9.6.1 (wrapper).
+> Gradle 9.7.0 (wrapper).
 
 ```bash
 # Full stack (API + PostgreSQL + Prometheus + Grafana)
