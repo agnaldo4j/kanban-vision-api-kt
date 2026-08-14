@@ -18,24 +18,29 @@ import java.io.File
  * por isso que a cópia em doc não pode ser mantida à mão. A lição do Codex P2 no #405 é literal aqui:
  * corrigir os dígitos não é conserto, é adiar o próximo apodrecimento com o guard verde.
  *
- * Topologia imposta, a mesma do GAP-FA: a VERDADE é o Gradle (mais o `uses:` do `ci.yml` para action e
- * o `gradle-wrapper.properties` para o wrapper), e todo texto que declara versão tem de bater com ela.
+ * A verdade mora no [VersoesDoBuild]; aqui ficam só as regras.
  *
- * Limite honesto: é casamento textual, como todo guard deste módulo — o Konsist não lê Gradle. O que
- * impede isso de virar silêncio é a exigência de casamento ÚNICO por componente: reescreveu a linha do
- * espelho, o teste fica vermelho pedindo para acertar o padrão, em vez de passar sem ter olhado. Foi
- * assim que ele nasceu vermelho — `Gradle plugin` casava o do PITest e o do CycloneDX ao mesmo tempo.
+ * **Limite honesto, e ele é real:** as formas vigiadas são as ESTRUTURADAS — a tabela do espelho, a
+ * coordenada `grupo:artefato:versão` e o badge do shields.io. Prosa solta continua sem guard, e de
+ * propósito: medido sobre as docs vivas, um casamento genérico de `<Nome> <versão>` produziu 23
+ * achados dos quais **2** eram drift — `KtLint 0` e `Detekt 0` são contagem de violação,
+ * `compileKotlin 2>&1` é redirecionamento de shell, `Koin 4.x`/`Detekt 2.x` são séries e
+ * `Detekt 1.23.8` é histórico legítimo. Um guard com 21/23 de falso-positivo seria desligado na
+ * primeira semana. Para prosa a saída é apontar para o espelho em vez de repetir o número, como o
+ * `testing-and-observability` passou a fazer. (Codex P2 no #412 pediu cobertura fora de coordenada; o
+ * que dava para cobrir sem ruído foi o badge.)
  */
 class StackVersionMirrorTest {
     /** `workingDir` do teste é o projectDir do módulo; a raiz vem por systemProperty (ver build.gradle.kts). */
     private val raiz = System.getProperty("rootDir")?.let(::File) ?: File("..")
+    private val build = VersoesDoBuild(raiz)
 
     @Test
     fun `o espelho em stack md declara a versao vigente de cada componente rastreado`() {
-        val espelho = ler(ESPELHO)
+        val espelho = build.ler(ESPELHO)
         val divergentes =
-            componentes().mapNotNull { (nome, padrao, vigente) ->
-                val declaradas = padrao.findAll(espelho).map { it.groupValues[1] }.toList()
+            build.componentes().filter { it.noEspelho }.mapNotNull { (nome, vigente) ->
+                val declaradas = declaracaoDe(nome).findAll(espelho).map { it.groupValues[1] }.toList()
                 val declarada =
                     declaradas.singleOrNull()
                         ?: return@mapNotNull "$nome — o padrão casou ${declaradas.size}x em $ESPELHO " +
@@ -53,16 +58,14 @@ class StackVersionMirrorTest {
         // Uma coordenada `grupo:artefato:versão` em doc é snippet para copiar e colar — declaração de
         // estado vigente, não prosa. Por isso a regra é exata e sem heurística de "menção histórica":
         // se o leitor copiar aquilo, tem de compilar contra o que o repo usa hoje.
-        val vigentes = coordenadasDoGradle()
+        val vigentes = build.coordenadas()
         val divergentes =
-            docsVivas(raiz).flatMap { arquivo ->
-                arquivo.readText().lines().withIndex().flatMap { (i, linha) ->
-                    COORDENADA.findAll(linha).mapNotNull { achado ->
-                        val (grupo, artefato, versao) = achado.destructured
-                        val vigente = vigentes["$grupo:$artefato"] ?: return@mapNotNull null
-                        "${arquivo.relativeTo(raiz).path}:${i + 1} — $grupo:$artefato declara $versao, o build usa $vigente"
-                            .takeIf { versao != vigente }
-                    }
+            porLinhaDeDocViva { arquivo, i, linha ->
+                VersoesDoBuild.COORDENADA.findAll(linha).mapNotNull { achado ->
+                    val (grupo, artefato, versao) = achado.destructured
+                    val vigente = vigentes["$grupo:$artefato"] ?: return@mapNotNull null
+                    "$arquivo:$i — $grupo:$artefato declara $versao, o build usa $vigente"
+                        .takeIf { versao != vigente }
                 }
             }
         assertTrue(divergentes.isEmpty()) {
@@ -72,20 +75,46 @@ class StackVersionMirrorTest {
     }
 
     @Test
+    fun `nenhum badge de doc viva anuncia versao diferente da que o build usa`() {
+        // O `shields.io/badge/<slug>-<rótulo>-<cor>` é a OUTRA forma estruturada de declarar versão, e a
+        // regra de coordenada não a via: o README anunciava Ktor 3.5.1, Gradle 9.6.1, kotest 6.2.2 e
+        // opentelemetry 2.29.0 com o build em 3.5.2/9.7.0/6.2.3/2.30.0-alpha. (Codex P2 no #412 apontou
+        // os três primeiros; o quarto apareceu ao varrer os badges em vez de conferir a lista dele.)
+        val porSlug = build.componentes().mapNotNull { c -> c.slugDeBadge?.let { it to c.vigente } }.toMap()
+        val divergentes =
+            porLinhaDeDocViva { arquivo, i, linha ->
+                BADGE.findAll(linha).mapNotNull { achado ->
+                    // O shields.io escapa `-` como `--` nos DOIS campos: `arrow--kt`, `2.0.0--alpha.5`.
+                    val slug = achado.groupValues[1].replace("--", "-")
+                    val vigente = porSlug[slug] ?: return@mapNotNull null
+                    val anunciada = achado.groupValues[2].replace("--", "-")
+                    "$arquivo:$i — badge `$slug` anuncia $anunciada, o build usa $vigente"
+                        .takeIf { anunciada != vigente }
+                }
+            }
+        assertTrue(divergentes.isEmpty()) {
+            "badge anunciando versão que o build não usa:\n" + divergentes.joinToString("\n")
+        }
+    }
+
+    @Test
     fun `nenhuma doc viva cita a action de SCA sem nomear a versao que o ci roda`() {
         // Regra deliberadamente mais frouxa que a de coordenada: aqui a menção HISTÓRICA é legítima e
         // precisa sobreviver — o pitfall do `github-ci-health` registra um comportamento medido no
-        // v2.3.8, e apagar a versão medida destruiria a evidência. O que a regra exige é que a linha
-        // não fique falando SÓ da versão velha: se cita a action, a versão vigente tem de aparecer
-        // junto. Mesmo espírito do "declara UM percentual" do QualityGateMirrorTest.
-        val vigente = versaoDaActionDeSca()
+        // v2.3.8, e apagar a versão medida destruiria a evidência. O que a regra exige é que a linha não
+        // fique falando SÓ da versão velha: se cita a action, a vigente tem de aparecer junto.
+        val vigente = build.versaoDaActionDeSca()
         val obsoletas =
-            docsVivas(raiz).flatMap { arquivo ->
-                arquivo.readText().lines().withIndex().mapNotNull { (i, linha) ->
-                    val citadas = ACTION_DE_SCA.findAll(linha).map { it.groupValues[1] }.toList()
-                    "${arquivo.relativeTo(raiz).path}:${i + 1} — cita $citadas e o ci roda v$vigente"
-                        .takeIf { citadas.isNotEmpty() && vigente !in citadas }
-                }
+            porLinhaDeDocViva { arquivo, i, linha ->
+                val citadas =
+                    VersoesDoBuild.ACTION_DE_SCA
+                        .findAll(linha)
+                        .map { it.groupValues[1] }
+                        .toList()
+                listOfNotNull(
+                    "$arquivo:$i — cita $citadas e o ci roda v$vigente"
+                        .takeIf { citadas.isNotEmpty() && vigente !in citadas },
+                ).asSequence()
             }
         assertTrue(obsoletas.isEmpty()) {
             "doc viva citando a action de SCA sem nomear a versão vigente (v$vigente):\n" +
@@ -100,10 +129,11 @@ class StackVersionMirrorTest {
         // que passaria nas outras regras deste arquivo, já que o `ci.yml` é doc viva e a linha `uses:`
         // continuaria por perto satisfazendo a regra acima.
         val rodape =
-            ler(CI)
+            build
+                .ler(VersoesDoBuild.CI)
                 .lines()
                 .singleOrNull { it.contains("SBOM: artifact") }
-                ?: error("$CI deve ter exatamente uma linha de rodapé do Supply Chain Report")
+                ?: error("${VersoesDoBuild.CI} deve ter exatamente uma linha de rodapé do Supply Chain Report")
         assertTrue(VERSAO_LITERAL.containsMatchIn(rodape).not()) {
             "o rodapé do Supply Chain Report voltou a fixar a versão do scanner à mão: $rodape"
         }
@@ -115,8 +145,8 @@ class StackVersionMirrorTest {
         // espelho existindo é aceitável; existindo SEM guard foi como ele ficou em 1.3.1 com o build
         // em 1.4.0.
         assertEquals(
-            versaoNomeada("sql_persistence/build.gradle.kts", "exposedVersion"),
-            versaoNomeada(ARQUITETURA, "exposedVersion"),
+            build.versaoNomeada("sql_persistence/build.gradle.kts", "exposedVersion"),
+            build.versaoNomeada(ARQUITETURA, "exposedVersion"),
             "o exemplo de Exposed em $ARQUITETURA divergiu do sql_persistence",
         )
     }
@@ -124,19 +154,14 @@ class StackVersionMirrorTest {
     @Test
     fun `o parser reconhece as formas em que uma versao e declarada, e so elas`() {
         // Anti-vácuo das regras acima: elas comparam textos, e comparação entre dois "não achei" passa.
-        // Cada linha aqui é uma forma que o espelho realmente usa.
         assertEquals(listOf("3.5.2"), versoesDe("Ktor", "| HTTP | Ktor 3.5.2 (Netty engine) |"))
         assertEquals(listOf("2.4.10"), versoesDe("Kotlin", "| Kotlin | 2.4.10 |"))
-        assertEquals(listOf("2.0.0-alpha.5"), versoesDe("Detekt", "| Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt`) |"))
+        assertEquals(listOf("2.0.0-alpha.5"), versoesDe("Detekt", "| Static analysis | Detekt 2.0.0-alpha.5 |"))
         assertEquals(
             listOf("42.7.13"),
             versoesDe("org.postgresql:postgresql", "driver `org.postgresql:postgresql` 42.7.13) |"),
         )
-        assertEquals(listOf("2.5.0"), versoesDe("google/osv-scanner-action@", "(`google/osv-scanner-action@v2.5.0`) — gate"))
-
-        // E o que NÃO pode casar: `Gradle` seguido de palavra é o plugin do PITest/CycloneDX, não o wrapper.
-        assertEquals(emptyList<String>(), versoesDe("Gradle", "| Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 |"))
-        assertEquals(listOf("9.7.0"), versoesDe("Gradle", "| Java | Java 25 LTS (Gradle 9.7.0 wrapper; Foojay) |"))
+        assertEquals(listOf("2.5.0"), versoesDe("google/osv-scanner-action@", "(`google/osv-scanner-action@v2.5.0`)"))
 
         // Dois "Gradle plugin" no espelho — o do PITest e o do CycloneDX. A barra desambigua; sem ela o
         // padrão casa os dois e a regra reprova por ambiguidade em vez de comparar a versão errada.
@@ -145,7 +170,42 @@ class StackVersionMirrorTest {
         assertEquals(listOf("1.19.0", "3.4.1"), versoesDe("Gradle plugin", "$linhaPitest\n$linhaSbom"))
         assertEquals(listOf("1.19.0"), versoesDe("/ Gradle plugin", "$linhaPitest\n$linhaSbom"))
         assertEquals(listOf("3.4.1"), versoesDe("CycloneDX Gradle plugin", "$linhaPitest\n$linhaSbom"))
+        assertEquals(listOf("9.7.0"), versoesDe("Gradle", "| Java | Java 25 LTS (Gradle 9.7.0 wrapper) |"))
     }
+
+    @Test
+    fun `o parser de badge le slug e versao escapados, e ignora badge sem versao`() {
+        fun badges(linha: String) =
+            BADGE
+                .findAll(linha)
+                .map { "${it.groupValues[1].replace("--", "-")}=${it.groupValues[2].replace("--", "-")}" }
+                .toList()
+
+        assertEquals(listOf("ktor=3.5.2"), badges("[![K](https://img.shields.io/badge/ktor-3.5.2-087CFA?logo=ktor)](x)"))
+        // `--` é o escape de `-` do shields.io, nos dois campos.
+        assertEquals(listOf("arrow-kt=2.2.3"), badges("https://img.shields.io/badge/arrow--kt-2.2.3-E91E63"))
+        assertEquals(listOf("detekt=2.0.0-alpha.5"), badges("https://img.shields.io/badge/detekt-2.0.0--alpha.5-9146FF"))
+        assertEquals(
+            listOf("opentelemetry=2.30.0-alpha"),
+            badges("https://img.shields.io/badge/opentelemetry-2.30.0--alpha-425CC7?logo=opentelemetry"),
+        )
+
+        // Badge que não declara versão de artefato — o rótulo não começa com dígito, ou nem é versão.
+        assertEquals(emptyList<String>(), badges("https://img.shields.io/badge/java-25%20LTS-ED8B00"))
+        assertEquals(emptyList<String>(), badges("https://img.shields.io/badge/pitest-mutation%20testing-CC0000"))
+        assertEquals(emptyList<String>(), badges("https://img.shields.io/badge/license-MIT-blue.svg"))
+        assertEquals(emptyList<String>(), badges("https://img.shields.io/badge/P1-red?style=flat"))
+    }
+
+    private fun porLinhaDeDocViva(regra: (String, Int, String) -> Sequence<String>): List<String> =
+        docsVivas(raiz).flatMap { arquivo ->
+            val caminho = arquivo.relativeTo(raiz).path
+            arquivo
+                .readText()
+                .lines()
+                .withIndex()
+                .flatMap { (i, linha) -> regra(caminho, i + 1, linha).toList() }
+        }
 
     private fun versoesDe(
         nome: String,
@@ -159,125 +219,16 @@ class StackVersionMirrorTest {
      */
     private fun declaracaoDe(nome: String): Regex = Regex("""\Q$nome\E`?\s*\|?\s*v?([0-9][0-9A-Za-z.\-]*)""")
 
-    private fun componentes(): List<Triple<String, Regex, String>> {
-        val coord = coordenadasDoGradle()
-
-        fun de(coordenada: String): String =
-            requireNotNull(coord[coordenada]) { "coordenada não encontrada nos build.gradle.kts: $coordenada" }
-        return listOf(
-            "Ktor" to de("io.ktor:ktor-server-core-jvm"),
-            "Koin" to de("io.insert-koin:koin-core"),
-            "HikariCP" to de("com.zaxxer:HikariCP"),
-            "Flyway" to de("org.flywaydb:flyway-core"),
-            "org.postgresql:postgresql" to de("org.postgresql:postgresql"),
-            "Arrow-kt" to de("io.arrow-kt:arrow-core"),
-            "JUnit Jupiter" to de("org.junit.jupiter:junit-jupiter-api"),
-            "MockK" to de("io.mockk:mockk"),
-            "Konsist" to de("com.lemonappdev:konsist"),
-            "Detekt" to de("dev.detekt:dev.detekt.gradle.plugin"),
-            "ktor-openapi" to de("io.github.smiley4:ktor-openapi"),
-            "ktor-swagger-ui" to de("io.github.smiley4:ktor-swagger-ui"),
-            "Kotlin" to de("org.jetbrains.kotlin:kotlin-gradle-plugin"),
-            "PITest core" to versaoChamada("http_api/build.gradle.kts", "pitestVersion"),
-            // A barra é o que separa do "CycloneDX Gradle plugin": sem ela o padrão casa os DOIS e a
-            // exigência de casamento único reprova (foi como este teste nasceu vermelho).
-            "/ Gradle plugin" to de("info.solidsoft.gradle.pitest:gradle-pitest-plugin"),
-            "CycloneDX Gradle plugin" to versaoDePlugin("org.cyclonedx.bom"),
-            "google/osv-scanner-action@" to versaoDaActionDeSca(),
-            "KtLint" to versaoDoKtLint(),
-            "Gradle" to versaoDoWrapper(),
-            "(API" to de("io.opentelemetry:opentelemetry-api"),
-        ).map { (nome, vigente) -> Triple(nome, declaracaoDe(nome), vigente) }
-    }
-
-    /** Toda coordenada `grupo:artefato:versão` declarada em qualquer script Gradle do repo. */
-    private fun coordenadasDoGradle(): Map<String, String> =
-        scriptsGradle()
-            .flatMap { COORDENADA.findAll(it.readText().semComentarios()) }
-            .associate { achado ->
-                val (grupo, artefato, versao) = achado.destructured
-                "$grupo:$artefato" to versao
-            }.also { require(it.isNotEmpty()) { "nenhuma coordenada lida dos scripts Gradle — o parser quebrou" } }
-
-    private fun scriptsGradle(): List<File> =
-        (
-            listOf(File(raiz, "build.gradle.kts")) + File(raiz, "buildSrc").walkTopDown() +
-                modulos().map { File(raiz, "$it/build.gradle.kts") }
-        ).filter { it.isFile && it.name.endsWith(".gradle.kts") }
-            .distinct()
-
-    private fun modulos(): List<String> =
-        MODULO_INCLUIDO
-            .findAll(ler("settings.gradle.kts").semComentarios())
-            .map { it.groupValues[1] }
-            .toList()
-
-    private fun versaoDePlugin(id: String): String =
-        acharUnica(Regex("""id\("${Regex.escape(id)}"\)\s+version\s+"([^"]+)""""), "build.gradle.kts", "plugin $id")
-
-    private fun versaoNomeada(
-        caminho: String,
-        nome: String,
-    ): String = acharUnica(Regex("""val\s+${Regex.escape(nome)}\s*=\s*"([^"]+)""""), caminho, "val $nome")
-
-    private fun versaoChamada(
-        caminho: String,
-        nome: String,
-    ): String = acharUnica(Regex("""${Regex.escape(nome)}\s*\.\s*set\s*\(\s*"([^"]+)"\s*\)"""), caminho, "$nome.set")
-
-    private fun versaoDoKtLint(): String =
-        acharUnica(Regex("""ktlint\s*\{[^}]*?version\s*\.\s*set\s*\(\s*"([^"]+)"\s*\)"""), CONVENTION_PLUGIN, "bloco ktlint")
-
-    private fun versaoDoWrapper(): String = acharUnica(Regex("""gradle-([0-9][0-9A-Za-z.\-]*)-bin\.zip"""), WRAPPER, "distributionUrl")
-
-    private fun versaoDaActionDeSca(): String = acharUnica(ACTION_DE_SCA, CI, "uses: osv-scanner-action")
-
-    /**
-     * O stripper de comentários é de fonte **Kotlin** e só se aplica a `.gradle.kts`.
-     *
-     * Rodá-lo sobre YAML ou `.properties` não é inofensivo, é destrutivo: `https://` casa o comentário
-     * de linha do Kotlin e leva o resto da linha embora — o que apagou tanto o `uses:` do `ci.yml`
-     * quanto o `distributionUrl` do wrapper, e as duas regras nasceram vermelhas com "achei []".
-     */
-    private fun acharUnica(
-        padrao: Regex,
-        caminho: String,
-        oQue: String,
-    ): String {
-        val bruto = ler(caminho)
-        val texto = if (caminho.endsWith(".gradle.kts")) bruto.semComentarios() else bruto
-        val achados =
-            padrao
-                .findAll(texto)
-                .map { it.groupValues[1] }
-                .distinct()
-                .toList()
-        return achados.singleOrNull()
-            ?: error("esperava exatamente uma declaração de $oQue em $caminho, achei $achados")
-    }
-
-    private fun ler(caminhoRelativo: String): String {
-        val arquivo = File(raiz, caminhoRelativo)
-        require(arquivo.isFile) { "arquivo não encontrado: ${arquivo.absolutePath}" }
-        return arquivo.readText()
-    }
-
     private companion object {
         const val ESPELHO = ".claude/rules/stack.md"
         const val ARQUITETURA = ".claude/rules/architecture.md"
-        const val CONVENTION_PLUGIN = "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts"
-        const val WRAPPER = "gradle/wrapper/gradle-wrapper.properties"
-        const val CI = ".github/workflows/ci.yml"
-
-        // `grupo:artefato:versão` — a forma canônica, tanto no Gradle quanto no snippet de doc. O grupo
-        // exige minúscula inicial e ponto para não casar `Concern | Library` de tabela markdown.
-        val COORDENADA = Regex("""([a-z][a-z0-9.\-]*\.[a-z0-9.\-]+):([A-Za-z0-9.\-_]+):([0-9][0-9A-Za-z.\-]*)""")
-
-        val ACTION_DE_SCA = Regex("""osv-scanner-action@v([0-9][0-9A-Za-z.\-]*)""")
 
         // Um `v1.2.3` escrito à mão no rodapé. O derivado usa `%s`, que não casa aqui.
         val VERSAO_LITERAL = Regex("""osv-scanner v[0-9]""")
 
-        val MODULO_INCLUIDO = Regex("""["']\s*:([A-Za-z0-9_\-]+)\s*["']""")
+        // `shields.io/badge/<slug>-<rótulo>-<cor>`, com o `-` do nome escapado como `--`. O rótulo tem de
+        // COMEÇAR com dígito: é o que separa "declara versão" de `java-25%20LTS` ou
+        // `pitest-mutation%20testing`, que não declaram versão de artefato nenhuma.
+        val BADGE = Regex("""shields\.io/badge/([A-Za-z0-9]+(?:--[A-Za-z0-9]+)*)-([0-9][0-9A-Za-z.\-]*)-[0-9A-Fa-f]{3,8}""")
     }
 }

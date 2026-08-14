@@ -99,7 +99,12 @@ Três camadas de teste, cada uma com responsabilidade distinta:
 
 ### Versão em uso
 
-O projeto usa **JUnit Jupiter 6.1.1** (`junit-jupiter`).
+O projeto usa **JUnit Jupiter** (`junit-jupiter`) — a versão vigente está na tabela de stack em
+`.claude/rules/stack.md`, que é o único espelho do build (GAP-FF).
+
+Aqui ela era repetida como dígito e ficou em 6.1.1 com o build em 6.1.3. Ponteiro não apodrece;
+número solto em skill apodrece e nenhum bump o atualiza.
+
 Documentação: https://junit.org/junit5/docs/current/user-guide/
 
 ### Imports corretos
