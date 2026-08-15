@@ -1,7 +1,5 @@
 package com.kanbanvision.architecture
 
-import java.io.File
-
 /*
  * A VERDADE das versões, lida das fontes que mandam nelas — os scripts Gradle, o
  * `gradle-wrapper.properties` e o `uses:` do `ci.yml`.
@@ -26,9 +24,7 @@ internal data class Componente(
     val noEspelho: Boolean = true,
 )
 
-internal class VersoesDoBuild(
-    private val raiz: File,
-) {
+internal class VersoesDoBuild {
     fun componentes(): List<Componente> = deCoordenada() + deDeclaracaoPropria()
 
     private fun deCoordenada(): List<Componente> {
@@ -85,7 +81,7 @@ internal class VersoesDoBuild(
      */
     fun coordenadas(): Map<String, String> {
         val porCoordenada =
-            scriptsGradle()
+            scriptsDeBuild()
                 .flatMap { COORDENADA.findAll(it.readText().semComentarios()) }
                 .groupBy({ "${it.groupValues[1]}:${it.groupValues[2]}" }, { it.groupValues[3] })
         require(porCoordenada.isNotEmpty()) { "nenhuma coordenada lida dos scripts Gradle — o parser quebrou" }
@@ -103,12 +99,6 @@ internal class VersoesDoBuild(
         caminho: String,
         nome: String,
     ): String = acharUnica(Regex("""val\s+${Regex.escape(nome)}\s*=\s*"([^"]+)""""), caminho, "val $nome")
-
-    fun ler(caminhoRelativo: String): String {
-        val arquivo = File(raiz, caminhoRelativo)
-        require(arquivo.isFile) { "arquivo não encontrado: ${arquivo.absolutePath}" }
-        return arquivo.readText()
-    }
 
     private fun versaoDePlugin(id: String): String =
         acharUnica(Regex("""id\("${Regex.escape(id)}"\)\s+version\s+"([^"]+)""""), "build.gradle.kts", "plugin $id")
@@ -147,21 +137,7 @@ internal class VersoesDoBuild(
             ?: error("esperava exatamente uma declaração de $oQue em $caminho, achei $achados")
     }
 
-    private fun scriptsGradle(): List<File> =
-        (
-            listOf(File(raiz, "build.gradle.kts")) + File(raiz, "buildSrc").walkTopDown() +
-                modulos().map { File(raiz, "$it/build.gradle.kts") }
-        ).filter { it.isFile && it.name.endsWith(".gradle.kts") }
-            .distinct()
-
-    private fun modulos(): List<String> =
-        MODULO_INCLUIDO
-            .findAll(ler("settings.gradle.kts").semComentarios())
-            .map { it.groupValues[1] }
-            .toList()
-
     internal companion object {
-        const val CONVENTION_PLUGIN = "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts"
         const val WRAPPER = "gradle/wrapper/gradle-wrapper.properties"
         const val CI = ".github/workflows/ci.yml"
 
@@ -170,7 +146,5 @@ internal class VersoesDoBuild(
         val COORDENADA = Regex("""([a-z][a-z0-9.\-]*\.[a-z0-9.\-]+):([A-Za-z0-9.\-_]+):([0-9][0-9A-Za-z.\-]*)""")
 
         val ACTION_DE_SCA = Regex("""osv-scanner-action@v([0-9][0-9A-Za-z.\-]*)""")
-
-        val MODULO_INCLUIDO = Regex("""["']\s*:([A-Za-z0-9_\-]+)\s*["']""")
     }
 }
