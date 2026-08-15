@@ -167,8 +167,10 @@ se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no có
   incidente **não** prova que é culpa nossa — use o §4 (reproduzir fora do CI).
 - `## PR Size Report` dizendo *"unavailable"* **não é bug**: é o `pr-size` admitindo que o `gh api` não
   respondeu (ou voltou vazio, como no #288) em vez de fabricar um `✅` a partir de contagem ausente.
-- **O `osv-scanner-action@v2.3.8` do CI FALHA (exit 1) numa `unused ignore`; o `osv-scanner` 2.4.0 local só
-  avisa (exit 0).** Uma exceção obsoleta no `osv-scanner.toml` (o OSV revisou o advisory e ela não casa mais
+- **O `osv-scanner-action` do CI FALHA (exit 1) numa `unused ignore`; o `osv-scanner` 2.4.0 local só
+  avisa (exit 0).** Medido no `@v2.3.8`; o CI roda hoje `@v2.5.0` (GAP-FF) e o comportamento **não foi
+  re-medido** — trate a assinatura como válida até alguém observar o contrário, não como garantida.
+  Uma exceção obsoleta no `osv-scanner.toml` (o OSV revisou o advisory e ela não casa mais
   com nenhum pacote do SBOM) passa a **bloquear o gate sozinha** — e um scan local recente **não reproduz**.
   Reproduza com o comando EXATO do CI (`osv-scanner --config=osv-scanner.toml --format markdown --output
   osv-report.md -L build/reports/cyclonedx/bom.json`) e observe o **exit code**, não só o texto; **remova a

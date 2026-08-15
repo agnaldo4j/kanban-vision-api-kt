@@ -167,25 +167,8 @@ class QualityGateMirrorTest {
             .toList()
     }
 
-    /**
-     * Doc e config que descrevem o estado VIGENTE: a árvore `.claude`, a política, e as configs de
-     * raiz que repetem gate ou nomeiam módulo.
-     *
-     * `codecov.yml` e `README.md` entraram no GAP-FB: o guard do GAP-FA só varria `.md` sob `.claude`,
-     * e o codecov dizia "JaCoCo >= 96%" — DUAS subidas atrasadas — sem ninguém notar.
-     *
-     * Sem o glob escrito por extenso: em KDoc ele abre um bloco aninhado e o arquivo para de compilar.
-     */
-    private fun docsVivas(): List<File> {
-        val docs =
-            File(raiz, ".claude").walkTopDown().filter { it.isFile && it.extension == "md" }.toList() +
-                CONFIGS_VIVAS.map { File(raiz, it) }
-        // `adr` e `docs/quality` ficam DE FORA de propósito: ADR é imutável por política e
-        // scorecard/audit são snapshots datados — os 97% deles são fato histórico, não drift.
-        require(docs.size > CONFIGS_VIVAS.size) { "nenhuma doc viva encontrada — o walk quebrou" }
-        docs.forEach { require(it.isFile) { "config viva não encontrada: ${it.absolutePath}" } }
-        return docs
-    }
+    /** Compartilhada com o [StackVersionMirrorTest] — ver `DocsVivas.kt` para por que não é privada. */
+    private fun docsVivas(): List<File> = docsVivas(raiz)
 
     @Test
     fun `o parser reconhece as formas em que um modulo e citado, e so elas`() {
@@ -299,17 +282,6 @@ class QualityGateMirrorTest {
     private companion object {
         const val ESPELHO = ".claude/rules/stack.md"
         const val CONVENTION_PLUGIN = "buildSrc/src/main/kotlin/kanban.kotlin-common.gradle.kts"
-
-        // Config de raiz que repete gate ou nomeia módulo. O `ci.yml` entra porque nomeia módulo nos
-        // caminhos de relatório; os gates dele passaram a ser DERIVADOS do Gradle (GAP-FB), então
-        // não há mais número a espelhar lá.
-        val CONFIGS_VIVAS =
-            listOf(
-                "docs/politicas-explicitas.md",
-                "codecov.yml",
-                "README.md",
-                ".github/workflows/ci.yml",
-            )
 
         // `:modulo:task` — a forma que o leitor copia e cola. Só vale em linha com `gradlew`.
         val TASK_GRADLE = Regex(""":([a-z][a-z0-9_-]*):[a-zA-Z]""")

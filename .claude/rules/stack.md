@@ -4,32 +4,32 @@
 
 | Concern | Library |
 |---|---|
-| HTTP | Ktor 3.5.1 (Netty engine) |
+| HTTP | Ktor 3.5.2 (Netty engine) |
 | Authentication | JWT Bearer (`ktor-server-auth-jwt`) |
 | Rate Limiting | `ktor-server-rate-limit` (100 req/min per IP) |
 | Serialization | kotlinx.serialization |
 | DI | Koin 4.2.2 |
 | JDBC | Raw JDBC + HikariCP 7.1.0 |
-| DB Migrations | Flyway 13.0.0 |
+| DB Migrations | Flyway 13.2.0 |
 | Production DB | PostgreSQL (JDBC driver `org.postgresql:postgresql` 42.7.13) |
 | Test DB | Embedded PostgreSQL (zonky) |
 | Metrics | Micrometer + Prometheus (`/metrics`) |
 | Logging | SLF4J + Logback + logstash-logback-encoder (JSON via `LOG_FORMAT=json`) |
 | Functional types | Arrow-kt 2.2.3 (Either, Raise, zipOrAccumulate) |
-| Testing | JUnit Jupiter 6.1.2 + MockK 1.14.11 |
+| Testing | JUnit Jupiter 6.1.3 + MockK 1.14.11 |
 | Mutation testing | PITest core 1.25.3 / Gradle plugin 1.19.0 (STRONGER; gates: `domain-common` 90% · `domain-kanban` 78% · `domain-simulation` 73% · `usecases` 55% · `sql_persistence` 65% · `http_api` 45% (plugins/adapters/events)) |
 | OpenAPI | ktor-openapi 5.7.0 + ktor-swagger-ui 5.7.0 |
 | Static analysis | Detekt 2.0.0-alpha.5 (`dev.detekt` — ADR-0024; jvmTarget follows the toolchain) |
 | Architecture fitness | Konsist 0.17.3 + JUnit — módulo test-only `architecture/` (ADR-0026); fitness functions (conte com `rg -c '@Test' architecture/src/test` — a contagem muda a cada regra nova e já divergiu em 4 arquivos), incl. o grafo de `project` deps `simulation → kanban → common` (`ProjectDependencyGraphTest`, ADR-0038); roda no `testAll` |
 | Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, **nunca gate de PR**. Sinal agendado de regressão (`perf-regression.yml`, cron semanal) compara CI-vs-referência-de-CI com tolerância larga — tripwire não-bloqueante (ADR-0039) |
-| SBOM | CycloneDX Gradle plugin 3.3.0 (`org.cyclonedx.bom`, root; `runtimeClasspath` + `migrationRuntime` — ADR-0025, GAP-DA) |
-| SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.3.8`) — blocking gate; exceptions in `osv-scanner.toml` |
+| SBOM | CycloneDX Gradle plugin 3.4.1 (`org.cyclonedx.bom`, root; `runtimeClasspath` + `migrationRuntime` — ADR-0025, GAP-DA) |
+| SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.5.0`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
 | Containerisation | Docker multi-stage: GraalVM **Native Image** (binários app + migração — ADR-0032) sobre Oracle Linux 9 slim + docker-compose. Dev/testes seguem JVM (`buildFatJar` disponível) |
 | Kubernetes | Manifests in `k8s/` (Namespace, ConfigMap, Deployment, Service, Ingress, HPA, PDB) |
-| Observability | Prometheus 2.54 + Grafana 11.3 + OTel SDK/instrumentação de biblioteca 2.30.0 (API 1.64.0, sem javaagent — ADR-0031) |
-| Java | Java 25 LTS (Gradle 9.6.1 wrapper; Foojay resolver auto-provisions toolchain) |
+| Observability | Prometheus 2.54 + Grafana 11.3 + OTel SDK/instrumentação de biblioteca 2.30.0 (API 1.65.0, sem javaagent — ADR-0031) |
+| Java | Java 25 LTS (Gradle 9.7.0 wrapper; Foojay resolver auto-provisions toolchain) |
 | Kotlin | 2.4.10 |
 
 ## CI/CD — GitHub Actions (`.github/workflows/ci.yml`)

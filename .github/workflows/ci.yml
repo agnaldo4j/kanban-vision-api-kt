@@ -433,7 +433,19 @@ jobs:
               cat osv-report.md
             fi
             echo ''
-            echo '> SBOM: artifact `sbom-cyclonedx` · Scanner: osv-scanner v2.3.8 · Gate: ADR-0025'
+            # Derivado do `uses:` acima, nunca reescrito à mão: o dependabot bumpa a action e não
+            # sabe da prosa. Escrito à mão, o rodapé anunciou v2.3.8 por três PRs depois do bump
+            # para v2.5.0 (GAP-FF).
+            # O `|| true` NÃO é supérfluo por acidente: hoje o step roda no `bash -e` default (sem
+            # pipefail), o status do pipe é o do `cut`, que sai 0 mesmo sem match — medido. Basta
+            # alguém pôr `shell: bash` aqui ou um `defaults.run.shell` no workflow para o pipefail
+            # entrar e o grep sem match abortar o step ANTES do printf, levando junto o delimitador
+            # SUPPLY_CHAIN_REPORT e quebrando o parse do $GITHUB_OUTPUT. Mesmo idioma do `ignores=`
+            # logo acima. (Copilot no #412.)
+            scanner=$({ grep -oE 'osv-scanner-action@v[0-9]+\.[0-9]+\.[0-9]+' .github/workflows/ci.yml ||
+              true; } | head -1 | cut -d@ -f2)
+            printf '> SBOM: artifact `sbom-cyclonedx` · Scanner: osv-scanner %s · Gate: ADR-0025\n' \
+              "${scanner:-versão não derivada}"
             echo 'SUPPLY_CHAIN_REPORT'
           } >> "$GITHUB_OUTPUT"
 
