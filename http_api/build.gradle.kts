@@ -265,7 +265,7 @@ dependencies {
     // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
     migrationRuntime(platform("tools.jackson:jackson-bom:3.2.1"))
     migrationRuntime(project(":sql_persistence"))
-    migrationRuntime("ch.qos.logback:logback-classic:1.6.2")
+    migrationRuntime("ch.qos.logback:logback-classic:1.6.3")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
     migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
@@ -313,7 +313,7 @@ dependencies {
     // Referenciada só pelo logback*.xml — runtime only.
     runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.30.0-alpha")
 
-    implementation("ch.qos.logback:logback-classic:1.6.2")
+    implementation("ch.qos.logback:logback-classic:1.6.3")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
@@ -329,7 +329,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.65.0")
-    testImplementation("io.kotest:kotest-property:6.2.3")
+    testImplementation("io.kotest:kotest-property:6.2.4")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
     testImplementation("au.com.dius.pact.consumer:junit5:4.7.5")
     testImplementation("au.com.dius.pact.provider:junit5:4.7.5")
