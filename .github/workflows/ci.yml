@@ -44,7 +44,7 @@ jobs:
           python3 scripts/assert-ci-protection.py
 
       - name: Set up Java 25 (Gradle daemon)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -367,7 +367,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Java 25 (Gradle daemon)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -389,7 +389,7 @@ jobs:
           retention-days: 14
 
       - name: Scan SBOM for known vulnerabilities (osv-scanner)
-        uses: google/osv-scanner-action/osv-scanner-action@v2.5.0
+        uses: google/osv-scanner-action/osv-scanner-action@v2.5.1
         with:
           # Gate bloqueante (ADR-0025): exit code != 0 em CVE conhecida falha o job.
           # Exceções somente via osv-scanner.toml com reason documentada.
