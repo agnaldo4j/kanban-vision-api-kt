@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     // Sem arrow: Domain/Audit/DomainError/CommonError usam apenas stdlib + java.time.
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
 }
