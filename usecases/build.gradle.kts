@@ -58,12 +58,12 @@ dependencies {
     api(project(":domain-simulation"))
 
     api("io.arrow-kt:arrow-core:2.2.3")
-    implementation("org.slf4j:slf4j-api:2.0.18")
+    implementation("org.slf4j:slf4j-api:2.0.19")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.20")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("io.kotest:kotest-property:6.2.3")
+    testImplementation("io.kotest:kotest-property:6.2.5")
 }
