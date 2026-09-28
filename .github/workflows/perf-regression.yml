@@ -57,7 +57,7 @@ jobs:
              ON CONFLICT (id) DO NOTHING;"
 
       - name: Set up k6
-        uses: grafana/setup-k6-action@v1.2.1
+        uses: grafana/setup-k6-action@v1.2.2
 
       - name: Execute baseline profile
         # continue-on-error: uma falha de threshold do k6 não deve parar o job — a
