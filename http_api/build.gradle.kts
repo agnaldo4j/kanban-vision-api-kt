@@ -298,12 +298,21 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.2")
     implementation("io.micrometer:micrometer-registry-prometheus:1.17.1")
 
+    // `opentelemetry-api-incubator` é ALPHA, então não está no `opentelemetry-bom` estável e nenhuma
+    // coordenada daqui o nomeia: ele entra transitivo pelo `opentelemetry-instrumentation-api`, que o
+    // declara na versão do core contra o qual FOI COMPILADO (2.32.0 → 1.66.0-alpha). Com o core
+    // explícito em 1.67.0 o par fica cruzado, e o incubator 1.66.0-alpha chama
+    // `io.opentelemetry.api.internal.ConfigUtil`, que o 1.67.0 não tem mais → `NoClassDefFoundError`
+    // ao construir o SDK, em produção e não só no teste. O BOM alpha alinha a família numa linha
+    // (mesmo idioma do netty-bom/jackson-bom acima); pin por-artefato esqueceria o próximo.
+    implementation(platform("io.opentelemetry:opentelemetry-bom-alpha:1.67.0-alpha"))
+
     // OpenTelemetry API — spans manuais somente em http_api
     implementation("io.opentelemetry:opentelemetry-api:1.67.0")
     // Kotlin coroutines extension: asContextElement() propagates OTel context across thread hops
     implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.67.0")
     // ADR-0031: traces em build time (sem javaagent) — SDK autoconfigure lê as envs OTEL_*;
-    // instrumentações de biblioteca na linha 2.30.0(-alpha), alinhada ao SDK/API 1.64.0.
+    // instrumentações de biblioteca na linha 2.32.0(-alpha), alinhada ao SDK/API 1.67.0.
     implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.67.0")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.67.0")
     implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.32.0-alpha")
