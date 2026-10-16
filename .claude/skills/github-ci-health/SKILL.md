@@ -168,7 +168,7 @@ se um job vermelho sobreviveu a ela, é gate real, e gate real se corrige no có
 - `## PR Size Report` dizendo *"unavailable"* **não é bug**: é o `pr-size` admitindo que o `gh api` não
   respondeu (ou voltou vazio, como no #288) em vez de fabricar um `✅` a partir de contagem ausente.
 - **O `osv-scanner-action` do CI FALHA (exit 1) numa `unused ignore`; o `osv-scanner` 2.4.0 local só
-  avisa (exit 0).** Medido no `@v2.3.8`; o CI roda hoje `@v2.5.0` (GAP-FF) e o comportamento **não foi
+  avisa (exit 0).** Medido no `@v2.3.8`; o CI roda hoje `@v2.6.0` (GAP-FF) e o comportamento **não foi
   re-medido** — trate a assinatura como válida até alguém observar o contrário, não como garantida.
   Uma exceção obsoleta no `osv-scanner.toml` (o OSV revisou o advisory e ela não casa mais
   com nenhum pacote do SBOM) passa a **bloquear o gate sozinha** — e um scan local recente **não reproduz**.
