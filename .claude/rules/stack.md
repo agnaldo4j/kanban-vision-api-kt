@@ -23,7 +23,7 @@
 | Architecture fitness | Konsist 0.18.0 + JUnit — módulo test-only `architecture/` (ADR-0026); fitness functions (conte com `rg -c '@Test' architecture/src/test` — a contagem muda a cada regra nova e já divergiu em 4 arquivos), incl. o grafo de `project` deps `simulation → kanban → common` (`ProjectDependencyGraphTest`, ADR-0038); roda no `testAll` |
 | Load testing | k6 2.x — scripts em `load/`, baseline p95 em `docs/quality/` (versão exata da medição registrada lá; ADR-0027); workflow manual, **nunca gate de PR**. Sinal agendado de regressão (`perf-regression.yml`, cron semanal) compara CI-vs-referência-de-CI com tolerância larga — tripwire não-bloqueante (ADR-0039) |
 | SBOM | CycloneDX Gradle plugin 3.5.1 (`org.cyclonedx.bom`, root; `runtimeClasspath` + `migrationRuntime` — ADR-0025, GAP-DA) |
-| SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.5.0`) — blocking gate; exceptions in `osv-scanner.toml` |
+| SCA | osv-scanner v2 (action `google/osv-scanner-action@v2.6.0`) — blocking gate; exceptions in `osv-scanner.toml` |
 | Formatting | KtLint 1.5.0 |
 | Coverage | JaCoCo (≥ 98% per module — ADR-0029) |
 | Containerisation | Docker multi-stage: GraalVM **Native Image** (binários app + migração — ADR-0032) sobre Oracle Linux 9 slim + docker-compose. Dev/testes seguem JVM (`buildFatJar` disponível) |
