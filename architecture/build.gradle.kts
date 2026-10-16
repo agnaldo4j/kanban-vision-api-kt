@@ -8,7 +8,7 @@ plugins {
 // dependência de produção é necessária.
 
 dependencies {
-    testImplementation("com.lemonappdev:konsist:0.17.3")
+    testImplementation("com.lemonappdev:konsist:0.18.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
     // O Konsist REQUISITA JUnit Platform 1.x (linha JUnit 5); sem o launcher explícito

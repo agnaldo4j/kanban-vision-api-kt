@@ -227,8 +227,8 @@ registry. É o bridge perfeito para este stack.
 ```kotlin
 // http_api/build.gradle.kts
 implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.2")
-implementation("io.micrometer:micrometer-registry-prometheus:1.17.0")
-implementation("io.micrometer:micrometer-core:1.17.0")
+implementation("io.micrometer:micrometer-registry-prometheus:1.17.1")
+implementation("io.micrometer:micrometer-core:1.17.1")
 ```
 
 ### Plugin de Métricas no Ktor
@@ -503,7 +503,7 @@ adicione spans manuais:
 
 ```kotlin
 // Dependência adicional para instrumentação manual
-// implementation("io.opentelemetry:opentelemetry-api:1.65.0")
+// implementation("io.opentelemetry:opentelemetry-api:1.67.0")
 
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.StatusCode
