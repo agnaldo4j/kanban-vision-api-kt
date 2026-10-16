@@ -4,7 +4,7 @@
 [![Last Commit](https://img.shields.io/github/last-commit/agnaldo4j/kanban-vision-api-kt)](https://github.com/agnaldo4j/kanban-vision-api-kt/commits/main)
 
 [![Kotlin](https://img.shields.io/badge/kotlin-2.4.21-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![Ktor](https://img.shields.io/badge/ktor-3.5.2-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
+[![Ktor](https://img.shields.io/badge/ktor-3.6.0-087CFA?logo=ktor&logoColor=white)](https://ktor.io/)
 [![Gradle](https://img.shields.io/badge/gradle-9.8.1-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
 [![Java](https://img.shields.io/badge/java-25%20LTS-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![GraalVM](https://img.shields.io/badge/graalvm-native--image%20in%20production-EE8100)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/GraalVM)

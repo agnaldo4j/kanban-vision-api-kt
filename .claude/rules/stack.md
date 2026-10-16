@@ -4,7 +4,7 @@
 
 | Concern | Library |
 |---|---|
-| HTTP | Ktor 3.5.2 (Netty engine) |
+| HTTP | Ktor 3.6.0 (Netty engine) |
 | Authentication | JWT Bearer (`ktor-server-auth-jwt`) |
 | Rate Limiting | `ktor-server-rate-limit` (100 req/min per IP) |
 | Serialization | kotlinx.serialization |
