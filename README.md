@@ -12,7 +12,7 @@
 [![Koin](https://img.shields.io/badge/koin-4.2.2-F88900)](https://insert-koin.io/)
 [![Kotest Property](https://img.shields.io/badge/kotest--property-6.2.5-2D5BE3)](https://kotest.io/docs/proptest/property-based-testing.html)
 [![PITest](https://img.shields.io/badge/pitest-mutation%20testing-CC0000)](https://pitest.org/)
-[![Detekt](https://img.shields.io/badge/detekt-2.0.0--alpha.5-9146FF)](https://detekt.dev/)
+[![Detekt](https://img.shields.io/badge/detekt-2.0.0--alpha.6-9146FF)](https://detekt.dev/)
 [![Konsist](https://img.shields.io/badge/konsist-architecture%20fitness-4B9E4B)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Architecture-Fitness-Functions)
 [![SBOM](https://img.shields.io/badge/SBOM-CycloneDX-FF6D00)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain)
 [![SCA](https://img.shields.io/badge/SCA-osv--scanner-4285F4)](https://github.com/agnaldo4j/kanban-vision-api-kt/wiki/Security-Supply-Chain)
