@@ -439,8 +439,8 @@ Adicione em cada módulo que vai usar property tests:
 
 ```kotlin
 // <modulo>/build.gradle.kts — em cada módulo que usa property tests
-testImplementation("io.kotest:kotest-property:6.2.3")
-testImplementation("io.kotest:kotest-assertions-core:6.2.3")  // shouldBe, shouldThrow, isLeft(), isRight()
+testImplementation("io.kotest:kotest-property:6.2.5")
+testImplementation("io.kotest:kotest-assertions-core:6.2.5")  // shouldBe, shouldThrow, isLeft(), isRight()
 ```
 
 `kotest-property` é **independente** do Kotest test framework — não exige trocar JUnit 5.
@@ -952,7 +952,7 @@ denominador** de um refactor que deletou duplicação já coberta (`.claude/rule
 ## 8. Konsist — Fitness Functions de Arquitetura (ADR-0026)
 
 As invariantes da arquitetura hexagonal são testes JUnit 5 no módulo test-only
-`architecture/` (Konsist 0.17.3) — rodam DENTRO do `testAll` via `:architecture:check`
+`architecture/` (Konsist 0.18.0) — rodam DENTRO do `testAll` via `:architecture:check`
 e falham o CI em violação estrutural. Regras atuais: Dependency Rule entre camadas,
 pureza do `domain` (sem imports de framework) e placement dos ports
 (`interface *Repository` só em `usecases.repositories`).
