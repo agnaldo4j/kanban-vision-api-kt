@@ -226,7 +226,7 @@ registry. É o bridge perfeito para este stack.
 
 ```kotlin
 // http_api/build.gradle.kts
-implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.5.2")
+implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.6.0")
 implementation("io.micrometer:micrometer-registry-prometheus:1.17.1")
 implementation("io.micrometer:micrometer-core:1.17.1")
 ```
