@@ -290,7 +290,7 @@ dependencies {
     implementation("io.ktor:ktor-server-rate-limit-jvm:3.6.0")
     // Rate limit distribuído (GAP-BZ/ADR-0041): contador compartilhado em Redis via Lettuce,
     // com circuit-breaker resilience4j (mesmo idioma do DbCircuitBreaker do sql_persistence).
-    implementation("io.lettuce:lettuce-core:7.8.0.RELEASE")
+    implementation("io.lettuce:lettuce-core:7.9.0.RELEASE")
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
     implementation("io.github.resilience4j:resilience4j-micrometer:2.4.0")
     implementation("io.github.resilience4j:resilience4j-kotlin:2.4.0")
@@ -338,7 +338,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.67.0")
-    testImplementation("io.kotest:kotest-property:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.6")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
     testImplementation("au.com.dius.pact.consumer:junit5:4.7.5")
     testImplementation("au.com.dius.pact.provider:junit5:4.7.5")
