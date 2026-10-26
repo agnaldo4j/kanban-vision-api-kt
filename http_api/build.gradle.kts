@@ -223,7 +223,7 @@ dependencies {
     constraints {
         // Transitivas de java-jwt/ktor-openapi com CVE conhecida — gate de SCA (ADR-0025).
         // Remover cada constraint quando a dependência direta passar a puxar versão >= fix.
-        implementation("com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4") {
             because("GHSA-j3rv-43j4-c7qm, GHSA-rmj7-2vxq-3g9f e outras corrigidas em 2.21.4")
         }
         implementation("org.mozilla:rhino:1.9.1") {
@@ -251,7 +251,7 @@ dependencies {
     // TODA a família tools.jackson (core/databind/module-kotlin) numa linha, evitando drift
     // módulo-a-módulo (mesmo idioma do netty-bom acima). Remover quando logstash-logback-encoder puxar
     // >= 3.1.5 nativamente — o 9.0 declara tools.jackson 3.0.1, então o pin continua necessário aqui.
-    implementation(platform("tools.jackson:jackson-bom:3.2.3"))
+    implementation(platform("tools.jackson:jackson-bom:3.2.4"))
 
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))
@@ -263,7 +263,7 @@ dependencies {
     // O jackson-bom precisa ser repetido aqui: `migrationRuntime` é uma configuração própria e NÃO
     // herda o `platform` do `implementation`, então o logstash-logback-encoder abaixo puxaria a família
     // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
-    migrationRuntime(platform("tools.jackson:jackson-bom:3.2.3"))
+    migrationRuntime(platform("tools.jackson:jackson-bom:3.2.4"))
     migrationRuntime(project(":sql_persistence"))
     migrationRuntime("ch.qos.logback:logback-classic:1.6.5")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
@@ -290,13 +290,13 @@ dependencies {
     implementation("io.ktor:ktor-server-rate-limit-jvm:3.6.0")
     // Rate limit distribuído (GAP-BZ/ADR-0041): contador compartilhado em Redis via Lettuce,
     // com circuit-breaker resilience4j (mesmo idioma do DbCircuitBreaker do sql_persistence).
-    implementation("io.lettuce:lettuce-core:7.8.0.RELEASE")
+    implementation("io.lettuce:lettuce-core:7.9.0.RELEASE")
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
     implementation("io.github.resilience4j:resilience4j-micrometer:2.4.0")
     implementation("io.github.resilience4j:resilience4j-kotlin:2.4.0")
     implementation("io.ktor:ktor-server-cors-jvm:3.6.0")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.6.0")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.17.1")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.17.2")
 
     // `opentelemetry-api-incubator` é ALPHA, então não está no `opentelemetry-bom` estável e nenhuma
     // coordenada daqui o nomeia: ele entra transitivo pelo `opentelemetry-instrumentation-api`, que o
@@ -338,7 +338,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.67.0")
-    testImplementation("io.kotest:kotest-property:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.6")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
     testImplementation("au.com.dius.pact.consumer:junit5:4.7.5")
     testImplementation("au.com.dius.pact.provider:junit5:4.7.5")
