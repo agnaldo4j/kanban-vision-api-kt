@@ -57,7 +57,7 @@ dependencies {
     implementation(project(":domain-kanban"))
     api(project(":domain-simulation"))
 
-    api("io.arrow-kt:arrow-core:2.2.3")
+    api("io.arrow-kt:arrow-core:2.3.0.1")
     implementation("org.slf4j:slf4j-api:2.0.20")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.21")
@@ -65,5 +65,5 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("io.kotest:kotest-property:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.6")
 }

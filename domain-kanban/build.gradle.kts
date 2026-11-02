@@ -8,14 +8,14 @@ dependencies {
     // pelo DomainPurityTest). Precondições de construção/argumento seguem `require` (fail-fast em bug).
     // `api`: o `Either<KanbanError, _>` das operações de agregado (Board.addStep/addCard) é ABI
     // pública do módulo — expõe arrow-core transitivamente aos consumidores (padrão de usecases).
-    api("io.arrow-kt:arrow-core:2.2.3")
+    api("io.arrow-kt:arrow-core:2.3.0.1")
     implementation(project(":domain-common"))
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.21")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
     testImplementation("io.mockk:mockk:1.14.11")
-    testImplementation("io.kotest:kotest-property:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.6")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
 
