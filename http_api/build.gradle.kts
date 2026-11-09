@@ -223,10 +223,10 @@ dependencies {
     constraints {
         // Transitivas de java-jwt/ktor-openapi com CVE conhecida — gate de SCA (ADR-0025).
         // Remover cada constraint quando a dependência direta passar a puxar versão >= fix.
-        implementation("com.fasterxml.jackson.core:jackson-databind:2.22.3") {
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.22.4") {
             because("GHSA-j3rv-43j4-c7qm, GHSA-rmj7-2vxq-3g9f e outras corrigidas em 2.21.4")
         }
-        implementation("org.mozilla:rhino:1.9.1") {
+        implementation("org.mozilla:rhino:1.9.2") {
             because(
                 "GHSA-3w8q-xq97-5j7x: ranges afetados [0,1.7.14.1), [1.7.15,1.7.15.1) e [1.8.0,1.8.1); " +
                     "1.7.14.1 não foi publicada no Maven Central e 1.7.15/1.8.0 são vulneráveis — " +
@@ -243,7 +243,7 @@ dependencies {
     // 4.2.15 → 4.2.16: lote de CVEs em netty-codec-http/http2/compression (GHSA-558v/4mp9/6cqp/6jqx/gcjf/
     // jppx/mvh2/q4f6/c69g, High/Medium), fix 4.2.16.Final. Não introduzido por nenhum PR — bump transitivo
     // do OSV; bump quando o Ktor puxar >= 4.2.16 nativamente.
-    implementation(platform("io.netty:netty-bom:4.2.19.Final"))
+    implementation(platform("io.netty:netty-bom:4.2.20.Final"))
 
     // logstash-logback-encoder 9.0 migrou para Jackson 3.x (coordenadas `tools.jackson`, distintas do
     // Jackson 2.x `com.fasterxml.jackson` pinado acima) e puxa a família em 3.1.4 — vulnerável a
@@ -251,7 +251,7 @@ dependencies {
     // TODA a família tools.jackson (core/databind/module-kotlin) numa linha, evitando drift
     // módulo-a-módulo (mesmo idioma do netty-bom acima). Remover quando logstash-logback-encoder puxar
     // >= 3.1.5 nativamente — o 9.0 declara tools.jackson 3.0.1, então o pin continua necessário aqui.
-    implementation(platform("tools.jackson:jackson-bom:3.2.3"))
+    implementation(platform("tools.jackson:jackson-bom:3.2.4"))
 
     implementation(project(":domain-common"))
     implementation(project(":domain-kanban"))
@@ -263,13 +263,13 @@ dependencies {
     // O jackson-bom precisa ser repetido aqui: `migrationRuntime` é uma configuração própria e NÃO
     // herda o `platform` do `implementation`, então o logstash-logback-encoder abaixo puxaria a família
     // tools.jackson 3.1.4 (CVE GHSA-5gvw-p9qm-jgwh) de volta ao SBOM do binário de migração.
-    migrationRuntime(platform("tools.jackson:jackson-bom:3.2.3"))
+    migrationRuntime(platform("tools.jackson:jackson-bom:3.2.4"))
     migrationRuntime(project(":sql_persistence"))
-    migrationRuntime("ch.qos.logback:logback-classic:1.6.5")
+    migrationRuntime("ch.qos.logback:logback-classic:1.6.6")
     migrationRuntime("net.logstash.logback:logstash-logback-encoder:9.0")
-    migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.32.0-alpha")
+    migrationRuntime("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.33.1-alpha")
 
-    implementation("io.arrow-kt:arrow-core:2.2.3")
+    implementation("io.arrow-kt:arrow-core:2.3.0.1")
 
     implementation("io.ktor:ktor-server-core-jvm:3.6.0")
     implementation("io.ktor:ktor-server-netty-jvm:3.6.0")
@@ -290,13 +290,13 @@ dependencies {
     implementation("io.ktor:ktor-server-rate-limit-jvm:3.6.0")
     // Rate limit distribuído (GAP-BZ/ADR-0041): contador compartilhado em Redis via Lettuce,
     // com circuit-breaker resilience4j (mesmo idioma do DbCircuitBreaker do sql_persistence).
-    implementation("io.lettuce:lettuce-core:7.8.0.RELEASE")
+    implementation("io.lettuce:lettuce-core:7.9.0.RELEASE")
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
     implementation("io.github.resilience4j:resilience4j-micrometer:2.4.0")
     implementation("io.github.resilience4j:resilience4j-kotlin:2.4.0")
     implementation("io.ktor:ktor-server-cors-jvm:3.6.0")
     implementation("io.ktor:ktor-server-metrics-micrometer-jvm:3.6.0")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.17.1")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.17.2")
 
     // `opentelemetry-api-incubator` é ALPHA, então não está no `opentelemetry-bom` estável e nenhuma
     // coordenada daqui o nomeia: ele entra transitivo pelo `opentelemetry-instrumentation-api`, que o
@@ -315,14 +315,14 @@ dependencies {
     // instrumentações de biblioteca na linha 2.32.0(-alpha), alinhada ao SDK/API 1.67.0.
     implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.67.0")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp:1.67.0")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.32.0-alpha")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-ktor-3.0:2.33.1-alpha")
     // implementation (não runtimeOnly): OpenTelemetryDriver.install() é chamado em código —
     // o driver nasce com noop() e não lê o GlobalOpenTelemetry.
-    implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc:2.32.0-alpha")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc:2.33.1-alpha")
     // Referenciada só pelo logback*.xml — runtime only.
-    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.32.0-alpha")
+    runtimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0:2.33.1-alpha")
 
-    implementation("ch.qos.logback:logback-classic:1.6.5")
+    implementation("ch.qos.logback:logback-classic:1.6.6")
     implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     // janino removido: existia só para o <if> condicional do logback.xml,
     // suporte que o logback 1.5.x eliminou (seleção agora via <include>).
@@ -338,8 +338,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     // ADR-0031: InMemorySpanExporter para o teste de integração de exportação de spans
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.67.0")
-    testImplementation("io.kotest:kotest-property:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.6")
     // Pact JVM 4.6.17 — compatível com JUnit Jupiter 6.0.3 (GAP-K / ADR-0011)
-    testImplementation("au.com.dius.pact.consumer:junit5:4.7.5")
-    testImplementation("au.com.dius.pact.provider:junit5:4.7.5")
+    testImplementation("au.com.dius.pact.consumer:junit5:4.7.7")
+    testImplementation("au.com.dius.pact.provider:junit5:4.7.7")
 }
